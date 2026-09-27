@@ -142,6 +142,8 @@ class ConstraintModel:
         self.placement_mode = placement_mode
         self.unassigned_penalty = unassigned_penalty
         self.downlink_duration_ratio = downlink_duration_ratio
+        self.agility_profile = agility_profile
+        self.non_agile_transition_s = non_agile_transition_s
 
         self.has_ground_stations = len(problem.ground_stations) > 0
 

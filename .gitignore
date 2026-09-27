@@ -1,0 +1,6 @@
+.venv/
+output/
+output_original_fallback/
+.mplconfig/
+__pycache__/
+.DS_Store

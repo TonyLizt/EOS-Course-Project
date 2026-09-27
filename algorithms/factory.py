@@ -32,6 +32,8 @@ from algorithms.heuristics import (
 from algorithms.meta_sa import SimulatedAnnealingScheduler, SAConfig
 from algorithms.meta_ga import GeneticAlgorithmScheduler, GAConfig
 from algorithms.meta_aco import AntColonyScheduler, ACOConfig
+from algorithms.pressure_repair import PressureRepairScheduler, PressureRepairConfig
+from algorithms.adaptive_repair import AdaptiveRepairScheduler, AdaptiveRepairConfig
 
 # PPO (Reinforcement Learning)
 
@@ -59,6 +61,14 @@ def create_algorithm(
     if name in ("completion_first", "completion", "tcr"):
         cfg = _apply_overrides(HeuristicConfig(), o)
         return HeuristicCompletionFirstScheduler(cfg=cfg)
+
+    if name == "pressure_repair":
+        cfg = _apply_overrides(PressureRepairConfig(), o)
+        return PressureRepairScheduler(cfg=cfg)
+
+    if name == "adaptive_repair":
+        cfg = _apply_overrides(AdaptiveRepairConfig(), o)
+        return AdaptiveRepairScheduler(cfg=cfg)
 
     # Profit first
     if name in ("profit_first", "profit", "tp"):
@@ -119,7 +129,7 @@ def create_algorithm(
 
     raise ValueError(
         f"Unknown algorithm: {algo_name}. "
-        f"Supported: mip, completion_first, profit_first, balance_first, sa, ga, aco, ppo"
+        f"Supported: mip, completion_first, pressure_repair, adaptive_repair, profit_first, balance_first, sa, ga, aco, ppo"
     )
 
 

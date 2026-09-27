@@ -486,6 +486,8 @@ def run_benchmark(
         {"class_id": 1, "algo_name": "mip", "cfg_overrides": {}},
 
         {"class_id": 2, "algo_name": "completion_first", "cfg_overrides": {}},
+        {"class_id": 2, "algo_name": "pressure_repair", "cfg_overrides": {}},
+        {"class_id": 2, "algo_name": "adaptive_repair", "cfg_overrides": {}},
         {"class_id": 2, "algo_name": "profit_first", "cfg_overrides": {}},
         {"class_id": 2, "algo_name": "balance_first", "cfg_overrides": {}},
         {"class_id": 2, "algo_name": "timeliness_first", "cfg_overrides": {}},
@@ -661,6 +663,9 @@ def run_benchmark(
                         other_jobs.append(job)
 
             elif class_id == 2:
+                base_seed = _stable_seed(f"{scenario_name}|{algo_name}")
+                cfg_overrides_job = dict(cfg_overrides)
+                cfg_overrides_job.setdefault("seed", base_seed)
                 other_jobs.append(
                     {
                         "scenario_json": str(scenario_json), "scenario_name": scenario_name,
@@ -668,7 +673,7 @@ def run_benchmark(
                         "class_id": class_id, "algo_name": algo_name, "placement_mode": placement_mode,
                         "downlink_duration_ratio": downlink_duration_ratio, "unassigned_penalty": unassigned_penalty,
                         "agility_profile": agility_profile, "non_agile_transition_s": non_agile_transition_s,
-                        "objective_weights": (0.0, 0.0, 0.0, 0.0), "cfg_overrides": cfg_overrides,
+                        "objective_weights": (0.0, 0.0, 0.0, 0.0), "cfg_overrides": cfg_overrides_job,
                         "schedule_dir": str(scenario_schedule_dir),
                     }
                 )

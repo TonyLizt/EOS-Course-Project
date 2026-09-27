@@ -73,7 +73,7 @@ def compute_transition_time_agile(delta_g_deg: float, profile_name: str) -> floa
 
 
 def _get_first_last_from_list(x: Any, want_first: bool) -> Any:
-    if not isinstance(x, list) or not x:
+    if not isinstance(x, (list, tuple)) or not x:
         return None
     return x[0] if want_first else x[-1]
 
@@ -107,9 +107,13 @@ def extract_attitude_from_angles(angles: Any, want_first: bool) -> Optional[Dict
     # Case 2: dict of arrays or nested structure
     if isinstance(angles, dict):
         # Common cases:
-        # {'roll':[...], 'pitch':[...], 'yaw':[...]}
-        # {'gamma':[], 'pi':[], 'psi':[]}
-        for keyset in (("roll", "pitch", "yaw"), ("gamma", "pi", "psi")):
+        # Scenario windows use the plural *_angles fields. Keep support for
+        # the older roll/pitch/yaw and gamma/pi/psi representations.
+        for keyset in (
+            ("roll_angles", "pitch_angles", "yaw_angles"),
+            ("roll", "pitch", "yaw"),
+            ("gamma", "pi", "psi"),
+        ):
             if all(k in angles for k in keyset):
                 try:
                     r_list = angles[keyset[0]]
@@ -123,7 +127,7 @@ def extract_attitude_from_angles(angles: Any, want_first: bool) -> Optional[Dict
                     roll = float(r)
                     pitch = float(p)
                     yaw = float(y)
-                    # Map gamma -> roll, pi -> pitch, psi -> yaw when using gamma/pi/psi
+                    # Map gamma -> roll, pi -> pitch, psi -> yaw when needed.
                     return {"roll": roll, "pitch": pitch, "yaw": yaw}
                 except Exception:
                     return None
