@@ -1,10 +1,10 @@
 # 第一阶段：运行 EOS-Bench 与自定义算法
 
-本目录是官方 EOS-Bench 提交 `ee282656e8b2f6fd0d3cf84677b40966e2780ef3` 的独立 Git 工作树，分支为 `codex/course-project`。原始仓库在 `/Users/tonylizt/Projects/EOS-Bench`，数据集在 `/Users/tonylizt/Documents/3rd/操作系统原理课程设计/EOS-Bench-data`。准备脚本只读取数据集，所有派生实例、计划和日志均写在本目录的 `output/`。
+本目录是官方 EOS-Bench 提交 `ee282656e8b2f6fd0d3cf84677b40966e2780ef3` 的独立 Git 工作树；当前开发分支可用 `git branch --show-current` 查看。原始仓库在 `/Users/tonylizt/Projects/EOS-Bench`，数据集在 `/Users/tonylizt/Documents/3rd/操作系统原理课程设计/EOS-Bench-data`。准备脚本只读取数据集，所有派生实例、计划和日志均写在本目录的 `output/`。
 
 ## 环境
 
-官方 README 建议 Python 3.10+、Java 17，并列出 `orekit-jpype`、`jpype1`、`numpy`、`pandas`、`matplotlib`、`scipy`、`pulp`、`torch`。本阶段读取预计算场景并运行两个启发式算法，只需 `requirements-course.txt` 中的三个包。场景重新生成需要 Java/Orekit；MIP 需要 PuLP；PPO 需要 PyTorch。本机系统 `python3` 是 3.9，不适合此仓库；本次使用 Codex 附带的 Python 3.12。
+官方 README 建议 Python 3.10+、Java 17，并列出 `orekit-jpype`、`jpype1`、`numpy`、`pandas`、`matplotlib`、`scipy`、`pulp`、`torch`。读取预计算场景并运行本项目的启发式对照，只需 `requirements-course.txt` 中的基础依赖；重新生成轨道场景或使用本地三维可视化还需要 Java/Orekit。MIP 需要 PuLP；PPO 需要 PyTorch。本机系统 `python3` 是 3.9，不适合此仓库；本次使用 Codex 附带的 Python 3.12。
 
 可在有 Python 3.10+ 的环境中这样准备：
 
@@ -14,7 +14,7 @@ python3.12 -m venv .venv
 .venv/bin/python -m pip install -r requirements-course.txt
 ```
 
-本机现有 `.venv` 使用附带的 Python 3.12 创建，含可用的 NumPy、Matplotlib、ijson；可直接运行以下命令。
+本机现有 `.venv` 使用附带的 Python 3.12 创建，已额外安装本地可视化所需的 Orekit 依赖；基础调度与三维展示的操作分别见下文。
 
 ## 官方 README 的完整流程与本项目的输入输出
 
@@ -23,10 +23,10 @@ python3.12 -m venv .venv
 | 生成场景 | `main_generate.py` | `input/` 中的卫星配置、目标配置，或随机任务参数 | `output/Scenario_*.json`、场景汇总 | 否；已下载预计算场景 |
 | 切分母场景 | `input/scenario_splitter.py` | 下载数据集中的 7 天场景 JSON | 较短规划期的场景 JSON | 是；由 `prepare_first_step.py` 调用，写到本项目 `output/` |
 | 难度分析 | `Characterisation/analyze_combined_conflict.py` | 场景 JSON | 冲突指标报告和 Excel | 否；官方 README 将其列为可选分析步骤 |
-| 调度与评估 | `main_scheduler.py` | `output/` 下所有 `Scenario_*.json`；算法名及参数 | `output/schedules/` 中的计划 JSON、甘特图 PNG、`runlog_batch_*.txt`；PPO 模型写到 `output/models/` | 是；运行两个启发式算法 |
-| 三维展示 | `main_draw.py` | 一个场景 JSON、可选的计划 JSON | `draw/orbit.czml`，并启动本地 Cesium 页面 | 否；已有甘特图，需要展示时再运行 |
+| 调度与评估 | `main_scheduler.py` | `output/` 下所有 `Scenario_*.json`；算法名及参数 | `output/schedules/` 中的计划 JSON、甘特图 PNG、`runlog_batch_*.txt`；PPO 模型写到 `output/models/` | 是；先运行小实例，再做 TCR 对照实验 |
+| 三维展示 | `main_draw.py` | 一个场景 JSON、可选的计划 JSON | `draw/orbit.czml`，并启动本地 Cesium 页面 | 是；已用 TCR 首轮实验的新算法计划验证 |
 
-官方 README 给了两种使用方式：终端传参，或编辑脚本末尾的默认配置后直接运行。我们现在用终端传参，输入仍遵循官方 `SchedulingProblem → ConstraintModel → Schedule → 指标和输出` 流程。下载数据集不在代码仓库内；本项目仅从 `/Users/tonylizt/Documents/3rd/操作系统原理课程设计/EOS-Bench-data` 读取两个母场景。该数据集不需要搬进 `output/`，也没有被修改。
+官方 README 给了两种使用方式：终端传参，或编辑脚本末尾的默认配置后直接运行。我们现在用终端传参，输入仍遵循官方 `SchedulingProblem → ConstraintModel → Schedule → 指标和输出` 流程。下载数据集不在代码仓库内；本项目从 `/Users/tonylizt/Documents/3rd/操作系统原理课程设计/EOS-Bench-data` 只读获取所需母场景。该数据集不需要搬进 `output/`，也没有被修改。
 
 ## 重现这次小实验
 
@@ -88,3 +88,52 @@ cd /Users/tonylizt/Projects/EOS-Course-Project
 全量指标与各次运行时间见 `output/experiments/tcr_study/results.csv`。这些是算法默认迭代参数下的首轮效果，**没有对各算法施加相同计算时间上限**；不能据此声称运行时间或统计显著性占优。MIP 未运行，因为当前精简环境未装 PuLP。
 
 在区域聚集 / 0h 场景，用实验相同的算法种子 `20260928` 做消融：静态稀缺构造 173，启用动态稀缺构造 175，再加增广链仍为 175，完整 ALNS 也为 175。ALNS 对次级 TP/时序质量有改进，但该场景完成数的增量来自动态构造；增广链的重插机制另有单元测试验证。下一轮应在更多独立实例上检查修复模块的收益与随机种子敏感性。
+
+## 本地网页可视化（2026-09-29）
+
+官方的 `main_draw.py` 用 Orekit 把场景中的卫星轨道转换成 CZML，再启动本机 HTTP 服务，通过 `draw/cesium_viewer.html` 展示卫星、地面目标和可选的调度计划。**这是算法结果的三维回放，不会重新运行调度算法，也不是算法内部搜索过程的动画。**
+
+### 本次可视化接入改动
+
+| 文件／本地生成物 | 改动 |
+|---|---|
+| `draw/orekit_to_czml.py` | 轨道历元同时接受数据集中的 ISO 8601 时间和官方原有的英文月份时间格式；带时区的时间统一转换为 UTC。 |
+| `main_draw.py` | HTTP 服务只绑定 `127.0.0.1`，避免把整个项目目录暴露给局域网。 |
+| `.gitignore` | 忽略自动生成的 `draw/orbit.czml` 和本机用的 `draw/orekit-data.zip` 链接。 |
+| `COURSE_SETUP.md` | 补充依赖、输入配对、启动、输出和停止方法。 |
+| 本机 `.venv/`、`draw/orbit.czml`、`draw/orekit-data.zip` | 前者安装可视化依赖；后两者分别是生成的轨道文件和指向仓库已有 `utils/orekit-data.zip` 的符号链接。它们不提交 Git。 |
+
+原始数据集、派生场景 JSON 和调度计划 JSON 均未被这次可视化改动修改。
+
+### 首次准备
+
+从项目根目录执行：
+
+```bash
+cd /Users/tonylizt/Projects/EOS-Course-Project
+.venv/bin/python -m pip install 'orekit-jpype[jdk4py]' 'jpype1==1.5.2'
+ln -s ../utils/orekit-data.zip draw/orekit-data.zip
+```
+
+`ln -s` 只需在 `draw/orekit-data.zip` 不存在时执行一次；不要覆盖已有文件。仓库内的 `utils/orekit-data.zip` 是 Orekit 所需的数据，不是调度场景。官方建议 Java 17；本机用 Python 3.12、已安装的 `jdk4py` 和 Java 25 实测成功，但其他机器应以官方建议版本为先。页面从 Cesium 在线地址加载脚本与地球资源，浏览器需要能访问相应网络资源。
+
+### 选择输入 JSON
+
+- `--scenario` 必填：选择**一个**场景 JSON。推荐使用 `output/experiments/tcr_study/scenarios/` 中的 24 小时派生场景，不直接用 7 天母场景做课堂演示。
+- `--schedule` 可选：选择**同一场景**运行后得到的计划 JSON；省略时只显示卫星和目标，不显示完成率、观测区间等计划信息。
+- 两个路径都从本项目根目录算起。可先比较两个 JSON 的 `scenario_id`；应完全一致。计划文件名中的场景部分也应与场景文件名对应，后面的 `adaptive_repair`、`completion_first`、`sa` 等才表示算法。不要把不同分布、时间片或任务集的文件配在一起。
+- 若想看仓库自带的官方演示，可配对 `docs/Scenario_S1_Sats20_M500_T0.5d_dist0.json` 与同名前缀的 `docs/scheduler_Scenario_S1_Sats20_M500_T0.5d_dist0_c3_ga_p0_c1_t0_b0.json`（或该目录下其他同场景计划）。这组 20 星、500 任务数据较大，生成轨道会比下方 3 星示例更耗时；不要与 `Scenario_Study_...` 派生场景混用。
+
+例如，查看全球随机分布、0h 时间片的新算法结果：
+
+```bash
+cd /Users/tonylizt/Projects/EOS-Course-Project
+.venv/bin/python main_draw.py \
+  --scenario output/experiments/tcr_study/scenarios/Scenario_Study_Sats3_M200_T1d_dist0_h000_seed20260927.json \
+  --schedule output/experiments/tcr_study/schedules/scheduler_Scenario_Study_Sats3_M200_T1d_dist0_h000_seed20260927_c2_adaptive_repair_implicit.json \
+  --port 8080
+```
+
+脚本生成／覆盖 `draw/orbit.czml`，随后自动打开浏览器；也可手动访问终端打印的 `http://localhost:8080/draw/cesium_viewer.html?schedule=...` 地址。页面左侧显示 TP、TCR 等指标，中间播放轨道与目标，右侧列出观测区间；右上角的 **Gantt Chart** 可打开同一计划的甘特图。本机已验证该示例加载 187 个任务、TCR = 0.935、TP = 1045，且页面与 CZML、计划文件均可访问。生成的 CZML 约 25 MB，固定文件名会被下一次展示覆盖；它不改变输入 JSON。若 8080 已被占用，换用 `--port 8081` 等空闲端口。
+
+**停止网页：** 保持启动它的终端运行，演示结束后在该终端按 `Ctrl+C`；服务停止后网页不能继续加载本地文件。若终端已丢失，先用 `lsof -nP -iTCP:8080 -sTCP:LISTEN` 确认对应进程，再停止那个进程，不要盲目结束其他占用端口的程序。

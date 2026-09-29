@@ -354,9 +354,14 @@ def demo(
         m_deg = float(op["mean_anomaly_deg"])
 
         epoch_str = op["epoch"]
-        epoch_dt = datetime.strptime(
-            epoch_str, "%d %b %Y %H:%M:%S.%f"
-        ).replace(tzinfo=timezone.utc)
+        try:
+            epoch_dt = datetime.fromisoformat(epoch_str.replace("Z", "+00:00"))
+        except ValueError:
+            epoch_dt = datetime.strptime(epoch_str, "%d %b %Y %H:%M:%S.%f")
+        if epoch_dt.tzinfo is None:
+            epoch_dt = epoch_dt.replace(tzinfo=timezone.utc)
+        else:
+            epoch_dt = epoch_dt.astimezone(timezone.utc)
 
         print(
             f"    Satellite {sat_id}: a={a_m:.1f} m, e={e}, i={i_deg} deg, "

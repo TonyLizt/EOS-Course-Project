@@ -79,11 +79,11 @@ def start_http_server_and_open(
     """
     print("=== Step 2: Starting Local HTTP Server ===")
     print(f"Working directory : {project_root}")
-    print(f"Command           : python -m http.server {port}")
+    print(f"Command           : python -m http.server {port} --bind 127.0.0.1")
 
     # Start http.server in a separate process
     proc = subprocess.Popen(
-        [sys.executable, "-m", "http.server", str(port)],
+        [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
         cwd=project_root,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

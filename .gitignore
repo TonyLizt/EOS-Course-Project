@@ -1,6 +1,8 @@
 .venv/
 output/
 output_original_fallback/
+draw/orbit.czml
+draw/orekit-data.zip
 .mplconfig/
 __pycache__/
 .DS_Store
