@@ -150,7 +150,8 @@ class HeuristicCompletionFirstScheduler(BaseSchedulerAlgorithm):
                 downlink_duration_ratio=constraint_model.downlink_duration_ratio,
                 max_candidates=self.cfg.max_candidates_per_task,
                 random_samples_per_window=0,
-                seed=None,  # Candidates themselves do not strongly depend on seed; we shuffle later
+                # 候选池内部也会打乱窗口位置；必须传入实验种子才可跨进程复现。
+                seed=self.cfg.seed,
             )
 
         remaining = set(task_ids)
@@ -272,7 +273,7 @@ class HeuristicProfitFirstScheduler(BaseSchedulerAlgorithm):
                 downlink_duration_ratio=constraint_model.downlink_duration_ratio,
                 max_candidates=self.cfg.max_candidates_per_task,
                 random_samples_per_window=0,
-                seed=None,
+                seed=self.cfg.seed,
             )
 
         # Sort by descending priority; tasks with the same priority can be shuffled
@@ -339,7 +340,7 @@ class HeuristicTimelinessFirstScheduler(BaseSchedulerAlgorithm):
                 downlink_duration_ratio=constraint_model.downlink_duration_ratio,
                 max_candidates=self.cfg.max_candidates_per_task,
                 random_samples_per_window=0,
-                seed=None,
+                seed=self.cfg.seed,
             )
             cand_map[tid] = cands
             if cands:
@@ -418,7 +419,7 @@ class HeuristicBalanceFirstScheduler(BaseSchedulerAlgorithm):
                 downlink_duration_ratio=constraint_model.downlink_duration_ratio,
                 max_candidates=self.cfg.max_candidates_per_task,
                 random_samples_per_window=0,
-                seed=None,
+                seed=self.cfg.seed,
             )
 
         # First sort by descending priority to avoid failing to schedule tasks

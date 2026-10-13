@@ -6,3 +6,5 @@ draw/orekit-data.zip
 .mplconfig/
 __pycache__/
 .DS_Store
+__pycache__/
+*.py[cod]
