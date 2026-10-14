@@ -93,7 +93,7 @@ HTTP 提交体不包含 `run_id`、SHA、算法版本与时间戳；服务端补
 | `GET /api/runs/{run_id}/visualization/replay` | 无 | 200；从已提交成功计划派生回放 manifest、卫星/载荷配置及半开区间 `SLEWING/OBSERVING` 时间段；不重跑调度 | 404 不存在、409 尚无正式成功结果、场景缺失/哈希不符或回放配置无效 |
 | `GET /api/health` | 无 | 200；`status`、版本、Controller 实例 ID、时间、数据库可读状态 | 503 服务不健康 |
 
-卫星回放还使用 `GET /visualization/fixed-payload-state.js`、`GET /visualization/fixed-payload-geometry.js` 与 `GET /visualization/assets/satellites/landsat8.glb` 三个本地静态资源路径。几何脚本在浏览器中以同一固定载荷姿态构建射线，用 Cesium WGS84 椭球相交；不接受客户端输入的任意资源路径。`GET /visualization/cesium/{run_id}` 会将 `schedule`、`czml`、`replay` 和 `gantt` URL 作为查询参数传给 Cesium 页面。这些资源只影响显示层，不改变 `RunConfig`、SQLite 模式、Controller 状态或正式计划契约。
+卫星回放还使用 `GET /visualization/fixed-payload-state.js`、`GET /visualization/fixed-payload-geometry.js`、`GET /visualization/fixed-payload-view.js` 与 `GET /visualization/assets/satellites/landsat8.glb` 四个本地静态资源路径。几何脚本在浏览器中以同一固定载荷姿态构建射线，用 Cesium WGS84 椭球相交；第二视图脚本只从主 Viewer 时钟和同一姿态输出设置相机。这些路径不接受客户端输入的任意资源路径。`GET /visualization/cesium/{run_id}` 会将 `schedule`、`czml`、`replay` 和 `gantt` URL 作为查询参数传给 Cesium 页面。这些资源只影响显示层，不改变 `RunConfig`、SQLite 模式、Controller 状态或正式计划契约。
 
 `POST /api/runs` 示例：
 

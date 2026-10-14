@@ -89,6 +89,8 @@ cd /mnt/d/Code/EOS-Course-Project
 
 每颗星在转向和拍摄阶段会显示独立视锥：转向为琥珀色，拍摄为绿色，并在原 `sat_end_time` 隐藏。视场使用配置中明示的“方形完整角”显示假设，中心和边界射线共用固定载荷姿态，通过 Cesium WGS84 椭球求交生成中心点与地面覆盖。部分视场越过地平线时不画完整覆盖，无交点时不沿用旧几何。这些覆盖仅用于回放，不修正任务成功或指标。详细验证见 [commit 4 交接记录](docs/phase2/satellite_replay_commit_4.md)；卫星选择与同钟固定载荷第二视图尚待 commit 5。
 
+左侧“Fixed Payload View”列出原卫星 ID 和机动类型；也可在主地球或任务列表点选卫星。第二 Viewer 持续显示选中星在等待、转向和拍摄阶段的固定载荷视野，与主 Viewer 共用唯一仿真时钟。暂停、倍速、时间拖动及任务列表跳转都从同一绝对时间状态重建；不会延长短任务。画面按光学 FOV 比例留白，不随面板比例拉伸；隐藏面板可停止额外渲染。详见 [commit 5 交接记录](docs/phase2/satellite_replay_commit_5.md)。
+
 ## 开发与验证
 
 ```bash

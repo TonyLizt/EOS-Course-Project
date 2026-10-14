@@ -1,5 +1,13 @@
 # 课程项目运行与版本记录
 
+## 卫星回放 commit 5：同钟固定载荷视图（2026-10-14，`feat/satellite-body-fixed-payload-replay`，待审核）
+
+Cesium 页面新增“固定载荷视角渲染组件”：可从卫星列表、主地球实体或任务列表选星，显示原卫星 ID、当前任务、`IDLE/SLEWING/OBSERVING` 阶段和姿态质量。第二 Viewer 不加载主视图的卫星模型、视锥或标注，关闭自身动画推进与交互控制，每次只读主 Viewer 的权威时间及同一 `evaluateSatelliteState`。面板隐藏后停止额外渲染，切换卫星不增加时钟监听器，页面卸载时销毁第二 Viewer。
+
+传感器水平/垂直完整 FOV 保持原配置；光学纵横比按两个半角正切的比值计算，显示容器使用留白而不拉伸画面。Node.js 测试通过相机 pose、状态文本、FOV 和横/竖容器留白。CesiumJS 1.136 + Chromium 141 冒烟结果：180×180 有效画面、aspect ratio 1、FOV 45°、时间 `2026-01-01T00:00:05Z`、`shouldAnimate=false`、相机输入关闭，无控制台错误。新静态路径为 `GET /visualization/fixed-payload-view.js`；详见 [commit 5 交接记录](docs/phase2/satellite_replay_commit_5.md)。
+
+---
+
 ## 卫星回放 commit 4：逐星视锥与 WGS84 覆盖（2026-10-14，`feat/satellite-body-fixed-payload-replay`，待审核）
 
 Cesium 主视图现在从同一固定载荷姿态生成中心视线与方形全角 FOV 边界采样，用原生 `IntersectionTests.rayEllipsoid` 求 WGS84 最近正向交点。每星独立显示视锥、椭球中心交点和 ECEF 覆盖：`SLEWING` 为琥珀色，`OBSERVING` 为绿色，原拍摄结束端点立即隐藏。部分射线越过地平线时只显示有效射线，不拼接错误多边形；全部无交点时清空覆盖。目标高度点与椭球交点保持不同语义，20 m 视觉抬高只用于避免地表闪烁。新静态路径为 `GET /visualization/fixed-payload-geometry.js`，无数据库、Controller、Worker、算法或指标变更。

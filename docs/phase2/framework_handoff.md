@@ -1,6 +1,6 @@
-# 第二阶段框架交接说明（v0.2.1 框架 + W1/W2 + 卫星回放 commit 1–4）
+# 第二阶段框架交接说明（v0.2.1 框架 + W1/W2 + 卫星回放 commit 1–5）
 
-本文件记录 v0.2.1 框架、`feat/hmt-worker-ipc` 与卫星回放 commit 1–4 当前已实现的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。
+本文件记录 v0.2.1 框架、`feat/hmt-worker-ipc` 与卫星回放 commit 1–5 当前已实现的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。
 
 ## 1. 当前闭环
 
@@ -20,7 +20,8 @@
 | `eos_system/exporting.py` | 数据库结果的 JSON/CSV 下载及文件输出 | 新导出格式以同一已入库快照为准 |
 | `eos_system/visualization.py` | CZML 缓存与生成进程 | 梁兆榮完善 Cesium 和甘特图交互 |
 | `replay/` 与 `replay_configs/` | 回放契约、输入完整性、manifest、任务阶段及可版本化显示配置 | 回放仅派生显示数据；不得向调度约束反向写入 |
-| `draw/cesium_viewer.html`、`draw/fixed-payload-state.js` 与 `draw/fixed-payload-geometry.js` | 按绝对时间求本体/载荷姿态，显示 GLB，用 Cesium WGS84 求逐星视锥、中心交点和覆盖 | 固定载荷第二视图与选星待 commit 5；回放不可用时保留点/标签回退 |
+| `draw/cesium_viewer.html`、`draw/fixed-payload-state.js` 与 `draw/fixed-payload-geometry.js` | 按绝对时间求本体/载荷姿态，显示 GLB，用 Cesium WGS84 求逐星视锥、中心交点和覆盖 | 回放不可用时保留点/标签回退；正式链路总验收见 commit 6 |
+| `draw/fixed-payload-view.js` | 从同一姿态输出相机 pose，固定光学 FOV/纵横比，为选中星驱动无独立时钟的第二 Viewer | 只读主时钟；隐藏后不渲染；不向姿态增加镜头自由度 |
 
 ## 3. 配置与路径
 
@@ -52,7 +53,8 @@ python scripts/check_visualization.py <已成功的运行ID>
 - 本地管理接口没有用户认证，服务应保持监听 `127.0.0.1`。
 - CZML 首次生成需要 Orekit/JVM；页面依赖 Cesium 在线资源，离线展示需后续打包资源。
 - Landsat 8 GLB 只是通用显示外观，不改变源场景的卫星 ID。模型—本体轴校准尚为单位四元数；当前姿态是几何指向示意，不是 Orekit 姿态或动力学验证。
-- commit 4 已实现视锥、椭球中心交点、ECEF 覆盖和部分/无交点降级，但仍采用方形全角显示假设，不包含地形遮挡或真实成像验证。固定载荷第二视图和双视图同钟待 commit 5；见 [`satellite_replay_commit_4.md`](satellite_replay_commit_4.md)。
+- commit 4 已实现视锥、椭球中心交点、ECEF 覆盖和部分/无交点降级，但仍采用方形全角显示假设，不包含地形遮挡或真实成像验证；见 [`satellite_replay_commit_4.md`](satellite_replay_commit_4.md)。
+- commit 5 已实现列表/地球/任务选星和与主时钟同步的固定载荷第二视图。第二 Viewer 显示的是地图/椭球模拟视野，不是真实遥感影像；见 [`satellite_replay_commit_5.md`](satellite_replay_commit_5.md)。
 - 文件输出失败会留下数据库内已成功的计划与导出失败事件，便于重试；不会把有效计划改判为失败。
 
 ## 7. 实验数据清理

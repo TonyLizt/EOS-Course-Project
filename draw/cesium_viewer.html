@@ -5,7 +5,7 @@
   <title>Scenario - Satellite Schedule Viewer</title>
 
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Cesium.js"></script>
-  <script src="fixed-payload-state.js"></script>  <script src="fixed-payload-geometry.js"></script>
+  <script src="fixed-payload-state.js"></script>  <script src="fixed-payload-geometry.js"></script>  <script src="fixed-payload-view.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
 
   <style>
@@ -172,6 +172,37 @@
     .asset-status strong {
       color: #ffc857;
     }
+    #payloadViewportShell {
+      position: relative;
+      width: 236px;
+      height: 236px;
+      margin-top: 8px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+    }
+    #payloadViewContainer {
+      position: absolute;
+      background: #000;
+    }
+    #payloadSatelliteList button, #togglePayloadView {
+      width: 100%;
+      margin: 3px 0;
+      padding: 5px 6px;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      background: rgba(25, 40, 75, 0.9);
+      color: #f5f5f5;
+      text-align: left;
+      cursor: pointer;
+    }
+    #payloadSatelliteList button.active {
+      border-color: #67b2ff;
+      background: rgba(45, 95, 170, 0.95);
+    }
+    #payloadViewStatus {
+      margin-top: 6px;
+      min-height: 30px;
+    }
 
     #openGanttBtn {
       padding: 5px 12px;
@@ -242,6 +273,13 @@
     <div class="panel-section">
       <h2>Satellite Appearance</h2>
       <div id="assetStatus" class="asset-status">Point/label fallback active until replay data loads.</div>      <div id="sensorGeometryStatus" class="asset-status">Sensor geometry inactive.</div>
+    </div>
+    <div class="panel-section">
+      <h2>Fixed Payload View</h2>
+      <div id="payloadSatelliteList" class="small-text">Replay satellites unavailable.</div>
+      <button id="togglePayloadView" type="button">Hide fixed payload view</button>
+      <div id="payloadViewportShell"><div id="payloadViewContainer"></div></div>
+      <div id="payloadViewStatus" class="asset-status">No satellite selected.</div>
     </div>
   </div>
 
@@ -489,6 +527,7 @@
             const a = assignments.find((x) => x.index === idx);
             if (!a) return;
 
+            if (viewer._selectReplaySatellite) viewer._selectReplaySatellite(a.satellite_id);
             viewer.clock.currentTime = a.start;
             viewer.clock.shouldAnimate = true;
 
@@ -618,6 +657,132 @@
       if (tgtPointCb) {
         tgtPointCb.addEventListener('change', () => setTargetPointVisible(tgtPointCb.checked));
       }
+    }
+
+    function setupFixedPayloadView(replay, stateAt) {
+      if (!window.FixedPayloadView || !(replay.satellites || []).length) return;
+      const list = document.getElementById('payloadSatelliteList');
+      const shell = document.getElementById('payloadViewportShell');
+      const container = document.getElementById('payloadViewContainer');
+      const status = document.getElementById('payloadViewStatus');
+      const toggle = document.getElementById('togglePayloadView');
+      const satelliteById = new Map(replay.satellites.map((item) => [item.id, item]));
+      let selectedId = replay.satellites[0].id;
+      let visible = true;
+      let payloadViewer = null;
+      let viewportKey = null;
+
+      const selectedSensor = (state) => {
+        const satellite = satelliteById.get(selectedId);
+        if (!satellite) return null;
+        return satellite.sensors.find((item) => item.sensor_id === (state && state.sensor_id))
+          || satellite.sensors[0] || null;
+      };
+      const ensureViewer = () => {
+        if (payloadViewer) return payloadViewer;
+        payloadViewer = new Cesium.Viewer('payloadViewContainer', {
+          baseLayerPicker: false,
+          geocoder: false,
+          homeButton: false,
+          sceneModePicker: false,
+          navigationHelpButton: false,
+          animation: false,
+          timeline: false,
+          fullscreenButton: false,
+          infoBox: false,
+          selectionIndicator: false,
+          shouldAnimate: false,
+          useDefaultRenderLoop: false,
+          requestRenderMode: true
+        });
+        payloadViewer.clock.shouldAnimate = false;
+        payloadViewer.scene.screenSpaceCameraController.enableInputs = false;
+        payloadViewer.scene.globe.depthTestAgainstTerrain = false;
+        return payloadViewer;
+      };
+      const applyViewport = (frustum) => {
+        const box = FixedPayloadView.viewportBox(
+          shell.clientWidth, shell.clientHeight, frustum.aspect_ratio
+        );
+        const key = [box.width, box.height, frustum.horizontal_full_fov_deg,
+          frustum.vertical_full_fov_deg].join(':');
+        if (key === viewportKey) return ensureViewer();
+        viewportKey = key;
+        container.style.width = box.width + 'px';
+        container.style.height = box.height + 'px';
+        container.style.left = box.left + 'px';
+        container.style.top = box.top + 'px';
+        const secondary = ensureViewer();
+        secondary.resize();
+        secondary.camera.frustum.aspectRatio = frustum.aspect_ratio;
+        secondary.camera.frustum.fov = Cesium.Math.toRadians(
+          frustum.aspect_ratio > 1
+            ? frustum.horizontal_full_fov_deg : frustum.vertical_full_fov_deg
+        );
+        secondary.camera.frustum.near = 10;
+        secondary.camera.frustum.far = 50000000;
+        return secondary;
+      };
+      const renderSelected = (time) => {
+        if (!visible) return;
+        const state = stateAt(selectedId, time);
+        const pose = FixedPayloadView.cameraPose(state);
+        const sensor = selectedSensor(state);
+        status.textContent = FixedPayloadView.statusText(selectedId, pose);
+        if (!pose || !sensor) return;
+        const frustum = FixedPayloadView.opticalFrustum(sensor);
+        const secondary = applyViewport(frustum);
+        secondary.clock.currentTime = Cesium.JulianDate.clone(time, secondary.clock.currentTime);
+        secondary.camera.setView({
+          destination: Cesium.Cartesian3.fromArray(pose.position_ecef_m),
+          orientation: {
+            direction: Cesium.Cartesian3.fromArray(pose.direction_ecef),
+            up: Cesium.Cartesian3.fromArray(pose.up_ecef)
+          }
+        });
+        secondary.scene.requestRender();
+        secondary.render();
+      };
+      const selectSatellite = (satelliteId) => {
+        if (!satelliteById.has(satelliteId)) return false;
+        selectedId = satelliteId;
+        list.querySelectorAll('button').forEach((button) => {
+          button.classList.toggle('active', button.dataset.satelliteId === selectedId);
+        });
+        renderSelected(viewer.clock.currentTime);
+        return true;
+      };
+      viewer._selectReplaySatellite = selectSatellite;
+
+      list.innerHTML = '';
+      replay.satellites.forEach((satellite) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.dataset.satelliteId = satellite.id;
+        button.textContent = satellite.id + ' [' + (satellite.maneuverability_type || 'unknown') + ']';
+        button.addEventListener('click', () => selectSatellite(satellite.id));
+        list.appendChild(button);
+      });
+      toggle.addEventListener('click', () => {
+        visible = !visible;
+        shell.style.display = visible ? 'block' : 'none';
+        toggle.textContent = visible ? 'Hide fixed payload view' : 'Show fixed payload view';
+        if (visible) renderSelected(viewer.clock.currentTime);
+      });
+      viewer.screenSpaceEventHandler.setInputAction((movement) => {
+        const picked = viewer.scene.pick(movement.position);
+        const entity = picked && picked.id;
+        const id = entity && (entity.id || entity._id);
+        if (typeof id === 'string') selectSatellite(id);
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+      viewer.clock.onTick.addEventListener((clock) => renderSelected(clock.currentTime));
+      window.addEventListener('resize', () => {
+        if (visible) renderSelected(viewer.clock.currentTime);
+      });
+      window.addEventListener('beforeunload', () => {
+        if (payloadViewer && !payloadViewer.isDestroyed()) payloadViewer.destroy();
+      }, { once: true });
+      selectSatellite(selectedId);
     }
 
     function setupSensorGeometry(satellite, stateAt) {
@@ -916,6 +1081,7 @@
         + frustumRayCount + ' sampled FOV boundary ray(s). Original satellite IDs remain unchanged; '
         + 'point/label geometry is retained as the load fallback. '
         + 'FOV is a square full-angle display assumption only.';
+      setupFixedPayloadView(replay, stateAt);
     }
 
     function setupGanttButton(schedule) {
