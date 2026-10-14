@@ -4,6 +4,12 @@
 
 修正正式排程沿用既有 `scenario_loader` 语义、以无时区 ISO 字串表示 UTC，卻被 replay sidecar 拒絕為 409 的整合問題。HTTP 回放現在只在記憶體內為顯示資料補上明確 `+00:00`，不修改 SQLite、正式計畫或場景；瀏覽器也會保留實際 replay 載入錯誤，不再被後續 fallback 訊息覆蓋。以既有成功實驗 `47023229-6c42-4364-9831-3b56d72b4869` 唯讀實測，可產生 1 顆衛星、30 個任務、47 個階段及 Landsat 8 模型資源；Python 定向 10 項與四組 Node.js 測試通過。
 
+後續真實頁面複測發現 CesiumJS 1.136 不提供 `Quaternion.fromElements()`；模型姿態 callback 已改為該版本支援的 `Quaternion` 建構與 result 原地覆寫，避免 Viewer 停止渲染。
+
+同一輪 Chromium 真實頁面測試也確認，任務列表若直接把無時區 schedule 字串交給 Cesium，香港時區會把 `13:40` 解讀為 `05:40Z`，超出 CZML 時段後被時鐘夾回起點。頁面現在依排程器既有語義先補 UTC 再建立 `JulianDate`，點任務列可跳到正確觀測時段並啟用光錐與固定載荷視圖。
+
+任務跳轉不再強制播放；否則 CZML 的高倍速可能在首幀就越過僅數秒的觀測。點擊後會暫停在原始任務開始時刻並要求立即重繪，使用者可確認模型、光錐與載荷狀態後自行按播放。
+
 ## 卫星整体姿态/固定载荷回放 commit 6 最终交付（2026-10-15，`feat/satellite-body-fixed-payload-replay`，待审核）
 
 正式 `SUCCEEDED` 运行的 `GET /api/runs/{run_id}/visualization/replay` 现在将 NASA Landsat 8 资产 manifest 与实际 GLB SHA-256 纳入回放/cache identity，返回受控资源来源、署名、大小与哈希。服务每次先重验场景、计划、配置和模型完整性，再以完整 `cache_key` 在进程内复用最多 16 个相同回放文档。回放文档无中间文件；既有轨道缓存机制保持不变。回放请求不写 SQLite，不变更正式计划、metrics、exports 或运行状态。

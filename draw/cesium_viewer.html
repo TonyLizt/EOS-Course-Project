@@ -350,6 +350,11 @@
       return null;
     }
 
+    function schedulerTimeForCesium(value) {
+      const text = String(value || '').trim();
+      return /(?:Z|[+-]\d{2}:\d{2})$/i.test(text) ? text : text + 'Z';
+    }
+
     async function tryLoadSchedule() {
       const url = getScheduleUrl();
       if (!url) return null;
@@ -464,8 +469,8 @@
 
       const assignments = rawAssignments
         .map((a, idx) => {
-          const start = Cesium.JulianDate.fromIso8601(a.sat_start_time);
-          const end = Cesium.JulianDate.fromIso8601(a.sat_end_time);
+          const start = Cesium.JulianDate.fromIso8601(schedulerTimeForCesium(a.sat_start_time));
+          const end = Cesium.JulianDate.fromIso8601(schedulerTimeForCesium(a.sat_end_time));
           const durationSec = Cesium.JulianDate.secondsDifference(end, start);
           return {
             index: idx,
@@ -531,8 +536,10 @@
             if (!a) return;
 
             if (viewer._selectReplaySatellite) viewer._selectReplaySatellite(a.satellite_id);
-            viewer.clock.currentTime = a.start;
-            viewer.clock.shouldAnimate = true;
+            viewer.clock.shouldAnimate = false;
+            viewer.clock.currentTime = Cesium.JulianDate.clone(a.start, viewer.clock.currentTime);
+            viewer.clock.tick();
+            viewer.scene.requestRender();
 
             listDiv.querySelectorAll('.assignment-row').forEach((r) => {
               r.classList.toggle('active', r === row);
@@ -1043,7 +1050,12 @@
             const state = stateAt(satellite.id, time);
             if (!state || !state.body_to_ecef_quaternion_xyzw) return undefined;
             const value = FixedPayloadState.multiply(state.body_to_ecef_quaternion_xyzw, modelAxis);
-            return Cesium.Quaternion.fromElements(value[0], value[1], value[2], value[3], result);
+            if (!result) return new Cesium.Quaternion(value[0], value[1], value[2], value[3]);
+            result.x = value[0];
+            result.y = value[1];
+            result.z = value[2];
+            result.w = value[3];
+            return result;
           }, false);
           entity.model = new Cesium.ModelGraphics({
             uri: model.uri,
