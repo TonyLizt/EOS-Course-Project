@@ -54,6 +54,9 @@ class ReplayContractTests(unittest.TestCase):
             target = write_manifest(scenario, plan, config, root / "runtime" / "replays" / "demo", [])
             manifest = json.loads(target.read_text(encoding="utf-8"))
             self.assertEqual(manifest["scenario_sha256"], hashlib.sha256(scenario.read_bytes()).hexdigest())
+            self.assertEqual(manifest["attitude_version"], "geometry-pointing-fixed-payload-v1")
+            self.assertEqual(manifest["geometry_version"], "wgs84-ray-ellipsoid-v1")
+            self.assertEqual(manifest["resources"][0]["asset_id"], "landsat8-nasa-display")
             self.assertNotIn(str(root), target.read_text(encoding="utf-8"))
 
     def test_missing_timezone_is_diagnostic_not_repaired(self):

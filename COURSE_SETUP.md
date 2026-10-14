@@ -1,5 +1,15 @@
 # 课程项目运行与版本记录
 
+## 卫星整体姿态/固定载荷回放 commit 6 最终交付（2026-10-15，`feat/satellite-body-fixed-payload-replay`，待审核）
+
+正式 `SUCCEEDED` 运行的 `GET /api/runs/{run_id}/visualization/replay` 现在将 NASA Landsat 8 资产 manifest 与实际 GLB SHA-256 纳入回放/cache identity，返回受控资源来源、署名、大小与哈希。服务每次先重验场景、计划、配置和模型完整性，再以完整 `cache_key` 在进程内复用最多 16 个相同回放文档。回放文档无中间文件；既有轨道缓存机制保持不变。回放请求不写 SQLite，不变更正式计划、metrics、exports 或运行状态。
+
+WSL2 Linux 6.18.33.2 / Python 3.10.12 / Node 24.20.0 / Intel Core Ultra 7 155H：Python 回放定向 **10/10**、Node.js 状态/几何/视图/总验收 **4 组通过**。正式交付测试确认两次请求复用同一缓存文档，三个 JS 和 GLB 静态路径可用，场景 SHA 和 SQLite 正式 run 快照前后一致。CesiumJS 1.136 + Chromium 141 通过 WGS84 几何与同钟视图冒烟；300 次×16 条边界射线求交为 17.8 ms，只代表本次隔离测试。两份保护场景哈希与登记值完全相同。
+
+有界全量 unittest 在 90 秒后仍停在既有 `test_http_cancel_uses_existing_route_and_temporary_database`（退出码 124），本交付不声称全量通过。当前姿态仍是几何指向示意，FOV 是方形全角假设，覆盖不含地形遮挡，第二 Viewer 是地图/椭球模拟视野而非真实遥感影像。完整 SHA、命令、资产、性能与限制见 [最终验证报告](docs/replay/final-validation.md)。
+
+---
+
 ## 卫星回放 commit 5：同钟固定载荷视图（2026-10-14，`feat/satellite-body-fixed-payload-replay`，待审核）
 
 Cesium 页面新增“固定载荷视角渲染组件”：可从卫星列表、主地球实体或任务列表选星，显示原卫星 ID、当前任务、`IDLE/SLEWING/OBSERVING` 阶段和姿态质量。第二 Viewer 不加载主视图的卫星模型、视锥或标注，关闭自身动画推进与交互控制，每次只读主 Viewer 的权威时间及同一 `evaluateSatelliteState`。面板隐藏后停止额外渲染，切换卫星不增加时钟监听器，页面卸载时销毁第二 Viewer。

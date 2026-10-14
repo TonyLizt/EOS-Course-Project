@@ -1,6 +1,6 @@
-# 第二阶段框架交接说明（v0.2.1 框架 + W1/W2 + 卫星回放 commit 1–5）
+# 第二阶段框架交接说明（v0.2.1 框架 + W1/W2 + 卫星回放 commit 1–6）
 
-本文件记录 v0.2.1 框架、`feat/hmt-worker-ipc` 与卫星回放 commit 1–5 当前已实现的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。
+本文件记录 v0.2.1 框架、`feat/hmt-worker-ipc` 与卫星回放 commit 1–6 当前已实现的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。卫星回放的完整交付证据见 [`../replay/final-validation.md`](../replay/final-validation.md)。
 
 ## 1. 当前闭环
 
@@ -20,6 +20,7 @@
 | `eos_system/exporting.py` | 数据库结果的 JSON/CSV 下载及文件输出 | 新导出格式以同一已入库快照为准 |
 | `eos_system/visualization.py` | CZML 缓存与生成进程 | 梁兆榮完善 Cesium 和甘特图交互 |
 | `replay/` 与 `replay_configs/` | 回放契约、输入完整性、manifest、任务阶段及可版本化显示配置 | 回放仅派生显示数据；不得向调度约束反向写入 |
+| `replay/assets.py` | 校验资产 manifest、受控路径及实际 GLB 哈希，将模型资源纳入 cache identity | 资产变更必须得到新 identity；不向浏览器暴露服务器绝对路径 |
 | `draw/cesium_viewer.html`、`draw/fixed-payload-state.js` 与 `draw/fixed-payload-geometry.js` | 按绝对时间求本体/载荷姿态，显示 GLB，用 Cesium WGS84 求逐星视锥、中心交点和覆盖 | 回放不可用时保留点/标签回退；正式链路总验收见 commit 6 |
 | `draw/fixed-payload-view.js` | 从同一姿态输出相机 pose，固定光学 FOV/纵横比，为选中星驱动无独立时钟的第二 Viewer | 只读主时钟；隐藏后不渲染；不向姿态增加镜头自由度 |
 

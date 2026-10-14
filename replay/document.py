@@ -6,6 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 
+from .assets import load_model_resources
 from .contracts import ReplayConfig
 from .manifest import canonical_bytes, code_sha
 from .read_only import ReplayInputError
@@ -25,6 +26,8 @@ def build_replay_document(record: dict, config_path: Path) -> dict:
     plan_bytes = canonical_bytes(plan)
     config_bytes = config_path.read_bytes()
     replay_config = ReplayConfig.from_bytes(config_bytes)
+    project_root = Path(__file__).parents[1]
+    resources, asset_manifest_sha = load_model_resources(replay_config, project_root)
     constraints = record["config"].get("constraints") or {}
     segments, diagnostics = build_task_phases(
         scenario, plan,
@@ -35,9 +38,11 @@ def build_replay_document(record: dict, config_path: Path) -> dict:
         "run_id": record["run_id"], "scenario_sha256": scenario_sha,
         "plan_sha256": hashlib.sha256(plan_bytes).hexdigest(),
         "replay_config_sha256": hashlib.sha256(config_bytes).hexdigest(),
-        "builder_code_sha": code_sha(Path(__file__).parents[1]),
+        "builder_code_sha": code_sha(project_root),
         "builder_version": "replay-document-v2", "propagation_version": "existing-orekit-czml-v1",
         "attitude_version": "geometry-pointing-fixed-payload-v1", "geometry_version": "wgs84-ray-ellipsoid-v1",
+        "asset_manifest_sha256": asset_manifest_sha,
+        "model_resources_sha256": hashlib.sha256(canonical_bytes(resources)).hexdigest(),
     }
     cache_key = hashlib.sha256(canonical_bytes(identity)).hexdigest()
     sensors_by_satellite = {}
@@ -61,6 +66,7 @@ def build_replay_document(record: dict, config_path: Path) -> dict:
             "reference_frame": "ECEF", "position_unit": "m", "quaternion_order": "xyzw",
             "rotation_direction": "body_to_ecef", "camera_axes": replay_config.camera_axes,
             "attitude_source": replay_config.attitude_source,
+            "resources": resources,
         },
         "replay_config": replay_config.as_dict(),
         "satellites": satellites,

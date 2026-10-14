@@ -91,6 +91,8 @@ cd /mnt/d/Code/EOS-Course-Project
 
 左侧“Fixed Payload View”列出原卫星 ID 和机动类型；也可在主地球或任务列表点选卫星。第二 Viewer 持续显示选中星在等待、转向和拍摄阶段的固定载荷视野，与主 Viewer 共用唯一仿真时钟。暂停、倍速、时间拖动及任务列表跳转都从同一绝对时间状态重建；不会延长短任务。画面按光学 FOV 比例留白，不随面板比例拉伸；隐藏面板可停止额外渲染。详见 [commit 5 交接记录](docs/phase2/satellite_replay_commit_5.md)。
 
+回放属于只读派生显示：重复请求以场景、正式计划、显示配置、模型资产和几何版本的完整 identity 去重，不写回 SQLite。模型本体的实际 SHA-256 也进入 manifest/cache key；资产被替换但配置 URL 不变时，不会误用旧 identity。完整验收环境、保护哈希、六个功能 commit 和已知限制见 [最终验证报告](docs/replay/final-validation.md)。
+
 ## 开发与验证
 
 ```bash
@@ -102,6 +104,10 @@ PYTHONHASHSEED=0 MPLBACKEND=Agg ~/eos-course-runtime/.venv/bin/python -m scripts
 ~/eos-course-runtime/.venv/bin/python -m scripts.check_plan_rejection
 # 安装可选轨道依赖后，传入任一成功实验的 run_id
 ~/eos-course-runtime/.venv/bin/python scripts/check_visualization.py <run_id>
+node tests/fixed_payload_state.test.cjs
+node tests/fixed_payload_geometry.test.cjs
+node tests/fixed_payload_view.test.cjs
+node tests/replay_acceptance.test.cjs
 ```
 
 组员开发前先读 [协作规范](docs/phase2/team_collaboration.md) 和 [算法接入说明](docs/phase2/algorithm_integration.md)；[当前数据库设计与 ER 图](docs/phase2/database_current_v02.md)记录落地模式。接口和数据库目标审核稿分别在 [接口设计](docs/phase2/interface_design_target.md)、[数据库目标设计](docs/phase2/database_design_target.md)。这些审核稿包含尚未完成的目标，当前字段以源码、`/docs` 和 [交接说明](docs/phase2/framework_handoff.md) 为准。每次版本变化及实测证据记在 [COURSE_SETUP.md](COURSE_SETUP.md)。

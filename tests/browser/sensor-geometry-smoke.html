@@ -51,6 +51,13 @@
       };
       const geometry = FixedPayloadGeometry.intersectFrame(frame, intersect);
       if (geometry.status !== 'COMPLETE') throw new Error('unexpected status: ' + geometry.status);
+      const benchmarkIterations = 300;
+      const benchmarkStart = performance.now();
+      for (let index = 0; index < benchmarkIterations; index += 1) {
+        const measured = FixedPayloadGeometry.intersectFrame(frame, intersect);
+        if (measured.status !== 'COMPLETE') throw new Error('benchmark geometry degraded');
+      }
+      const benchmarkMs = performance.now() - benchmarkStart;
       viewer.entities.add({
         polygon: {
           hierarchy: new Cesium.PolygonHierarchy(
@@ -73,7 +80,9 @@
         status: geometry.status,
         rayCount: geometry.ray_count,
         hitCount: geometry.hit_count,
-        primitiveCount: viewer.scene.primitives.length
+        primitiveCount: viewer.scene.primitives.length,
+        benchmarkIterations: benchmarkIterations,
+        benchmarkMs: benchmarkMs
       };
     } catch (error) {
       window.geometrySmoke = { ready: true, error: String(error && error.stack || error) };

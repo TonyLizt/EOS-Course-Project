@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import sqlite3
+import threading
 import uuid
+from collections import OrderedDict
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlencode
@@ -37,6 +39,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     database = Database(settings.database_path)
     database.ensure_defaults(settings.scenario_dir, settings.runtime_dir)
     controller = Controller(settings, database)
+    replay_cache: OrderedDict[str, dict] = OrderedDict()
+    replay_cache_lock = threading.Lock()
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -240,7 +244,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         record = successful_run(run_id)
         profile = Path(__file__).resolve().parent.parent / "replay_configs" / "display-profile-v2.json"
         try:
-            return build_replay_document(record, profile)
+            document = build_replay_document(record, profile)
+            cache_key = document["manifest"]["cache_key"]
+            with replay_cache_lock:
+                cached = replay_cache.get(cache_key)
+                if cached is not None:
+                    replay_cache.move_to_end(cache_key)
+                    return cached
+                replay_cache[cache_key] = document
+                while len(replay_cache) > 16:
+                    replay_cache.popitem(last=False)
+            return document
         except (OSError, ValueError, ReplayInputError) as exc:
             raise HTTPException(status_code=409, detail=f"回放输入不可用：{exc}") from exc
 

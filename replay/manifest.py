@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from .assets import load_model_resources
 from .contracts import ReplayConfig
 from .read_only import load_replay_inputs, require_isolated_output
 
@@ -26,6 +27,7 @@ def code_sha(project_root: Path) -> str:
 
 
 def make_manifest(inputs, config: ReplayConfig, config_bytes: bytes, builder_code_sha: str) -> dict:
+    resources, asset_manifest_sha = load_model_resources(config, Path(__file__).parents[1])
     cache_identity = {
         "scenario_sha256": inputs.scenario_sha256,
         "plan_sha256": inputs.plan_sha256,
@@ -33,8 +35,10 @@ def make_manifest(inputs, config: ReplayConfig, config_bytes: bytes, builder_cod
         "builder_code_sha": builder_code_sha,
         "builder_version": "replay-contract-v2",
         "propagation_version": "existing-orekit-czml-v1",
-        "attitude_version": "pending-commit-2",
+        "attitude_version": "geometry-pointing-fixed-payload-v1",
         "geometry_version": "wgs84-ray-ellipsoid-v1",
+        "asset_manifest_sha256": asset_manifest_sha,
+        "model_resources_sha256": hashlib.sha256(canonical_bytes(resources)).hexdigest(),
     }
     return {
         "schema_version": 2,
@@ -53,7 +57,7 @@ def make_manifest(inputs, config: ReplayConfig, config_bytes: bytes, builder_cod
             "mount_rotation_direction": "camera_to_body",
         },
         "attitude_source": config.attitude_source,
-        "resources": [],
+        "resources": resources,
         "warnings": [
             "geometry_pointing_illustration is display-only and is not a dynamics validation",
             "single-value source FOV is shown as a square full-angle display assumption",
