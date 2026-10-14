@@ -1,6 +1,6 @@
-# 第二阶段框架交接说明（v0.2.1）
+# 第二阶段框架交接说明（v0.2.1 框架 + W1/W2 功能分支）
 
-本文件记录当前已经实现的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。
+本文件记录 v0.2.1 框架及 `feat/hmt-worker-ipc` 当前已实现的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。
 
 ## 1. 当前闭环
 
@@ -14,8 +14,8 @@
 |---|---|---|
 | `eos_system/api.py` | HTTP 参数和路径配置、资源列表、结果及可视化入口 | 前端只经 `/api` 调用；新增接口先更新契约文档 |
 | `eos_system/storage.py` | SQLite 事务、迁移、运行/事件/导出记录 | 状态变化保持事务；新增列写显式迁移 |
-| `eos_system/controller.py` | 排队、启动 Worker、核验、取消、结果入库 | 完整 IPC/Daemon 可替换参考实现，但保留对外状态语义 |
-| `eos_system/worker_reference.py` | 独立进程最小协议 | 何明涛扩展双 Pipe、超时、回收和故障恢复 |
+| `eos_system/controller.py` | 排队、核验 Worker 独立进程身份后放行启动、取消与超时裁决、正式结果入库及安全停机 | 与李泽同核对 Controller 集成影响；独立 Daemon 另行接入 |
+| `eos_system/worker_reference.py` | 独立 Worker、双单向 Pipe、协作取消和候选事件 | W3 大结果文件载体与跨重启恢复另行设计；进程身份及后代回收见 `worker_process.py` |
 | `eos_system/algorithm_registry.py` | 算法规格、参数校验、`Solver` 协议、旧算法适配 | 四位成员按 `algorithm_integration.md` 注册算法 |
 | `eos_system/exporting.py` | 数据库结果的 JSON/CSV 下载及文件输出 | 新导出格式以同一已入库快照为准 |
 | `eos_system/visualization.py` | CZML 缓存与生成进程 | 梁兆榮完善 Cesium 和甘特图交互 |
@@ -46,7 +46,7 @@ python scripts/check_visualization.py <已成功的运行ID>
 
 ## 6. 当前限制
 
-- Worker 是最小参考实现，完整故障恢复与独立 Daemon 留待后续模块接入。
+- 本分支 W1/W2 已实现协作取消、有界 IPC 传输、运行期限、可信同 Session 后代回收及 Controller 持锁停机；`cancel_ack` 只确认收到请求。已核验 Worker 的正常完成不等于任意逃逸后代或跨重启孤儿都能回收；W3 大结果传输和独立 Daemon 留待后续。
 - 本地管理接口没有用户认证，服务应保持监听 `127.0.0.1`。
 - CZML 首次生成需要 Orekit/JVM；页面依赖 Cesium 在线资源，离线展示需后续打包资源。
 - 文件输出失败会留下数据库内已成功的计划与导出失败事件，便于重试；不会把有效计划改判为失败。

@@ -10,16 +10,16 @@
 
 本组计划完成三种机制不同的传统算法和一种机器学习算法。新算法会通过同一注册、运行和核验边界进入系统；本仓库当前可选的 `completion_first`、`adaptive_repair` 属于已有基线，**不计作这四种新算法的交付**。
 
-## 当前能力（v0.2.1）
+## 当前能力（v0.2.1 框架 + W1/W2 功能分支）
 
 - 浏览器选择**已登记的数据源、场景、算法和输出方案**，提交、取消并查看实验状态与正式结果。
-- FastAPI 和 Controller 在 WSL2 中运行；参考 Worker 由 `spawn` 创建为独立进程，以 JSON 字节通过单向 Pipe 回传候选计划。Controller 独立核验，成功事务写入 SQLite。
+- FastAPI 和 Controller 在 WSL2 中运行；Worker 由 `spawn` 创建，通过两条单向 Pipe 交换控制消息和 JSON 事件。Worker 执行 `setsid()` 并报告 `started`，Controller 核验本次进程的 Linux 身份后才发送 `start`；候选由 Controller 独立核验，并在成功事务中写入 SQLite。
 - 算法注册表统一元数据、专属参数模型和 Worker 创建入口。现有算法经适配器接入；新算法可从空计划开始，不必沿用旧启发式流程。
 - 浏览器下载 JSON/CSV；选择目录输出方案后，成功实验还会在该目录的 `run_id/` 子目录保存正式文件。SQLite、锁和缓存默认位于 WSL Linux 文件系统。
 - 结果页复用旧甘特图和 Cesium 页面。甘特图读取同一 `run_id` 的正式计划；Cesium 轨道按场景 SHA-256 生成并缓存。轨道生成需要可选的 Java/Orekit 依赖和浏览器可访问 Cesium 在线资源。
 - 实验列表可翻页；在详情中可永久删除已结束的实验。删除会清理 SQLite 中该实验的配置、事件、尝试、计划、指标和导出记录，并尝试压缩数据库。
 
-当前参考 Worker 的协作取消、后代进程回收和大结果文件通道，以及独立 Daemon、四种新算法、完整结果比较页面，仍属于后续开发。各模块实际边界见 [框架交接说明](docs/phase2/framework_handoff.md)。
+当前分支的 W1/W2 已接通运行中协作取消、IPC 期限与已核验同 Session 后代的安全回收；`cancel_ack` 只确认收到取消，不代表 Worker 或后代已退出。Controller 停机时须等待后台执行线程结束，未结束则保留单实例锁。超过 4 MiB 的大结果文件通道（W3）、独立 Daemon、四种新算法、完整结果比较页面及跨 Controller 重启的孤儿回收仍未交付。能力和限制见 [W2 实施记录](docs/phase2/W2%20WorkerIPC%20%E4%B8%8E%20Controller%20%E5%8D%8F%E4%BD%9C%E5%AE%9E%E6%96%BD%E8%AF%B4%E6%98%8E%20v1.0.md)。
 
 ## 运行流程
 

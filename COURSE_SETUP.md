@@ -1,5 +1,61 @@
 # 课程项目运行与版本记录
 
+## Worker/IPC W1/W2 最终交付联调（2026-10-14，`feat/hmt-worker-ipc`，待何明涛与李泽同审核）
+
+修正 README、框架交接及算法接入说明中过期的“协作取消尚未实现”等描述，保留 W3、Daemon、A/B/C/D 和跨重启回收为未交付范围。新增三个真实 TCP 回环 HTTP → Controller → `spawn` Worker → 临时 SQLite 异常闭环，覆盖运行中取消（`CANCELLED`）、不合作求解超时（`TIMED_OUT/ALGORITHM_TIMEOUT`）和携同 Session 后代的 Worker 异常退出（`FAILED/IPC_DISCONNECTED`、退出码 23）；均无正式计划，直接 Worker 与可信后代无活跃残留。测试桩仅在隔离服务进程中装配，正式算法注册表及运行时代码未改。
+
+WSL2 Ubuntu 22.04 / Python 3.10.12：HTTP 故障专题两轮各 **3/3**、完整 unittest **103/103**、`git diff --check` 通过。隔离成功闭环复跑 `completion_first` 24/30、TCR=0.800，SQLite attempt 1、exit_code 0、一份正式计划；JSON/CSV、旧 CLI 计划对照与篡改候选拒绝均通过。临时场景 SHA-256 为 `192eb635644fcdbc86854912704345494fe36d8cffb828c5000cff9221a9b84e`；母场景只读，临时数据库、服务和测试产物均已清理。Controller 交接及剩余可靠性边界见 W2 专题说明第 13 节。
+
+---
+
+## Worker/IPC W2-C 启动与取消竞争修复（2026-10-14，`feat/hmt-worker-ipc`，待人工复核）
+
+`Controller._execute()` 只有尚未决定取消、超时或停机时才将 `start` 入队。若 `USER_CANCEL` 或 `CONTROLLER_STOP` 先于 `start`，随后到达的 `started` 不再触发算法；也不向等待首条 `start` 的 Worker 单独发送 `cancel`，而是按原有有界回收裁决。真实 `spawn` 测试在 `setsid()` 后延迟 `started`，验证用户取消最终 `CANCELLED`、Controller 停机最终 `FAILED/CONTROLLER_STOP`，两者均没有发送 `start` 或执行算法准备。原有已排队 `start` 的阻塞写测试保持覆盖。W2-C 专题 **28 项连续三轮通过**，完整 unittest **100 项通过**，`git diff --check` 通过。HTTP、SQLite 模式、Solver、IPC 协议及 Linux 身份/信号机制未变；详情见 W2 设计说明。
+
+---
+
+## Worker/IPC W2-C 最终审核定向修复（2026-10-14，`feat/hmt-worker-ipc`，待人工复核）
+
+修复了 Worker 独立 Session 从未确认时，合法候选与退出码 0 可能绕过清理身份检查而提交成功的问题。Controller 现在等本次 Worker 的 `started` 到达，再通过内核 `/proc` 身份及 pidfd 确认独立 Session，才发送旧格式 `start`；正式成功前再次检查本 attempt 的身份确认与 start 放行。未确认身份的候选记明确失败和诊断；启动期用户取消仍按有界直接进程回收裁决，不向 Controller 所在进程组发信号。WSL2 隔离环境中 W2-C 专题 **26 项连续三轮通过**、Controller 取消/超时/进程身份专题 **50 项通过**、完整 unittest **98 项通过**、`git diff --check` 通过。生产 Worker、HTTP、SQLite 模式、算法签名及 IPC 协议未改。剩余边界见现有 W2 设计说明。
+
+---
+
+## Worker/IPC W2-C 首轮审核后定向修复（2026-10-14，`feat/hmt-worker-ipc`，待人工复核）
+
+`WorkerGroup.refresh()` 现在可在本 attempt 已确认独立 session、且组长 pidfd 仍固定身份时，于组长退出后继续发现同组后代；新成员经 PGID、SID、boot_id、starttime 和 pidfd 复核后仅接受逐进程信号，不向已退出组长的缓存 PGID 发 `killpg`。pidfd 获取遇 `ESRCH` 后若确认进程已消失或结束，不误报清理不完整；活跃但无法固定、权限或存在性不明则保留风险，并在后续确认退出后清除。真实 `spawn` 测试增加组长立即崩溃后首次发现后代、Controller 闭环回收、扫描与 pidfd 打开之间子进程退出、以及活跃未固定成员的风险消退。WSL2 隔离环境中 W2-C 专题 **23 项连续五轮通过**、完整 unittest **95 项通过**，`git diff --check` 通过，未见活跃测试后代。本轮未改 Controller 停机、HTTP、SQLite 模式、算法接口及 W1/W2-A/W2-B 协议或超时裁决。最后一次扫描后的新后代、逃逸 session、pidfd 不可用及跨 Controller 重启清扫仍无完整保证。详情见 W2 设计说明的本轮记录。
+
+---
+
+## Worker/IPC W2-C（2026-10-14，`feat/hmt-worker-ipc`，待集成审核）
+
+新增 Linux `/proc` 启动身份、独立 PGID/SID 与 pidfd 核验；只在当前组长身份仍可证明时发送进程组信号，组长退出后用事先固定的 pidfd 回收已识别后代。Controller 停机时停止领取新 attempt、向当前 Worker 请求停止、有限等待执行线程；若线程仍活跃则报错并保留 flock，退出后才解锁。内部停机中断记 `FAILED/CONTROLLER_STOP`；原取消/超时优先级和公共 HTTP、SQLite 模式、状态、算法及 IPC 契约不变。WSL2 Ubuntu 22.04 / Python 3.10.12 独立临时环境的完整 unittest **91 项通过**；W2-C 进程组 12 项、停机 7 项分别独立重复三轮通过，`git diff --check` 通过。已识别同组后代在测试后无活跃残留；逃逸后代、扫描间隙及跨 Controller 重启旧进程仍不能保证回收。详见 [`docs/phase2/W2 WorkerIPC 与 Controller 协作实施说明 v1.0.md`](docs/phase2/W2%20WorkerIPC%20%E4%B8%8E%20Controller%20%E5%8D%8F%E4%BD%9C%E5%AE%9E%E6%96%BD%E8%AF%B4%E6%98%8E%20v1.0.md)。
+
+---
+
+## Worker/IPC W2-B（2026-10-14，`feat/hmt-worker-ipc`，待审核）
+
+Controller 使用单线程非阻塞 Pipe 帧收发，给 start/cancel 写入、启动准备、搜索总墙钟、单帧传输和候选后退出设置单调时钟期限；直接 Worker 依次有界 join、terminate、kill。复用现有 `run_attempts.exit_code` 和小型诊断事件记录退出与 IPC 错误，Worker 不写数据库。人工审核后修复不同 `seq` 重复候选刷新退出期限、零长度帧误分类两项缺陷；同 `seq` 仍去重。WSL2 Ubuntu 22.04 / Python 3.10.12 的独立临时目录中，`python -m unittest discover -s tests -v` **72 项通过**，其中 W2-B 专题 21 项真实 spawn 故障/回收测试；原 W2-A HTTP 闭环、正常成功及 SQLite 事务测试保持通过。HTTP、SQLite 物理模式、状态枚举、算法接口、双 Pipe、协议版本及 4 MiB 限额未变。`Process.start()` 自身无法由现有单线程状态机抢占；后代进程组回收、Controller 安全停机和崩溃后旧进程清扫仍待 W2-C。详见 [`docs/phase2/W2 WorkerIPC 与 Controller 协作实施说明 v1.0.md`](docs/phase2/W2%20WorkerIPC%20%E4%B8%8E%20Controller%20%E5%8D%8F%E4%BD%9C%E5%AE%9E%E6%96%BD%E8%AF%B4%E6%98%8E%20v1.0.md)。
+
+---
+
+## Worker/IPC W2-A（2026-10-14，`feat/hmt-worker-ipc`）
+
+Controller 已接通 W1 的运行中协作取消：本 attempt 一次性发送完整 `cancel`，继续读取并去重 `cancel_ack`，在直接 Worker 退出后裁决 `CANCELLED`；取消候选仍受统一核验和 SQLite 成功事务保护。保留旧 `start`、双单向 Pipe、HTTP、SQLite 模式及算法签名。WSL2 Ubuntu 22.04 / Python 3.10.12 的独立临时目录中，完整单元测试 **51 项通过**（新增 Controller 专题 14 项，含真实 spawn 与 ASGI HTTP → Worker → SQLite 闭环）。同步 Pipe 的严格抗阻塞、完整超时和单 Worker 回收诊断待 W2-B；后代进程组清理与安全停机待 W2-C。因此本阶段建议 **FUNCTIONAL PASS / RELIABILITY PENDING**。详见 [`docs/phase2/W2 WorkerIPC 与 Controller 协作实施说明 v1.0.md`](docs/phase2/W2%20WorkerIPC%20%E4%B8%8E%20Controller%20%E5%8D%8F%E4%BD%9C%E5%AE%9E%E6%96%BD%E8%AF%B4%E6%98%8E%20v1.0.md)。
+
+---
+
+## Worker/IPC W1 补充验收（2026-10-14，`feat/hmt-worker-ipc`）
+
+基于 `906fe70` 增加 5 项真实 Linux `spawn` 子进程测试，覆盖协作取消的跨进程可见性、不合作求解桩的 2 秒有界退出、控制 Pipe EOF、求解异常和事件 Pipe 断链。求解桩在子进程内安装，场景位于临时目录；测试端的 `terminate/kill` 仅作为失败时清理兜底，本次测试未触发。WSL2 Ubuntu 22.04 / Python 3.10.12 虚拟环境中，完整单元测试 **37 项通过**，`git diff --check` 通过。未修改 Worker 业务源码、Controller、HTTP 或 SQLite；完整取消和进程组回收仍待 W2。详见 [`docs/phase2/worker_ipc_w1.md`](docs/phase2/worker_ipc_w1.md)。
+
+---
+
+## Worker/IPC W1（2026-10-14，`feat/hmt-worker-ipc`）
+
+在 v0.2.1 参考 Worker 中增加控制 Pipe 持续监听、协议字段和身份校验，以及接入 `SolveContext.is_cancelled()` 的线程安全取消标记。Worker 主线程独占 IPC 读写和事件序号，求解线程运行算法；收到取消后发送 `cancel_ack`，已取消的算法返回结果不会作为候选上报。保持旧 Controller `start` 消息兼容，未改 HTTP、SQLite 或算法公共签名。WSL2 Ubuntu 22.04 / Python 3.10.12 的虚拟环境中，基线 18 项和修改后 32 项单元测试通过；新增测试使用临时目录和测试桩，未执行服务端集成测试。Controller 发送取消命令、硬超时和进程组回收仍待 W2；大结果文件载体待 W3。详细协议与限制见 [`docs/phase2/worker_ipc_w1.md`](docs/phase2/worker_ipc_w1.md)。
+
+---
+
 ## 第二阶段组员协作规范（2026-10-14）
 
 新增 [`docs/phase2/team_collaboration.md`](docs/phase2/team_collaboration.md)，明确每项工作新建分支、经 PR 审核后合入 `main`、代码与对应专题文档及本记录同步提交的流程；列出四人职责、文档映射、PR 检查项和 Windows + WSL2 的协作方式。README 增加入口。本次只改文档，不改变运行行为。
