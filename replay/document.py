@@ -43,12 +43,14 @@ def build_replay_document(record: dict, config_path: Path) -> dict:
     sensors_by_satellite = {}
     for sensor in replay_config.sensors:
         sensors_by_satellite.setdefault(sensor.satellite_id, []).append(sensor.as_dict())
+    models_by_satellite = {model.satellite_id: model.as_dict() for model in replay_config.models}
     satellites = []
     for satellite in scenario["satellites"]:
         satellites.append({
             "id": satellite["id"],
             "maneuverability_type": (satellite.get("maneuverability_capability") or {}).get("maneuverability_type"),
             "sensors": sensors_by_satellite.get(satellite["id"], []),
+            "model": models_by_satellite.get(satellite["id"], models_by_satellite.get("*")),
         })
     return {
         "schema_version": 2,

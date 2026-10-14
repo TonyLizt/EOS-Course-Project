@@ -252,6 +252,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def cesium_page():
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "cesium_viewer.html")
 
+    @app.get("/visualization/fixed-payload-state.js")
+    def fixed_payload_state_script():
+        return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "fixed-payload-state.js",
+                            media_type="text/javascript")
+
+    @app.get("/visualization/assets/satellites/landsat8.glb")
+    def landsat8_model():
+        return FileResponse(Path(__file__).resolve().parent.parent / "assets" / "satellites" / "landsat8.glb",
+                            media_type="model/gltf-binary")
+
     @app.get("/visualization/gantt/{run_id}")
     def open_gantt(run_id: str):
         successful_run(run_id)

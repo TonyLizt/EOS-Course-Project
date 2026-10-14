@@ -5,6 +5,7 @@
   <title>Scenario - Satellite Schedule Viewer</title>
 
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Cesium.js"></script>
+  <script src="fixed-payload-state.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
 
   <style>
@@ -162,6 +163,16 @@
       margin-right: 8px;
     }
 
+    .asset-status {
+      font-size: 11px;
+      line-height: 1.45;
+      color: #cbd8ed;
+    }
+
+    .asset-status strong {
+      color: #ffc857;
+    }
+
     #openGanttBtn {
       padding: 5px 12px;
       font-size: 12px;
@@ -226,6 +237,11 @@
     <div class="panel-section">
       <h2>Simulation Time</h2>
       <div id="currentTime" class="small-text">-</div>
+    </div>
+
+    <div class="panel-section">
+      <h2>Satellite Appearance</h2>
+      <div id="assetStatus" class="asset-status">Point/label fallback active until replay data loads.</div>
     </div>
   </div>
 
@@ -313,13 +329,28 @@
       }
     }
 
+    async function tryLoadReplay() {
+      const url = new URLSearchParams(window.location.search).get('replay');
+      if (!url || !url.trim()) return null;
+      try {
+        const response = await fetch(url.trim());
+        if (!response.ok) throw new Error(response.status + ' ' + response.statusText);
+        return await response.json();
+      } catch (error) {
+        document.getElementById('assetStatus').textContent =
+          'Replay data unavailable; Cesium point/label fallback remains active. ' + error;
+        return null;
+      }
+    }
+
     // 第二阶段可按 run_id 传入场景专属 CZML；旧 CLI 没有参数时仍使用原路径。
     const czmlUrl = new URLSearchParams(window.location.search).get('czml') || 'orbit.czml';
     const czmlPromise = Cesium.CzmlDataSource.load(czmlUrl);
     const schedulePromise = tryLoadSchedule();
+    const replayPromise = tryLoadReplay();
 
-    Promise.all([czmlPromise, schedulePromise])
-      .then(function ([ds, schedule]) {
+    Promise.all([czmlPromise, schedulePromise, replayPromise])
+      .then(function ([ds, schedule, replay]) {
         viewer.dataSources.add(ds);
         viewer.zoomTo(ds).then(flyToEarthCenter);
 
@@ -328,6 +359,7 @@
         setupScheduleLink(schedule, ds);
         setupVisibilityControls(ds);
         setupGanttButton(schedule);
+        setupBodyModelsAndFixedPayloads(replay, ds);
       })
       .catch(function (error) {
         console.error('Error loading data:', error);
@@ -586,6 +618,97 @@
       if (tgtPointCb) {
         tgtPointCb.addEventListener('change', () => setTargetPointVisible(tgtPointCb.checked));
       }
+    }
+
+    function setupBodyModelsAndFixedPayloads(replay, ds) {
+      const status = document.getElementById('assetStatus');
+      if (!replay || !window.FixedPayloadState) {
+        status.textContent = 'No replay sidecar; Cesium point/label fallback is active.';
+        return;
+      }
+      const targets = new Map();
+      (replay.missions || []).forEach((mission) => {
+        const location = mission.target_location;
+        targets.set(mission.id, Cesium.Cartesian3.fromDegrees(
+          Number(location.longitude), Number(location.latitude), Number(location.altitude_km || 0) * 1000
+        ));
+      });
+      const stateCache = new Map();
+      const toArray = (value) => value ? [value.x, value.y, value.z] : null;
+      const positionAt = (satelliteId, isoTime) => {
+        const entity = ds.entities.getById(satelliteId);
+        if (!entity || !entity.position) return null;
+        const time = typeof isoTime === 'string' ? Cesium.JulianDate.fromIso8601(isoTime) : isoTime;
+        return toArray(entity.position.getValue(time));
+      };
+      const targetPosition = (taskId) => toArray(targets.get(taskId));
+      const stateAt = (satelliteId, time) => {
+        const key = satelliteId + ':' + Cesium.JulianDate.toIso8601(time, 3);
+        if (stateCache.has(key)) return stateCache.get(key);
+        try {
+          const value = FixedPayloadState.evaluateSatelliteState(
+            replay, satelliteId, Cesium.JulianDate.toIso8601(time), positionAt, targetPosition
+          );
+          stateCache.clear();
+          stateCache.set(key, value);
+          return value;
+        } catch (error) {
+          console.warn('Fixed payload state unavailable for ' + satelliteId, error);
+          return null;
+        }
+      };
+      let modelCount = 0;
+      let markerCount = 0;
+      (replay.satellites || []).forEach((satellite) => {
+        const entity = ds.entities.getById(satellite.id);
+        if (!entity || !entity.position) return;
+        const model = satellite.model;
+        if (model) {
+          const modelAxis = model.model_to_body_quaternion_xyzw;
+          entity.orientation = new Cesium.CallbackProperty((time, result) => {
+            const state = stateAt(satellite.id, time);
+            if (!state || !state.body_to_ecef_quaternion_xyzw) return undefined;
+            const value = FixedPayloadState.multiply(state.body_to_ecef_quaternion_xyzw, modelAxis);
+            return Cesium.Quaternion.fromElements(value[0], value[1], value[2], value[3], result);
+          }, false);
+          entity.model = new Cesium.ModelGraphics({
+            uri: model.uri,
+            minimumPixelSize: model.minimum_pixel_size,
+            maximumScale: model.maximum_scale,
+            runAnimations: false,
+            clampAnimations: true,
+            shadows: Cesium.ShadowMode.DISABLED
+          });
+          modelCount += 1;
+        }
+        viewer.entities.add({
+          id: 'fixed-payload-marker-' + satellite.id,
+          name: satellite.id + ' fixed payload -Z axis',
+          polyline: {
+            positions: new Cesium.CallbackProperty((time, result) => {
+              const state = stateAt(satellite.id, time);
+              if (!state || !state.position_ecef_m || !state.direction_ecef) return undefined;
+              const origin = Cesium.Cartesian3.fromArray(state.position_ecef_m);
+              const direction = Cesium.Cartesian3.fromArray(state.direction_ecef);
+              const endpoint = Cesium.Cartesian3.add(
+                origin, Cesium.Cartesian3.multiplyByScalar(direction, 80000, new Cesium.Cartesian3()),
+                new Cesium.Cartesian3()
+              );
+              if (!Array.isArray(result)) result = [];
+              result.length = 2;
+              result[0] = Cesium.Cartesian3.clone(origin, result[0]);
+              result[1] = Cesium.Cartesian3.clone(endpoint, result[1]);
+              return result;
+            }, false),
+            width: 2,
+            material: Cesium.Color.ORANGE
+          }
+        });
+        markerCount += 1;
+      });
+      status.innerHTML = '<strong>Landsat 8 illustrative appearance</strong><br>'
+        + modelCount + ' body model(s), ' + markerCount + ' fixed -Z payload marker(s). '
+        + 'Original satellite IDs remain unchanged; point/label geometry is retained as the load fallback.';
     }
 
     function setupGanttButton(schedule) {

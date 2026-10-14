@@ -44,5 +44,18 @@
       "vertical_full_fov_deg": 45.0
     }
   ],
+  "models": [
+    {
+      "satellite_id": "*",
+      "model_asset_id": "landsat8-nasa-display",
+      "uri": "/visualization/assets/satellites/landsat8.glb",
+      "model_to_body_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+      "minimum_pixel_size": 42.0,
+      "maximum_scale": 200000.0,
+      "appearance_label": "Landsat 8 示意外觀",
+      "role": "visual_appearance_only",
+      "fallback": "cesium_point_and_label"
+    }
+  ],
   "thruster_effect_mode": "disabled"
 }

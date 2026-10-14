@@ -62,6 +62,44 @@ class SensorDisplayConfig:
 
 
 @dataclass(frozen=True)
+class ModelDisplayConfig:
+    satellite_id: str
+    model_asset_id: str
+    uri: str
+    model_to_body_quaternion_xyzw: tuple[float, float, float, float]
+    minimum_pixel_size: float
+    maximum_scale: float
+    appearance_label: str
+    role: str
+    fallback: str
+
+    @classmethod
+    def parse(cls, data: dict[str, Any]) -> "ModelDisplayConfig":
+        _only(data, set(cls.__dataclass_fields__), "model")
+        try:
+            axis = tuple(float(value) for value in data["model_to_body_quaternion_xyzw"])
+            minimum = float(data["minimum_pixel_size"])
+            maximum = float(data["maximum_scale"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ReplayConfigError("invalid model numeric configuration") from exc
+        if len(axis) != 4 or not all(math.isfinite(value) for value in axis) or abs(sum(v * v for v in axis) - 1) > 1e-8:
+            raise ReplayConfigError("model-to-body quaternion must be a finite unit xyzw quaternion")
+        if minimum <= 0 or maximum <= 0:
+            raise ReplayConfigError("model display scale limits must be positive")
+        if data.get("role") != "visual_appearance_only":
+            raise ReplayConfigError("model role must remain visual_appearance_only")
+        if data.get("fallback") != "cesium_point_and_label":
+            raise ReplayConfigError("unsupported model fallback")
+        return cls(str(data["satellite_id"]), str(data["model_asset_id"]), str(data["uri"]), axis,
+                   minimum, maximum, str(data["appearance_label"]), data["role"], data["fallback"])
+
+    def as_dict(self) -> dict[str, Any]:
+        result = dict(self.__dict__)
+        result["model_to_body_quaternion_xyzw"] = list(self.model_to_body_quaternion_xyzw)
+        return result
+
+
+@dataclass(frozen=True)
 class ReplayConfig:
     schema_version: int
     replay_config_id: str
@@ -77,6 +115,7 @@ class ReplayConfig:
     camera_axes: str
     display_sampling_policy: dict[str, Any]
     sensors: tuple[SensorDisplayConfig, ...]
+    models: tuple[ModelDisplayConfig, ...]
     thruster_effect_mode: str
 
     @classmethod
@@ -110,8 +149,16 @@ class ReplayConfig:
         keys = [(sensor.satellite_id, sensor.sensor_id) for sensor in sensors]
         if len(keys) != len(set(keys)):
             raise ReplayConfigError("duplicate (satellite_id, sensor_id) replay sensor")
+        raw_models = data.get("models")
+        if not isinstance(raw_models, list):
+            raise ReplayConfigError("models must be a list")
+        models = tuple(ModelDisplayConfig.parse(item) for item in raw_models)
+        model_keys = [model.satellite_id for model in models]
+        if len(model_keys) != len(set(model_keys)):
+            raise ReplayConfigError("duplicate satellite model mapping")
         values = dict(data)
         values["sensors"] = sensors
+        values["models"] = models
         values["thruster_effect_mode"] = data.get("thruster_effect_mode", "disabled")
         return cls(**values)
 
@@ -126,4 +173,5 @@ class ReplayConfig:
     def as_dict(self) -> dict[str, Any]:
         result = dict(self.__dict__)
         result["sensors"] = [sensor.as_dict() for sensor in self.sensors]
+        result["models"] = [model.as_dict() for model in self.models]
         return result
