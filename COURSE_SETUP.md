@@ -1,5 +1,13 @@
 # 课程项目运行与版本记录
 
+## Worker/IPC W1/W2 最终交付联调（2026-10-14，`feat/hmt-worker-ipc`，待何明涛与李泽同审核）
+
+修正 README、框架交接及算法接入说明中过期的“协作取消尚未实现”等描述，保留 W3、Daemon、A/B/C/D 和跨重启回收为未交付范围。新增三个真实 TCP 回环 HTTP → Controller → `spawn` Worker → 临时 SQLite 异常闭环，覆盖运行中取消（`CANCELLED`）、不合作求解超时（`TIMED_OUT/ALGORITHM_TIMEOUT`）和携同 Session 后代的 Worker 异常退出（`FAILED/IPC_DISCONNECTED`、退出码 23）；均无正式计划，直接 Worker 与可信后代无活跃残留。测试桩仅在隔离服务进程中装配，正式算法注册表及运行时代码未改。
+
+WSL2 Ubuntu 22.04 / Python 3.10.12：HTTP 故障专题两轮各 **3/3**、完整 unittest **103/103**、`git diff --check` 通过。隔离成功闭环复跑 `completion_first` 24/30、TCR=0.800，SQLite attempt 1、exit_code 0、一份正式计划；JSON/CSV、旧 CLI 计划对照与篡改候选拒绝均通过。临时场景 SHA-256 为 `192eb635644fcdbc86854912704345494fe36d8cffb828c5000cff9221a9b84e`；母场景只读，临时数据库、服务和测试产物均已清理。Controller 交接及剩余可靠性边界见 W2 专题说明第 13 节。
+
+---
+
 ## Worker/IPC W2-C 启动与取消竞争修复（2026-10-14，`feat/hmt-worker-ipc`，待人工复核）
 
 `Controller._execute()` 只有尚未决定取消、超时或停机时才将 `start` 入队。若 `USER_CANCEL` 或 `CONTROLLER_STOP` 先于 `start`，随后到达的 `started` 不再触发算法；也不向等待首条 `start` 的 Worker 单独发送 `cancel`，而是按原有有界回收裁决。真实 `spawn` 测试在 `setsid()` 后延迟 `started`，验证用户取消最终 `CANCELLED`、Controller 停机最终 `FAILED/CONTROLLER_STOP`，两者均没有发送 `start` 或执行算法准备。原有已排队 `start` 的阻塞写测试保持覆盖。W2-C 专题 **28 项连续三轮通过**，完整 unittest **100 项通过**，`git diff --check` 通过。HTTP、SQLite 模式、Solver、IPC 协议及 Linux 身份/信号机制未变；详情见 W2 设计说明。

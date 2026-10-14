@@ -358,3 +358,21 @@ Worker 可能尚未执行 `setsid()`、组长可能已退出或 PID 被复用；
 - 真实 `spawn` 测试包装原 `worker_main()`：Worker 已执行 `setsid()`，测试桩在发送 `started` 前等待；Controller 先读取已持久化的用户取消，再放行 `started`。子进程记录是否收到 `start`、是否进入算法准备；两者均未发生，最终 `CANCELLED`，直接 Worker 及可信进程组按固定宽限安全回收。另以相同时序测试 `Controller.stop()`，最终 `FAILED/CONTROLLER_STOP` 且释放 flock；原有未完成停机保留 flock 测试继续通过。测试桩仅延迟消息和检测算法入口，不作为调度实验结果。
 - 本次仅修改 Controller 的放行条件、上述专题测试和阶段记录；没有改 pidfd、进程组信号、IPC 队列、HTTP、SQLite 模式、Solver 接口或协议版本。主动取消和停机发生在算法开始前时，直接回收可能没有 `cancel_ack`，该 ack 本来只表示收到控制命令，不是终态条件。
 - WSL2 Ubuntu 22.04 / Python 3.10.12 隔离环境：W2-C 专题 **28 项连续三轮通过**；完整 `python -m unittest discover -s tests -v` **100 项通过**；`git diff --check` 通过。原有“启动即取消”测试不再把 `cancel_ack` 当作必需事件；阻塞 `start` 写入的取消测试现在确定等到 `start` 入队再触发取消，继续覆盖原有 IPC 写入期限。测试没有使用正式 SQLite 或 EOS-Bench 母数据，结束后未见活跃测试 Worker/后代。
+
+## 13. W1/W2 系统联调与 Controller 交接（2026-10-14，待人工审核）
+
+本节是基于 `30f233a` 的交付验收记录，不改生产运行时代码。新增 `tests/test_http_failure_e2e.py`：测试服务用独立 `EOS_RUNTIME_DIR`、临时场景/SQLite、随机回环端口运行现有 FastAPI 与 Controller；仅在测试 app factory 中将可导入的故障 Worker 入口装配进服务进程，随后由 `spawn` 真正创建 Worker。测试桩不登记为正式算法，也不代表 A/B/C/D 的实验结果。
+
+- `test_real_http_running_cancel_reaps_worker_without_plan`：经真实 TCP HTTP 提交与运行中取消；求解桩已进入 `solve()`，Worker 上报一次 `cancel_ack`，最终 `CANCELLED`，attempt 退出码 0，正式计划/指标为空，`WORKER_REAP` 显示直接 Worker 与已识别成员已退出。
+- `test_real_http_search_timeout_reaps_slow_solver`：短预算与不合作求解桩经现有 API 运行，最终 `TIMED_OUT/ALGORITHM_TIMEOUT`，无正式计划，收到超时后的 `cancel_ack`，直接 Worker 有界退出。
+- `test_real_http_crash_reaps_trusted_descendant`：故障 Worker 完成独立 Session 握手并在收到 `start` 后创建同 Session 子进程，随后以退出码 23 异常退出；最终 `FAILED/IPC_DISCONNECTED`，无计划。测试核对 `WORKER_REAP` 的已确认身份与零活跃成员，子进程不再活跃；测试端 pidfd 强制清理兜底未触发。
+
+三项均使用真实回环请求、现有 HTTP 路径、Controller、Worker 进程和临时 SQLite；逐项检查 attempt、事件、计划、Worker PID 与服务进程 FD 数量。专题测试两轮各 **3/3 通过**；完整 `python -m unittest discover -s tests -v` **103/103 通过**；`git diff --check` 通过。原有真实成功闭环在隔离服务复跑：只读母场景派生 30 任务临时实例（SHA-256 `192eb635644fcdbc86854912704345494fe36d8cffb828c5000cff9221a9b84e`，种子 20260927），`completion_first` 完成 24/30、TCR=0.800，SQLite 记 `SUCCEEDED`、attempt 1、exit_code 0、一份计划及 24 条 assignment；JSON/CSV、旧 CLI 逐条对照和篡改候选拒绝检查均通过。临时库、场景和服务已清理；未见活跃测试 Worker 或可信后代。后台线程与 flock 生命周期仍以 W2-C 专题真实进程测试为证，不把 HTTP 服务进程退出当作独立的持锁证明。
+
+### 交接李泽同核对的代码边界
+
+1. `controller.py`：`start()/stop()/_loop()` 管理单实例锁、领取与停机；`_execute()` 管理 `spawn`、两条 Pipe、`started` 后内核身份核验再发送旧格式 `start`、一次性完整 `cancel`、事件去重、墙钟期限、候选/取消竞争、核验与正式提交。若后台执行线程未退出，`stop()` 抛错并保留 flock。
+2. `controller_ipc.py` 的 `ControlWriter/EventReader` 在 Controller 执行线程中驱动有界非阻塞帧传输；`worker_process.py` 以本次 Process、`/proc` 和 pidfd 保护组/成员信号。组长退出后不向缓存 PGID 发组信号。
+3. `storage.py` 仅新增内部 `Database.record_attempt_exit(run_id, attempt, exit_code, diagnostics)`：`_execute()` 回收后调用，写既有 `run_attempts.exit_code` 和小型 `WORKER_REAP` 事件；未改 SQLite 物理模式。
+4. `cancel_ack` 仅确认命令收到；用户取消且完成安全退出后为 `CANCELLED`，搜索墙钟预算到期为 `TIMED_OUT/ALGORITHM_TIMEOUT`，内部停机为 `FAILED/CONTROLLER_STOP`。直接 Worker、可信后代或扫描状态无法确认清理时为 `FAILED/WORKER_CLEANUP_INCOMPLETE`；未确认 Session 的候选不得提交成功。
+5. 李泽同负责的 `Controller` 生命周期与 `storage.py` 内部写入点是并行分支的主要冲突区。合并前请核对状态优先级、HTTP 409 语义、数据库事务与 Daemon 停机/重启预期。W3 大结果载体、独立 Daemon、正式算法 A/B/C/D、跨重启孤儿回收及逃逸 Session 后代均未在本次交付中实现。
