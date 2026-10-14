@@ -1,5 +1,11 @@
 # 课程项目运行与版本记录
 
+## 第二阶段组员协作规范（2026-10-14）
+
+新增 [`docs/phase2/team_collaboration.md`](docs/phase2/team_collaboration.md)，明确每项工作新建分支、经 PR 审核后合入 `main`、代码与对应专题文档及本记录同步提交的流程；列出四人职责、文档映射、PR 检查项和 Windows + WSL2 的协作方式。README 增加入口。本次只改文档，不改变运行行为。
+
+---
+
 ## 第二阶段框架 v0.2.1（2026-10-14，Windows + Ubuntu 22.04 / WSL2）
 
 在 `feat/phase2-v0.2` 分支上新增逐条实验清理：网页列表支持翻页，终态实验详情提供永久删除及可选的服务器导出文件清理。HTTP 接口为 `DELETE /api/runs/{run_id}`，可选 `delete_files=true`。数据库按依赖顺序在事务中删除该实验的配置、尝试、事件、计划、assignment、指标和导出记录，再尝试 `VACUUM` 与 WAL 截断；失败会提示，但已删记录不会恢复。正在排队、运行或核验的实验不能直接删除。

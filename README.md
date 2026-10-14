@@ -96,7 +96,7 @@ PYTHONHASHSEED=0 MPLBACKEND=Agg ~/eos-course-runtime/.venv/bin/python -m scripts
 ~/eos-course-runtime/.venv/bin/python scripts/check_visualization.py <run_id>
 ```
 
-组员接入算法请先读 [算法接入说明](docs/phase2/algorithm_integration.md)；[当前数据库设计与 ER 图](docs/phase2/database_current_v02.md)记录落地模式。接口和数据库目标审核稿分别在 [接口设计](docs/phase2/interface_design_target.md)、[数据库目标设计](docs/phase2/database_design_target.md)。这些审核稿包含尚未完成的目标，当前字段以源码、`/docs` 和 [交接说明](docs/phase2/framework_handoff.md) 为准。每次版本变化及实测证据记在 [COURSE_SETUP.md](COURSE_SETUP.md)。
+组员开发前先读 [协作规范](docs/phase2/team_collaboration.md) 和 [算法接入说明](docs/phase2/algorithm_integration.md)；[当前数据库设计与 ER 图](docs/phase2/database_current_v02.md)记录落地模式。接口和数据库目标审核稿分别在 [接口设计](docs/phase2/interface_design_target.md)、[数据库目标设计](docs/phase2/database_design_target.md)。这些审核稿包含尚未完成的目标，当前字段以源码、`/docs` 和 [交接说明](docs/phase2/framework_handoff.md) 为准。每次版本变化及实测证据记在 [COURSE_SETUP.md](COURSE_SETUP.md)。
 
 ## 项目分工
 
