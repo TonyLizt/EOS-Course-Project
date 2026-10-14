@@ -7,6 +7,7 @@ import os
 import signal
 import struct
 import tempfile
+import threading
 import time
 import unittest
 import uuid
@@ -24,9 +25,7 @@ from eos_system.storage import Database
 
 def _fault_worker(mode, observed, run_id, attempt, event_pipe, control_pipe):
     """真实子进程中的有界故障桩，不作为正式算法结果。"""
-    if mode == "blocked_start":
-        time.sleep(6)  # 故意不读取控制 Pipe；父进程必须有界回收。
-        return
+    os.setsid()
 
     def event(seq, kind, payload):
         worker.send_message(event_pipe, {
@@ -36,6 +35,9 @@ def _fault_worker(mode, observed, run_id, attempt, event_pipe, control_pipe):
         })
 
     event(1, "started", {"worker_pid": os.getpid()})
+    if mode == "blocked_start":
+        time.sleep(6)  # 已确认独立 Session，但故意不读取 start Pipe。
+        return
     worker.receive_message(control_pipe)
     if mode == "crash":
         os._exit(23)
@@ -246,14 +248,19 @@ class ControllerTimeoutTests(unittest.TestCase):
         self.assert_reaped(record, "terminate")
 
     def test_user_cancel_stays_bounded_while_start_send_is_blocked(self):
-        started = self.run_mode("blocked_start", padding=1_000_000)
-        deadline = time.monotonic() + 2
-        while time.monotonic() < deadline:
-            if self.database.get_status(self.run_id)["status"] == "RUNNING":
-                break
-            time.sleep(0.02)
-        self.database.request_cancel(self.run_id)
-        record = self.wait_terminal()
+        start_queued = threading.Event()
+        original_enqueue = controller_module.ControlWriter.enqueue
+
+        def observe_enqueue(writer, message, deadline):
+            original_enqueue(writer, message, deadline)
+            if message["kind"] == "start":
+                start_queued.set()
+
+        with patch.object(controller_module.ControlWriter, "enqueue", observe_enqueue):
+            started = self.run_mode("blocked_start", padding=1_000_000)
+            self.assertTrue(start_queued.wait(2), "测试未进入 start 已排队的阻塞写路径")
+            self.database.request_cancel(self.run_id)
+            record = self.wait_terminal()
         self.assertEqual(record["status"], "CANCELLED")
         self.assertLess(time.monotonic() - started, 5)
         self.assert_reaped(record, "terminate")

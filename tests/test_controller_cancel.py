@@ -57,6 +57,7 @@ def _spawn_test_worker(mode, entered, observed, release, startup_gate,
     if mode == "early_exit":
         os._exit(17)
     if mode == "exit_no_ack":
+        os.setsid()
         worker.send_message(event_pipe, {
             "protocol_version": 1, "run_id": run_id, "attempt": attempt,
             "seq": 1, "kind": "started",
@@ -70,6 +71,7 @@ def _spawn_test_worker(mode, entered, observed, release, startup_gate,
         event_pipe.close()
         return
     if mode == "duplicate_ack":
+        os.setsid()
         def report(seq, kind, payload):
             worker.send_message(event_pipe, {
                 "protocol_version": 1, "run_id": run_id, "attempt": attempt,
@@ -214,7 +216,8 @@ class ControllerCancelTests(unittest.TestCase):
         self.database.request_cancel(self.run_id)
         self.startup_gate.set()
         self.wait_status("CANCELLED")
-        self.assertEqual([e["event_type"] for e in self.worker_events()].count("cancel_ack"), 1)
+        # 取消可能早于 start 放行；此时直接回收，不要求 Worker 返回 ack。
+        self.assertLessEqual([e["event_type"] for e in self.worker_events()].count("cancel_ack"), 1)
         self.assertIsNone(self.database.get_run(self.run_id)["plan"])
 
     def test_repeated_cancel_produces_one_ack_and_one_terminal_event(self):

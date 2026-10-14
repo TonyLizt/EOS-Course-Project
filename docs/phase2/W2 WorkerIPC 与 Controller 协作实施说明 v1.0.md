@@ -228,7 +228,7 @@ Worker 可能尚未执行 `setsid()`、组长可能已退出或 PID 被复用；
 
 ## 9. 尚未交付的边界与后续阶段
 
-1. **W2-A、W2-B 分别有本文件第 10、11 节的实施与测试记录；W2-C 尚未编码或测试。** 前述方案段落仍是实施约束，不能替代各阶段的验收报告。
+1. **W2-A、W2-B、W2-C 分别有本文件第 10、11、12 节的实施与测试记录。** 前述方案段落仍是实施约束，不能替代各阶段的验收报告。
 2. W1 已测试的“取消后 Worker 主线程有界退出”不等于“任意不合作线程／逃逸后代均已回收”；W2-C 用独立进程组实测，同时保留已识别的逃逸限制。
 3. 崩溃后重新启动 Controller 时，历史随机 `worker_start_token` 不能保证 OS 身份一致；W2 不根据历史 PID 盲目清理旧进程。**如课程最终要求完整的孤儿进程恢复演示，必须与李泽同、梁兆榮共同增加可靠身份记录／回收方案，不能把本版的保守标记失败冒充完成恢复。**
 4. W3 才讨论超过 4 MiB 的候选文件载体、相对路径安全、SHA-256 和清理；本方案保留现有消息上限。
@@ -303,3 +303,58 @@ Worker 可能尚未执行 `setsid()`、组长可能已退出或 PID 被复用；
 **剩余边界**：`Process.start()` 本身和 Controller 内的场景核验/正式导出调用尚无可抢占硬期限；当前期限保护的是启动调用返回后的状态循环及 Pipe I/O。若直接进程在 `kill()` 后仍无法在 2 秒内结束，会记录回收不完整，不能宣称全链路严格有界。W2-B 只证明直接 Worker 进程的测试回收；其派生后代、PID/PGID/Session 身份核验、`Controller.stop()` 的持锁安全停机及重启后旧进程清扫均属 W2-C。HTTP 路径与响应、八种状态、SQLite 物理模式、算法签名、验证规则和原子提交均未改变；新增的存储方法是 Controller 内部调用。集成前仍须按第 6、8 节与李泽同核对 Controller 和 storage 的并行改动。
 
 **阶段建议：FUNCTIONAL PASS · RELIABILITY PENDING。** 已覆盖本阶段直接 Worker 的正常/故障路径；跨进程后代及安全停机尚无保证。
+
+## 12. W2-C 实施记录（2026-10-14，待集成审核）
+
+本节记录 W2-C 工作区的实际代码和隔离测试。第 10、11 节的“尚待 W2-C”仅描述当时 W2-A/B 的阶段边界，以本节的当前状态为准。
+
+### C1：Linux 身份与信号边界
+
+- 新增 `eos_system/worker_process.py`。`WorkerGroup` 仅从本次 `multiprocessing.Process.pid` 建立身份；记录 Linux boot_id、`/proc/<pid>/stat` 的 starttime、PPID、PGID、SID、进程状态及 pidfd。解析 stat 时从最后一个 `") "` 定位 comm 尾部，支持进程名含括号或空格；不按未经处理的整行 split 固定索引。Worker 原有 `setsid()` 仍在 `started` 事件之前执行；Controller 不采用 IPC 中任意 PGID 作为信号目标。
+- 只有本次组长仍存在、starttime/boot_id 与启动时一致、`PGID=SID=Process.pid>0`、与 Controller 自身 PGID/SID 不同，且组长 pidfd 已固定数字 PID 时，才可向其独立进程组发信号；每次发信号前重读 `/proc`。组长在 `setsid()` 前或身份不符时只用 Process 句柄回收直接 Worker，不执行 `killpg`。组长已退出后绝不凭缓存 PGID 调用 `killpg`。
+- 组长存活时扫描同 PGID/SID 的成员，并用 pidfd 固定成员身份。审核后补充：本 attempt 已确认独立 session，且组长 pidfd 仍固定其数字 PID 时，即使组长已经退出并被 `join`，也继续扫描同 PGID/SID；新发现的后代须核对 boot_id、starttime、PGID/SID，打开 pidfd 后再复核，之后只通过该 pidfd 发信号。组长退出后绝不向缓存 PGID 调用 `killpg`。缺少组长 pidfd 锚点、扫描失败或超过 128 个成员时标记扫描不完整并保守降级；`WorkerGroup.close()` 关闭全部 pidfd。
+
+### C2：有界回收与结果裁决
+
+- `reap_worker()` 集中执行已有协作期限后的回收：有限等待，必要时对仍可验证的组发 SIGTERM；对已固定的成员发送 SIGTERM；再次有限等待；再以同样身份复核执行 SIGKILL 或 Process 直接回收；最后 join 并检查直接 Worker 与已验证成员是否仍活跃。组长先退出时仅对已固定成员使用 pidfd。没有向 Controller 自己的组发信号。
+- `Controller._execute()` 在 Worker 启动后建立 `WorkerGroup`，执行循环中持续收集可验证的同组后代。回收后的 `WORKER_REAP` 小型事件记录动作、退出码、活跃成员数、身份确认/失败、扫描限制、组信号、成员信号及信号错误。直接 Worker、已确认活跃后代或受限扫描仍不能确认清理时，记 `FAILED/WORKER_CLEANUP_INCOMPLETE`，不提交 `SUCCEEDED`。原有用户取消优先于未锁定算法超时的裁决顺序保持不变。
+- **可证明的范围**仅是本次 Controller 存活期间仍在已确认 Worker 独立 session 内、且扫描时可逐一固定身份的成员。组长退出后凭本次固定的组长 pidfd 继续发现仍在该 session 的后代；无此锚点时标记 `scan_limited`，不会把无法确认的清理报告为完成。后代自行脱离 session/组、扫描之后才产生且在最后一次扫描之后仍存活、进程消失时 `/proc` 与存在性检查均不可用、以及跨 Controller 重启等情形仍不能保证回收。正常 Worker 无后代证据时继续按原成功核验事务处理。
+
+### C3：Controller 安全停机
+
+- `Controller._loop()` 的停止检查与 `start_attempt()` 由 `_dispatch_lock` 串行。`stop()` 先设置停止标记，等待领取临界区结束，再有限等待执行线程；当前 attempt 的 `_execute()` 在 `start` 已排队时发送一次现有 W1 cancel，尚未排队时不再启动算法，按原宽限回收，最终记 `FAILED/CONTROLLER_STOP`，不伪装成用户取消。核验后、成功事务前还复查停机标记；核验/导出仍由原后台线程执行。
+- 只有后台执行线程已退出，`stop()` 才释放 flock。若等待领取锁或线程退出超过期限，`stop()` 抛出明确错误并**保留 flock**；可在后台线程真正结束后再次调用 `stop()` 释放。`start()` 的恢复或线程启动抛异常时关闭已取得的 flock。外部 SIGKILL 结束整个 Controller 进程时，内核会释放锁；Python 停机路径无法阻止该行为。
+
+### 隔离验证与待联调
+
+- `tests/test_worker_process_group.py` 的 **12 项**使用真实 Linux `spawn` 与独立 session，覆盖带括号/空格的 stat 解析、`setsid` 前保守降级、错误 starttime、boot_id 无法读取、伪造 Controller PGID 拒发、真实组 SIGTERM、忽略 SIGTERM 的后代 pidfd SIGKILL、组长先退出后的成员回收及 pidfd 关闭。
+- `tests/test_controller_shutdown.py` 的 **7 项**使用临时场景与 SQLite，覆盖运行中停机、与 `start_attempt()` 竞争、核验阻塞时保留 flock、数据库恢复及线程启动异常后的解锁，以及 Controller 中真实后代与崩溃组长的回收。测试通过 `/proc` 核对成员不再活跃，并给测试创建的子进程设置独立 pidfd 清理兜底。两组专题各独立重复三轮均通过；完整 `python -m unittest discover -s tests -v` **91 项通过**，含原有 HTTP/Worker/SQLite 正常成功链路。`git diff --check` 通过；正式运行目录与母场景未用于测试。
+- 跨 Controller 崩溃重启仍只保留 `FAILED/CONTROLLER_RESTART` 的原有数据库恢复：历史 `worker_start_token` 或历史 PID 不用于发信号。跨重启孤儿清扫和 Daemon 联调须另议。HTTP、SQLite 物理模式、八种运行状态、`Solver.solve()`、双 Pipe、协议版本 1、4 MiB 限额及核验/正式提交事务不变。李泽同应复核 `_loop/start/stop/_execute` 与其并行 Controller 改动；没有自动发送外部通知。
+
+**阶段建议：PENDING（等待集成审核）。** 已验证本次进程生命周期内的已识别同组后代与持锁停机；扫描竞态、逃逸后代和跨重启清扫仍是明确能力边界，不能表述为无条件进程树回收。
+
+### W2-C 首轮审核后定向修复（2026-10-14）
+
+- 修复组长退出前刚创建的后代未被首次扫描发现的问题。`WorkerGroup.refresh()` 在已确认独立 session 且组长 pidfd 仍持有的条件下，组长退出后继续扫描；只为通过 PGID、SID、boot_id、starttime 复核且成功打开 pidfd 的新成员保留身份。组长退出后仍禁止 `killpg`。若没有组长 pidfd 锚点，`scan_limited` 保守报告风险。
+- `_open_pidfd()` 对 `ESRCH` 返回“进程已消失”，对权限、功能缺失和其他错误保留异常；`refresh()` 再核对进程是否确实消失或结束。仍活跃且无法固定的成员进入 `unpinned` 风险集合；后续确认其结束后清除风险。`/proc` 无法读取且存在性无法确认时继续保留风险，不凭历史 PID 发信号。
+- 新增真实 `spawn` 测试：`test_crashed_leader_discovers_unseen_child_after_reap` 在组长退出并被 join 后才首次发现后代，测试专用 pidfd 提供独立清理兜底；`test_controller_recovers_child_after_immediate_leader_crash` 验证 Controller 记录异常断链并回收后代；`test_child_exits_between_scan_and_pidfd_open` 让真实子进程在两步之间退出，确认不误报扫描不完整；`test_live_unpinned_child_risk_clears_after_confirmed_exit` 验证权限失败时保留风险、确定退出后清除。前述故障 Worker 与算法均是测试桩。
+- WSL2 Ubuntu 22.04 / Python 3.10.12 虚拟环境中，W2-C 专题 23 项连续五轮均通过；完整 `python -m unittest discover -s tests -v` **95 项通过**，包括正常成功、取消、超时、异常退出和持锁停机回归；`git diff --check` 通过。测试进程的直接 Worker 均已退出，测试创建的后代有独立 pidfd 清理兜底，检查时未见活跃测试后代。测试使用独立临时场景和 SQLite，未接触正式运行库或 EOS-Bench 母数据。
+- 本次没有修改 Controller 停机、HTTP、SQLite 模式、算法签名或 IPC 契约。pidfd 无法使用、后代脱离 session、跨 Controller 重启及最后一次扫描之后新出现的后代仍是保守边界；不会对不可信 PGID 发组信号。
+
+### W2-C 最终审核：未确认 Session 的成功提交防护（2026-10-14）
+
+- 发现并修复：`WorkerGroup.refresh()` 在从未确认组长独立 session 时可能返回 `scan_limited=False`；此前 Controller 仅以直接进程、已登记成员和该标记判断清理，存在正常退出码与合法候选绕过身份确认的成功提交路径。现在 `confirmed` 还要求组长 pidfd 已固定；Controller 正式成功前同时要求本 attempt 的身份已确认且 `start` 曾获准排队。
+- 真实参考 Worker 的顺序是 `setsid()` → `started` → 阻塞等待 `start` → 场景加载与求解。`Controller._execute()` 现收到匹配当前 Process.pid 的 `started` 后，再读取本次进程的 boot_id、starttime、PGID、SID 和 pidfd 状态；确认独立 session 且组长当前仍活跃后才发送原格式 `start`。IPC 自报 PGID 不用于放行或信号。事件到达与放行之间若组长已退出，重新读取会阻止放行；Pipe 本身固定于本次子进程，不根据后来复用的数字 PID 建立新连接。
+- 用户在身份确认前取消时，不提前发送 `start` 或无法被等待 `start` 的 Worker 正确处理的 `cancel`；保留单调时钟宽限后通过本次 Process 句柄直接回收。`start` 已排队后的取消仍按原顺序发送一次完整 `cancel`。未确认身份会记录 `WORKER_IDENTITY/WORKER_IDENTITY_UNCONFIRMED` 诊断；直接进程已安全退出的启动期用户取消仍为 `CANCELLED`，但没有把未核实的进程组清理宣称为完成。没有取消理由的合法候选即使退出码为 0，也记 `FAILED/WORKER_IDENTITY_UNCONFIRMED`，不进入统一核验与正式成功事务。
+
+- 原 W2-A/B 的故障测试桩中，需等待 `start` 的桩现在先调用 `setsid()`；阻塞控制写入桩先发送 `started` 再故意不读取 Pipe，以继续真实覆盖非阻塞写期限。这仅是测试桩适配，不改变生产 Worker 或公共协议。
+- 新增真实 `spawn` 测试：`test_fast_reference_worker_confirms_session_before_success`、`test_unconfirmed_session_cannot_commit_legal_candidate`（故障桩伪报 PGID、合法候选、退出码 0，且确认没有收到 `start`）、`test_cancel_before_setsid_uses_direct_reap_without_group_signal`。原有组长退出后 pidfd 回收、停机未完成保留 flock、成功/取消/超时回归继续执行。隔离临时场景与 SQLite，不向未确认的组发信号。
+- WSL2 Ubuntu 22.04 / Python 3.10.12：W2-C 进程身份与停机专题 **26 项连续三轮通过**；Controller 取消、超时与进程身份专题 **50 项通过**；完整 `python -m unittest discover -s tests -v` **98 项通过**；`git diff --check` 通过。`setsid()` 前取消保持 `CANCELLED` 且无组信号；伪报 PGID 的合法候选及退出码 0 最终为 `FAILED/WORKER_IDENTITY_UNCONFIRMED`，正式 plan 为空；真实快速参考 Worker 为 `SUCCEEDED`，`WORKER_REAP.identity_confirmed=true`。真实子进程均由测试清理，未连接正式实验数据库。
+- 仍无法从未确认的启动期 Worker 推断任意已逃逸的后代；该路径仅对本次 Process 句柄执行直接回收并留下明确诊断。已确认 session 的最后一次扫描之后产生的新后代、跨重启孤儿也不在本轮保证范围。HTTP、SQLite 物理模式、状态枚举、Solver 签名、IPC 版本和 4 MiB 限额未变。
+
+### W2-C 最终审核补充：启动与取消竞争（2026-10-14）
+
+- 修复 `Controller._execute()` 的 `start` 入队条件：显式要求 `stop_reason is None`。本轮若已锁定 `USER_CANCEL` 或 `CONTROLLER_STOP` 且 `start` 尚未排队，即使后来收到了 `started` 并确认独立 Session，也不再下发 `start`；因 Worker 第一条控制命令必须是 `start`，此时也不单独发送完整 `cancel`。已排队 `start` 的发送与取消队列保持既有顺序和期限。
+- 真实 `spawn` 测试包装原 `worker_main()`：Worker 已执行 `setsid()`，测试桩在发送 `started` 前等待；Controller 先读取已持久化的用户取消，再放行 `started`。子进程记录是否收到 `start`、是否进入算法准备；两者均未发生，最终 `CANCELLED`，直接 Worker 及可信进程组按固定宽限安全回收。另以相同时序测试 `Controller.stop()`，最终 `FAILED/CONTROLLER_STOP` 且释放 flock；原有未完成停机保留 flock 测试继续通过。测试桩仅延迟消息和检测算法入口，不作为调度实验结果。
+- 本次仅修改 Controller 的放行条件、上述专题测试和阶段记录；没有改 pidfd、进程组信号、IPC 队列、HTTP、SQLite 模式、Solver 接口或协议版本。主动取消和停机发生在算法开始前时，直接回收可能没有 `cancel_ack`，该 ack 本来只表示收到控制命令，不是终态条件。
+- WSL2 Ubuntu 22.04 / Python 3.10.12 隔离环境：W2-C 专题 **28 项连续三轮通过**；完整 `python -m unittest discover -s tests -v` **100 项通过**；`git diff --check` 通过。原有“启动即取消”测试不再把 `cancel_ack` 当作必需事件；阻塞 `start` 写入的取消测试现在确定等到 `start` 入队再触发取消，继续覆盖原有 IPC 写入期限。测试没有使用正式 SQLite 或 EOS-Bench 母数据，结束后未见活跃测试 Worker/后代。
