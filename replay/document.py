@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .assets import load_model_resources
@@ -11,6 +12,36 @@ from .contracts import ReplayConfig
 from .manifest import canonical_bytes, code_sha
 from .read_only import ReplayInputError
 from .timeline import build_task_phases
+
+
+def _scheduler_utc_text(value: str) -> str:
+    """Expose scheduler timestamps as explicit UTC without mutating the plan.
+
+    The existing scenario loader normalises all input offsets to UTC and removes
+    tzinfo before scheduling.  Consequently the committed schedule uses naive
+    ISO strings even though their established meaning is UTC.
+    """
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    else:
+        parsed = parsed.astimezone(timezone.utc)
+    return parsed.isoformat()
+
+
+def _display_plan(plan: dict) -> dict:
+    display = {**plan}
+    display["start_time"] = _scheduler_utc_text(plan["start_time"])
+    display["end_time"] = _scheduler_utc_text(plan["end_time"])
+    display["assignments"] = [
+        {
+            **item,
+            "sat_start_time": _scheduler_utc_text(item["sat_start_time"]),
+            "sat_end_time": _scheduler_utc_text(item["sat_end_time"]),
+        }
+        for item in plan["assignments"]
+    ]
+    return display
 
 
 def build_replay_document(record: dict, config_path: Path) -> dict:
@@ -24,13 +55,14 @@ def build_replay_document(record: dict, config_path: Path) -> dict:
     if not isinstance(plan, dict) or plan.get("scenario_id") != scenario.get("scenario_id"):
         raise ReplayInputError("committed plan and scenario identities differ")
     plan_bytes = canonical_bytes(plan)
+    display_plan = _display_plan(plan)
     config_bytes = config_path.read_bytes()
     replay_config = ReplayConfig.from_bytes(config_bytes)
     project_root = Path(__file__).parents[1]
     resources, asset_manifest_sha = load_model_resources(replay_config, project_root)
     constraints = record["config"].get("constraints") or {}
     segments, diagnostics = build_task_phases(
-        scenario, plan,
+        scenario, display_plan,
         agility_profile=constraints.get("agility_profile", "Standard-Agility"),
         non_agile_transition_s=float(constraints.get("non_agile_transition_s", 10.0)),
     )
@@ -39,7 +71,7 @@ def build_replay_document(record: dict, config_path: Path) -> dict:
         "plan_sha256": hashlib.sha256(plan_bytes).hexdigest(),
         "replay_config_sha256": hashlib.sha256(config_bytes).hexdigest(),
         "builder_code_sha": code_sha(project_root),
-        "builder_version": "replay-document-v2", "propagation_version": "existing-orekit-czml-v1",
+        "builder_version": "replay-document-v3", "propagation_version": "existing-orekit-czml-v1",
         "attitude_version": "geometry-pointing-fixed-payload-v1", "geometry_version": "wgs84-ray-ellipsoid-v1",
         "asset_manifest_sha256": asset_manifest_sha,
         "model_resources_sha256": hashlib.sha256(canonical_bytes(resources)).hexdigest(),
@@ -62,7 +94,7 @@ def build_replay_document(record: dict, config_path: Path) -> dict:
         "manifest": {
             **identity, "replay_id": cache_key[:24], "cache_key": cache_key,
             "scenario_id": scenario["scenario_id"], "replay_config_id": replay_config.replay_config_id,
-            "start_time": plan["start_time"], "end_time": plan["end_time"],
+            "start_time": display_plan["start_time"], "end_time": display_plan["end_time"],
             "reference_frame": "ECEF", "position_unit": "m", "quaternion_order": "xyzw",
             "rotation_direction": "body_to_ecef", "camera_axes": replay_config.camera_axes,
             "attitude_source": replay_config.attitude_source,
@@ -74,11 +106,12 @@ def build_replay_document(record: dict, config_path: Path) -> dict:
         "assignments": [{
             "assignment_ordinal": ordinal, "task_id": item["task_id"], "satellite_id": item["satellite_id"],
             "sensor_id": item["sensor_id"], "sat_start_time": item["sat_start_time"], "sat_end_time": item["sat_end_time"],
-        } for ordinal, item in enumerate(plan["assignments"])],
+        } for ordinal, item in enumerate(display_plan["assignments"])],
         "segments": segments,
         "diagnostics": diagnostics,
         "warnings": [
             "Attitude is a deterministic target-pointing illustration, not an Orekit attitude export or dynamics validation.",
+            "Legacy scheduler timestamps are exposed with an explicit UTC offset; committed plan bytes remain unchanged.",
             "This checkout parses plural *_angles fields in the legacy transition path; each actual result is recorded in diagnostics.",
         ],
     }

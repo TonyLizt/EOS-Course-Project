@@ -50,14 +50,16 @@ class ReplayDeliveryTests(unittest.TestCase):
             self.assertTrue(database.set_verifying(run_id, attempt))
             plan = {
                 "scenario_id": "fixture",
-                "start_time": "2026-01-01T00:00:00+00:00",
-                "end_time": "2026-01-01T00:01:00+00:00",
+                # The production scheduler emits naive ISO strings whose
+                # established meaning is UTC after scenario-loader normalisation.
+                "start_time": "2026-01-01T00:00:00",
+                "end_time": "2026-01-01T00:01:00",
                 "assignments": [{
                     "task_id": "M1",
                     "satellite_id": "ALOS-2_39766",
                     "sensor_id": "ALOS-2_39766_sensor",
-                    "sat_start_time": "2026-01-01T00:00:10+00:00",
-                    "sat_end_time": "2026-01-01T00:00:20+00:00",
+                    "sat_start_time": "2026-01-01T00:00:10",
+                    "sat_end_time": "2026-01-01T00:00:20",
                 }],
                 "unassigned_tasks": [],
             }
@@ -82,6 +84,8 @@ class ReplayDeliveryTests(unittest.TestCase):
             manifest = replay["manifest"]
             self.assertEqual(manifest["geometry_version"], "wgs84-ray-ellipsoid-v1")
             self.assertEqual(manifest["resources"][0]["asset_id"], "landsat8-nasa-display")
+            self.assertEqual(manifest["start_time"], "2026-01-01T00:00:00+00:00")
+            self.assertEqual(replay["assignments"][0]["sat_start_time"], "2026-01-01T00:00:10+00:00")
             self.assertEqual(len(manifest["asset_manifest_sha256"]), 64)
             self.assertEqual(len(manifest["model_resources_sha256"]), 64)
             self.assertEqual(hashlib.sha256(scenario.read_bytes()).hexdigest(), scenario_before)

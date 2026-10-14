@@ -367,6 +367,8 @@
       }
     }
 
+    let replayLoadError = null;
+
     async function tryLoadReplay() {
       const url = new URLSearchParams(window.location.search).get('replay');
       if (!url || !url.trim()) return null;
@@ -375,6 +377,7 @@
         if (!response.ok) throw new Error(response.status + ' ' + response.statusText);
         return await response.json();
       } catch (error) {
+        replayLoadError = error;
         document.getElementById('assetStatus').textContent =
           'Replay data unavailable; Cesium point/label fallback remains active. ' + error;
         return null;
@@ -991,7 +994,9 @@
     function setupBodyModelsAndFixedPayloads(replay, ds) {
       const status = document.getElementById('assetStatus');
       if (!replay || !window.FixedPayloadState) {
-        status.textContent = 'No replay sidecar; Cesium point/label fallback is active.';
+        status.textContent = replayLoadError
+          ? 'Replay data unavailable; Cesium point/label fallback remains active. ' + replayLoadError
+          : 'No replay sidecar; Cesium point/label fallback is active.';
         return;
       }
       const targets = new Map();
