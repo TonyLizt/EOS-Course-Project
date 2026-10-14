@@ -2,6 +2,7 @@
 const $ = (id) => document.getElementById(id);
 let selectedId = null;
 let currentAlgorithms = [];
+let outputProfiles = [];
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
@@ -16,14 +17,17 @@ async function api(path, options = {}) {
 
 async function bootstrap() {
   try {
-    const [health, scenarios, algorithms] = await Promise.all([
-      api("/api/health"), api("/api/scenarios"), api("/api/algorithms")
+    const [health, sources, profiles, algorithms] = await Promise.all([
+      api("/api/health"), api("/api/data-sources"), api("/api/output-profiles"), api("/api/algorithms")
     ]);
     $("health").textContent = `服务已连接 · ${health.version}`;
-    $("scenario").innerHTML = scenarios.items.map((s) => `<option value="${escapeHtml(s.scenario_id)}">${escapeHtml(s.name)}</option>`).join("");
+    $("source").innerHTML = sources.items.map((s) => `<option value="${escapeHtml(s.source_id)}">${escapeHtml(s.name)}</option>`).join("");
+    outputProfiles = profiles.items;
+    $("output-profile").innerHTML = profiles.items.map((p) => `<option value="${escapeHtml(p.profile_id)}">${escapeHtml(p.name)}</option>`).join("");
     currentAlgorithms = algorithms.items;
     $("algorithm").innerHTML = currentAlgorithms.map((a) => `<option value="${escapeHtml(a.algorithm_id)}">${escapeHtml(a.name)}</option>`).join("");
-    if (!scenarios.items.length) $("form-message").textContent = "尚无登记场景，请先按启动说明生成固定小实例。";
+    await loadScenarios();
+    updateHints();
     await refresh();
   } catch (error) {
     $("health").textContent = "服务连接失败";
@@ -31,12 +35,61 @@ async function bootstrap() {
   }
 }
 
+async function loadScenarios() {
+  const sourceId = $("source").value;
+  if (!sourceId) return;
+  const scenarios = await api(`/api/scenarios?source_id=${encodeURIComponent(sourceId)}`);
+  $("scenario").innerHTML = scenarios.items.map((s) => `<option value="${escapeHtml(s.scenario_id)}">${escapeHtml(s.name)}</option>`).join("");
+  $("form-message").textContent = scenarios.items.length ? "" : "该数据源没有直接存放的 JSON 场景文件。";
+}
+
+function updateHints() {
+  const algorithm = currentAlgorithms.find((a) => a.algorithm_id === $("algorithm").value);
+  const properties = Object.keys(algorithm?.parameters?.properties || {});
+  $("algorithm-hint").textContent = algorithm ? `${algorithm.description || ""} 参数：${properties.length ? properties.join("、") : "无"}` : "";
+  const profile = outputProfiles.find((p) => p.profile_id === $("output-profile").value);
+  $("output-hint").textContent = profile?.kind === "directory"
+    ? `正式 JSON/CSV 将保存到 ${profile.root_path}/<run_id>/；浏览器仍可下载。`
+    : "只提供浏览器下载；数据库与运行状态仍保存在 WSL 运行目录。";
+}
+
+$("source").addEventListener("change", () => loadScenarios().catch((error) => { $("form-message").textContent = error.message; }));
+$("algorithm").addEventListener("change", updateHints);
+$("output-profile").addEventListener("change", updateHints);
+
+$("register-location").addEventListener("click", async () => {
+  const kind = $("register-kind").value;
+  const endpoint = kind === "source" ? "/api/data-sources" : "/api/output-profiles";
+  $("register-location").disabled = true;
+  try {
+    const added = await api(endpoint, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({
+      name: $("register-name").value.trim(), path: $("register-path").value.trim()
+    })});
+    $("register-message").textContent = `已登记 ${added.name}：${added.root_path}`;
+    if (kind === "source") {
+      const sources = await api("/api/data-sources");
+      $("source").innerHTML = sources.items.map((s) => `<option value="${escapeHtml(s.source_id)}">${escapeHtml(s.name)}</option>`).join("");
+      $("source").value = added.source_id;
+      await loadScenarios();
+    } else {
+      const profiles = await api("/api/output-profiles");
+      outputProfiles = profiles.items;
+      $("output-profile").innerHTML = profiles.items.map((p) => `<option value="${escapeHtml(p.profile_id)}">${escapeHtml(p.name)}</option>`).join("");
+      $("output-profile").value = added.profile_id;
+      updateHints();
+    }
+  } catch (error) { $("register-message").textContent = error.message; }
+  finally { $("register-location").disabled = false; }
+});
+
 function buildRequest() {
   const params = JSON.parse($("params").value || "{}");
   if (params === null || Array.isArray(params) || typeof params !== "object") throw new Error("算法参数必须是 JSON 对象");
   return {
+    source_id: $("source").value,
     scenario_id: $("scenario").value,
     algorithm_id: $("algorithm").value,
+    output_profile_id: $("output-profile").value,
     algorithm_params: params,
     seed: Number($("seed").value),
     placement_mode: $("placement").value,
@@ -86,9 +139,16 @@ function showDetail(run) {
   $("cancel").disabled = ["SUCCEEDED","FAILED","CANCELLED","TIMED_OUT"].includes(run.status) || run.cancel_requested;
   $("export-json").hidden = run.status !== "SUCCEEDED";
   $("export-csv").hidden = run.status !== "SUCCEEDED";
+  $("open-gantt").hidden = run.status !== "SUCCEEDED";
+  $("open-cesium").hidden = run.status !== "SUCCEEDED";
   $("export-json").href = `/api/runs/${encodeURIComponent(run.run_id)}/export?format=json`;
   $("export-csv").href = `/api/runs/${encodeURIComponent(run.run_id)}/export?format=csv`;
+  $("open-gantt").href = `/visualization/gantt/${encodeURIComponent(run.run_id)}`;
+  $("open-cesium").href = `/visualization/cesium/${encodeURIComponent(run.run_id)}`;
   $("detail-error").textContent = run.error ? `${run.error.code}: ${run.error.message}` : "";
+  const files = (run.exports || []).filter((item) => item.artifact_path || item.error_message);
+  $("files").innerHTML = files.length ? files.map((item) => `<li>${escapeHtml(item.format.toUpperCase())} · ${escapeHtml(item.artifact_path || item.error_message)}</li>`).join("")
+    : "<li>此实验没有服务器目录文件；可使用上方浏览器下载。</li>";
   const m = run.metrics;
   $("metrics").innerHTML = m ? [
     ["完成任务", `${m.completed_tasks} / ${m.total_tasks}`], ["TCR", `${(m.TCR * 100).toFixed(1)}%`],

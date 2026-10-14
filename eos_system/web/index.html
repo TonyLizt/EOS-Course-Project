@@ -16,8 +16,12 @@
     <section class="card form-card">
       <div class="section-title"><h2>新建实验</h2><p>选择登记场景和算法，提交后由独立 Worker 执行。</p></div>
       <form id="run-form">
+        <label>数据源<select id="source" required></select></label>
         <label>场景<select id="scenario" required></select></label>
         <label>算法<select id="algorithm" required></select></label>
+        <p id="algorithm-hint" class="hint"></p>
+        <label>结果输出<select id="output-profile" required></select></label>
+        <p id="output-hint" class="hint"></p>
         <div class="two-cols">
           <label>随机种子<input id="seed" type="number" min="0" value="42" required></label>
           <label>算法预算 / 秒<input id="budget" type="number" min="1" max="600" value="60" required></label>
@@ -35,6 +39,13 @@
         <button type="submit" id="submit">提交实验</button>
         <p id="form-message" class="message" role="status"></p>
       </form>
+      <details class="location-setup"><summary>登记新的数据源或输出目录</summary>
+        <label>位置用途<select id="register-kind"><option value="source">只读数据源</option><option value="output">正式文件输出</option></select></label>
+        <label>显示名称<input id="register-name" placeholder="例如：刘懋兴固定场景" maxlength="120"></label>
+        <label>Windows 或 WSL 目录<input id="register-path" placeholder="例如 C:\EOS-Bench\output_s1 或 /home/bj201/results" maxlength="2048"></label>
+        <button class="secondary" type="button" id="register-location">登记目录</button>
+        <p id="register-message" class="message" role="status"></p>
+      </details>
     </section>
 
     <section class="card list-card">
@@ -49,13 +60,16 @@
         <button class="secondary" id="cancel" type="button">取消实验</button>
         <a id="export-json" class="link-button" href="#">导出 JSON</a>
         <a id="export-csv" class="link-button" href="#">导出 CSV</a>
+        <a id="open-gantt" class="link-button secondary" href="#" target="_blank" rel="noopener">甘特图</a>
+        <a id="open-cesium" class="link-button secondary" href="#" target="_blank" rel="noopener">Cesium 回放</a>
       </div>
       <p id="detail-error" class="error"></p>
+      <h3>服务器输出文件</h3><ul id="files" class="files"></ul>
       <h3>运行记录</h3><ol id="events" class="events"></ol>
       <h3>计划明细 <span id="assignment-count"></span></h3>
       <div class="table-wrap"><table><thead><tr><th>任务</th><th>卫星</th><th>开始</th><th>结束</th></tr></thead><tbody id="assignments"></tbody></table></div>
     </section>
   </main>
-  <footer>框架 v0.1 · 正式结果由 Controller 核验并从 SQLite 提供</footer>
+  <footer>框架 v0.2 · 正式结果由 Controller 核验并从 SQLite 提供</footer>
 </body>
 </html>

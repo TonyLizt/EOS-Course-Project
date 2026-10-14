@@ -1,0 +1,96 @@
+"""从正式数据库记录生成下载内容和可选的服务器文件。"""
+
+from __future__ import annotations
+
+import csv
+import hashlib
+import io
+import json
+import os
+import tempfile
+from pathlib import Path
+
+from .contracts import RunConfig
+from .storage import Database
+
+
+def render_json(record: dict) -> bytes:
+    """仅使用 Controller 已提交的计划与指标，不读取 Worker 临时结果。"""
+    plan = dict(record["plan"])
+    metric = record["metrics"]
+    plan["metrics"] = {
+        "TP": metric["TP"], "TCR": metric["TCR"], "BD": metric["BD"],
+        "TM": metric["TM"], "RT": metric["RT"], "RV": metric["RV"],
+    }
+    plan["provenance"] = {
+        "run_id": record["run_id"],
+        "source_id": record["config"].get("source_id", "runtime"),
+        "scenario_sha256": record["config"]["scenario_sha256"],
+        "algorithm_id": record["config"]["algorithm_id"],
+        "algorithm_version": record["config"]["algorithm_version"],
+        "seed": record["config"]["seed"],
+    }
+    return (json.dumps(plan, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
+def render_csv(record: dict) -> bytes:
+    output = io.StringIO(newline="")
+    fields = ["run_id", "source_id", "scenario_id", "algorithm_id", "task_id", "satellite_id", "sensor_id",
+              "sat_start_time", "sat_end_time", "ground_station_id", "gs_start_time", "gs_end_time",
+              "completed_tasks", "total_tasks", "TP", "TCR", "BD", "TM", "RT"]
+    writer = csv.DictWriter(output, fieldnames=fields)
+    writer.writeheader()
+    metrics = record["metrics"]
+    base = {
+        "run_id": record["run_id"], "source_id": record["config"].get("source_id", "runtime"),
+        "scenario_id": record["config"]["scenario_id"],
+        "algorithm_id": record["config"]["algorithm_id"],
+        **{key: metrics[key] for key in ("completed_tasks", "total_tasks", "TP", "TCR", "BD", "TM", "RT")},
+    }
+    # 空计划也保留一行实验摘要，避免只得到 CSV 表头。
+    for assignment in record["plan"]["assignments"] or [{}]:
+        writer.writerow({key: value for key, value in {**base, **assignment}.items() if key in fields})
+    return output.getvalue().encode("utf-8-sig")
+
+
+def _write_immutable(path: Path, data: bytes) -> None:
+    """同名正式文件若内容一致则复用；内容不同绝不覆盖。"""
+    digest = hashlib.sha256(data).digest()
+    if path.exists():
+        if hashlib.sha256(path.read_bytes()).digest() != digest:
+            raise FileExistsError(f"正式导出文件内容冲突：{path}")
+        return
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(prefix=".pending-", suffix=".tmp", dir=path.parent, delete=False) as stream:
+            temporary = Path(stream.name)
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+        temporary = None
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def persist_directory_exports(database: Database, config: RunConfig) -> None:
+    """成功入库后按实验快照保存文件；写文件失败不撤销已核验的正式计划。"""
+    if config.output_kind != "directory" or not config.output_root:
+        return
+    record = database.get_run(config.run_id)
+    if record is None or record["status"] != "SUCCEEDED":
+        raise ValueError("只有成功实验可保存正式导出")
+    root = Path(config.output_root).resolve(strict=True)
+    if not root.is_dir():
+        raise ValueError("实验选定的输出目录已不可用")
+    run_dir = root / config.run_id
+    run_dir.mkdir(exist_ok=True)
+    for format_name, render in (("json", render_json), ("csv", render_csv)):
+        try:
+            content = render(record)
+            target = run_dir / f"eos-{config.run_id}.{format_name}"
+            _write_immutable(target, content)
+            database.record_export(config.run_id, format_name, content, artifact_path=str(target))
+        except (OSError, ValueError) as exc:
+            database.record_export(config.run_id, format_name, None, error_message=str(exc)[:300])

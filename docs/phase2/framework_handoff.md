@@ -1,63 +1,52 @@
-# 第二阶段框架 v0.1 交接说明
+# 第二阶段框架交接说明（v0.2.0）
 
-本文件描述**当前代码实际实现**，用于四人接入。目标接口与 ER 图已随仓库放在 [`interface_design_target.md`](interface_design_target.md)、[`database_design_target.md`](database_design_target.md)；两份是审核稿，尚未实施的字段按文件开头提示处理。启动命令和版本记录见仓库根目录的 `COURSE_SETUP.md`。
+本文件记录当前已经实现的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。
 
-## 1. 当前可运行链路
+## 1. 当前闭环
 
-```text
-浏览器（配置、状态、计划表格、JSON/CSV）
-    → FastAPI / Controller（单服务进程）
-    → spawn 最小参考 Worker（独立进程，现有算法）
-    → 候选计划 JSON 经 Pipe 返回
-    → Controller 按同配置重建并核验计划
-    → SQLite 事务写入 plans + assignments + metrics + SUCCEEDED
-    → 页面与导出从 SQLite 读取
+浏览器或 HTTP 客户端选择数据源、场景、算法和输出配置，提交实验。FastAPI 将配置写入 SQLite，Controller 启动独立参考 Worker，读取算法返回的计划，经共享约束模型复核后，把状态、计划、指标和事件持久化。结果可从数据库下载 JSON/CSV；若选文件输出，还会在指定目录下以运行 ID 为子目录保存相同内容。旧甘特图页面和 Cesium 页面通过按运行 ID 的 URL 读取数据库结果。轨道 CZML 按场景哈希缓存，首次生成可能较慢。
+
+入口：`python -m eos_system`。本地接口文档：`http://127.0.0.1:8765/docs`。默认只监听本机；同一数据库只运行一个 Controller 实例。
+
+## 2. 模块边界
+
+| 模块 | 当前职责 | 后续接入点 |
+|---|---|---|
+| `eos_system/api.py` | HTTP 参数和路径配置、资源列表、结果及可视化入口 | 前端只经 `/api` 调用；新增接口先更新契约文档 |
+| `eos_system/storage.py` | SQLite 事务、迁移、运行/事件/导出记录 | 状态变化保持事务；新增列写显式迁移 |
+| `eos_system/controller.py` | 排队、启动 Worker、核验、取消、结果入库 | 完整 IPC/Daemon 可替换参考实现，但保留对外状态语义 |
+| `eos_system/worker_reference.py` | 独立进程最小协议 | 何明涛扩展双 Pipe、超时、回收和故障恢复 |
+| `eos_system/algorithm_registry.py` | 算法规格、参数校验、`Solver` 协议、旧算法适配 | 四位成员按 `algorithm_integration.md` 注册算法 |
+| `eos_system/exporting.py` | 数据库结果的 JSON/CSV 下载及文件输出 | 新导出格式以同一已入库快照为准 |
+| `eos_system/visualization.py` | CZML 缓存与生成进程 | 梁兆榮完善 Cesium 和甘特图交互 |
+
+## 3. 配置与路径
+
+`data_sources` 表登记可读场景目录；`output_profiles` 表登记下载或文件输出方式。Windows 路径如 `C:\EOS-Bench\output_s1` 在 WSL 中转换为 `/mnt/c/EOS-Bench/output_s1`。目录登记由本机管理员执行；运行时仍检查场景文件属于已登记目录。输出目录必须可写，且不能与任何输入目录互相包含。默认数据源来自 `EOS_SCENARIO_DIR`，默认文件输出根目录来自 `EOS_RUNTIME_DIR/artifacts`。
+
+本地运行文件、数据库和缓存统一放在 `EOS_RUNTIME_DIR`（默认 `~/eos-course-runtime`）；母场景只读，派生场景存入登记的运行目录。文件输出的每次实验有独立 `run_id` 目录。浏览器可同时保留下载方式。
+
+## 4. 算法协作规则
+
+算法作者实现 `solve(problem, constraints, context) -> Schedule`，可自行组织搜索、学习模型或中间状态，不要求共用单计划修复机制。`context` 提供种子、时间预算、取消检查和算法私有参数；算法必须返回可由共享核验器复核的最终计划。算法规格在 `algorithm_registry.py` 注册，记录 ID、版本、作者、类别和参数模型。完整示例与验收要求见 [`algorithm_integration.md`](algorithm_integration.md)。
+
+各成员在自己的分支提交算法或系统模块，避免并行修改同一个注册表；集成时由李泽同统一登记、跑固定种子成对实验和完整 HTTP 闭环。刘懋兴提供场景来源与哈希清单，并参与机器学习算法；何明涛负责 Worker/IPC 和一项传统算法；梁兆榮负责界面、可视化和一项传统算法；李泽同负责整体集成与机器学习算法主导。
+
+## 5. 可复现检查
+
+```bash
+python -m unittest discover -s tests -v
+python scripts/smoke_system.py
+PYTHONHASHSEED=0 MPLBACKEND=Agg python -m scripts.check_cli_parity
+python -m scripts.check_plan_rejection
+python scripts/check_visualization.py <已成功的运行ID>
 ```
 
-当前只有已有 `completion_first` 和 `adaptive_repair` 两个算法可选，均视为基线，不冒称 A/B/C/D 已完成。参考 Worker 支持真实进程、启动/阶段/候选/失败事件，Controller 可强制终止单个 Worker；它不代替何明涛负责的控制线程、协作取消、进程组后代回收、大结果文件通道和完整故障测试。独立 Daemon、Cesium、交互甘特图、ML D 也尚未接入。
+前三项和可视化检查都依赖已经启动的服务或相应运行记录；纯单元测试独立执行。Cesium 轨道生成另需 `requirements-visualization.txt`，不影响基础调度。所有算法都要补充最小机制测试、可行计划回放及同场景同预算的成对实验；本版只验证参考框架，未声称完成组员的正式算法。
 
-## 2. 代码地图
+## 6. 当前限制
 
-| 文件 | 职责 | 扩展时注意 |
-|---|---|---|
-| `eos_system/config.py` | WSL 运行目录、场景登记和 SHA-256 | 正式场景清单由刘懋兴替换/扩充；保留只读和 ID→路径边界 |
-| `eos_system/contracts.py` | HTTP/Worker 共用配置与算法白名单 | A/B/C/D 在这里增加参数模式和注册，不透传任意 Python 对象 |
-| `eos_system/runner.py` | 复用 `SchedulingProblem`、`ConstraintModel`、`SchedulingEngine` | 算法返回内存计划，保持旧 CLI 可运行 |
-| `eos_system/verification.py` | Controller 重建 assignment、检查来源窗口/资源/约束并算指标 | Worker 报告不成为正式计划或指标；变更约束时同步验证 |
-| `eos_system/worker_reference.py` | 最小参考进程及 JSON 字节 IPC | 何明涛负责完善，可替换实现但保留消息字段与纯数据协议 |
-| `eos_system/controller.py` | 持久排队、状态、启动 Worker、取消/预算、单实例锁 | 替换 Worker 时沿用 run_id/attempt/seq 去重与状态事务 |
-| `eos_system/storage.py` | SQLite 七表、事务与查询 | 仅 Controller 正式写入；迁移时提升 `PRAGMA user_version` |
-| `eos_system/api.py` | HTTP 与数据库导出 | 前端只调用此层；`scenario_path` 不返回浏览器 |
-| `eos_system/web/` | 零构建依赖的临时操作页面 | 梁兆榮可重做 UI，不应绕过 API 直读文件 |
-| `eos_system/prepare_demo.py` | 只读母场景→固定小实例 | 只在显式运行时产生文件，不在服务启动时自动切分 |
-
-## 3. 运行配置与文件位置
-
-- 权威代码仓库：Windows `D:\Code\EOS-Course-Project`，WSL `/mnt/d/Code/EOS-Course-Project`。
-- 原始母场景：Windows `C:\EOS-Bench`，WSL `/mnt/c/EOS-Bench`，只读。
-- 默认运行目录：WSL `~/eos-course-runtime/`；场景在 `scenarios/`，虚拟环境在 `.venv/`，结果库为 `results.sqlite3`，锁为 `controller.lock`。
-- 环境变量：`EOS_RUNTIME_DIR` 可以指定整个运行目录，`EOS_SCENARIO_DIR` 可以指定场景登记目录。数据库不要放到 `/mnt/c` 或 `/mnt/d`。
-- 浏览器地址：`http://127.0.0.1:8765/`。不启动多 Web worker 或 `--reload`。
-
-## 4. 公共契约
-
-`POST /api/runs` 接受登记的 `scenario_id`、`algorithm_id`、白名单 `algorithm_params`、`seed`、`placement_mode`、约束、权重和 `time_budget_s`；服务器补齐 `run_id`、场景哈希与路径、算法版本和创建时间。查询：`GET /api/scenarios`、`GET /api/algorithms`、`GET /api/runs`、`GET /api/runs/{id}`；取消：`POST /api/runs/{id}/cancel`；导出：`GET /api/runs/{id}/export?format=json|csv`。详细字段以 FastAPI `/docs` 及 `contracts.py` 为当前实现依据。
-
-Worker 事件包：`protocol_version=1`、`run_id`、`attempt`、严格递增的 `seq`、`kind`、`sent_at`、`payload`。现有事件 `started`、`heartbeat`（含 `phase`）、`candidate_result`、`failed`；Controller→Worker 现有 `start`。参考 Worker 还没有实现 `cancel_ack`，当前取消由 Controller 强制终止该进程。`candidate_result` 只含候选计划与算法搜索秒数，不直接触发成功。
-
-数据库中的 `QUEUED` 是排队真相，重启会继续取出；旧 `RUNNING/VERIFYING` 在 Controller 重启时保守标记 `FAILED`，不信任可能迟到的旧进程消息。一个 `run_id` 只能有一个正式计划，成功事务同时写 `plans/assignments/metrics/runs.status`。结果导出只从正式库生成。
-
-## 5. 组员接入顺序
-
-1. **何明涛**：先跑 `scripts/smoke_system.py`，再将 `worker_reference.py` 拆成 Worker 入口、IPC 和运行管理；`controller.py` 可改为使用其稳定的 `start_worker/poll_events/request_cancel/reap_worker` 接口。重点补充后代回收、大计划和取消/超时测试。
-2. **刘懋兴**：提供固定场景 ID、路径、哈希与来源分组，先替换 `config.py` 中的目录扫描登记，避免把所有 JSON 当正式实验场景；实验脚本调用 API 或统一 runner，保留输入 SHA。
-3. **梁兆榮**：页面只消费 `/api`；升级视觉和比较功能时保持配置与计划来源一致。Daemon 读取 `/api/health`，只监护 Controller，不直接写正式 DB。
-4. **李泽同**：维护公共契约、数据库迁移、Controller 状态/事务和 D 算法注册；公共字段变更先同步四人并更新此文档。
-
-## 6. 已知边界与验证
-
-- 参考 Worker 只有小结果 Pipe（上限 4 MiB）；超限进入失败状态。何明涛的正式实现要加隔离目录的原子临时文件与哈希。
-- 当前取消终止 Worker 主进程；算法自行启动的后代进程尚无完整清理保证。只开放当前不启动额外进程的两个基线算法。
-- Controller 单实例、一个参考 Worker 并行；`Settings.max_workers` 留作后续并发实现，当前请保持 1。
-- 运行时环境依赖由 `requirements-system.txt` 说明；Java/Orekit 不在基础网页的启动门槛内。
-- 测试：`python -m unittest discover -s tests -v` 检查旧算法、事务与 IPC 去重；服务运行后 `python scripts/smoke_system.py` 检查真实 HTTP、进程、库和两个导出，`PYTHONHASHSEED=0 MPLBACKEND=Agg python -m scripts.check_cli_parity` 与旧 CLI 逐条对照，`python -m scripts.check_plan_rejection` 验证篡改资源量不能过核验。对照脚本使用自动清理的临时目录。每次更换 Worker、场景登记或算法注册后复跑。
+- Worker 是最小参考实现，完整故障恢复与独立 Daemon 留待后续模块接入。
+- 本地管理接口没有用户认证，服务应保持监听 `127.0.0.1`。
+- CZML 首次生成需要 Orekit/JVM；页面依赖 Cesium 在线资源，离线展示需后续打包资源。
+- 文件输出失败会留下数据库内已成功的计划与导出失败事件，便于重试；不会把有效计划改判为失败。

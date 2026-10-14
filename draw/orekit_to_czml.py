@@ -305,9 +305,11 @@ def demo(
         # Default to the uploaded multi-satellite scenario, but the path can be changed manually
         scenario_path: str = "output/Scenario_S1_Sats3_M10_T0.5d_dist1.json",
         output_czml: str = "orbit.czml",
+        orekit_data_path: str = "orekit-data.zip",
+        orbit_step_s: float | None = None,
 ):
     # 1) Orekit data
-    init_orekit("orekit-data.zip")
+    init_orekit(orekit_data_path)
 
     # 2) Read the scenario JSON
     if not os.path.exists(scenario_path):
@@ -325,6 +327,9 @@ def demo(
     start_iso = meta.get("creation_time", "2025-11-18T12:00:00")
     duration_s = float(meta.get("duration", 43200.0))
     step_s = float(meta.get("time_step", 10.0))
+    if orbit_step_s is not None:
+        # 可视化轨道采样可稀于调度时间步；不修改场景或正式 assignment。
+        step_s = max(step_s, float(orbit_step_s))
 
     start_dt = datetime.fromisoformat(start_iso).replace(tzinfo=timezone.utc)
     end_dt = start_dt + timedelta(seconds=duration_s)

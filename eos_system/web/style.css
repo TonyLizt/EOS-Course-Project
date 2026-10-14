@@ -5,6 +5,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; }
 
 .topbar {
@@ -106,6 +107,10 @@ tbody tr.selected { background: #e3f3f1; }
 .events { max-height: 190px; overflow: auto; padding-left: 23px; color: #536a70; font-size: 12px; }
 .events li { padding: 4px 0; }
 .message { min-height: 20px; color: #176b70; font-size: 12px; }
+.hint { margin: -8px 0 14px; color: #64767c; font-size: 12px; overflow-wrap: anywhere; }
+.location-setup { margin-top: 18px; }
+.files { padding-left: 20px; color: #536a70; font-size: 12px; overflow-wrap: anywhere; }
+.files li { padding: 4px 0; }
 .error { color: #a43f38; font-size: 12px; }
 footer { padding: 24px; color: #809095; text-align: center; font-size: 12px; }
 

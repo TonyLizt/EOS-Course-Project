@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -45,23 +47,55 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def list_scenarios(settings: Settings) -> list[dict]:
-    """只登记专用场景目录中的 JSON；浏览器不能传入任意磁盘路径。"""
-    if not settings.scenario_dir.is_dir():
+def normalise_user_path(value: str) -> Path:
+    """把本机 Windows 路径转成 WSL 挂载路径，并解析为真实目录。"""
+    raw = value.strip()
+    matched = re.fullmatch(r"([A-Za-z]):[\\/](.*)", raw)
+    if matched:
+        raw = f"/mnt/{matched.group(1).lower()}/{matched.group(2).replace(chr(92), '/')}"
+    if not raw or not Path(raw).expanduser().is_absolute():
+        raise ValueError("请输入绝对的 WSL 或 Windows 目录路径")
+    path = Path(raw).expanduser().resolve()
+    if not path.is_dir():
+        raise ValueError(f"目录不存在：{value}")
+    return path
+
+
+def require_writable_directory(path: Path) -> None:
+    """登记输出位置时短暂创建并自动删除测试文件，及时报告权限问题。"""
+    try:
+        with tempfile.TemporaryFile(dir=path):
+            pass
+    except OSError as exc:
+        raise ValueError(f"输出目录不可写：{path}") from exc
+
+
+def list_scenarios_in(root: Path, source_id: str) -> list[dict]:
+    """只列出已登记目录中的直接子文件，防止页面指定任意磁盘路径。"""
+    if not root.is_dir():
         return []
     result = []
-    for path in sorted(settings.scenario_dir.glob("*.json")):
+    for path in sorted(root.glob("*.json")):
         if not path.is_file() or path.is_symlink():
             continue
-        result.append({"scenario_id": path.stem, "name": path.stem, "sha256": sha256_file(path)})
+        result.append({"source_id": source_id, "scenario_id": path.stem, "name": path.stem, "sha256": sha256_file(path)})
     return result
 
 
-def resolve_scenario(settings: Settings, scenario_id: str) -> tuple[Path, str]:
+def resolve_scenario_in(root: Path, scenario_id: str) -> tuple[Path, str]:
     """ID 只允许简单文件名，解析后仍检查目录边界和符号链接。"""
-    if not scenario_id or not all(ch.isalnum() or ch in "_-" for ch in scenario_id):
-        raise ValueError("场景 ID 只能包含字母、数字、下划线和短横线")
-    path = settings.scenario_dir / f"{scenario_id}.json"
-    if path.is_symlink() or not path.is_file() or path.resolve().parent != settings.scenario_dir:
+    if not scenario_id or not scenario_id[0].isalnum() or not all(ch.isalnum() or ch in "_.-" for ch in scenario_id):
+        raise ValueError("场景 ID 只能包含字母、数字、下划线、短横线和小数点")
+    path = root / f"{scenario_id}.json"
+    if path.is_symlink() or not path.is_file() or path.resolve().parent != root.resolve():
         raise FileNotFoundError(f"未登记场景：{scenario_id}")
     return path, sha256_file(path)
+
+
+def list_scenarios(settings: Settings) -> list[dict]:
+    """兼容早期脚本使用的默认场景目录。"""
+    return list_scenarios_in(settings.scenario_dir, "runtime")
+
+
+def resolve_scenario(settings: Settings, scenario_id: str) -> tuple[Path, str]:
+    return resolve_scenario_in(settings.scenario_dir, scenario_id)

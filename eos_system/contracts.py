@@ -34,8 +34,10 @@ class ObjectiveOptions(StrictModel):
 
 
 class RunRequest(StrictModel):
+    source_id: str = Field(default="runtime", min_length=1, max_length=80)
     scenario_id: str = Field(min_length=1, max_length=200)
     algorithm_id: str = Field(min_length=1, max_length=100)
+    output_profile_id: str = Field(default="download", min_length=1, max_length=80)
     algorithm_params: dict[str, Any] = Field(default_factory=dict)
     seed: int = Field(default=42, ge=0, le=2**32 - 1)
     placement_mode: Literal["earliest", "center"] = "earliest"
@@ -48,32 +50,27 @@ class RunConfig(RunRequest):
     run_id: str
     scenario_sha256: str
     scenario_path: str
+    output_kind: Literal["download", "directory"] = "download"
+    output_root: str | None = None
     algorithm_version: str
     created_at: str
 
 
+class DirectoryRegistration(StrictModel):
+    """位置登记由服务端校验；普通实验请求只携带登记 ID。"""
+
+    name: str = Field(min_length=1, max_length=120)
+    path: str = Field(min_length=1, max_length=2048)
+
+
 def validate_algorithm_params(algorithm_id: str, params: dict[str, Any]) -> None:
-    """首版只开放必要参数；新增算法在此扩展白名单和边界。"""
-    allowed = {
-        "completion_first": {},
-        "adaptive_repair": {"max_candidates_per_task": (int, 1, 512), "alns_iterations": (int, 0, 500)},
-    }
-    if algorithm_id not in allowed:
-        raise ValueError(f"算法未登记：{algorithm_id}")
-    spec = allowed[algorithm_id]
-    for name, value in params.items():
-        if name not in spec:
-            raise ValueError(f"算法参数未登记：{name}")
-        kind, minimum, maximum = spec[name]
-        if type(value) is not kind or not minimum <= value <= maximum:
-            raise ValueError(f"算法参数 {name} 超出允许范围")
+    """兼容旧调用方；参数规则只保留在算法注册表一处。"""
+    from .algorithm_registry import get_algorithm
+
+    get_algorithm(algorithm_id).parse_params(params)
 
 
 def list_algorithms() -> list[dict]:
-    return [
-        {"algorithm_id": "completion_first", "name": "完成率优先（现有基线）", "category": "baseline", "parameters": {}},
-        {"algorithm_id": "adaptive_repair", "name": "自适应修复（现有算法）", "category": "baseline", "parameters": {
-            "max_candidates_per_task": {"type": "integer", "min": 1, "max": 512},
-            "alns_iterations": {"type": "integer", "min": 0, "max": 500},
-        }},
-    ]
+    from .algorithm_registry import list_algorithms as registered
+
+    return registered()

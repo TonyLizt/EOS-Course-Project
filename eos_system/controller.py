@@ -13,6 +13,7 @@ import time
 
 from .config import Settings
 from .contracts import RunConfig
+from .exporting import persist_directory_exports
 from .storage import Database
 from .verification import verify_candidate
 from .worker_reference import receive_message, send_message, worker_main
@@ -160,6 +161,12 @@ class Controller:
             if not self.database.finish_success(config.run_id, attempt, plan, metrics, time.perf_counter() - verify_started):
                 # 核验期间可能收到取消请求；成功事务会拒绝提交，此处补上明确终态。
                 self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED_DURING_VERIFY", "核验期间已取消")
+            else:
+                try:
+                    persist_directory_exports(self.database, config)
+                except (OSError, ValueError) as exc:
+                    # 正式计划已在库中提交，外部目录故障只记诊断事件，不篡改成功状态。
+                    self.database.record_system_event(config.run_id, attempt, "EXPORT_FAILED", {"message": str(exc)[:300]})
         finally:
             if process.is_alive():
                 process.terminate()

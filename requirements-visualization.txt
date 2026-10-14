@@ -1,0 +1,3 @@
+# 仅在需要用 Orekit 生成 Cesium 轨道回放时安装；基础调度网页不依赖它。
+orekit-jpype[jdk4py]
+jpype1==1.5.2

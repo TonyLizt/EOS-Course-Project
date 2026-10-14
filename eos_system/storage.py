@@ -29,10 +29,12 @@ def compact_json(value: object) -> str:
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS runs (
   run_id TEXT PRIMARY KEY,
+  source_id TEXT NOT NULL DEFAULT 'runtime',
   scenario_id TEXT NOT NULL,
   scenario_sha256 TEXT NOT NULL,
   algorithm_id TEXT NOT NULL,
   algorithm_version TEXT NOT NULL,
+  output_profile_id TEXT NOT NULL DEFAULT 'download',
   config_json TEXT NOT NULL,
   config_sha256 TEXT NOT NULL,
   idempotency_key TEXT UNIQUE,
@@ -118,12 +120,45 @@ CREATE TABLE IF NOT EXISTS exports (
   format TEXT NOT NULL CHECK (format IN ('json','csv')),
   status TEXT NOT NULL CHECK (status IN ('SUCCEEDED','FAILED')),
   artifact_sha256 TEXT,
+  artifact_path TEXT,
+  error_message TEXT,
   created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS data_sources (
+  source_id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  root_path TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS output_profiles (
+  profile_id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('download','directory')),
+  root_path TEXT UNIQUE,
+  created_at TEXT NOT NULL,
+  CHECK ((kind='download' AND root_path IS NULL) OR (kind='directory' AND root_path IS NOT NULL))
 );
 CREATE INDEX IF NOT EXISTS idx_runs_status_time ON runs(status,created_at);
 CREATE INDEX IF NOT EXISTS idx_runs_scenario_algorithm ON runs(scenario_id,algorithm_id,created_at);
 CREATE INDEX IF NOT EXISTS idx_events_run ON run_events(run_id,event_id);
 CREATE INDEX IF NOT EXISTS idx_assignments_sat ON assignments(run_id,satellite_id,sat_start_time);
+"""
+
+
+MIGRATION_1_TO_2 = """
+ALTER TABLE runs ADD COLUMN source_id TEXT NOT NULL DEFAULT 'runtime';
+ALTER TABLE runs ADD COLUMN output_profile_id TEXT NOT NULL DEFAULT 'download';
+ALTER TABLE exports ADD COLUMN artifact_path TEXT;
+ALTER TABLE exports ADD COLUMN error_message TEXT;
+CREATE TABLE IF NOT EXISTS data_sources (
+  source_id TEXT PRIMARY KEY, name TEXT NOT NULL, root_path TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS output_profiles (
+  profile_id TEXT PRIMARY KEY, name TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('download','directory')),
+  root_path TEXT UNIQUE, created_at TEXT NOT NULL,
+  CHECK ((kind='download' AND root_path IS NULL) OR (kind='directory' AND root_path IS NOT NULL))
+);
 """
 
 
@@ -133,11 +168,13 @@ class Database:
         path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as connection:
             version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1):
+            if version not in (0, 1, 2):
                 raise RuntimeError(f"数据库版本 {version} 比当前程序新")
             if version == 0:
-                connection.executescript(SCHEMA)
-                connection.execute("PRAGMA user_version=1")
+                connection.executescript("BEGIN IMMEDIATE;\n" + SCHEMA + "\nPRAGMA user_version=2;\nCOMMIT;")
+            elif version == 1:
+                # 仅向前增加表和列，保留 v0.1 正式实验与导出记录。
+                connection.executescript("BEGIN IMMEDIATE;\n" + MIGRATION_1_TO_2 + "\nPRAGMA user_version=2;\nCOMMIT;")
 
     @contextmanager
     def connect(self):
@@ -162,6 +199,51 @@ class Database:
                 connection.execute("ROLLBACK")
                 raise
 
+    def ensure_defaults(self, scenario_dir: Path, runtime_dir: Path) -> None:
+        """首次启动登记默认位置；环境变量变化后同步默认项的真实路径。"""
+        artifacts = runtime_dir / "artifacts"
+        artifacts.mkdir(parents=True, exist_ok=True)
+        with self.write() as db:
+            db.execute("INSERT INTO data_sources(source_id,name,root_path,created_at) VALUES ('runtime','运行目录场景',?,?) "
+                       "ON CONFLICT(source_id) DO UPDATE SET root_path=excluded.root_path",
+                       (str(scenario_dir.resolve()), now()))
+            db.execute("INSERT OR IGNORE INTO output_profiles(profile_id,name,kind,root_path,created_at) "
+                       "VALUES ('download','仅浏览器下载','download',NULL,?)", (now(),))
+            db.execute("INSERT INTO output_profiles(profile_id,name,kind,root_path,created_at) "
+                       "VALUES ('runtime-files','WSL 运行目录文件','directory',?,?) "
+                       "ON CONFLICT(profile_id) DO UPDATE SET root_path=excluded.root_path",
+                       (str(artifacts.resolve()), now()))
+
+    def list_data_sources(self) -> list[dict]:
+        with self.connect() as db:
+            return [dict(row) for row in db.execute("SELECT * FROM data_sources ORDER BY created_at,source_id")]
+
+    def get_data_source(self, source_id: str) -> dict | None:
+        with self.connect() as db:
+            row = db.execute("SELECT * FROM data_sources WHERE source_id=?", (source_id,)).fetchone()
+            return dict(row) if row else None
+
+    def add_data_source(self, source_id: str, name: str, root: Path) -> dict:
+        with self.write() as db:
+            db.execute("INSERT INTO data_sources(source_id,name,root_path,created_at) VALUES (?,?,?,?)",
+                       (source_id, name, str(root), now()))
+        return self.get_data_source(source_id)
+
+    def list_output_profiles(self) -> list[dict]:
+        with self.connect() as db:
+            return [dict(row) for row in db.execute("SELECT * FROM output_profiles ORDER BY created_at,profile_id")]
+
+    def get_output_profile(self, profile_id: str) -> dict | None:
+        with self.connect() as db:
+            row = db.execute("SELECT * FROM output_profiles WHERE profile_id=?", (profile_id,)).fetchone()
+            return dict(row) if row else None
+
+    def add_output_profile(self, profile_id: str, name: str, root: Path) -> dict:
+        with self.write() as db:
+            db.execute("INSERT INTO output_profiles(profile_id,name,kind,root_path,created_at) VALUES (?,?,'directory',?,?)",
+                       (profile_id, name, str(root), now()))
+        return self.get_output_profile(profile_id)
+
     def enqueue(self, config: RunConfig, max_queued: int, idempotency_key: str | None = None) -> tuple[str, bool]:
         config_json = compact_json(config.model_dump())
         config_sha = hashlib.sha256(config_json.encode("utf-8")).hexdigest()
@@ -182,9 +264,9 @@ class Database:
             if count >= max_queued:
                 raise OverflowError("实验队列已满")
             db.execute(
-                "INSERT INTO runs(run_id,scenario_id,scenario_sha256,algorithm_id,algorithm_version,config_json,config_sha256,idempotency_key,status,created_at,updated_at,queued_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                (config.run_id, config.scenario_id, config.scenario_sha256, config.algorithm_id,
-                 config.algorithm_version, config_json, config_sha, idempotency_key,
+                "INSERT INTO runs(run_id,source_id,scenario_id,scenario_sha256,algorithm_id,algorithm_version,output_profile_id,config_json,config_sha256,idempotency_key,status,created_at,updated_at,queued_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (config.run_id, config.source_id, config.scenario_id, config.scenario_sha256, config.algorithm_id,
+                 config.algorithm_version, config.output_profile_id, config_json, config_sha, idempotency_key,
                  "QUEUED", config.created_at, config.created_at, config.created_at),
             )
             self._event(db, config.run_id, None, "controller", None, "QUEUED", None)
@@ -195,6 +277,11 @@ class Database:
             "INSERT INTO run_events(run_id,attempt_no,source,source_seq,event_type,payload_json,recorded_at) VALUES (?,?,?,?,?,?,?)",
             (run_id, attempt, source, seq, kind, compact_json(payload) if payload is not None else None, now()),
         )
+
+    def record_system_event(self, run_id: str, attempt: int | None, kind: str, payload: dict | None = None) -> None:
+        """记录正式状态之外的诊断事件，例如可选文件导出失败。"""
+        with self.write() as db:
+            self._event(db, run_id, attempt, "controller", None, kind, payload)
 
     def next_queued(self) -> dict | None:
         with self.connect() as db:
@@ -306,6 +393,7 @@ class Database:
             metrics = db.execute("SELECT * FROM metrics WHERE run_id=?", (run_id,)).fetchone()
             attempts = db.execute("SELECT attempt_no,worker_pid,started_at,ended_at,outcome,algorithm_runtime_s,verification_runtime_s,exit_code FROM run_attempts WHERE run_id=? ORDER BY attempt_no", (run_id,)).fetchall()
             events = db.execute("SELECT event_id,attempt_no,source,event_type,payload_json,recorded_at FROM run_events WHERE run_id=? ORDER BY event_id", (run_id,)).fetchall()
+            exports = db.execute("SELECT export_id,format,status,artifact_sha256,artifact_path,error_message,created_at FROM exports WHERE run_id=? ORDER BY export_id", (run_id,)).fetchall()
             return {
                 "run_id": run_id, "status": row["status"], "config": json.loads(row["config_json"]),
                 "attempt": row["current_attempt"], "cancel_requested": row["cancel_requested_at"] is not None,
@@ -320,15 +408,19 @@ class Database:
                     "recorded_at": item["recorded_at"],
                     "payload": json.loads(item["payload_json"]) if item["payload_json"] else None,
                 } for item in events],
+                "exports": [dict(item) for item in exports],
             }
 
     def list_runs(self, limit: int = 20, offset: int = 0) -> dict:
         with self.connect() as db:
             total = db.execute("SELECT COUNT(*) FROM runs").fetchone()[0]
-            rows = db.execute("SELECT r.run_id,r.scenario_id,r.algorithm_id,r.status,r.created_at,r.finished_at,m.TCR,m.completed_tasks FROM runs r LEFT JOIN metrics m ON r.run_id=m.run_id ORDER BY r.created_at DESC LIMIT ? OFFSET ?", (limit, offset)).fetchall()
+            rows = db.execute("SELECT r.run_id,r.source_id,r.scenario_id,r.algorithm_id,r.output_profile_id,r.status,r.created_at,r.finished_at,m.TCR,m.completed_tasks FROM runs r LEFT JOIN metrics m ON r.run_id=m.run_id ORDER BY r.created_at DESC LIMIT ? OFFSET ?", (limit, offset)).fetchall()
             return {"items": [dict(row) for row in rows], "total": total, "limit": limit, "offset": offset}
 
-    def record_export(self, run_id: str, format_name: str, data: bytes) -> None:
+    def record_export(self, run_id: str, format_name: str, data: bytes | None,
+                      artifact_path: str | None = None, error_message: str | None = None) -> None:
         with self.write() as db:
-            db.execute("INSERT INTO exports(run_id,format,status,artifact_sha256,created_at) VALUES (?,?,?,?,?)",
-                       (run_id, format_name, "SUCCEEDED", hashlib.sha256(data).hexdigest(), now()))
+            status = "FAILED" if error_message else "SUCCEEDED"
+            digest = hashlib.sha256(data).hexdigest() if data is not None else None
+            db.execute("INSERT INTO exports(run_id,format,status,artifact_sha256,artifact_path,error_message,created_at) VALUES (?,?,?,?,?,?,?)",
+                       (run_id, format_name, status, digest, artifact_path, error_message, now()))

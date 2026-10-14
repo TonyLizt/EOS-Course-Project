@@ -1,11 +1,11 @@
 # 第二阶段接口设计文档（审核稿）
 
-> **文档状态：第二阶段目标设计，尚非全部已实现接口。** v0.1 框架当前可调用的路径、字段和限制以 [`framework_handoff.md`](framework_handoff.md)、`eos_system/contracts.py`、`eos_system/api.py` 及启动后的 `/docs` 为准。本文保留完整目标契约，供四人讨论后逐项落地；其中 A/B/C/D 算法、Daemon 与完整 Worker 可靠性接口仍待实现。
+> **文档状态：第二阶段目标设计，尚非全部已实现接口。** v0.2 框架当前可调用的路径、字段和限制以 [`framework_handoff.md`](framework_handoff.md)、`eos_system/contracts.py`、`eos_system/api.py` 及启动后的 `/docs` 为准。本文保留完整目标契约，供四人讨论后逐项落地；其中 A/B/C/D 算法、Daemon 与完整 Worker 可靠性接口仍待实现。
 
 - 版本：v0.1，2026-10-13
 - 负责人：李泽同；对接：何明涛（Worker/IPC）、梁兆榮（页面/Daemon）、刘懋兴（场景/实验协议）
-- 适用环境：Windows 浏览器 + Ubuntu/WSL2 服务；接口尚未实现
-- 关联文档：[数据库设计文档](第二阶段_数据库设计文档_审核稿.md)
+- 适用环境：Windows 浏览器 + Ubuntu/WSL2 服务；本文包含尚未实现的目标接口
+- 关联文档：[当前数据库设计](database_current_v02.md)、[数据库目标设计](database_design_target.md)
 
 ## 1. 目标、边界和数据流
 
