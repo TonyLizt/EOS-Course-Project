@@ -417,6 +417,31 @@ class Database:
             rows = db.execute("SELECT r.run_id,r.source_id,r.scenario_id,r.algorithm_id,r.output_profile_id,r.status,r.created_at,r.finished_at,m.TCR,m.completed_tasks FROM runs r LEFT JOIN metrics m ON r.run_id=m.run_id ORDER BY r.created_at DESC LIMIT ? OFFSET ?", (limit, offset)).fetchall()
             return {"items": [dict(row) for row in rows], "total": total, "limit": limit, "offset": offset}
 
+    def delete_finished_run(self, run_id: str) -> dict | None:
+        """仅删除终态实验；所有关联记录在同一写事务内清理。"""
+        with self.write() as db:
+            row = db.execute("SELECT status,config_json FROM runs WHERE run_id=?", (run_id,)).fetchone()
+            if row is None:
+                return None
+            if row["status"] not in TERMINAL:
+                raise ValueError("实验仍在排队或运行；请先取消并等待终态")
+            exports = [dict(item) for item in db.execute(
+                "SELECT format,status,artifact_path,artifact_sha256 FROM exports WHERE run_id=?", (run_id,)
+            )]
+            # 现有模式未启用级联删除；先删子表，最后删 runs，避免悬空正式结果。
+            for table in ("exports", "metrics", "assignments", "plans", "run_events", "run_attempts"):
+                db.execute(f"DELETE FROM {table} WHERE run_id=?", (run_id,))
+            db.execute("DELETE FROM runs WHERE run_id=?", (run_id,))
+            return {"run_id": run_id, "config": json.loads(row["config_json"]), "exports": exports}
+
+    def compact_after_delete(self) -> None:
+        """删除后回收 SQLite 与 WAL 空间；失败不回滚已经提交的删除。"""
+        with self.connect() as db:
+            db.execute("VACUUM")
+            busy, _, _ = db.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+            if busy:
+                raise sqlite3.OperationalError("WAL 正由其他连接使用，暂时不能截断")
+
     def record_export(self, run_id: str, format_name: str, data: bytes | None,
                       artifact_path: str | None = None, error_message: str | None = None) -> None:
         with self.write() as db:

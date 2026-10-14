@@ -1,5 +1,15 @@
 # 课程项目运行与版本记录
 
+## 第二阶段框架 v0.2.1（2026-10-14，Windows + Ubuntu 22.04 / WSL2）
+
+在 `feat/phase2-v0.2` 分支上新增逐条实验清理：网页列表支持翻页，终态实验详情提供永久删除及可选的服务器导出文件清理。HTTP 接口为 `DELETE /api/runs/{run_id}`，可选 `delete_files=true`。数据库按依赖顺序在事务中删除该实验的配置、尝试、事件、计划、assignment、指标和导出记录，再尝试 `VACUUM` 与 WAL 截断；失败会提示，但已删记录不会恢复。正在排队、运行或核验的实验不能直接删除。
+
+文件清理仅针对本实验目录中路径、文件名及原始 SHA-256 均一致的正式 JSON/CSV；被修改的文件会保留。输入场景和多次实验共用的轨道缓存不参与删除。Controller 完成正式结果与目录输出时和删除接口共用进程锁，避免成功入库与导出之间被删除。
+
+实测：Ubuntu 22.04 / Python 3.10.12 完整测试集 18 项通过；JavaScript 语法检查与 `git diff --check` 通过。独立临时 SQLite 验证了非终态 409、终态删除、所有关联表清空及压缩后页数下降。隔离本地服务的网页成功提交 24/30 的实验，终态详情显示删除按钮与文件选项；API 删除后返回 2 个文件已清理、数据库已压缩，列表总数归零。隔离测试服务已停止，`/tmp/eos-delete-qa-v021` 已清理；原有正式运行库没有被删除。
+
+---
+
 ## 第二阶段框架 v0.2.0（2026-10-14，Windows + Ubuntu 22.04 / WSL2）
 
 本次与根目录 README 改写一起提交；README 已说明课程项目背景、目标、运行方式和 [EOS-Bench](https://github.com/Ethan19YQ/EOS-Bench) 上游来源。当前实现及组员接入边界见 [`docs/phase2/framework_handoff.md`](docs/phase2/framework_handoff.md)，算法接口见 [`docs/phase2/algorithm_integration.md`](docs/phase2/algorithm_integration.md)，落地数据库 ER 图见 [`docs/phase2/database_current_v02.md`](docs/phase2/database_current_v02.md)。v0.1 的 `feat/phase2-framework` 已由用户合并到 `main`；本版从合并后的 `main` 建立 `feat/phase2-v0.2`。

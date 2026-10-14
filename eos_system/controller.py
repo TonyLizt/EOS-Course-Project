@@ -24,6 +24,8 @@ class Controller:
         self.settings = settings
         self.database = database
         self._stop = threading.Event()
+        # 终态写入及目录导出期间，API 删除须等待，避免刚成功就被删导致导出写入悬空。
+        self.finalization_lock = threading.RLock()
         self._thread: threading.Thread | None = None
         self._lock_file = None
         self.instance_id = f"{os.getpid()}-{int(time.time())}"
@@ -158,15 +160,16 @@ class Controller:
                 return
             verify_started = time.perf_counter()
             plan, metrics = verify_candidate(config, candidate, reported_runtime)
-            if not self.database.finish_success(config.run_id, attempt, plan, metrics, time.perf_counter() - verify_started):
-                # 核验期间可能收到取消请求；成功事务会拒绝提交，此处补上明确终态。
-                self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED_DURING_VERIFY", "核验期间已取消")
-            else:
-                try:
-                    persist_directory_exports(self.database, config)
-                except (OSError, ValueError) as exc:
-                    # 正式计划已在库中提交，外部目录故障只记诊断事件，不篡改成功状态。
-                    self.database.record_system_event(config.run_id, attempt, "EXPORT_FAILED", {"message": str(exc)[:300]})
+            with self.finalization_lock:
+                if not self.database.finish_success(config.run_id, attempt, plan, metrics, time.perf_counter() - verify_started):
+                    # 核验期间可能收到取消请求；成功事务会拒绝提交，此处补上明确终态。
+                    self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED_DURING_VERIFY", "核验期间已取消")
+                else:
+                    try:
+                        persist_directory_exports(self.database, config)
+                    except (OSError, ValueError) as exc:
+                        # 正式计划已在库中提交，外部目录故障只记诊断事件，不篡改成功状态。
+                        self.database.record_system_event(config.run_id, attempt, "EXPORT_FAILED", {"message": str(exc)[:300]})
         finally:
             if process.is_alive():
                 process.terminate()

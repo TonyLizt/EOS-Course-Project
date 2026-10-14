@@ -18,6 +18,7 @@ from .algorithm_registry import get_algorithm, list_algorithms
 from .config import Settings, list_scenarios_in, normalise_user_path, require_writable_directory, resolve_scenario_in
 from .contracts import DirectoryRegistration, RunConfig, RunRequest
 from .controller import Controller
+from .deletion import remove_exported_files
 from .exporting import render_csv, render_json
 from .storage import Database, now
 from .visualization import OrbitUnavailable, orbit_cache_path
@@ -158,6 +159,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="实验不存在")
         return _public_run(record)
 
+    @app.delete("/api/runs/{run_id}")
+    def delete_run(run_id: str, delete_files: bool = False):
+        """永久清理一条终态实验；目录文件由用户明确选择是否同时删除。"""
+        try:
+            with controller.finalization_lock:
+                deleted = database.delete_finished_run(run_id)
+                if deleted is None:
+                    raise HTTPException(status_code=404, detail="实验不存在")
+                files_removed, warnings = remove_exported_files(deleted) if delete_files else (0, [])
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        try:
+            database.compact_after_delete()
+            compacted = True
+        except sqlite3.OperationalError as exc:
+            # 删除已经提交；压缩失败只影响磁盘空间的即时回收，空闲页仍可被后续实验复用。
+            compacted = False
+            warnings.append(f"数据库暂未压缩：{exc}")
+        return {"run_id": run_id, "deleted": True, "files_removed": files_removed,
+                "database_compacted": compacted, "warnings": warnings}
+
     @app.post("/api/runs/{run_id}/cancel", status_code=202)
     def cancel_run(run_id: str):
         result = database.request_cancel(run_id)
@@ -170,14 +192,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/runs/{run_id}/export")
     def export_run(run_id: str, format: str = Query(pattern="^(json|csv)$")):
-        record = database.get_run(run_id)
-        if record is None:
-            raise HTTPException(status_code=404, detail="实验不存在")
-        if record["status"] != "SUCCEEDED" or record["plan"] is None or record["metrics"] is None:
-            raise HTTPException(status_code=409, detail="实验尚无正式成功结果")
-        public = _public_run(record)
-        content = render_json(public) if format == "json" else render_csv(public)
-        database.record_export(run_id, format, content)
+        with controller.finalization_lock:
+            record = database.get_run(run_id)
+            if record is None:
+                raise HTTPException(status_code=404, detail="实验不存在")
+            if record["status"] != "SUCCEEDED" or record["plan"] is None or record["metrics"] is None:
+                raise HTTPException(status_code=409, detail="实验尚无正式成功结果")
+            public = _public_run(record)
+            content = render_json(public) if format == "json" else render_csv(public)
+            database.record_export(run_id, format, content)
         name = f"eos-{run_id}.{format}"
         media = "application/json" if format == "json" else "text/csv"
         return Response(content, media_type=media, headers={"Content-Disposition": f'attachment; filename="{name}"'})

@@ -75,6 +75,8 @@ button:hover, .link-button:hover { background: #11565a; }
 button:disabled { opacity: .55; cursor: default; }
 .secondary { background: #e8f3f3; color: #155f64; }
 .secondary:hover { background: #d6e9e9; }
+.danger { background: #a63d38; }
+.danger:hover { background: #842e2a; }
 
 .badge {
   padding: 7px 11px;
@@ -97,6 +99,9 @@ th, td { padding: 11px; border-bottom: 1px solid #edf1f2; white-space: nowrap; }
 tbody tr[data-id] { cursor: pointer; }
 tbody tr[data-id]:hover { background: #eef8f7; }
 tbody tr.selected { background: #e3f3f1; }
+.list-footer { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 14px; font-size: 12px; color: #536a70; }
+.delete-option { display: flex; align-items: center; gap: 8px; margin: -4px 0 16px; color: #7c3c38; font-weight: 500; }
+.delete-option input { display: inline-block; width: auto; margin: 0; }
 
 .metrics { display: grid; grid-template-columns: repeat(4, minmax(90px, 1fr)); gap: 10px; margin-bottom: 14px; }
 .metric { padding: 12px; border-radius: 10px; background: #f4f8f8; }

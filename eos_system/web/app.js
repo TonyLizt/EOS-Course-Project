@@ -3,6 +3,9 @@ const $ = (id) => document.getElementById(id);
 let selectedId = null;
 let currentAlgorithms = [];
 let outputProfiles = [];
+const pageSize = 30;
+let pageOffset = 0;
+let deletingRunId = null;
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
@@ -119,16 +122,43 @@ $("run-form").addEventListener("submit", async (event) => {
 
 async function refresh() {
   try {
-    const list = await api("/api/runs?limit=30");
+    let list = await api(`/api/runs?limit=${pageSize}&offset=${pageOffset}`);
+    if (pageOffset > 0 && pageOffset >= list.total) {
+      pageOffset = Math.max(0, Math.floor((list.total - 1) / pageSize) * pageSize);
+      list = await api(`/api/runs?limit=${pageSize}&offset=${pageOffset}`);
+    }
+    $("run-count").textContent = `共 ${list.total} 条实验 · 状态每两秒刷新`;
+    $("page-label").textContent = list.total ? `${pageOffset + 1}–${Math.min(pageOffset + pageSize, list.total)} / ${list.total}` : "0 / 0";
+    $("previous-page").disabled = pageOffset === 0;
+    $("next-page").disabled = pageOffset + pageSize >= list.total;
     $("runs").innerHTML = list.items.map((r) => `<tr data-id="${escapeHtml(r.run_id)}" class="${r.run_id === selectedId ? "selected" : ""}">
       <td>${escapeHtml(new Date(r.created_at).toLocaleString())}</td><td>${escapeHtml(r.scenario_id)}</td>
       <td>${escapeHtml(r.algorithm_id)}</td><td>${escapeHtml(r.status)}</td>
       <td>${r.TCR == null ? "—" : (Number(r.TCR) * 100).toFixed(1) + "%"}</td></tr>`).join("");
     document.querySelectorAll("#runs tr[data-id]").forEach((row) => row.addEventListener("click", () => {
+      if (selectedId !== row.dataset.id) $("delete-files").checked = false;
       selectedId = row.dataset.id; refresh();
     }));
-    if (selectedId) await showDetail(await api(`/api/runs/${encodeURIComponent(selectedId)}`));
+    if (selectedId) {
+      try { showDetail(await api(`/api/runs/${encodeURIComponent(selectedId)}`)); }
+      catch (error) { selectedId = null; clearDetail(); }
+    }
   } catch (error) { $("form-message").textContent = error.message; }
+}
+
+function clearDetail() {
+  $("selected-run").textContent = "选择列表中的实验";
+  $("detail-status").textContent = "尚未选择";
+  $("detail-status").className = "badge muted";
+  $("actions").hidden = true;
+  $("delete-option").hidden = true;
+  $("delete-files").checked = false;
+  $("detail-error").textContent = "";
+  $("metrics").innerHTML = "";
+  $("files").innerHTML = "";
+  $("events").innerHTML = "";
+  $("assignments").innerHTML = "";
+  $("assignment-count").textContent = "";
 }
 
 function showDetail(run) {
@@ -137,6 +167,9 @@ function showDetail(run) {
   $("detail-status").className = `badge ${["FAILED","CANCELLED","TIMED_OUT"].includes(run.status) ? "failed" : ["RUNNING","QUEUED","VERIFYING"].includes(run.status) ? "running" : ""}`;
   $("actions").hidden = false;
   $("cancel").disabled = ["SUCCEEDED","FAILED","CANCELLED","TIMED_OUT"].includes(run.status) || run.cancel_requested;
+  $("delete-run").disabled = deletingRunId === run.run_id || !["SUCCEEDED","FAILED","CANCELLED","TIMED_OUT"].includes(run.status);
+  $("delete-option").hidden = !(run.exports || []).some((item) => item.artifact_path);
+  if ($("delete-option").hidden) $("delete-files").checked = false;
   $("export-json").hidden = run.status !== "SUCCEEDED";
   $("export-csv").hidden = run.status !== "SUCCEEDED";
   $("open-gantt").hidden = run.status !== "SUCCEEDED";
@@ -165,6 +198,25 @@ $("cancel").addEventListener("click", async () => {
   try { await api(`/api/runs/${encodeURIComponent(selectedId)}/cancel`, {method:"POST"}); await refresh(); }
   catch (error) { $("detail-error").textContent = error.message; }
 });
+$("delete-run").addEventListener("click", async () => {
+  if (!selectedId) return;
+  const runId = selectedId;
+  const deleteFiles = $("delete-files").checked;
+  const filesNote = deleteFiles ? "同时删除未被修改的正式 JSON/CSV 文件。" : "服务器导出文件将保留。";
+  if (!window.confirm(`确定永久删除实验 ${runId} 的数据库记录吗？此操作无法撤销。${filesNote}`)) return;
+  deletingRunId = runId;
+  $("delete-run").disabled = true;
+  try {
+    const result = await api(`/api/runs/${encodeURIComponent(runId)}?delete_files=${deleteFiles}`, {method:"DELETE"});
+    selectedId = null;
+    clearDetail();
+    $("list-message").textContent = `已删除实验 ${runId}；${result.database_compacted ? "数据库已压缩" : "数据库空闲页可复用"}。${result.files_removed ? `已删除 ${result.files_removed} 个导出文件。` : ""}${result.warnings.join("；")}`;
+    await refresh();
+  } catch (error) { $("detail-error").textContent = error.message; }
+  finally { deletingRunId = null; if (selectedId) $("delete-run").disabled = false; }
+});
 $("refresh").addEventListener("click", refresh);
+$("previous-page").addEventListener("click", () => { pageOffset = Math.max(0, pageOffset - pageSize); refresh(); });
+$("next-page").addEventListener("click", () => { pageOffset += pageSize; refresh(); });
 bootstrap();
 setInterval(refresh, 2000);
