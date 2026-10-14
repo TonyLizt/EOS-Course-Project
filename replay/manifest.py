@@ -34,7 +34,7 @@ def make_manifest(inputs, config: ReplayConfig, config_bytes: bytes, builder_cod
         "builder_version": "replay-contract-v2",
         "propagation_version": "existing-orekit-czml-v1",
         "attitude_version": "pending-commit-2",
-        "geometry_version": "pending-commit-4",
+        "geometry_version": "wgs84-ray-ellipsoid-v1",
     }
     return {
         "schema_version": 2,

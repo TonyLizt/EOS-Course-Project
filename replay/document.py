@@ -37,7 +37,7 @@ def build_replay_document(record: dict, config_path: Path) -> dict:
         "replay_config_sha256": hashlib.sha256(config_bytes).hexdigest(),
         "builder_code_sha": code_sha(Path(__file__).parents[1]),
         "builder_version": "replay-document-v2", "propagation_version": "existing-orekit-czml-v1",
-        "attitude_version": "geometry-pointing-fixed-payload-v1", "geometry_version": "pending-commit-4",
+        "attitude_version": "geometry-pointing-fixed-payload-v1", "geometry_version": "wgs84-ray-ellipsoid-v1",
     }
     cache_key = hashlib.sha256(canonical_bytes(identity)).hexdigest()
     sensors_by_satellite = {}

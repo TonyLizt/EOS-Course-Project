@@ -257,6 +257,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "fixed-payload-state.js",
                             media_type="text/javascript")
 
+    @app.get("/visualization/fixed-payload-geometry.js")
+    def fixed_payload_geometry_script():
+        return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "fixed-payload-geometry.js",
+                            media_type="text/javascript")
+
     @app.get("/visualization/assets/satellites/landsat8.glb")
     def landsat8_model():
         return FileResponse(Path(__file__).resolve().parent.parent / "assets" / "satellites" / "landsat8.glb",

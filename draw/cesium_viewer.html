@@ -5,7 +5,7 @@
   <title>Scenario - Satellite Schedule Viewer</title>
 
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Cesium.js"></script>
-  <script src="fixed-payload-state.js"></script>
+  <script src="fixed-payload-state.js"></script>  <script src="fixed-payload-geometry.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
 
   <style>
@@ -241,7 +241,7 @@
 
     <div class="panel-section">
       <h2>Satellite Appearance</h2>
-      <div id="assetStatus" class="asset-status">Point/label fallback active until replay data loads.</div>
+      <div id="assetStatus" class="asset-status">Point/label fallback active until replay data loads.</div>      <div id="sensorGeometryStatus" class="asset-status">Sensor geometry inactive.</div>
     </div>
   </div>
 
@@ -620,6 +620,209 @@
       }
     }
 
+    function setupSensorGeometry(satellite, stateAt) {
+      if (!window.FixedPayloadGeometry || !window.FixedPayloadState) return 0;
+      const samplesPerEdge = 4;
+      const statusMap = viewer._sensorGeometryStatuses || new Map();
+      viewer._sensorGeometryStatuses = statusMap;
+      if (!viewer._sensorGeometryStatusListener) {
+        viewer._sensorGeometryStatusListener = true;
+        viewer.clock.onTick.addEventListener(function () {
+          const values = Array.from(statusMap.values());
+          const active = values.filter((value) => value !== 'IDLE');
+          const complete = active.filter((value) => value === 'COMPLETE').length;
+          const partial = active.filter((value) => value === 'PARTIAL_HORIZON').length;
+          const missed = active.filter((value) =>
+            value === 'NO_BOUNDARY_INTERSECTION' || value === 'CENTER_MISS'
+          ).length;
+          document.getElementById('sensorGeometryStatus').textContent = active.length
+            ? 'WGS84 sensor geometry: ' + complete + ' complete, ' + partial
+              + ' partial horizon, ' + missed + ' no intersection.'
+            : 'Sensor frustums hidden: no satellite is slewing or observing at this time.';
+        });
+      }
+
+      let cachedKey = null;
+      let cachedGeometry = null;
+      const cartesianArray = (value) => [value.x, value.y, value.z];
+      const intersectWgs84 = (originArray, directionArray) => {
+        const origin = Cesium.Cartesian3.fromArray(originArray);
+        const direction = Cesium.Cartesian3.normalize(
+          Cesium.Cartesian3.fromArray(directionArray), new Cesium.Cartesian3()
+        );
+        const ray = new Cesium.Ray(origin, direction);
+        const interval = Cesium.IntersectionTests.rayEllipsoid(ray, Cesium.Ellipsoid.WGS84);
+        if (!interval) return null;
+        const distances = [interval.start, interval.stop]
+          .filter((value) => Number.isFinite(value) && value >= 0)
+          .sort((left, right) => left - right);
+        if (!distances.length) return null;
+        return cartesianArray(Cesium.Ray.getPoint(ray, distances[0], new Cesium.Cartesian3()));
+      };
+      const geometryAt = (time) => {
+        const key = Cesium.JulianDate.toIso8601(time, 3);
+        if (key === cachedKey) return cachedGeometry;
+        const state = stateAt(satellite.id, time);
+        const style = FixedPayloadGeometry.phaseStyle(state && state.phase);
+        if (!state || !style.visible) {
+          cachedKey = key;
+          cachedGeometry = { visible: false, style: style, status: 'IDLE' };
+          statusMap.set(satellite.id, 'IDLE');
+          return cachedGeometry;
+        }
+        const sensor = satellite.sensors.find((item) => item.sensor_id === state.sensor_id)
+          || satellite.sensors[0];
+        try {
+          const frame = FixedPayloadGeometry.sensorFrame(
+            state, sensor, FixedPayloadState.rotate, samplesPerEdge
+          );
+          const intersections = FixedPayloadGeometry.intersectFrame(frame, intersectWgs84);
+          cachedKey = key;
+          cachedGeometry = {
+            visible: true, style: style, intersections: intersections, status: intersections.status
+          };
+          statusMap.set(satellite.id, intersections.status);
+          return cachedGeometry;
+        } catch (error) {
+          console.warn('Sensor geometry unavailable for ' + satellite.id, error);
+          cachedKey = key;
+          cachedGeometry = { visible: false, style: style, status: 'GEOMETRY_MISSING' };
+          statusMap.set(satellite.id, 'GEOMETRY_MISSING');
+          return cachedGeometry;
+        }
+      };
+      const colorAt = (time, alphaScale) => {
+        const rgba = geometryAt(time).style.rgba;
+        return new Cesium.Color(rgba[0], rgba[1], rgba[2], rgba[3] * alphaScale);
+      };
+      const liftForDisplay = (array) => {
+        const point = Cesium.Cartesian3.fromArray(array);
+        const normal = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(
+          point, new Cesium.Cartesian3()
+        );
+        return Cesium.Cartesian3.add(
+          point,
+          Cesium.Cartesian3.multiplyByScalar(normal, 20, new Cesium.Cartesian3()),
+          new Cesium.Cartesian3()
+        );
+      };
+
+      viewer.entities.add({
+        id: 'fixed-payload-center-' + satellite.id,
+        name: satellite.id + ' sensor center ray and WGS84 ellipsoid hit',
+        polyline: {
+          show: new Cesium.CallbackProperty((time) => {
+            const value = geometryAt(time);
+            return Boolean(value.visible && value.intersections.center_hit_ecef_m);
+          }, false),
+          positions: new Cesium.CallbackProperty((time) => {
+            const value = geometryAt(time);
+            if (!value.visible || !value.intersections.center_hit_ecef_m) return undefined;
+            return [
+              Cesium.Cartesian3.fromArray(value.intersections.origin_ecef_m),
+              Cesium.Cartesian3.fromArray(value.intersections.center_hit_ecef_m)
+            ];
+          }, false),
+          width: 2,
+          material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
+            (time) => colorAt(time, 1.0), false
+          ))
+        }
+      });
+      viewer.entities.add({
+        id: 'fixed-payload-center-hit-' + satellite.id,
+        name: satellite.id + ' WGS84 center intersection; target altitude is separate',
+        position: new Cesium.CallbackProperty((time) => {
+          const value = geometryAt(time);
+          return value.visible && value.intersections.center_hit_ecef_m
+            ? liftForDisplay(value.intersections.center_hit_ecef_m) : undefined;
+        }, false),
+        point: {
+          show: new Cesium.CallbackProperty((time) => {
+            const value = geometryAt(time);
+            return Boolean(value.visible && value.intersections.center_hit_ecef_m);
+          }, false),
+          pixelSize: 7,
+          color: new Cesium.CallbackProperty((time) => colorAt(time, 2.5), false),
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 1
+        }
+      });
+
+      const rayCount = samplesPerEdge * 4;
+      for (let index = 0; index < rayCount; index += 1) {
+        viewer.entities.add({
+          id: 'fixed-payload-boundary-' + satellite.id + '-' + index,
+          polyline: {
+            show: new Cesium.CallbackProperty((time) => {
+              const value = geometryAt(time);
+              return Boolean(value.visible && value.intersections.boundary_hits_ecef_m[index]);
+            }, false),
+            positions: new Cesium.CallbackProperty((time) => {
+              const value = geometryAt(time);
+              const hit = value.visible && value.intersections.boundary_hits_ecef_m[index];
+              if (!hit) return undefined;
+              return [
+                Cesium.Cartesian3.fromArray(value.intersections.origin_ecef_m),
+                Cesium.Cartesian3.fromArray(hit)
+              ];
+            }, false),
+            width: 1,
+            material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
+              (time) => colorAt(time, 1.4), false
+            ))
+          }
+        });
+        viewer.entities.add({
+          id: 'fixed-payload-side-' + satellite.id + '-' + index,
+          polygon: {
+            show: new Cesium.CallbackProperty((time) => {
+              const value = geometryAt(time);
+              return Boolean(value.visible && value.intersections.coverage_ecef_m);
+            }, false),
+            hierarchy: new Cesium.CallbackProperty((time) => {
+              const value = geometryAt(time);
+              const coverage = value.visible && value.intersections.coverage_ecef_m;
+              if (!coverage) return undefined;
+              return new Cesium.PolygonHierarchy([
+                Cesium.Cartesian3.fromArray(value.intersections.origin_ecef_m),
+                Cesium.Cartesian3.fromArray(coverage[index]),
+                Cesium.Cartesian3.fromArray(coverage[(index + 1) % coverage.length])
+              ]);
+            }, false),
+            perPositionHeight: true,
+            material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
+              (time) => colorAt(time, 0.42), false
+            )),
+            outline: false
+          }
+        });
+      }
+      viewer.entities.add({
+        id: 'fixed-payload-footprint-' + satellite.id,
+        name: satellite.id + ' WGS84 ellipsoid footprint',
+        polygon: {
+          show: new Cesium.CallbackProperty((time) => {
+            const value = geometryAt(time);
+            return Boolean(value.visible && value.intersections.coverage_ecef_m);
+          }, false),
+          hierarchy: new Cesium.CallbackProperty((time) => {
+            const value = geometryAt(time);
+            const coverage = value.visible && value.intersections.coverage_ecef_m;
+            return coverage
+              ? new Cesium.PolygonHierarchy(coverage.map(liftForDisplay)) : undefined;
+          }, false),
+          perPositionHeight: true,
+          material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
+            (time) => colorAt(time, 0.7), false
+          )),
+          outline: true,
+          outlineColor: Cesium.Color.WHITE.withAlpha(0.65)
+        }
+      });
+      return rayCount;
+    }
+
     function setupBodyModelsAndFixedPayloads(replay, ds) {
       const status = document.getElementById('assetStatus');
       if (!replay || !window.FixedPayloadState) {
@@ -659,6 +862,7 @@
       };
       let modelCount = 0;
       let markerCount = 0;
+      let frustumRayCount = 0;
       (replay.satellites || []).forEach((satellite) => {
         const entity = ds.entities.getById(satellite.id);
         if (!entity || !entity.position) return;
@@ -705,10 +909,13 @@
           }
         });
         markerCount += 1;
+        frustumRayCount += setupSensorGeometry(satellite, stateAt);
       });
       status.innerHTML = '<strong>Landsat 8 illustrative appearance</strong><br>'
         + modelCount + ' body model(s), ' + markerCount + ' fixed -Z payload marker(s). '
-        + 'Original satellite IDs remain unchanged; point/label geometry is retained as the load fallback.';
+        + frustumRayCount + ' sampled FOV boundary ray(s). Original satellite IDs remain unchanged; '
+        + 'point/label geometry is retained as the load fallback. '
+        + 'FOV is a square full-angle display assumption only.';
     }
 
     function setupGanttButton(schedule) {

@@ -1,5 +1,13 @@
 # 课程项目运行与版本记录
 
+## 卫星回放 commit 4：逐星视锥与 WGS84 覆盖（2026-10-14，`feat/satellite-body-fixed-payload-replay`，待审核）
+
+Cesium 主视图现在从同一固定载荷姿态生成中心视线与方形全角 FOV 边界采样，用原生 `IntersectionTests.rayEllipsoid` 求 WGS84 最近正向交点。每星独立显示视锥、椭球中心交点和 ECEF 覆盖：`SLEWING` 为琥珀色，`OBSERVING` 为绿色，原拍摄结束端点立即隐藏。部分射线越过地平线时只显示有效射线，不拼接错误多边形；全部无交点时清空覆盖。目标高度点与椭球交点保持不同语义，20 m 视觉抬高只用于避免地表闪烁。新静态路径为 `GET /visualization/fixed-payload-geometry.js`，无数据库、Controller、Worker、算法或指标变更。
+
+Node.js 几何/生命周期测试通过，覆盖中心命中、部分地平线、全部无交点、精确半开端点和多星独立阶段。CesiumJS 1.136 + Chromium 141 本地 HTTP 冒烟测试生成 16/16 条 WGS84 边界交点及 1 个覆盖 primitive，无控制台错误；同时发现并修正 CesiumJS 1.136 不提供 `Cartesian3.toArray()` 的兼容性问题。Python 回放定向测试 **9/9** 通过，详见 [commit 4 交接记录](docs/phase2/satellite_replay_commit_4.md)。固定载荷第二视图、选星与双视图同钟仍属 commit 5。
+
+---
+
 ## 卫星本体与固定载荷回放 commit 1–3（2026-10-14，`feat/satellite-body-fixed-payload-replay`，待审核）
 
 成功实验新增只读 `GET /api/runs/{run_id}/visualization/replay` 派生数据：校验已提交场景哈希与计划身份，按当前转移模型生成确定性 `SLEWING/OBSERVING` 时间段，不重跑调度、不改写母场景或正式计划。Cesium 页面使用 NASA Landsat 8 GLB 作通用示意外观，模型姿态与固定相机—本体变换分离，并保留原卫星 ID 和点/标签回退。新配置与资产来源、哈希、轴向假设见 [commit 1–3 专题交接](docs/phase2/satellite_replay_commits_1_3.md)。

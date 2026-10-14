@@ -85,7 +85,9 @@ cd /mnt/d/Code/EOS-Course-Project
 
 成功实验的“Cesium 回放”现在还会请求 `GET /api/runs/{run_id}/visualization/replay`。服务只从已入库的正式计划和哈希相符的只读场景派生显示数据，不重跑算法，也不会将回放结果写回调度结果。页面使用 NASA Landsat 8 模型作为数据集卫星的**通用示意外观**，不会把 ALOS-2、AQUA 或 CARTOSAT-2C 改名为 Landsat 8；资产来源与验证见 [`docs/replay/landsat8-validation.md`](docs/replay/landsat8-validation.md)。
 
-当前本体姿态是以 ECEF 轨道位置和任务目标计算的几何指向示意，固定载荷始终使用同一相机—本体变换。它不是 Orekit 姿态或卫星动力学验证；若派生数据不可用，Cesium 保留原有点/标签显示。视锥、地面足迹与边界裁剪不在本轮 commit 1–3 内，详细交接见 [卫星回放 commit 1–3 记录](docs/phase2/satellite_replay_commits_1_3.md)。
+当前本体姿态是以 ECEF 轨道位置和任务目标计算的几何指向示意，固定载荷始终使用同一相机—本体变换。它不是 Orekit 姿态或卫星动力学验证；若派生数据不可用，Cesium 保留原有点/标签显示。
+
+每颗星在转向和拍摄阶段会显示独立视锥：转向为琥珀色，拍摄为绿色，并在原 `sat_end_time` 隐藏。视场使用配置中明示的“方形完整角”显示假设，中心和边界射线共用固定载荷姿态，通过 Cesium WGS84 椭球求交生成中心点与地面覆盖。部分视场越过地平线时不画完整覆盖，无交点时不沿用旧几何。这些覆盖仅用于回放，不修正任务成功或指标。详细验证见 [commit 4 交接记录](docs/phase2/satellite_replay_commit_4.md)；卫星选择与同钟固定载荷第二视图尚待 commit 5。
 
 ## 开发与验证
 
