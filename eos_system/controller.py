@@ -10,13 +10,14 @@ import multiprocessing as mp
 import os
 import threading
 import time
+from datetime import datetime, timezone
 
 from .config import Settings
 from .contracts import RunConfig
 from .exporting import persist_directory_exports
 from .storage import Database
 from .verification import verify_candidate
-from .worker_reference import receive_message, send_message, worker_main
+from .worker_reference import CANCEL_GRACE_S, PROTOCOL_VERSION, receive_message, send_message, worker_main
 
 
 class Controller:
@@ -89,19 +90,39 @@ class Controller:
             candidate: dict | None = None
             reported_runtime: float | None = None
             failure: tuple[str, str] | None = None
+            cancel_started_at: float | None = None
+            cancel_ack_received = False
+            # W1 最多等待 2 秒；Controller 额外留出一次 IPC/调度宽限。
+            cancel_grace_s = CANCEL_GRACE_S + self.settings.stop_grace_s
             while not self._stop.is_set():
                 state = self.database.get_status(config.run_id)
-                if not state or state["status"] in {"CANCELLED", "FAILED", "TIMED_OUT"}:
+                if not state or state["current_attempt"] != attempt:
+                    failure = ("WORKER_STATE", "运行记录或 attempt 已变化")
+                    break
+                if state["status"] in {"CANCELLED", "FAILED", "TIMED_OUT"}:
                     failure = ("CANCELLED", "实验已停止")
                     break
-                if state["cancel_requested_at"]:
-                    failure = ("CANCELLED", "用户取消运行")
-                    break
                 clock = time.monotonic()
-                if searching_at is None and clock - started_at > self.settings.startup_timeout_s:
+                if state["cancel_requested_at"] and cancel_started_at is None:
+                    cancel_started_at = clock
+                    # 旧 start 没有 seq，故本 attempt 首条完整控制命令使用 seq=1。
+                    try:
+                        send_message(control_send, {
+                            "protocol_version": PROTOCOL_VERSION, "run_id": config.run_id,
+                            "attempt": attempt, "seq": 1, "kind": "cancel",
+                            "sent_at": datetime.now(timezone.utc).isoformat(), "payload": {},
+                        })
+                    except (BrokenPipeError, EOFError, OSError, ValueError):
+                        failure = ("CANCELLED", "取消控制 Pipe 已断开")
+                        break
+                if cancel_started_at is not None:
+                    if clock - cancel_started_at >= cancel_grace_s:
+                        failure = ("CANCELLED", "Worker 未在协作取消宽限内退出")
+                        break
+                elif searching_at is None and clock - started_at > self.settings.startup_timeout_s:
                     failure = ("STARTUP_TIMEOUT", "Worker 启动或加载超时")
                     break
-                if searching_at is not None and clock - searching_at > config.time_budget_s + self.settings.transfer_timeout_s:
+                elif searching_at is not None and clock - searching_at > config.time_budget_s + self.settings.transfer_timeout_s:
                     failure = ("TIMED_OUT", "算法运行或结果传输超时")
                     break
                 if event_recv.poll(0.1):
@@ -115,33 +136,52 @@ class Controller:
                         continue
                     if message.get("protocol_version") != 1 or message.get("run_id") != config.run_id or message.get("attempt") != attempt:
                         continue
+                    if message["kind"] == "started" and message["payload"].get("worker_pid") != process.pid:
+                        failure = ("WORKER_IDENTITY", "Worker 身份与所启动进程不一致")
+                        break
                     if not self.database.record_worker_event(message):
                         continue
                     kind, payload = message["kind"], message["payload"]
-                    if kind == "started" and payload.get("worker_pid") != process.pid:
-                        failure = ("WORKER_IDENTITY", "Worker 身份与所启动进程不一致")
-                        break
                     if kind == "heartbeat" and payload.get("phase") == "SEARCHING":
-                        searching_at = time.monotonic()
+                        if searching_at is None:
+                            searching_at = time.monotonic()
+                    elif kind == "cancel_ack":
+                        if cancel_started_at is not None and payload.get("accepted") is True:
+                            cancel_ack_received = True
                     elif kind == "candidate_result":
+                        if cancel_started_at is not None:
+                            # 取消已被 Controller 接受；晚到候选只作审计事件。
+                            continue
                         candidate = payload["plan"]
                         reported_runtime = float(payload["algorithm_runtime_s"])
                         break
                     elif kind == "failed":
-                        failure = (payload.get("code", "WORKER_ERROR"), payload.get("message", "Worker 报告失败"))
-                        break
+                        if cancel_started_at is None:
+                            failure = (payload.get("code", "WORKER_ERROR"), payload.get("message", "Worker 报告失败"))
+                            break
                 elif not process.is_alive():
                     # 退出后再尝试取一次尾部消息，避免把成功结果误判为断链。
                     if not event_recv.poll(0.1):
                         break
 
-            process.join(timeout=self.settings.stop_grace_s)
+            if cancel_started_at is not None:
+                process.join(timeout=max(0.0, cancel_started_at + cancel_grace_s - time.monotonic()))
+            else:
+                process.join(timeout=self.settings.stop_grace_s)
             if process.is_alive():
                 process.terminate()
                 process.join(timeout=self.settings.stop_grace_s)
             if process.is_alive():
                 process.kill()
                 process.join(timeout=2)
+            if process.is_alive():
+                self.database.finish_failure(config.run_id, attempt, "FAILED", "WORKER_CLEANUP_INCOMPLETE", "Worker 直接进程未能退出")
+                return
+            if cancel_started_at is not None:
+                # ack 是诊断信息；无 ack 但已安全结束仍可裁决用户取消。
+                message = "用户取消运行" if cancel_ack_received else "用户取消运行；未收到 Worker 确认"
+                self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED", message)
+                return
             if failure:
                 status = "CANCELLED" if failure[0] == "CANCELLED" else "TIMED_OUT" if "TIMEOUT" in failure[0] or failure[0] == "TIMED_OUT" else "FAILED"
                 self.database.finish_failure(config.run_id, attempt, status, failure[0], failure[1])
@@ -154,6 +194,11 @@ class Controller:
                 return
             if reported_runtime < 0 or reported_runtime > config.time_budget_s:
                 self.database.finish_failure(config.run_id, attempt, "TIMED_OUT", "SEARCH_BUDGET", "算法搜索超过预算")
+                return
+            # 候选到达和 join 期间可能收到取消；事务检查仍负责最终裁决。
+            state = self.database.get_status(config.run_id)
+            if state and state["current_attempt"] == attempt and state["cancel_requested_at"]:
+                self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED", "用户取消运行")
                 return
             if not self.database.set_verifying(config.run_id, attempt):
                 self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED_DURING_VERIFY", "核验前已取消")
