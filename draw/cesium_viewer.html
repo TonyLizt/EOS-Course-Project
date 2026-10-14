@@ -779,12 +779,10 @@
         toggle.textContent = visible ? 'Hide fixed payload view' : 'Show fixed payload view';
         if (visible) renderSelected(viewer.clock.currentTime);
       });
-      viewer.screenSpaceEventHandler.setInputAction((movement) => {
-        const picked = viewer.scene.pick(movement.position);
-        const entity = picked && picked.id;
+      viewer.selectedEntityChanged.addEventListener((entity) => {
         const id = entity && (entity.id || entity._id);
         if (typeof id === 'string') selectSatellite(id);
-      }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+      });
       viewer.clock.onTick.addEventListener((clock) => renderSelected(clock.currentTime));
       window.addEventListener('resize', () => {
         if (visible) renderSelected(viewer.clock.currentTime);
