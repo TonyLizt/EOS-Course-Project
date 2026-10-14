@@ -1,5 +1,11 @@
 # 课程项目运行与版本记录
 
+## Worker/IPC W1（2026-10-14，`feat/hmt-worker-ipc`）
+
+在 v0.2.1 参考 Worker 中增加控制 Pipe 持续监听、协议字段和身份校验，以及接入 `SolveContext.is_cancelled()` 的线程安全取消标记。Worker 主线程独占 IPC 读写和事件序号，求解线程运行算法；收到取消后发送 `cancel_ack`，已取消的算法返回结果不会作为候选上报。保持旧 Controller `start` 消息兼容，未改 HTTP、SQLite 或算法公共签名。WSL2 Ubuntu 22.04 / Python 3.10.12 的虚拟环境中，基线 18 项和修改后 32 项单元测试通过；新增测试使用临时目录和测试桩，未执行服务端集成测试。Controller 发送取消命令、硬超时和进程组回收仍待 W2；大结果文件载体待 W3。详细协议与限制见 [`docs/phase2/worker_ipc_w1.md`](docs/phase2/worker_ipc_w1.md)。
+
+---
+
 ## 第二阶段组员协作规范（2026-10-14）
 
 新增 [`docs/phase2/team_collaboration.md`](docs/phase2/team_collaboration.md)，明确每项工作新建分支、经 PR 审核后合入 `main`、代码与对应专题文档及本记录同步提交的流程；列出四人职责、文档映射、PR 检查项和 Windows + WSL2 的协作方式。README 增加入口。本次只改文档，不改变运行行为。
