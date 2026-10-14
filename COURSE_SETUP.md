@@ -1,5 +1,13 @@
 # 课程项目运行与版本记录
 
+## 第二阶段回放后端 v0.3（2026-10-14，`feat/replay-backend`，待李泽同审核）
+
+在正式成功实验之后增加独立的回放构建闭环：SQLite `user_version=3` 与 `replay_artifacts`、`POST /api/runs/{run_id}/replay`、回放状态和资源 GET、原甘特图 schedule 身份字段，以及按实验删除派生回放缓存。固定配置 `geometry-illustration-v2` 生成轨道 CZML、姿态示意样本、阶段区间、诊断和配置资源；Controller 校验哈希并发布 READY。旧 `GET /api/runs/{run_id}/visualization/orbit.czml` 保留到梁兆榮完成前端迁移，首次访问仍可能构建旧共享轨道缓存。当前姿态是展示示意，尚未宣称 Orekit TargetPointing 精确姿态；何明涛的正式回放消息型 IPC、梁兆榮的前端、刘懋兴的数据核验仍按交接文档继续。
+
+WSL Ubuntu 22.04 / Python 3.10.12：完整 `unittest discover -s tests -v` **105/105 通过**，包括新增 v2→v3 迁移及 HTTP→独立构建进程→READY→资源 ETag→删除闭环；`git diff --check` 通过。原 Orekit 导出器的单星 10 分钟/3 轨道样本缓存未命中实测约 179 秒，较大场景需单独预算测试。旧本机 SQLite 中 10 条终态测试实验按用户授权在 v3 迁移后删除，现 runs=0；输入场景和正式导出文件未删，迁移验收后的本机 `.pre-v3.bak` 已清理。工作树尚未 commit/推送。接口与任务交接见 [`docs/phase2/replay_backend_handoff.md`](docs/phase2/replay_backend_handoff.md)，当前 ER 图见 [`docs/phase2/database_current_v03.md`](docs/phase2/database_current_v03.md)。
+
+---
+
 ## Worker/IPC W1/W2 最终交付联调（2026-10-14，`feat/hmt-worker-ipc`，待何明涛与李泽同审核）
 
 修正 README、框架交接及算法接入说明中过期的“协作取消尚未实现”等描述，保留 W3、Daemon、A/B/C/D 和跨重启回收为未交付范围。新增三个真实 TCP 回环 HTTP → Controller → `spawn` Worker → 临时 SQLite 异常闭环，覆盖运行中取消（`CANCELLED`）、不合作求解超时（`TIMED_OUT/ALGORITHM_TIMEOUT`）和携同 Session 后代的 Worker 异常退出（`FAILED/IPC_DISCONNECTED`、退出码 23）；均无正式计划，直接 Worker 与可信后代无活跃残留。测试桩仅在隔离服务进程中装配，正式算法注册表及运行时代码未改。

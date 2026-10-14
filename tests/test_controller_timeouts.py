@@ -238,8 +238,9 @@ class ControllerTimeoutTests(unittest.TestCase):
     def test_real_blocked_control_send_has_deadline(self):
         self.settings = Settings(runtime_dir=self.settings.runtime_dir,
                                  scenario_dir=self.settings.scenario_dir,
-                                 startup_timeout_s=0.8, transfer_timeout_s=0.3,
+                                 startup_timeout_s=2.0, transfer_timeout_s=0.3,
                                  stop_grace_s=0.2)
+        # WSL 冷启动可超过 0.8 秒；这里仍用 0.3 秒上限检验阻塞发送。
         started = self.run_mode("blocked_start", padding=1_000_000)
         record = self.wait_terminal()
         self.assertEqual(record["status"], "FAILED")
