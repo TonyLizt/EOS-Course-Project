@@ -1,11 +1,11 @@
 # EOS-Course-Project 第二阶段 W2：Worker/IPC 与 Controller 生命周期协作实施说明
 
-> **版本**：v1.0 · 2026-10-14  
-> **状态**：拟实施方案／跨模块协作说明，**不是已完成的功能或测试记录**  
-> **方案负责人**：何明涛（Worker、IPC、取消与超时机制）；Controller 集成负责人：李泽同  
-> **开发分支**：`feat/hmt-worker-ipc`；W1 已推送：`906fe70`、`70fdefe`；尚未创建 PR  
-> **拟入库位置**：`docs/phase2/worker_controller_w2_design.md`  
-> **本轮范围**：W2-A 运行中取消；W2-B 超时／异常／单 Worker 回收；W2-C 安全进程组回收与 Controller 停机  
+> **版本**：v1.0 · 2026-10-14\
+> **状态**：拟实施方案／跨模块协作说明，**不是已完成的功能或测试记录**\
+> **方案负责人**：何明涛（Worker、IPC、取消与超时机制）；Controller 集成负责人：李泽同\
+> **开发分支**：`feat/hmt-worker-ipc`；W1 已推送：`906fe70`、`70fdefe`；尚未创建 PR\
+> **拟入库位置**：`docs/phase2/worker_controller_w2_design.md`\
+> **本轮范围**：W2-A 运行中取消；W2-B 超时／异常／单 Worker 回收；W2-C 安全进程组回收与 Controller 停机\
 > **不涉及**：算法 A/B/C/D 实现、HTTP 新接口、SQLite 模式迁移、Daemon 主程序、大计划文件载体（W3）
 
 ## 1. 依据、效力与职责
@@ -212,18 +212,18 @@ Worker 可能尚未执行 `setsid()`、组长可能已退出或 PID 被复用；
 
 ## 8. 交接李泽同的通知正文（可直接发送）
 
-> 我这边 Worker/IPC W1 已完成并推送到 `feat/hmt-worker-ipc`（`906fe70`、`70fdefe`），暂未提 PR；W1 真实 spawn 测试已报告 37 项通过。  
-> 
-> 接下来 W2 的取消／超时／进程回收方案由我负责细化，严格沿用目前的 HTTP、运行状态枚举、SQLite 九表、`Solver.solve()`、双单向 Pipe 和 W1 协议，不要求你重新设计这些公共接口。  
-> 
-> 由于 Controller 是你负责的集成模块，**提前通知一下我预计要在自己的功能分支修改的部分**：  
-> 1. `Controller._execute()`：把运行中的 `cancel` 真正通过控制 Pipe 发给 Worker，接收 `cancel_ack`，继续处理候选／失败事件并正确裁决取消；修复搜索计时被重复心跳重置以及 IPC 阻塞等问题。  
-> 2. `Controller._loop()/start()/stop()`：处理停止领取任务与 `start_attempt()` 的竞态，确保当前 Worker 和执行线程结束后才释放实例锁。  
-> 3. 可能新增 `worker_process.py`：由 Worker 模块提供 PID／PGID 身份验证、`SIGTERM→SIGKILL` 和后代清理；Controller 调用并记录结果。  
-> 4. 原则上**不动 SQLite 模式、API 和算法签名**。只有实际需要记录退出码时才可能补一个小型 `storage.py` 写入方法；如需修改会先与你对齐。  
-> 
-> 我们准备采用的状态语义是：`cancel_ack` 仅表示命令被接受，不是终态；用户取消在 Worker 安全停止后进入 `CANCELLED`，算法搜索预算超时且回收完成后进入 `TIMED_OUT`；启动／IPC 故障使用现有 `FAILED` 加诊断码；停止服务而打断运行不伪装为用户取消。成功只由 Controller 核验和事务提交，且成功前必须确认必需的 Worker 清理。  
-> 
+> 我这边 Worker/IPC W1 已完成并推送到 `feat/hmt-worker-ipc`（`906fe70`、`70fdefe`），暂未提 PR；W1 真实 spawn 测试已报告 37 项通过。\
+>
+> 接下来 W2 的取消／超时／进程回收方案由我负责细化，严格沿用目前的 HTTP、运行状态枚举、SQLite 九表、`Solver.solve()`、双单向 Pipe 和 W1 协议，不要求你重新设计这些公共接口。\
+>
+> 由于 Controller 是你负责的集成模块，**提前通知一下我预计要在自己的功能分支修改的部分**：\
+> 1. `Controller._execute()`：把运行中的 `cancel` 真正通过控制 Pipe 发给 Worker，接收 `cancel_ack`，继续处理候选／失败事件并正确裁决取消；修复搜索计时被重复心跳重置以及 IPC 阻塞等问题。\
+> 2. `Controller._loop()/start()/stop()`：处理停止领取任务与 `start_attempt()` 的竞态，确保当前 Worker 和执行线程结束后才释放实例锁。\
+> 3. 可能新增 `worker_process.py`：由 Worker 模块提供 PID／PGID 身份验证、`SIGTERM→SIGKILL` 和后代清理；Controller 调用并记录结果。\
+> 4. 原则上**不动 SQLite 模式、API 和算法签名**。只有实际需要记录退出码时才可能补一个小型 `storage.py` 写入方法；如需修改会先与你对齐。\
+>
+> 我们准备采用的状态语义是：`cancel_ack` 仅表示命令被接受，不是终态；用户取消在 Worker 安全停止后进入 `CANCELLED`，算法搜索预算超时且回收完成后进入 `TIMED_OUT`；启动／IPC 故障使用现有 `FAILED` 加诊断码；停止服务而打断运行不伪装为用户取消。成功只由 Controller 核验和事务提交，且成功前必须确认必需的 Worker 清理。\
+>
 > 文档会列明具体函数、测试和限制，并按照协作规范更新 `COURSE_SETUP.md` 与受影响的交接说明。**请你主要看是否与你近期正在修改的 Controller 函数冲突，以及这些终态语义是否影响你的现有接口／数据库或 Daemon 联调。** 对于不改变公共契约的 Worker 内部机制，我这边按方案推进；涉及公共接口／数据库变化则先单独与你确认，PR 合并前请你审阅集成影响。
 
 ## 9. 尚未交付的边界与后续阶段
