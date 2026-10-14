@@ -53,7 +53,14 @@ class RunConfig(RunRequest):
     output_kind: Literal["download", "directory"] = "download"
     output_root: str | None = None
     algorithm_version: str
+    algorithm_code_sha: str | None = None
     created_at: str
+
+
+class ReplayRequest(StrictModel):
+    """网页只选择已登记的展示配置，不提交服务器文件路径。"""
+
+    replay_config_id: str = Field(min_length=1, max_length=100)
 
 
 class DirectoryRegistration(StrictModel):

@@ -64,7 +64,7 @@ class MigrationAndExportTests(unittest.TestCase):
                 """)
             Database(path)
             with sqlite3.connect(path) as db:
-                self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 2)
+                self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 3)
                 self.assertEqual(db.execute("SELECT run_id FROM runs").fetchone()[0], "old-run")
                 fields = {row[1] for row in db.execute("PRAGMA table_info(runs)")}
                 self.assertTrue({"source_id", "output_profile_id"}.issubset(fields))

@@ -10,7 +10,7 @@
 
 本组计划完成三种机制不同的传统算法和一种机器学习算法。新算法会通过同一注册、运行和核验边界进入系统；本仓库当前可选的 `completion_first`、`adaptive_repair` 属于已有基线，**不计作这四种新算法的交付**。
 
-## 当前能力（v0.2.1 框架 + W1/W2 功能分支）
+## 当前能力（v0.3 回放后端开发分支）
 
 - 浏览器选择**已登记的数据源、场景、算法和输出方案**，提交、取消并查看实验状态与正式结果。
 - FastAPI 和 Controller 在 WSL2 中运行；Worker 由 `spawn` 创建，通过两条单向 Pipe 交换控制消息和 JSON 事件。Worker 执行 `setsid()` 并报告 `started`，Controller 核验本次进程的 Linux 身份后才发送 `start`；候选由 Controller 独立核验，并在成功事务中写入 SQLite。
@@ -83,6 +83,14 @@ cd /mnt/d/Code/EOS-Course-Project
 
 首次查看一个场景时，服务会使用仓库的 `utils/orekit-data.zip` 生成 CZML，并缓存到 WSL 运行目录的 `visualizations/scenes/`；相同场景哈希的后续实验复用缓存。可视化轨道使用较稀的采样，仅影响画面文件，不改变调度输入和正式计划。旧的 `main_draw.py` CLI 仍可独立使用。
 
+### 独立结果回放（后端参考实现）
+
+成功实验可以向 `POST /api/runs/{run_id}/replay` 提交 `{ "replay_config_id": "geometry-illustration-v2" }`。返回的 `replay_id` 用于轮询状态和读取 manifest 中的轨道、姿态、阶段、诊断与配置资源。相同输入和版本会复用缓存；回放失败不会改变正式计划或指标。详情见[回放后端交接](docs/phase2/replay_backend_handoff.md)。
+
+当前参考姿态是**几何目标指向示意**，固定传感器安装和视场解释也标为展示假设；尚未完成 Orekit TargetPointing 权威整星姿态及新 Cesium 交互。旧 Cesium 页面继续使用 `GET /api/runs/{run_id}/visualization/orbit.czml`，**该旧接口保留到梁兆榮完成前端迁移并验收**。新回放 GET 不启动构建，只有 POST 发起独立构建。
+
+回放派生文件保存在 WSL 运行目录的 `replays/`，SQLite 模式为 v3。删除终态实验时同步清理该实验回放缓存；正在构建的实验暂不能删除。旧场景哈希轨道缓存跨实验共享，仍保留。
+
 ## 开发与验证
 
 ```bash
@@ -96,7 +104,7 @@ PYTHONHASHSEED=0 MPLBACKEND=Agg ~/eos-course-runtime/.venv/bin/python -m scripts
 ~/eos-course-runtime/.venv/bin/python scripts/check_visualization.py <run_id>
 ```
 
-组员开发前先读 [协作规范](docs/phase2/team_collaboration.md) 和 [算法接入说明](docs/phase2/algorithm_integration.md)；[当前数据库设计与 ER 图](docs/phase2/database_current_v02.md)记录落地模式。接口和数据库目标审核稿分别在 [接口设计](docs/phase2/interface_design_target.md)、[数据库目标设计](docs/phase2/database_design_target.md)。这些审核稿包含尚未完成的目标，当前字段以源码、`/docs` 和 [交接说明](docs/phase2/framework_handoff.md) 为准。每次版本变化及实测证据记在 [COURSE_SETUP.md](COURSE_SETUP.md)。
+组员开发前先读 [协作规范](docs/phase2/team_collaboration.md) 和 [算法接入说明](docs/phase2/algorithm_integration.md)；[当前数据库设计与 ER 图](docs/phase2/database_current_v03.md)记录落地模式。接口和数据库目标审核稿分别在 [接口设计](docs/phase2/interface_design_target.md)、[数据库目标设计](docs/phase2/database_design_target.md)。这些审核稿包含尚未完成的目标，当前字段以源码、`/docs` 和 [交接说明](docs/phase2/replay_backend_handoff.md) 为准。每次版本变化及实测证据记在 [COURSE_SETUP.md](COURSE_SETUP.md)。
 
 ## 项目分工
 
