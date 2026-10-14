@@ -1,0 +1,48 @@
+{
+  "schema_version": 2,
+  "replay_config_id": "display-profile-v2",
+  "config_version": "2.0.0",
+  "attitude_mode": "body_pointing_fixed_sensor",
+  "attitude_source": "geometry_pointing_illustration",
+  "idle_attitude_policy": "hold_ecef_v1",
+  "initial_display_policy": "first_task_start_attitude",
+  "earth_model": "WGS84_ellipsoid",
+  "reference_frame": "ECEF",
+  "quaternion_order": "xyzw",
+  "rotation_direction": "body_to_ecef",
+  "camera_axes": "forward=-Z,right=+X,up=+Y",
+  "display_sampling_policy": {
+    "attitude_step_s": 1.0,
+    "preserve_task_and_slew_endpoints": true
+  },
+  "sensors": [
+    {
+      "satellite_id": "ALOS-2_39766",
+      "sensor_id": "ALOS-2_39766_sensor",
+      "sensor_mount_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+      "sensor_offset_body_m": [0.0, 0.0, 0.0],
+      "fov_interpretation": "square_full_angle_display_assumption",
+      "horizontal_full_fov_deg": 45.0,
+      "vertical_full_fov_deg": 45.0
+    },
+    {
+      "satellite_id": "AQUA_27424",
+      "sensor_id": "AQUA_27424_sensor",
+      "sensor_mount_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+      "sensor_offset_body_m": [0.0, 0.0, 0.0],
+      "fov_interpretation": "square_full_angle_display_assumption",
+      "horizontal_full_fov_deg": 45.0,
+      "vertical_full_fov_deg": 45.0
+    },
+    {
+      "satellite_id": "CARTOSAT-2C_41599",
+      "sensor_id": "CARTOSAT-2C_41599_sensor",
+      "sensor_mount_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+      "sensor_offset_body_m": [0.0, 0.0, 0.0],
+      "fov_interpretation": "square_full_angle_display_assumption",
+      "horizontal_full_fov_deg": 45.0,
+      "vertical_full_fov_deg": 45.0
+    }
+  ],
+  "thruster_effect_mode": "disabled"
+}
