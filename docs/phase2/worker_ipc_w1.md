@@ -53,3 +53,21 @@ W2 发送取消时使用完整格式，例如：
 - 本次没有运行 HTTP/SQLite/目录输出集成测试，也没有对正式算法做取消响应承诺。既有算法未主动轮询 `context.is_cancelled()` 时，仍需 W2 的强制回收。
 
 本次未改变 HTTP、SQLite 模式、正式运行状态、算法公共签名及 Controller 行为。新控制命令的联调细节应由李泽同确认后进入 W2。
+
+## W1 补充验收（2026-10-14，基于 `906fe70`）
+
+新增 5 项真实 Linux `spawn` 子进程测试。`tests/test_worker_ipc.py` 提供模块顶层可导入的测试入口 `spawn_worker_with_test_solver()`；它在**子进程内**安装有限时长的测试求解桩，再调用原本的 `worker_main()`。取消可见性通过 `multiprocessing.get_context("spawn").Event()` 从子进程回报，未依赖父进程的 monkeypatch。空场景只写在 `tempfile.TemporaryDirectory()`，不接触正式 SQLite 或 EOS-Bench 母数据。
+
+| 新增测试 | 验证结果 |
+|---|---|
+| `test_real_spawn_cooperative_cancel_observed_without_candidate` | 确认子进程已进入 `solve()`，收到合法 `cancel` 后子进程中的 `is_cancelled()` 变为真；收到一次 `cancel_ack`，无候选，Worker 自行以退出码 0 结束，事件序号递增且 Pipe 最终 EOF。 |
+| `test_real_spawn_uncooperative_cancel_has_bounded_worker_exit` | 求解桩有界睡眠 5 秒且不读取取消标记；`cancel_ack` 在 1.5 秒阈值内到达，Worker 在 2 秒取消宽限后自行退出，整体小于 4.5 秒，无候选。测试端未执行强制回收。 |
+| `test_real_spawn_control_eof_exits_without_lingering_process` | 运行中关闭控制 Pipe，Worker 报 `failed/ConnectionError`、退出码 0、事件 Pipe EOF。 |
+| `test_real_spawn_solver_exception_exits_without_lingering_process` | 子进程求解桩抛出异常，Worker 报 `failed/RuntimeError`、退出码 0、事件 Pipe EOF。 |
+| `test_real_spawn_closed_event_pipe_exits_without_lingering_process` | 关闭事件 Pipe 后发送取消，Worker 尝试回报时检测到断链并退出，退出码 0。 |
+
+每项子进程测试在 `finally` 中设置了有界 `join → terminate → kill` 测试兜底；一旦用到外部强制回收，测试会失败并明确报告。当前新增测试均由 Worker 自行退出，无测试结束后的遗留进程。事件 Pipe 如果单独断开而 Worker 长期没有任何下一次事件发送，写端无法立即感知断链；W2 仍需负责墙钟超时和强制回收。
+
+取消与候选竞争的判定保持不变：Worker **已经接受**的取消会先置位，再丢弃随后取得的求解结果；若候选在取消被 Worker 处理之前已经发送，Controller 的运行状态检查与正式提交事务负责裁决。补充检查未发现需要修改 W1 源码的问题。
+
+在 WSL2 Ubuntu 22.04 的 `~/eos-course-runtime/.venv` 执行 `python -m unittest discover -s tests -v`：**37 项全部通过**，其中 Worker IPC 专题 19 项；`git diff --check` 通过。未运行 HTTP 服务端集成检查；现有 Controller 只发送旧 `start` 的正常路径继续由真实 `spawn` 空场景测试覆盖。

@@ -1,5 +1,11 @@
 # 课程项目运行与版本记录
 
+## Worker/IPC W1 补充验收（2026-10-14，`feat/hmt-worker-ipc`）
+
+基于 `906fe70` 增加 5 项真实 Linux `spawn` 子进程测试，覆盖协作取消的跨进程可见性、不合作求解桩的 2 秒有界退出、控制 Pipe EOF、求解异常和事件 Pipe 断链。求解桩在子进程内安装，场景位于临时目录；测试端的 `terminate/kill` 仅作为失败时清理兜底，本次测试未触发。WSL2 Ubuntu 22.04 / Python 3.10.12 虚拟环境中，完整单元测试 **37 项通过**，`git diff --check` 通过。未修改 Worker 业务源码、Controller、HTTP 或 SQLite；完整取消和进程组回收仍待 W2。详见 [`docs/phase2/worker_ipc_w1.md`](docs/phase2/worker_ipc_w1.md)。
+
+---
+
 ## Worker/IPC W1（2026-10-14，`feat/hmt-worker-ipc`）
 
 在 v0.2.1 参考 Worker 中增加控制 Pipe 持续监听、协议字段和身份校验，以及接入 `SolveContext.is_cancelled()` 的线程安全取消标记。Worker 主线程独占 IPC 读写和事件序号，求解线程运行算法；收到取消后发送 `cancel_ack`，已取消的算法返回结果不会作为候选上报。保持旧 Controller `start` 消息兼容，未改 HTTP、SQLite 或算法公共签名。WSL2 Ubuntu 22.04 / Python 3.10.12 的虚拟环境中，基线 18 项和修改后 32 项单元测试通过；新增测试使用临时目录和测试桩，未执行服务端集成测试。Controller 发送取消命令、硬超时和进程组回收仍待 W2；大结果文件载体待 W3。详细协议与限制见 [`docs/phase2/worker_ipc_w1.md`](docs/phase2/worker_ipc_w1.md)。

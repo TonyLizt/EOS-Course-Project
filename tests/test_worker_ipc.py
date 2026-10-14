@@ -17,10 +17,46 @@ from eos_system.algorithm_registry import CompletionParams, LegacySearchAdapter,
 from eos_system.contracts import RunConfig
 from eos_system import worker_reference as worker
 from schedulers.constraint_model import Schedule
+from schedulers.scenario_loader import load_scheduling_problem_from_json
 
 
 RUN_ID = "00000000-0000-4000-8000-000000000101"
 ATTEMPT = 1
+
+
+class SpawnTestSolver:
+    """仅在真实 spawn 子进程中运行的有限时长求解桩。"""
+
+    def __init__(self, mode, entered, observed):
+        self.mode = mode
+        self.entered = entered
+        self.observed = observed
+
+    def solve(self, problem, constraints, context):
+        self.entered.set()
+        if self.mode == "raises":
+            raise RuntimeError("spawn test solver failure")
+        if self.mode == "uncooperative":
+            time.sleep(5)  # 有界阻塞；故意不查询 is_cancelled。
+            return Schedule()
+        deadline = time.monotonic() + 6
+        while time.monotonic() < deadline:
+            if context.is_cancelled():
+                self.observed.set()
+                return Schedule()
+            time.sleep(0.01)
+        raise RuntimeError("测试求解桩未在 6 秒内观察到取消")
+
+
+def spawn_worker_with_test_solver(run_id, attempt, event_pipe, control_pipe, mode, entered, observed):
+    """可被 spawn 导入的入口；测试替身在子进程内安装并执行。"""
+    def prepare_test_solver(config):
+        problem = load_scheduling_problem_from_json(config.scenario_path)
+        context = SolveContext(config.seed, config.time_budget_s, ObjectiveWeights(), CompletionParams())
+        return SpawnTestSolver(mode, entered, observed), problem, None, context
+
+    with patch.object(worker, "prepare", side_effect=prepare_test_solver):
+        worker.worker_main(run_id, attempt, event_pipe, control_pipe)
 
 
 def envelope(kind, seq=1, **changes):
@@ -48,6 +84,56 @@ class WorkerIpcTests(unittest.TestCase):
     def _start_command(self):
         return {"kind": "start", "run_id": RUN_ID, "attempt": ATTEMPT,
                 "config": self.config.model_dump()}
+
+    def make_empty_scene(self):
+        # 只供进程/IPC 测试，不代表真实调度实验。
+        scene = {"scenario_id": "fixture", "metadata": {
+            "creation_time": "2026-01-01T00:00:00", "duration": 60,
+        }, "satellites": [], "ground_stations": [], "missions": []}
+        raw = json.dumps(scene).encode()
+        self.scene.write_bytes(raw)
+        return self.config.model_copy(update={"scenario_sha256": hashlib.sha256(raw).hexdigest()})
+
+    @contextmanager
+    def spawn_stub_harness(self, mode):
+        config = self.make_empty_scene()
+        context = mp.get_context("spawn")
+        event_recv, event_send = context.Pipe(duplex=False)
+        control_recv, control_send = context.Pipe(duplex=False)
+        entered, observed = context.Event(), context.Event()
+        process = context.Process(target=spawn_worker_with_test_solver,
+                                  args=(RUN_ID, ATTEMPT, event_send, control_recv,
+                                        mode, entered, observed))
+        forced_cleanup = False
+        try:
+            process.start()
+            event_send.close()
+            control_recv.close()
+            yield process, event_recv, control_send, entered, observed, config
+        finally:
+            control_send.close()
+            event_recv.close()
+            if process.pid is not None:
+                process.join(timeout=0.5)
+                if process.is_alive():
+                    forced_cleanup = True
+                    process.terminate()
+                    process.join(timeout=1)
+                if process.is_alive():
+                    process.kill()
+                    process.join(timeout=1)
+                self.assertFalse(process.is_alive(), "测试结束后遗留 Worker 子进程")
+            self.assertFalse(forced_cleanup, "Worker 未自行退出，测试端执行了外部强制回收")
+
+    def drain_after_exit(self, event_recv):
+        messages = []
+        for _ in range(8):
+            self.assertTrue(event_recv.poll(1), "Worker 已退出但事件 Pipe 未关闭")
+            try:
+                messages.append(worker.receive_message(event_recv))
+            except EOFError:
+                return messages
+        self.fail("Worker 退出后事件 Pipe 未出现 EOF")
 
     @contextmanager
     def harness(self, solve=None):
@@ -151,12 +237,7 @@ class WorkerIpcTests(unittest.TestCase):
 
     def test_real_spawn_runs_empty_test_scenario(self):
         # 仅验证进程和 IPC 正常路径；空场景不是算法实验数据。
-        scene = {"scenario_id": "fixture", "metadata": {
-            "creation_time": "2026-01-01T00:00:00", "duration": 60,
-        }, "satellites": [], "ground_stations": [], "missions": []}
-        raw = json.dumps(scene).encode()
-        self.scene.write_bytes(raw)
-        config = self.config.model_copy(update={"scenario_sha256": hashlib.sha256(raw).hexdigest()})
+        config = self.make_empty_scene()
         context = mp.get_context("spawn")
         event_recv, event_send = context.Pipe(duplex=False)
         control_recv, control_send = context.Pipe(duplex=False)
@@ -179,6 +260,84 @@ class WorkerIpcTests(unittest.TestCase):
                 process.join(timeout=2)
             event_recv.close()
             control_send.close()
+
+    def test_real_spawn_cooperative_cancel_observed_without_candidate(self):
+        with self.spawn_stub_harness("cooperative") as (process, events, control, entered, observed, config):
+            started = self.read_event(events)
+            self.assertEqual(started["kind"], "started")
+            self.assertEqual(started["payload"]["worker_pid"], process.pid)
+            worker.send_message(control, {"kind": "start", "run_id": RUN_ID,
+                                          "attempt": ATTEMPT, "config": config.model_dump()})
+            self.assertTrue(entered.wait(3), "spawn 子进程未进入 solve()")
+            worker.send_message(control, envelope("cancel"))
+            messages = self.read_until_kind(events, "cancel_ack")
+            self.assertTrue(observed.wait(2), "spawn 子进程未通过 is_cancelled() 观察到取消")
+            process.join(timeout=3)
+            self.assertEqual(process.exitcode, 0, "Worker 未自行正常退出")
+            messages.extend(self.drain_after_exit(events))
+            self.assertNotIn("candidate_result", [item["kind"] for item in messages])
+            self.assertEqual([item["kind"] for item in messages].count("cancel_ack"), 1)
+            self.assertEqual([item["seq"] for item in [started] + messages],
+                             list(range(1, len(messages) + 2)))
+            self.assertFalse(process.is_alive())
+
+    def test_real_spawn_uncooperative_cancel_has_bounded_worker_exit(self):
+        with self.spawn_stub_harness("uncooperative") as (process, events, control, entered, observed, config):
+            self.assertEqual(self.read_event(events)["kind"], "started")
+            worker.send_message(control, {"kind": "start", "run_id": RUN_ID,
+                                          "attempt": ATTEMPT, "config": config.model_dump()})
+            self.assertTrue(entered.wait(3), "spawn 子进程未进入不合作 solve()")
+            sent_at = time.monotonic()
+            worker.send_message(control, envelope("cancel"))
+            messages = self.read_until_kind(events, "cancel_ack")
+            self.assertLess(time.monotonic() - sent_at, 1.5, "cancel_ack 未及时到达")
+            process.join(timeout=worker.CANCEL_GRACE_S + 2)
+            elapsed = time.monotonic() - sent_at
+            self.assertEqual(process.exitcode, 0, "Worker 未在取消宽限后自行退出")
+            self.assertLess(elapsed, 4.5, "Worker 主线程被不合作求解线程阻塞")
+            self.assertFalse(observed.is_set(), "不合作测试桩不应读取 is_cancelled()")
+            messages.extend(self.drain_after_exit(events))
+            self.assertNotIn("candidate_result", [item["kind"] for item in messages])
+            self.assertFalse(process.is_alive())
+
+    def test_real_spawn_control_eof_exits_without_lingering_process(self):
+        with self.spawn_stub_harness("cooperative") as (process, events, control, entered, _observed, config):
+            self.assertEqual(self.read_event(events)["kind"], "started")
+            worker.send_message(control, {"kind": "start", "run_id": RUN_ID,
+                                          "attempt": ATTEMPT, "config": config.model_dump()})
+            self.assertTrue(entered.wait(3))
+            control.close()
+            messages = self.read_until_terminal(events)
+            self.assertEqual(messages[-1]["kind"], "failed")
+            self.assertEqual(messages[-1]["payload"]["code"], "ConnectionError")
+            process.join(timeout=3)
+            self.assertEqual(process.exitcode, 0)
+            self.assertEqual(self.drain_after_exit(events), [])
+
+    def test_real_spawn_solver_exception_exits_without_lingering_process(self):
+        with self.spawn_stub_harness("raises") as (process, events, control, entered, _observed, config):
+            self.assertEqual(self.read_event(events)["kind"], "started")
+            worker.send_message(control, {"kind": "start", "run_id": RUN_ID,
+                                          "attempt": ATTEMPT, "config": config.model_dump()})
+            self.assertTrue(entered.wait(3))
+            messages = self.read_until_terminal(events)
+            self.assertEqual(messages[-1]["kind"], "failed")
+            self.assertEqual(messages[-1]["payload"]["code"], "RuntimeError")
+            process.join(timeout=3)
+            self.assertEqual(process.exitcode, 0)
+            self.assertEqual(self.drain_after_exit(events), [])
+
+    def test_real_spawn_closed_event_pipe_exits_without_lingering_process(self):
+        with self.spawn_stub_harness("cooperative") as (process, events, control, entered, _observed, config):
+            self.assertEqual(self.read_event(events)["kind"], "started")
+            worker.send_message(control, {"kind": "start", "run_id": RUN_ID,
+                                          "attempt": ATTEMPT, "config": config.model_dump()})
+            self.assertTrue(entered.wait(3))
+            events.close()
+            worker.send_message(control, envelope("cancel"))
+            process.join(timeout=3)
+            self.assertEqual(process.exitcode, 0, "事件 Pipe 关闭后 Worker 未自行退出")
+            self.assertFalse(process.is_alive())
 
     def test_malformed_json_and_required_fields_are_rejected(self):
         for data in (b"{", json.dumps(envelope("cancel", payload=[])).encode(),
