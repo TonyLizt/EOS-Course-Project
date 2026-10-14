@@ -1,5 +1,7 @@
 # 卫星整体姿态与固定载荷回放：最终验证
 
+> 本文记录 `6a7c285` 时的 commit 6 验收基线。真实页面测试后完成的 UTC/Cesium 相容、3D 视锥、追踪恢复、callback 防护及任务点交互，统一记录在 [`../phase2/satellite_replay_post_commit_6.md`](../phase2/satellite_replay_post_commit_6.md)。
+
 - 验收日期：2026-10-15（Asia/Hong_Kong）
 - 分支：`feat/satellite-body-fixed-payload-replay`
 - 环境：WSL2 Linux 6.18.33.2，Python 3.10.12，Node 24.20.0，Intel Core Ultra 7 155H

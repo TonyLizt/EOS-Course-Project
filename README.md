@@ -87,9 +87,9 @@ cd /mnt/d/Code/EOS-Course-Project
 
 当前本体姿态是以 ECEF 轨道位置和任务目标计算的几何指向示意，固定载荷始终使用同一相机—本体变换。它不是 Orekit 姿态或卫星动力学验证；若派生数据不可用，Cesium 保留原有点/标签显示。
 
-每颗星在转向和拍摄阶段会显示独立视锥：转向为琥珀色，拍摄为绿色，并在原 `sat_end_time` 隐藏。视场使用配置中明示的“方形完整角”显示假设，中心和边界射线共用固定载荷姿态，通过 Cesium WGS84 椭球求交生成中心点与地面覆盖。部分视场越过地平线时不画完整覆盖，无交点时不沿用旧几何。这些覆盖仅用于回放，不修正任务成功或指标。详细验证见 [commit 4 交接记录](docs/phase2/satellite_replay_commit_4.md)；卫星选择与同钟固定载荷第二视图尚待 commit 5。
+每颗星在转向和拍摄阶段会显示独立视锥：转向为琥珀色，拍摄为绿色，并在原 `sat_end_time` 隐藏。视场使用配置中明示的“方形完整角”显示假设，以 16 条边界、半透明侧面和端面形成可辨识的 3D 方锥；中心和边界射线通过 Cesium WGS84 椭球求交生成中心点与地面覆盖。部分视场越过地平线时保留视场包络但不画完整 footprint，无交点时不沿用旧地面几何。这些显示仅用于回放，不修正任务成功或指标。基础几何见 [commit 4 交接记录](docs/phase2/satellite_replay_commit_4.md)，commit 6 后的显示增强与兼容修正见[后续整合记录](docs/phase2/satellite_replay_post_commit_6.md)。
 
-左侧“Fixed Payload View”列出原卫星 ID 和机动类型；也可在主地球或任务列表点选卫星。第二 Viewer 持续显示选中星在等待、转向和拍摄阶段的固定载荷视野，与主 Viewer 共用唯一仿真时钟。暂停、倍速、时间拖动及任务列表跳转都从同一绝对时间状态重建；不会延长短任务。画面按光学 FOV 比例留白，不随面板比例拉伸；隐藏面板可停止额外渲染。详见 [commit 5 交接记录](docs/phase2/satellite_replay_commit_5.md)。
+左侧“Fixed Payload View”列出原卫星 ID 和机动类型；也可在主地球或任务列表点选卫星。第二 Viewer 持续显示选中星的固定载荷视野，并在活动任务期间标出任务 ID、经纬度和地面点。单击主地球卫星使用原生选取，双击可追踪；单击任务点会解除追踪并切到该点上方约 600 km 的正下视角。任务列表跳转会暂停在原开始时刻，避免高倍速越过短任务。画面按光学 FOV 比例留白，隐藏面板可停止额外渲染。基础设计见 [commit 5 交接记录](docs/phase2/satellite_replay_commit_5.md)，当前交互见[commit 6 后续整合记录](docs/phase2/satellite_replay_post_commit_6.md)。
 
 回放属于只读派生显示：重复请求以场景、正式计划、显示配置、模型资产和几何版本的完整 identity 去重，不写回 SQLite。模型本体的实际 SHA-256 也进入 manifest/cache key；资产被替换但配置 URL 不变时，不会误用旧 identity。完整验收环境、保护哈希、六个功能 commit 和已知限制见 [最终验证报告](docs/replay/final-validation.md)。
 

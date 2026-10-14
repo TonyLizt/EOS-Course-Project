@@ -1,5 +1,9 @@
 # 课程项目运行与版本记录
 
+# 卫星回放 commit 6 后续整合记录（2026-10-15）
+
+已将 `6a7c285` 之后的六个提交 `ed60809`、`79851bd`、`08d06b9`、`6422935`、`b5ebe21`、`a3622b1` 汇总为[专题交接](docs/phase2/satellite_replay_post_commit_6.md)：涵盖正式 schedule UTC 相容、CesiumJS 1.136 Quaternion 修正、精确任务跳转、半透明 3D 方锥、原生卫星选取/双击追踪恢复、callback 与浏览器缓存防护、Fixed Payload 任务点/坐标和主地球任务点 600 km 正下视。以成功实验 `965cfdc1-cb00-4500-b993-c20b8c23416c` 进行 Chromium 整页验收，无 render/page/console error；Python 定向 10/10、Node.js 4 组通过。API 路径、SQLite 模式、Controller/Worker、算法、正式计划与指标不变；完整 unittest 的既有停滞限制仍保留。
+
 # 回放正式数据 UTC 兼容修正（2026-10-15）
 
 修正正式排程沿用既有 `scenario_loader` 语义、以无时区 ISO 字串表示 UTC，卻被 replay sidecar 拒絕為 409 的整合問題。HTTP 回放現在只在記憶體內為顯示資料補上明確 `+00:00`，不修改 SQLite、正式計畫或場景；瀏覽器也會保留實際 replay 載入錯誤，不再被後續 fallback 訊息覆蓋。以既有成功實驗 `47023229-6c42-4364-9831-3b56d72b4869` 唯讀實測，可產生 1 顆衛星、30 個任務、47 個階段及 Landsat 8 模型資源；Python 定向 10 項與四組 Node.js 測試通過。

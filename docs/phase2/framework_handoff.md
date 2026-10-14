@@ -1,6 +1,6 @@
-# 第二阶段框架交接说明（v0.2.1 框架 + W1/W2 + 卫星回放 commit 1–6）
+# 第二阶段框架交接说明（v0.2.1 框架 + W1/W2 + 卫星回放 commit 1–6 及后续整合）
 
-本文件记录 v0.2.1 框架、`feat/hmt-worker-ipc` 与卫星回放 commit 1–6 当前已实现的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。卫星回放的完整交付证据见 [`../replay/final-validation.md`](../replay/final-validation.md)。
+本文件记录 v0.2.1 框架、`feat/hmt-worker-ipc` 与卫星回放 commit 1–6 及其真实页面后续修正的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。卫星回放的 commit 6 交付证据见 [`../replay/final-validation.md`](../replay/final-validation.md)，commit 6 后的兼容、视锥和交互修正见 [`satellite_replay_post_commit_6.md`](satellite_replay_post_commit_6.md)。
 
 ## 1. 当前闭环
 
@@ -22,7 +22,7 @@
 | `replay/` 与 `replay_configs/` | 回放契约、输入完整性、manifest、任务阶段及可版本化显示配置 | 回放仅派生显示数据；不得向调度约束反向写入 |
 | `replay/assets.py` | 校验资产 manifest、受控路径及实际 GLB 哈希，将模型资源纳入 cache identity | 资产变更必须得到新 identity；不向浏览器暴露服务器绝对路径 |
 | `draw/cesium_viewer.html`、`draw/fixed-payload-state.js` 与 `draw/fixed-payload-geometry.js` | 按绝对时间求本体/载荷姿态，显示 GLB，用 Cesium WGS84 求逐星视锥、中心交点和覆盖 | 回放不可用时保留点/标签回退；正式链路总验收见 commit 6 |
-| `draw/fixed-payload-view.js` | 从同一姿态输出相机 pose，固定光学 FOV/纵横比，为选中星驱动无独立时钟的第二 Viewer | 只读主时钟；隐藏后不渲染；不向姿态增加镜头自由度 |
+| `draw/fixed-payload-view.js` | 从同一姿态输出相机 pose，固定光学 FOV/纵横比，为选中星驱动无独立时钟的第二 Viewer；活动任务显示地面点、ID 与经纬度 | 只读主时钟；隐藏后不渲染；不向姿态增加镜头自由度 |
 
 ## 3. 配置与路径
 
@@ -56,6 +56,7 @@ python scripts/check_visualization.py <已成功的运行ID>
 - Landsat 8 GLB 只是通用显示外观，不改变源场景的卫星 ID。模型—本体轴校准尚为单位四元数；当前姿态是几何指向示意，不是 Orekit 姿态或动力学验证。
 - commit 4 已实现视锥、椭球中心交点、ECEF 覆盖和部分/无交点降级，但仍采用方形全角显示假设，不包含地形遮挡或真实成像验证；见 [`satellite_replay_commit_4.md`](satellite_replay_commit_4.md)。
 - commit 5 已实现列表/地球/任务选星和与主时钟同步的固定载荷第二视图。第二 Viewer 显示的是地图/椭球模拟视野，不是真实遥感影像；见 [`satellite_replay_commit_5.md`](satellite_replay_commit_5.md)。
+- commit 6 后已补齐正式 schedule UTC 相容、CesiumJS 1.136 模型姿态、任务精确跳转、半透明 3D 方锥、原生选取/追踪、callback/浏览器缓存防护、载荷任务标记和任务点俯视；见 [`satellite_replay_post_commit_6.md`](satellite_replay_post_commit_6.md)。这些仍是显示交互，不改变调度可行性或正式结果。
 - 文件输出失败会留下数据库内已成功的计划与导出失败事件，便于重试；不会把有效计划改判为失败。
 
 ## 7. 实验数据清理
