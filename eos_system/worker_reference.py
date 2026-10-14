@@ -67,15 +67,24 @@ def _validate_message(message: object) -> dict:
 
 def send_message(connection: Connection, message: dict) -> None:
     """在 Pipe 上只传 JSON 字节，保持参考实现的 4 MiB 限额。"""
+    connection.send_bytes(encode_message_bytes(message))
+
+
+def encode_message_bytes(message: dict) -> bytes:
+    """供 Controller 的有界 Pipe 写入复用同一校验和 JSON 编码。"""
     _validate_message(message)
     data = json.dumps(message, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     if len(data) > MAX_MESSAGE_BYTES:
         raise ValueError("IPC 消息超过参考 Worker 的 4 MiB 限额")
-    connection.send_bytes(data)
+    return data
 
 
 def receive_message(connection: Connection) -> dict:
-    data = connection.recv_bytes(MAX_MESSAGE_BYTES)
+    return decode_message_bytes(connection.recv_bytes(MAX_MESSAGE_BYTES))
+
+
+def decode_message_bytes(data: bytes) -> dict:
+    """供 Controller 的有界 Pipe 读取复用同一协议验证。"""
     try:
         message = json.loads(data.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:

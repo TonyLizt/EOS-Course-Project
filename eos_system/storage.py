@@ -283,6 +283,18 @@ class Database:
         with self.write() as db:
             self._event(db, run_id, attempt, "controller", None, kind, payload)
 
+    def record_attempt_exit(self, run_id: str, attempt: int, exit_code: int | None, diagnostics: dict) -> None:
+        """在原有 attempt 列和事件表中记录直接 Worker 的退出与回收。"""
+        with self.write() as db:
+            row = db.execute("SELECT 1 FROM run_attempts WHERE run_id=? AND attempt_no=?",
+                             (run_id, attempt)).fetchone()
+            if row is None:
+                return
+            db.execute("UPDATE run_attempts SET exit_code=? WHERE run_id=? AND attempt_no=?",
+                       (exit_code, run_id, attempt))
+            self._event(db, run_id, attempt, "controller", None, "WORKER_REAP",
+                        {"exit_code": exit_code, **diagnostics})
+
     def next_queued(self) -> dict | None:
         with self.connect() as db:
             row = db.execute("SELECT * FROM runs WHERE status='QUEUED' ORDER BY queued_at,run_id LIMIT 1").fetchone()

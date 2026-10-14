@@ -1,5 +1,11 @@
 # 课程项目运行与版本记录
 
+## Worker/IPC W2-B（2026-10-14，`feat/hmt-worker-ipc`，待审核）
+
+Controller 使用单线程非阻塞 Pipe 帧收发，给 start/cancel 写入、启动准备、搜索总墙钟、单帧传输和候选后退出设置单调时钟期限；直接 Worker 依次有界 join、terminate、kill。复用现有 `run_attempts.exit_code` 和小型诊断事件记录退出与 IPC 错误，Worker 不写数据库。人工审核后修复不同 `seq` 重复候选刷新退出期限、零长度帧误分类两项缺陷；同 `seq` 仍去重。WSL2 Ubuntu 22.04 / Python 3.10.12 的独立临时目录中，`python -m unittest discover -s tests -v` **72 项通过**，其中 W2-B 专题 21 项真实 spawn 故障/回收测试；原 W2-A HTTP 闭环、正常成功及 SQLite 事务测试保持通过。HTTP、SQLite 物理模式、状态枚举、算法接口、双 Pipe、协议版本及 4 MiB 限额未变。`Process.start()` 自身无法由现有单线程状态机抢占；后代进程组回收、Controller 安全停机和崩溃后旧进程清扫仍待 W2-C。详见 [`docs/phase2/W2 WorkerIPC 与 Controller 协作实施说明 v1.0.md`](docs/phase2/W2%20WorkerIPC%20%E4%B8%8E%20Controller%20%E5%8D%8F%E4%BD%9C%E5%AE%9E%E6%96%BD%E8%AF%B4%E6%98%8E%20v1.0.md)。
+
+---
+
 ## Worker/IPC W2-A（2026-10-14，`feat/hmt-worker-ipc`）
 
 Controller 已接通 W1 的运行中协作取消：本 attempt 一次性发送完整 `cancel`，继续读取并去重 `cancel_ack`，在直接 Worker 退出后裁决 `CANCELLED`；取消候选仍受统一核验和 SQLite 成功事务保护。保留旧 `start`、双单向 Pipe、HTTP、SQLite 模式及算法签名。WSL2 Ubuntu 22.04 / Python 3.10.12 的独立临时目录中，完整单元测试 **51 项通过**（新增 Controller 专题 14 项，含真实 spawn 与 ASGI HTTP → Worker → SQLite 闭环）。同步 Pipe 的严格抗阻塞、完整超时和单 Worker 回收诊断待 W2-B；后代进程组清理与安全停机待 W2-C。因此本阶段建议 **FUNCTIONAL PASS / RELIABILITY PENDING**。详见 [`docs/phase2/W2 WorkerIPC 与 Controller 协作实施说明 v1.0.md`](docs/phase2/W2%20WorkerIPC%20%E4%B8%8E%20Controller%20%E5%8D%8F%E4%BD%9C%E5%AE%9E%E6%96%BD%E8%AF%B4%E6%98%8E%20v1.0.md)。

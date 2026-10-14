@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import fcntl
+import math
 import multiprocessing as mp
 import os
 import threading
@@ -13,11 +14,15 @@ import time
 from datetime import datetime, timezone
 
 from .config import Settings
+from .controller_ipc import (EOF, ControlWriter, EventReader, IpcError,
+                             IpcMessageTooLarge, IpcProtocolError,
+                             IpcSendTimeout, IpcTransferInterrupted,
+                             IpcTransferTimeout)
 from .contracts import RunConfig
 from .exporting import persist_directory_exports
 from .storage import Database
 from .verification import verify_candidate
-from .worker_reference import CANCEL_GRACE_S, PROTOCOL_VERSION, receive_message, send_message, worker_main
+from .worker_reference import CANCEL_GRACE_S, PROTOCOL_VERSION, worker_main
 
 
 class Controller:
@@ -71,6 +76,20 @@ class Controller:
                 # 队列线程不能因单次实验故障而退出，否则后续 QUEUED 将无人处理。
                 self.database.finish_failure(queued["run_id"], attempt, "FAILED", type(exc).__name__, str(exc))
 
+    def _reap_worker(self, process: mp.Process, initial_grace_s: float) -> dict:
+        """只回收本次 Process 直接子进程；后代进程组属于 W2-C。"""
+        action = "exited"
+        process.join(timeout=max(0.0, initial_grace_s))
+        if process.is_alive():
+            action = "terminate"
+            process.terminate()
+            process.join(timeout=max(0.0, self.settings.stop_grace_s))
+        if process.is_alive():
+            action = "kill"
+            process.kill()
+            process.join(timeout=2)
+        return {"action": action, "exit_code": process.exitcode, "alive": process.is_alive()}
+
     def _execute(self, config: RunConfig, attempt: int) -> None:
         context = mp.get_context("spawn")
         event_recv, event_send = context.Pipe(duplex=False)
@@ -80,111 +99,192 @@ class Controller:
             args=(config.run_id, attempt, event_send, control_recv),
             name=f"eos-worker-{config.run_id[:8]}",
         )
+        startup_started_at = time.monotonic()
+        startup_deadline = startup_started_at + self.settings.startup_timeout_s
+        reaped = False
         try:
             process.start()
             event_send.close()
             control_recv.close()
-            send_message(control_send, {"kind": "start", "run_id": config.run_id, "attempt": attempt, "config": config.model_dump()})
-            started_at = time.monotonic()
+            reader = EventReader(event_recv)
+            writer = ControlWriter(control_send)
+            writer.enqueue({"kind": "start", "run_id": config.run_id, "attempt": attempt,
+                            "config": config.model_dump()}, startup_deadline)
             searching_at: float | None = None
             candidate: dict | None = None
             reported_runtime: float | None = None
-            failure: tuple[str, str] | None = None
-            cancel_started_at: float | None = None
+            candidate_exit_deadline: float | None = None
+            failure: tuple[str, str, str] | None = None
+            stop_reason: str | None = None
+            stop_deadline: float | None = None
             cancel_ack_received = False
+            ipc_diagnostic: tuple[str, str] | None = None
+            event_eof = False
             # W1 最多等待 2 秒；Controller 额外留出一次 IPC/调度宽限。
             cancel_grace_s = CANCEL_GRACE_S + self.settings.stop_grace_s
             while not self._stop.is_set():
                 state = self.database.get_status(config.run_id)
                 if not state or state["current_attempt"] != attempt:
-                    failure = ("WORKER_STATE", "运行记录或 attempt 已变化")
+                    failure = ("FAILED", "WORKER_STATE", "运行记录或 attempt 已变化")
                     break
                 if state["status"] in {"CANCELLED", "FAILED", "TIMED_OUT"}:
-                    failure = ("CANCELLED", "实验已停止")
+                    failure = ("FAILED", "WORKER_STATE", "实验已处于终态")
                     break
                 clock = time.monotonic()
-                if state["cancel_requested_at"] and cancel_started_at is None:
-                    cancel_started_at = clock
+                # 同一轮先看已持久化的用户取消，再判定墙钟超时；已锁定的理由不回退。
+                if state["cancel_requested_at"] and stop_reason is None:
+                    stop_reason = "USER_CANCEL"
+                    stop_deadline = clock + cancel_grace_s
                     # 旧 start 没有 seq，故本 attempt 首条完整控制命令使用 seq=1。
                     try:
-                        send_message(control_send, {
+                        writer.enqueue({
                             "protocol_version": PROTOCOL_VERSION, "run_id": config.run_id,
                             "attempt": attempt, "seq": 1, "kind": "cancel",
                             "sent_at": datetime.now(timezone.utc).isoformat(), "payload": {},
-                        })
-                    except (BrokenPipeError, EOFError, OSError, ValueError):
-                        failure = ("CANCELLED", "取消控制 Pipe 已断开")
+                        }, stop_deadline)
+                    except (IpcError, ValueError) as exc:
+                        ipc_diagnostic = ("IPC_SEND_ERROR", str(exc))
                         break
-                if cancel_started_at is not None:
-                    if clock - cancel_started_at >= cancel_grace_s:
-                        failure = ("CANCELLED", "Worker 未在协作取消宽限内退出")
-                        break
-                elif searching_at is None and clock - started_at > self.settings.startup_timeout_s:
-                    failure = ("STARTUP_TIMEOUT", "Worker 启动或加载超时")
+                if stop_deadline is not None and clock >= stop_deadline:
+                    if writer.pending:
+                        ipc_diagnostic = ("IPC_SEND_TIMEOUT", "取消控制消息未在协作期限内写完")
                     break
-                elif searching_at is not None and clock - searching_at > config.time_budget_s + self.settings.transfer_timeout_s:
-                    failure = ("TIMED_OUT", "算法运行或结果传输超时")
+                if stop_reason is None and searching_at is None and clock >= startup_deadline:
+                    if writer.pending:
+                        failure = ("FAILED", "IPC_SEND_TIMEOUT", "Worker start 控制消息未在启动期限内写完")
+                    else:
+                        failure = ("FAILED", "WORKER_STARTUP_TIMEOUT", "Worker 启动或加载超时")
                     break
-                if event_recv.poll(0.1):
-                    try:
-                        message = receive_message(event_recv)
-                    except EOFError:
-                        message = None
-                    if message is None:
-                        if not process.is_alive():
+                if stop_reason is None and searching_at is not None and candidate is None:
+                    if clock >= searching_at + config.time_budget_s + self.settings.transfer_timeout_s:
+                        stop_reason = "ALGORITHM_TIMEOUT"
+                        stop_deadline = clock + cancel_grace_s
+                        try:
+                            writer.enqueue({
+                                "protocol_version": PROTOCOL_VERSION, "run_id": config.run_id,
+                                "attempt": attempt, "seq": 1, "kind": "cancel",
+                                "sent_at": datetime.now(timezone.utc).isoformat(), "payload": {},
+                            }, stop_deadline)
+                        except (IpcError, ValueError) as exc:
+                            ipc_diagnostic = ("IPC_SEND_ERROR", str(exc))
                             break
-                        continue
-                    if message.get("protocol_version") != 1 or message.get("run_id") != config.run_id or message.get("attempt") != attempt:
-                        continue
-                    if message["kind"] == "started" and message["payload"].get("worker_pid") != process.pid:
-                        failure = ("WORKER_IDENTITY", "Worker 身份与所启动进程不一致")
+                if stop_reason is None and candidate_exit_deadline is not None and clock >= candidate_exit_deadline:
+                    failure = ("FAILED", "WORKER_EXIT_TIMEOUT", "Worker 返回候选后未按期退出")
+                    break
+                try:
+                    writer.check_deadline(clock)
+                    writer.pump()
+                    if not event_eof:
+                        reader.check_deadline(clock, self.settings.transfer_timeout_s)
+                        message = reader.read_one()
+                    else:
+                        message = EOF
+                except (IpcError, ValueError) as exc:
+                    if isinstance(exc, IpcMessageTooLarge):
+                        code = "IPC_MESSAGE_TOO_LARGE"
+                    elif isinstance(exc, IpcTransferTimeout):
+                        code = "IPC_TRANSFER_TIMEOUT"
+                    elif isinstance(exc, IpcTransferInterrupted):
+                        code = "IPC_TRANSFER_INTERRUPTED"
+                    elif isinstance(exc, IpcSendTimeout):
+                        code = "IPC_SEND_TIMEOUT"
+                    elif isinstance(exc, IpcProtocolError):
+                        code = "IPC_PROTOCOL_ERROR"
+                    else:
+                        code = "IPC_DISCONNECTED"
+                    ipc_diagnostic = (code, str(exc))
+                    if stop_reason is None:
+                        failure = ("FAILED", code, str(exc))
+                    break
+
+                if message is EOF:
+                    event_eof = True
+                    if candidate is None and stop_reason is None:
+                        failure = ("FAILED", "IPC_DISCONNECTED", "Worker 事件 Pipe 已关闭")
                         break
-                    if not self.database.record_worker_event(message):
+                elif message is not None:
+                    if message["run_id"] != config.run_id or message["attempt"] != attempt:
                         continue
                     kind, payload = message["kind"], message["payload"]
-                    if kind == "heartbeat" and payload.get("phase") == "SEARCHING":
-                        if searching_at is None:
-                            searching_at = time.monotonic()
-                    elif kind == "cancel_ack":
-                        if cancel_started_at is not None and payload.get("accepted") is True:
-                            cancel_ack_received = True
-                    elif kind == "candidate_result":
-                        if cancel_started_at is not None:
-                            # 取消已被 Controller 接受；晚到候选只作审计事件。
-                            continue
-                        candidate = payload["plan"]
-                        reported_runtime = float(payload["algorithm_runtime_s"])
+                    if kind not in {"started", "heartbeat", "candidate_result", "failed", "cancel_ack"}:
+                        failure = ("FAILED", "IPC_PROTOCOL_ERROR", f"未知 Worker 事件：{kind}")
                         break
-                    elif kind == "failed":
-                        if cancel_started_at is None:
-                            failure = (payload.get("code", "WORKER_ERROR"), payload.get("message", "Worker 报告失败"))
+                    if kind == "started" and payload.get("worker_pid") != process.pid:
+                        failure = ("FAILED", "WORKER_IDENTITY", "Worker 身份与所启动进程不一致")
+                        break
+                    if kind != "started" and ("worker_pid" in payload or "worker_start_token" in payload):
+                        failure = ("FAILED", "IPC_PROTOCOL_ERROR", "非 started 事件携带 Worker 身份字段")
+                        break
+                    if kind == "heartbeat" and not isinstance(payload.get("phase"), str):
+                        failure = ("FAILED", "IPC_PROTOCOL_ERROR", "heartbeat 阶段字段错误")
+                        break
+                    if kind == "cancel_ack" and type(payload.get("accepted")) is not bool:
+                        failure = ("FAILED", "IPC_PROTOCOL_ERROR", "cancel_ack 接受字段错误")
+                        break
+                    if kind == "failed" and (not isinstance(payload.get("code"), str)
+                                             or not isinstance(payload.get("message"), str)):
+                        failure = ("FAILED", "IPC_PROTOCOL_ERROR", "failed 载荷字段错误")
+                        break
+                    runtime: float | None = None
+                    if kind == "candidate_result":
+                        if not isinstance(payload.get("plan"), dict):
+                            failure = ("FAILED", "IPC_PROTOCOL_ERROR", "候选计划结构错误")
                             break
-                elif not process.is_alive():
-                    # 退出后再尝试取一次尾部消息，避免把成功结果误判为断链。
-                    if not event_recv.poll(0.1):
+                        try:
+                            runtime = float(payload["algorithm_runtime_s"])
+                        except (KeyError, TypeError, ValueError) as exc:
+                            failure = ("FAILED", "IPC_PROTOCOL_ERROR", f"候选 runtime 错误：{exc}")
+                            break
+                        if not math.isfinite(runtime):
+                            failure = ("FAILED", "IPC_PROTOCOL_ERROR", "候选 runtime 非有限数")
+                            break
+                    if not self.database.record_worker_event(message):
+                        continue
+                    if kind == "heartbeat" and payload.get("phase") == "SEARCHING" and searching_at is None:
+                        searching_at = time.monotonic()
+                    elif kind == "cancel_ack" and stop_reason is not None and payload.get("accepted") is True:
+                        cancel_ack_received = True
+                    elif kind == "candidate_result" and stop_reason is None:
+                        if candidate is not None:
+                            failure = ("FAILED", "IPC_PROTOCOL_ERROR", "Worker 重复发送候选计划")
+                            break
+                        candidate = payload["plan"]
+                        reported_runtime = runtime
+                        candidate_exit_deadline = time.monotonic() + self.settings.stop_grace_s
+                    elif kind == "failed" and stop_reason is None:
+                        failure = ("FAILED", str(payload.get("code", "WORKER_ERROR")),
+                                   str(payload.get("message", "Worker 报告失败")))
                         break
 
-            if cancel_started_at is not None:
-                process.join(timeout=max(0.0, cancel_started_at + cancel_grace_s - time.monotonic()))
-            else:
-                process.join(timeout=self.settings.stop_grace_s)
-            if process.is_alive():
-                process.terminate()
-                process.join(timeout=self.settings.stop_grace_s)
-            if process.is_alive():
-                process.kill()
-                process.join(timeout=2)
-            if process.is_alive():
+                if not process.is_alive():
+                    # 子进程退出后再读尽已有完整帧；不丢弃已发送的候选或失败事件。
+                    if event_eof:
+                        break
+                    if message is None and reader.frame_started_at is None:
+                        break
+                self._stop.wait(0.01)
+
+            if ipc_diagnostic is not None:
+                self.database.record_system_event(config.run_id, attempt, "IPC_ERROR",
+                                                  {"code": ipc_diagnostic[0], "message": ipc_diagnostic[1][:300]})
+            grace = 0.0 if stop_reason is not None or candidate_exit_deadline is not None else self.settings.stop_grace_s
+            reap = self._reap_worker(process, grace)
+            reaped = True
+            self.database.record_attempt_exit(config.run_id, attempt, reap["exit_code"],
+                                              {"action": reap["action"], "alive": reap["alive"],
+                                               "reason": stop_reason or (failure[1] if failure else "NORMAL")})
+            if reap["alive"]:
                 self.database.finish_failure(config.run_id, attempt, "FAILED", "WORKER_CLEANUP_INCOMPLETE", "Worker 直接进程未能退出")
                 return
-            if cancel_started_at is not None:
-                # ack 是诊断信息；无 ack 但已安全结束仍可裁决用户取消。
+            if stop_reason == "USER_CANCEL":
                 message = "用户取消运行" if cancel_ack_received else "用户取消运行；未收到 Worker 确认"
                 self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED", message)
                 return
+            if stop_reason == "ALGORITHM_TIMEOUT":
+                self.database.finish_failure(config.run_id, attempt, "TIMED_OUT", "ALGORITHM_TIMEOUT", "算法运行或结果传输超过墙钟期限")
+                return
             if failure:
-                status = "CANCELLED" if failure[0] == "CANCELLED" else "TIMED_OUT" if "TIMEOUT" in failure[0] or failure[0] == "TIMED_OUT" else "FAILED"
-                self.database.finish_failure(config.run_id, attempt, status, failure[0], failure[1])
+                self.database.finish_failure(config.run_id, attempt, *failure)
                 return
             if candidate is None or reported_runtime is None:
                 self.database.finish_failure(config.run_id, attempt, "FAILED", "WORKER_EXIT", f"Worker 未返回候选计划，退出码 {process.exitcode}")
@@ -216,8 +316,11 @@ class Controller:
                         # 正式计划已在库中提交，外部目录故障只记诊断事件，不篡改成功状态。
                         self.database.record_system_event(config.run_id, attempt, "EXPORT_FAILED", {"message": str(exc)[:300]})
         finally:
-            if process.is_alive():
-                process.terminate()
-                process.join(timeout=2)
+            if process.pid is not None and not reaped:
+                self._reap_worker(process, 0)
             event_recv.close()
+            event_send.close()
             control_send.close()
+            control_recv.close()
+            if process.pid is not None and not process.is_alive():
+                process.close()

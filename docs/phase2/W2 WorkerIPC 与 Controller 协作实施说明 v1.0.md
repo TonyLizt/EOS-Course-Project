@@ -228,7 +228,7 @@ Worker 可能尚未执行 `setsid()`、组长可能已退出或 PID 被复用；
 
 ## 9. 尚未交付的边界与后续阶段
 
-1. **W2-A 已有本文件第 10 节的实施与测试记录；W2-B/W2-C 尚未编码、测试或提交。** 前述方案段落仍是实施约束，不能替代后续阶段的验收报告。
+1. **W2-A、W2-B 分别有本文件第 10、11 节的实施与测试记录；W2-C 尚未编码或测试。** 前述方案段落仍是实施约束，不能替代各阶段的验收报告。
 2. W1 已测试的“取消后 Worker 主线程有界退出”不等于“任意不合作线程／逃逸后代均已回收”；W2-C 用独立进程组实测，同时保留已识别的逃逸限制。
 3. 崩溃后重新启动 Controller 时，历史随机 `worker_start_token` 不能保证 OS 身份一致；W2 不根据历史 PID 盲目清理旧进程。**如课程最终要求完整的孤儿进程恢复演示，必须与李泽同、梁兆榮共同增加可靠身份记录／回收方案，不能把本版的保守标记失败冒充完成恢复。**
 4. W3 才讨论超过 4 MiB 的候选文件载体、相对路径安全、SHA-256 和清理；本方案保留现有消息上限。
@@ -261,3 +261,45 @@ Worker 可能尚未执行 `setsid()`、组长可能已退出或 PID 被复用；
 - 本文件第 6 节要求提前通知李泽同 Controller 修改范围。当前会话没有授权 Codex 代发外部消息；何明涛应在集成审核前按第 8 节通知其确认影响。
 
 **阶段建议：FUNCTIONAL PASS / RELIABILITY PENDING。** 完整 IPC 抗阻塞、后代回收及安全停机不得据本节标记为通过。
+
+## 11. W2-B 实施记录（2026-10-14，待集成审核）
+
+本节以本次工作区代码和实际隔离测试为依据。第 10 节描述的是当时 W2-A 的验收状态；本节补充其后的 W2-B 结果，未将 W2-C 设计写成现有能力。
+
+### 有界 IPC 与职责
+
+- `eos_system/controller_ipc.py` 新增 Controller 独占的 `ControlWriter`、`EventReader`。它们在 Linux Pipe 文件描述符上使用非阻塞 `os.write()` / `os.read()`，由 `_execute()` 同一线程逐轮驱动；没有后台 I/O 线程、第二读取者或并发 SQLite 写入。控制侧仅排队当前 attempt 的旧格式 `start` 和完整格式 `cancel`，单次最多写 1 MiB；事件侧单次最多读 1 MiB，只向状态机交付完整一帧。两侧都检查单调时钟期限及 EOF、半帧、写端断开、非法长度和解码失败。
+- 帧格式沿用当前 Linux / CPython 3.10 `multiprocessing.Connection.send_bytes()` 对小于 4 MiB 消息所用的 **4 字节网络序有符号长度头 + JSON 字节**。`worker_reference.py` 抽取共用编解码，Worker 的 `send_bytes()` / `recv_bytes()`、协议版本 1、两条单向 Pipe、消息 JSON 和 `MAX_MESSAGE_BYTES` 均保持原样。该底层帧细节是实现依赖；升级 Python 或移植平台时应重新验证真实 Worker 互通，不能视作新的公共协议承诺。
+- `Controller._execute()` 不再在主状态循环中同步 `send_bytes()` 或在 `poll()` 后同步 `recv_bytes()`。合法事件仍先验证身份、版本、关键字段及载荷，再由原有 `record_worker_event()` 去重；错误 attempt 事件不能进入本次状态机。`candidate_result` 只有完整接收后才进入核验路径；4 MiB 以上的帧在读 body 前拒绝。IPC 传输缓冲只保存当前一帧和最多两条控制消息。
+
+### 时钟、竞争与终态
+
+| 阶段 | 单调时钟起点和截止 | 超期处理 |
+|---|---|---|
+| 启动与准备 | `Process.start()` 调用前设 `startup_timeout_s` 期限；直到首次有效 `SEARCHING`。包含 start 写入、Worker 启动、场景加载与算法准备 | `FAILED/IPC_SEND_TIMEOUT` 或 `FAILED/WORKER_STARTUP_TIMEOUT`；直接进程受控回收 |
+| 搜索与结果总保护 | 首次有效 `SEARCHING`；`time_budget_s + transfer_timeout_s`，重复 `SEARCHING` 不重置 | 发一次 W1 cancel，固定协作期限后回收，最终 `TIMED_OUT/ALGORITHM_TIMEOUT` |
+| 单帧事件传输 | 本帧首字节到达；每帧 `transfer_timeout_s`，含候选帧 | 未完成为 `FAILED/IPC_TRANSFER_TIMEOUT`；EOF 半帧为 `IPC_TRANSFER_INTERRUPTED` |
+| 候选后退出 | 完整候选到达；`stop_grace_s` | 直接 Worker 未退出为 `FAILED/WORKER_EXIT_TIMEOUT`，不得直接提交候选 |
+| 用户取消 | 本 attempt 首次读到已持久化的取消；W1 2 秒加 `stop_grace_s` | `cancel_ack` 不延长期限；直接 Worker 结束或回收后裁决 `CANCELLED` |
+
+每轮先读当前 attempt 的数据库取消状态，再判断未锁定的搜索超时。若本轮同时看到两者，用户取消优先；一旦锁定 `USER_CANCEL` 或 `ALGORITHM_TIMEOUT`，晚到的取消、ack、候选或 Worker 自报时间不能更改理由。IPC 故障仍记录诊断事件，但已锁定的取消/超时理由不被其覆盖。候选先到时仍须检查直接进程退出码、用户取消、统一核验及 SQLite 成功事务；`RT` 仍只按 `solve()` 的运行时间统计。
+
+### 回收与诊断
+
+- `_reap_worker()` 只使用本次持有的 `multiprocessing.Process` 句柄：有限 `join` → 若存活 `terminate()` → 最多 `stop_grace_s` 等待 → 若仍存活 `kill()` → 最多 2 秒等待。正常退出也及时 join。`finally` 关闭四个父进程 Pipe 端，并在进程已结束时关闭 Process 句柄；没有调用 `killpg()`。
+- `storage.Database.record_attempt_exit()` 仅更新现有 `run_attempts.exit_code` 并写一条小型 Controller `WORKER_REAP` 事件，内容含动作、退出码、存活检查及原因；无需模式迁移，也不向事件表写完整候选。IPC 错误另写 `IPC_ERROR` 诊断。直接进程最终仍存活时使用原状态 `FAILED/WORKER_CLEANUP_INCOMPLETE`，不声称安全回收完成。Worker 不访问 SQLite。
+- `FAILED` 中分别使用 `IPC_SEND_TIMEOUT`、`WORKER_STARTUP_TIMEOUT`、`IPC_TRANSFER_TIMEOUT`、`IPC_TRANSFER_INTERRUPTED`、`IPC_MESSAGE_TOO_LARGE`、`IPC_PROTOCOL_ERROR`、`IPC_DISCONNECTED`、`WORKER_EXIT_TIMEOUT` 等错误码；搜索总墙钟到期为 `TIMED_OUT/ALGORITHM_TIMEOUT`。异常退出码不为 0 时，即使先收到候选，也不提交正式结果。
+
+### 实际测试及边界
+
+在 WSL2 Ubuntu 22.04 / Python 3.10.12 的项目虚拟环境，执行 `python -m unittest discover -s tests -v`：**72 项通过**，包括新增 `tests/test_controller_timeouts.py` 的 **21 项**。新测试使用独立临时 EOS_RUNTIME_DIR、场景副本和 SQLite；故障桩在真实 `spawn` 子进程中运行，覆盖正常参考 Worker 成功、搜索超时与不合作算法、重复 `SEARCHING`、启动加载超时、真实受阻 start/cancel 写入、半帧超时与断链、超长帧、畸形 JSON/版本/字段、异常退出、failed 事件、候选后崩溃或不退出、取消/超时先后顺序，以及忽略 SIGTERM 后的 SIGKILL 兜底。每个测试核对终态和直接进程结束；另核对故障运行前后的 `/proc/self/fd` 数量不增加。原 W2-A HTTP/Worker/SQLite 及事务回归也在本次全量测试中通过。测试桩不作为调度实验结果。
+
+### 审核后定向修复
+
+- **已发现并修复的 W2-B 缺陷**：`Controller._execute()` 原先对不同 `seq` 的重复 `candidate_result` 会覆盖候选及重新设置候选后退出期限。现在每个 attempt 首份有效候选仅设置一次该期限；后续不同 `seq` 候选记 `FAILED/IPC_PROTOCOL_ERROR`，不进入核验或正式提交。原有数据库 `seq` 去重先执行，因此相同 `seq` 的重传仍被忽略。取消与搜索超时理由一经锁定的处理保持不变。
+- **已发现并修复的 W2-B 缺陷**：`EventReader.read_one()` 读到四字节零长度头时直接抛 `IpcProtocolError`，不再尝试 `os.read(fd, 0)` 后误报传输中断。真实子进程通过 `Connection.send_bytes(b"")` 验证为 `FAILED/IPC_PROTOCOL_ERROR`。
+- 新增三个真实 `spawn` 测试：`test_new_sequence_candidate_cannot_extend_exit_deadline`、`test_same_sequence_candidate_remains_deduplicated`、`test_zero_length_send_bytes_is_protocol_error`。持续发送不同 `seq` 候选的故障 Worker 被直接回收，没有正式计划入库；同 `seq` 候选只保留一条事件。本节测试总数已按复测结果更新。上述缺陷与 W2-C 尚未实现的后代进程组清理、持锁停机属于不同边界。
+
+**剩余边界**：`Process.start()` 本身和 Controller 内的场景核验/正式导出调用尚无可抢占硬期限；当前期限保护的是启动调用返回后的状态循环及 Pipe I/O。若直接进程在 `kill()` 后仍无法在 2 秒内结束，会记录回收不完整，不能宣称全链路严格有界。W2-B 只证明直接 Worker 进程的测试回收；其派生后代、PID/PGID/Session 身份核验、`Controller.stop()` 的持锁安全停机及重启后旧进程清扫均属 W2-C。HTTP 路径与响应、八种状态、SQLite 物理模式、算法签名、验证规则和原子提交均未改变；新增的存储方法是 Controller 内部调用。集成前仍须按第 6、8 节与李泽同核对 Controller 和 storage 的并行改动。
+
+**阶段建议：FUNCTIONAL PASS · RELIABILITY PENDING。** 已覆盖本阶段直接 Worker 的正常/故障路径；跨进程后代及安全停机尚无保证。
