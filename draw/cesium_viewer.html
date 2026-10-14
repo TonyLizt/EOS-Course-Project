@@ -5,9 +5,9 @@
   <title>Scenario - Satellite Schedule Viewer</title>
 
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Cesium.js"></script>
-  <script src="fixed-payload-state.js?v=20261015-4"></script>
-  <script src="fixed-payload-geometry.js?v=20261015-4"></script>
-  <script src="fixed-payload-view.js?v=20261015-4"></script>
+  <script src="fixed-payload-state.js?v=20261015-5"></script>
+  <script src="fixed-payload-geometry.js?v=20261015-5"></script>
+  <script src="fixed-payload-view.js?v=20261015-5"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
 
   <style>
@@ -679,9 +679,21 @@
       const status = document.getElementById('payloadViewStatus');
       const toggle = document.getElementById('togglePayloadView');
       const satelliteById = new Map(replay.satellites.map((item) => [item.id, item]));
+      const missionById = new Map();
+      (replay.missions || []).forEach((mission) => {
+        const display = FixedPayloadView.missionDisplay(mission);
+        if (!display) return;
+        missionById.set(display.id, {
+          ...display,
+          position: Cesium.Cartesian3.fromDegrees(
+            display.longitude, display.latitude, display.altitude_m + 250
+          )
+        });
+      });
       let selectedId = replay.satellites[0].id;
       let visible = true;
       let payloadViewer = null;
+      let payloadTargetEntity = null;
       let viewportKey = null;
 
       const selectedSensor = (state) => {
@@ -710,6 +722,32 @@
         payloadViewer.clock.shouldAnimate = false;
         payloadViewer.scene.screenSpaceCameraController.enableInputs = false;
         payloadViewer.scene.globe.depthTestAgainstTerrain = false;
+        payloadTargetEntity = payloadViewer.entities.add({
+          id: 'fixed-payload-current-target',
+          name: 'Current replay mission target',
+          show: false,
+          position: Cesium.Cartesian3.ZERO,
+          point: {
+            pixelSize: 13,
+            color: Cesium.Color.YELLOW,
+            outlineColor: Cesium.Color.RED,
+            outlineWidth: 3,
+            disableDepthTestDistance: 1000000
+          },
+          label: {
+            text: '',
+            font: 'bold 14px sans-serif',
+            fillColor: Cesium.Color.YELLOW,
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            pixelOffset: new Cesium.Cartesian2(0, -22),
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            disableDepthTestDistance: 1000000
+          }
+        });
+        viewer._payloadViewer = payloadViewer;
+        viewer._payloadTargetEntity = payloadTargetEntity;
         return payloadViewer;
       };
       const applyViewport = (frustum) => {
@@ -740,10 +778,21 @@
         const state = stateAt(selectedId, time);
         const pose = FixedPayloadView.cameraPose(state);
         const sensor = selectedSensor(state);
-        status.textContent = FixedPayloadView.statusText(selectedId, pose);
-        if (!pose || !sensor) return;
+        const mission = pose && pose.task_id ? missionById.get(pose.task_id) : null;
+        status.textContent = FixedPayloadView.statusText(selectedId, pose)
+          + (mission ? ' | target ' + mission.latitude.toFixed(4) + '°, '
+            + mission.longitude.toFixed(4) + '°' : '');
+        if (!pose || !sensor) {
+          if (payloadTargetEntity) payloadTargetEntity.show = false;
+          return;
+        }
         const frustum = FixedPayloadView.opticalFrustum(sensor);
         const secondary = applyViewport(frustum);
+        payloadTargetEntity.show = Boolean(mission);
+        if (mission) {
+          payloadTargetEntity.position = mission.position;
+          payloadTargetEntity.label.text = mission.label;
+        }
         secondary.clock.currentTime = Cesium.JulianDate.clone(time, secondary.clock.currentTime);
         secondary.camera.setView({
           destination: Cesium.Cartesian3.fromArray(pose.position_ecef_m),
@@ -765,6 +814,24 @@
         return true;
       };
       viewer._selectReplaySatellite = selectSatellite;
+      const flyToMission = (missionId) => {
+        const mission = missionById.get(missionId);
+        if (!mission) return false;
+        viewer.trackedEntity = undefined;
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(
+            mission.longitude, mission.latitude, mission.altitude_m + 600000
+          ),
+          orientation: {
+            heading: 0,
+            pitch: -Cesium.Math.PI_OVER_TWO,
+            roll: 0
+          },
+          duration: 1.0
+        });
+        return true;
+      };
+      viewer._flyToReplayMission = flyToMission;
 
       list.innerHTML = '';
       replay.satellites.forEach((satellite) => {
@@ -783,7 +850,8 @@
       });
       viewer.selectedEntityChanged.addEventListener((entity) => {
         const id = entity && (entity.id || entity._id);
-        if (typeof id === 'string') selectSatellite(id);
+        if (typeof id !== 'string') return;
+        if (!selectSatellite(id)) flyToMission(id);
       });
       viewer.clock.onTick.addEventListener((clock) => renderSelected(clock.currentTime));
       window.addEventListener('resize', () => {

@@ -62,5 +62,21 @@
       + ' | ' + pose.quality;
   }
 
-  return { cameraPose, opticalFrustum, statusText, viewportBox };
+  function missionDisplay(mission) {
+    if (!mission || !mission.id || !mission.target_location) return null;
+    const latitude = Number(mission.target_location.latitude);
+    const longitude = Number(mission.target_location.longitude);
+    const altitudeM = Number(mission.target_location.altitude_km || 0) * 1000;
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
+        || !Number.isFinite(altitudeM)) return null;
+    return {
+      id: mission.id,
+      latitude: latitude,
+      longitude: longitude,
+      altitude_m: altitudeM,
+      label: mission.id + '\n' + latitude.toFixed(4) + '°, ' + longitude.toFixed(4) + '°'
+    };
+  }
+
+  return { cameraPose, missionDisplay, opticalFrustum, statusText, viewportBox };
 }));

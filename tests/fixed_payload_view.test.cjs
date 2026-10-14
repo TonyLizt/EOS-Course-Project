@@ -14,6 +14,18 @@ assert.deepEqual(pose.position_ecef_m, [1, 2, 3]);
 assert.equal(view.statusText('S1', pose), 'S1 | SLEWING | task M1 | geometry_pointing_illustration');
 assert.equal(view.cameraPose(null), null);
 
+assert.deepEqual(view.missionDisplay({
+  id: 'M1',
+  target_location: { latitude: 22.302711, longitude: 114.177216, altitude_km: 0.15 }
+}), {
+  id: 'M1',
+  latitude: 22.302711,
+  longitude: 114.177216,
+  altitude_m: 150,
+  label: 'M1\n22.3027°, 114.1772°'
+});
+assert.equal(view.missionDisplay({ id: 'broken' }), null);
+
 const square = view.opticalFrustum({
   horizontal_full_fov_deg: 45,
   vertical_full_fov_deg: 45,
