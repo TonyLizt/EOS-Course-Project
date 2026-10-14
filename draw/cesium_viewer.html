@@ -313,7 +313,9 @@
       }
     }
 
-    const czmlPromise = Cesium.CzmlDataSource.load('orbit.czml');
+    // 第二阶段可按 run_id 传入场景专属 CZML；旧 CLI 没有参数时仍使用原路径。
+    const czmlUrl = new URLSearchParams(window.location.search).get('czml') || 'orbit.czml';
+    const czmlPromise = Cesium.CzmlDataSource.load(czmlUrl);
     const schedulePromise = tryLoadSchedule();
 
     Promise.all([czmlPromise, schedulePromise])
@@ -598,7 +600,8 @@
 
       btn.disabled = false;
       btn.addEventListener('click', () => {
-        const target = 'gantt_viewer.html?schedule=' + encodeURIComponent(scheduleUrl);
+        const ganttBase = new URLSearchParams(window.location.search).get('gantt') || 'gantt_viewer.html';
+        const target = ganttBase + '?schedule=' + encodeURIComponent(scheduleUrl);
         window.open(target, '_blank');
       });
     }

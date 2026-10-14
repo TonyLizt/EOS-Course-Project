@@ -59,9 +59,9 @@ def worker_main(run_id: str, attempt: int, event_pipe: Connection, control_pipe:
         report("heartbeat", {"phase": "LOADING"})
         if sha256_file(Path(config.scenario_path)) != config.scenario_sha256:
             raise ValueError("场景 SHA-256 不一致")
-        engine, problem = prepare(config)
+        solver, problem, constraints, context = prepare(config)
         report("heartbeat", {"phase": "SEARCHING"})
-        plan, runtime = run_prepared(engine, problem)
+        plan, runtime = run_prepared(solver, problem, constraints, context)
         report("heartbeat", {"phase": "SERIALIZING"})
         report("candidate_result", {"plan": plan, "algorithm_runtime_s": runtime})
     except BaseException as exc:

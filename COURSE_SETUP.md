@@ -1,10 +1,43 @@
 # 课程项目运行与版本记录
 
+## 第二阶段框架 v0.2.1（2026-10-14，Windows + Ubuntu 22.04 / WSL2）
+
+在 `feat/phase2-v0.2` 分支上新增逐条实验清理：网页列表支持翻页，终态实验详情提供永久删除及可选的服务器导出文件清理。HTTP 接口为 `DELETE /api/runs/{run_id}`，可选 `delete_files=true`。数据库按依赖顺序在事务中删除该实验的配置、尝试、事件、计划、assignment、指标和导出记录，再尝试 `VACUUM` 与 WAL 截断；失败会提示，但已删记录不会恢复。正在排队、运行或核验的实验不能直接删除。
+
+文件清理仅针对本实验目录中路径、文件名及原始 SHA-256 均一致的正式 JSON/CSV；被修改的文件会保留。输入场景和多次实验共用的轨道缓存不参与删除。Controller 完成正式结果与目录输出时和删除接口共用进程锁，避免成功入库与导出之间被删除。
+
+实测：Ubuntu 22.04 / Python 3.10.12 完整测试集 18 项通过；JavaScript 语法检查与 `git diff --check` 通过。独立临时 SQLite 验证了非终态 409、终态删除、所有关联表清空及压缩后页数下降。隔离本地服务的网页成功提交 24/30 的实验，终态详情显示删除按钮与文件选项；API 删除后返回 2 个文件已清理、数据库已压缩，列表总数归零。隔离测试服务已停止，`/tmp/eos-delete-qa-v021` 已清理；原有正式运行库没有被删除。
+
+---
+
+## 第二阶段框架 v0.2.0（2026-10-14，Windows + Ubuntu 22.04 / WSL2）
+
+本次与根目录 README 改写一起提交；README 已说明课程项目背景、目标、运行方式和 [EOS-Bench](https://github.com/Ethan19YQ/EOS-Bench) 上游来源。当前实现及组员接入边界见 [`docs/phase2/framework_handoff.md`](docs/phase2/framework_handoff.md)，算法接口见 [`docs/phase2/algorithm_integration.md`](docs/phase2/algorithm_integration.md)，落地数据库 ER 图见 [`docs/phase2/database_current_v02.md`](docs/phase2/database_current_v02.md)。v0.1 的 `feat/phase2-framework` 已由用户合并到 `main`；本版从合并后的 `main` 建立 `feat/phase2-v0.2`。
+
+### 本版变更
+
+| 范围 | 当前实现 |
+|---|---|
+| 输入与输出 | 浏览器选择并登记数据源、场景和输出方案；Windows 盘符路径转换为 WSL 路径并校验目录；场景保持只读，禁止输入输出目录重叠；每次运行记录所选 ID、解析路径和场景 SHA-256 |
+| 正式文件 | JSON/CSV 继续从数据库下载；目录输出按 `run_id` 隔离，原子写入并记录哈希、路径或失败原因；文件失败不撤销已核验的计划 |
+| 算法扩展 | 增加 `Solver`、`SolveContext`、`AlgorithmSpec` 和专属参数模型；旧算法走适配器，新算法可独立设计中间状态和搜索机制，最终统一提交 `Schedule` 核验 |
+| 可视化回放 | 按 `run_id` 将数据库计划交给原甘特图/Cesium 页面；Orekit 在独立子进程按场景哈希生成 CZML 并缓存，生成物位于 WSL 运行目录；轨道依赖单独安装 |
+| 数据库 | `user_version=2`，新增数据源和输出方案登记表、运行选择字段及文件导出字段；v1→v2 事务迁移保留已有实验 |
+| 文档与协作 | 新 README、当前 ER 图、算法接入说明、交接说明及目标设计稿状态提示；没有将四种正式新算法或完整 Daemon 误写为已完成 |
+
+### 2026-10-14 实测
+
+Ubuntu 22.04 / Python 3.10.12：16 项单元测试通过，包括 v1 数据库迁移、算法私有参数、场景目录约束、正式目录文件和缓存轨道回放。固定 1 星 30 任务的 HTTP 冒烟实验完成 24 项，TCR=0.800，JSON/CSV 下载通过。另从第二个登记数据源选取 3 星 30 任务场景并指定自定义输出目录，正式实验完成 17 项，TCR=0.567；数据库与目录下 JSON/CSV 记录均为成功。旧 CLI 与新入口对照为相同的 17 条 assignment；资源量篡改计划被拒绝。浏览器检查了数据源切换、实验详情、下载链接、甘特图 17 条计划和已缓存场景的 Cesium 指标/任务列表。1 星 24 小时场景的 CZML 首次生成成功，包含 32 个包；后续按哈希复用缓存。首次生成仍可能耗时较长，Cesium 在线资源需浏览器可访问。
+
+本版仍采用最小参考 Worker；完整 IPC 取消确认、进程组回收、独立 Daemon、三项新传统算法和机器学习算法由组员继续实现。运行位置由 `EOS_RUNTIME_DIR` 与 `EOS_SCENARIO_DIR` 配置，页面还可登记其他目录。Windows 保存代码与使用浏览器，调度、进程、数据库和高频文件运行于 Ubuntu。
+
+---
+
 ## 第二阶段框架 v0.1.0（2026-10-13，Windows + Ubuntu 22.04 / WSL2）
 
 本节是当前运行入口；下文第一阶段的 Mac 路径仅保留为历史实验记录。第二阶段框架的模块边界、组员接入方式和已知限制见 [`docs/phase2/framework_handoff.md`](docs/phase2/framework_handoff.md)。
 
-当前交接分支为 `feat/phase2-framework`；小组完成非作者检查后再合并 `main`。在 `D:\Code\EOS-Course-Project` 中执行 `git fetch origin`、`git switch feat/phase2-framework` 后，再使用下方 WSL 命令。若本机已有同名工作树，直接进入该工作树，不在一个分支上重复切换。
+历史交接分支为 `feat/phase2-framework`，已合并到 `main`。本节以下命令与能力记录保持 v0.1 时的状态；当前使用者优先阅读上方 v0.2 记录和根目录 README。
 
 ### 本次实现
 
