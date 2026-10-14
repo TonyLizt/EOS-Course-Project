@@ -5,7 +5,9 @@
   <title>Scenario - Satellite Schedule Viewer</title>
 
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Cesium.js"></script>
-  <script src="fixed-payload-state.js"></script>  <script src="fixed-payload-geometry.js"></script>  <script src="fixed-payload-view.js"></script>
+  <script src="fixed-payload-state.js?v=20261015-4"></script>
+  <script src="fixed-payload-geometry.js?v=20261015-4"></script>
+  <script src="fixed-payload-view.js?v=20261015-4"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
 
   <style>
@@ -850,6 +852,7 @@
             state, sensor, FixedPayloadState.rotate, samplesPerEdge
           );
           const intersections = FixedPayloadGeometry.intersectFrame(frame, intersectWgs84);
+          if (!intersections) throw new Error('sensor frame intersections are unavailable');
           cachedKey = key;
           cachedGeometry = {
             visible: true, style: style, intersections: intersections, status: intersections.status
@@ -868,6 +871,13 @@
         const rgba = geometryAt(time).style.rgba;
         return new Cesium.Color(rgba[0], rgba[1], rgba[2], rgba[3] * alphaScale);
       };
+      const visibleIntersections = (time) => {
+        const value = geometryAt(time);
+        return value && value.visible && value.intersections ? value.intersections : null;
+      };
+      const frustumBoundary = (intersections) => intersections
+        && Array.isArray(intersections.frustum_boundary_ecef_m)
+        ? intersections.frustum_boundary_ecef_m : null;
       const liftForDisplay = (array) => {
         const point = Cesium.Cartesian3.fromArray(array);
         const normal = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(
@@ -885,15 +895,15 @@
         name: satellite.id + ' sensor center ray and WGS84 ellipsoid hit',
         polyline: {
           show: new Cesium.CallbackProperty((time) => {
-            const value = geometryAt(time);
-            return Boolean(value.visible && value.intersections.center_hit_ecef_m);
+            const intersections = visibleIntersections(time);
+            return Boolean(intersections && intersections.center_hit_ecef_m);
           }, false),
           positions: new Cesium.CallbackProperty((time) => {
-            const value = geometryAt(time);
-            if (!value.visible || !value.intersections.center_hit_ecef_m) return undefined;
+            const intersections = visibleIntersections(time);
+            if (!intersections || !intersections.center_hit_ecef_m) return undefined;
             return [
-              Cesium.Cartesian3.fromArray(value.intersections.origin_ecef_m),
-              Cesium.Cartesian3.fromArray(value.intersections.center_hit_ecef_m)
+              Cesium.Cartesian3.fromArray(intersections.origin_ecef_m),
+              Cesium.Cartesian3.fromArray(intersections.center_hit_ecef_m)
             ];
           }, false),
           width: 2,
@@ -906,14 +916,14 @@
         id: 'fixed-payload-center-hit-' + satellite.id,
         name: satellite.id + ' WGS84 center intersection; target altitude is separate',
         position: new Cesium.CallbackProperty((time) => {
-          const value = geometryAt(time);
-          return value.visible && value.intersections.center_hit_ecef_m
-            ? liftForDisplay(value.intersections.center_hit_ecef_m) : undefined;
+          const intersections = visibleIntersections(time);
+          return intersections && intersections.center_hit_ecef_m
+            ? liftForDisplay(intersections.center_hit_ecef_m) : undefined;
         }, false),
         point: {
           show: new Cesium.CallbackProperty((time) => {
-            const value = geometryAt(time);
-            return Boolean(value.visible && value.intersections.center_hit_ecef_m);
+            const intersections = visibleIntersections(time);
+            return Boolean(intersections && intersections.center_hit_ecef_m);
           }, false),
           pixelSize: 7,
           color: new Cesium.CallbackProperty((time) => colorAt(time, 2.5), false),
@@ -928,15 +938,16 @@
           id: 'fixed-payload-boundary-' + satellite.id + '-' + index,
           polyline: {
             show: new Cesium.CallbackProperty((time) => {
-              const value = geometryAt(time);
-              return Boolean(value.visible && value.intersections.frustum_boundary_ecef_m[index]);
+              const boundary = frustumBoundary(visibleIntersections(time));
+              return Boolean(boundary && boundary[index]);
             }, false),
             positions: new Cesium.CallbackProperty((time) => {
-              const value = geometryAt(time);
-              const endpoint = value.visible && value.intersections.frustum_boundary_ecef_m[index];
-              if (!endpoint) return undefined;
+              const intersections = visibleIntersections(time);
+              const boundary = frustumBoundary(intersections);
+              const endpoint = boundary && boundary[index];
+              if (!intersections || !endpoint) return undefined;
               return [
-                Cesium.Cartesian3.fromArray(value.intersections.origin_ecef_m),
+                Cesium.Cartesian3.fromArray(intersections.origin_ecef_m),
                 Cesium.Cartesian3.fromArray(endpoint)
               ];
             }, false),
@@ -951,15 +962,15 @@
           id: 'fixed-payload-side-' + satellite.id + '-' + index,
           polygon: {
             show: new Cesium.CallbackProperty((time) => {
-              const value = geometryAt(time);
-              return Boolean(value.visible && value.intersections.frustum_boundary_ecef_m);
+              return Boolean(frustumBoundary(visibleIntersections(time)));
             }, false),
             hierarchy: new Cesium.CallbackProperty((time) => {
-              const value = geometryAt(time);
-              const boundary = value.visible && value.intersections.frustum_boundary_ecef_m;
-              if (!boundary) return undefined;
+              const intersections = visibleIntersections(time);
+              const boundary = frustumBoundary(intersections);
+              if (!intersections || !boundary || !boundary[index]
+                  || !boundary[(index + 1) % boundary.length]) return undefined;
               return new Cesium.PolygonHierarchy([
-                Cesium.Cartesian3.fromArray(value.intersections.origin_ecef_m),
+                Cesium.Cartesian3.fromArray(intersections.origin_ecef_m),
                 Cesium.Cartesian3.fromArray(boundary[index]),
                 Cesium.Cartesian3.fromArray(boundary[(index + 1) % boundary.length])
               ]);
@@ -978,12 +989,10 @@
         name: satellite.id + ' fixed payload translucent FOV envelope',
         polygon: {
           show: new Cesium.CallbackProperty((time) => {
-            const value = geometryAt(time);
-            return Boolean(value.visible && value.intersections.frustum_boundary_ecef_m);
+            return Boolean(frustumBoundary(visibleIntersections(time)));
           }, false),
           hierarchy: new Cesium.CallbackProperty((time) => {
-            const value = geometryAt(time);
-            const boundary = value.visible && value.intersections.frustum_boundary_ecef_m;
+            const boundary = frustumBoundary(visibleIntersections(time));
             return boundary
               ? new Cesium.PolygonHierarchy(
                 boundary.map((point) => Cesium.Cartesian3.fromArray(point))
@@ -1003,12 +1012,12 @@
         name: satellite.id + ' WGS84 ellipsoid footprint',
         polygon: {
           show: new Cesium.CallbackProperty((time) => {
-            const value = geometryAt(time);
-            return Boolean(value.visible && value.intersections.coverage_ecef_m);
+            const intersections = visibleIntersections(time);
+            return Boolean(intersections && intersections.coverage_ecef_m);
           }, false),
           hierarchy: new Cesium.CallbackProperty((time) => {
-            const value = geometryAt(time);
-            const coverage = value.visible && value.intersections.coverage_ecef_m;
+            const intersections = visibleIntersections(time);
+            const coverage = intersections && intersections.coverage_ecef_m;
             return coverage
               ? new Cesium.PolygonHierarchy(coverage.map(liftForDisplay)) : undefined;
           }, false),

@@ -14,6 +14,8 @@
 
 修復固定載荷選星曾覆蓋 Cesium 內建 `LEFT_CLICK`、導致衛星選取與追蹤入口消失的回歸。現在改為監聽 `selectedEntityChanged`：單擊衛星仍使用 Cesium 原生選取框／資訊框，雙擊或原生追蹤控制仍可跟隨衛星，且選取變更會同步更新 Fixed Payload View。
 
+修復視錐 callback 在 IDLE、任務端點或瀏覽器暫存舊版 geometry 腳本時直接索引不存在的第 16 條邊界、造成 Cesium 停止渲染。三個 replay JS URL 現在帶版本參數以避免新舊資源混用；所有中心線、邊界、側面、端面與 footprint callback 都先驗證可見 intersections 與陣列項目，缺資料時安全隱藏而非拋例外。
+
 ## 卫星整体姿态/固定载荷回放 commit 6 最终交付（2026-10-15，`feat/satellite-body-fixed-payload-replay`，待审核）
 
 正式 `SUCCEEDED` 运行的 `GET /api/runs/{run_id}/visualization/replay` 现在将 NASA Landsat 8 资产 manifest 与实际 GLB SHA-256 纳入回放/cache identity，返回受控资源来源、署名、大小与哈希。服务每次先重验场景、计划、配置和模型完整性，再以完整 `cache_key` 在进程内复用最多 16 个相同回放文档。回放文档无中间文件；既有轨道缓存机制保持不变。回放请求不写 SQLite，不变更正式计划、metrics、exports 或运行状态。
