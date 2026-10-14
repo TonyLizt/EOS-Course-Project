@@ -931,20 +931,21 @@
           polyline: {
             show: new Cesium.CallbackProperty((time) => {
               const value = geometryAt(time);
-              return Boolean(value.visible && value.intersections.boundary_hits_ecef_m[index]);
+              return Boolean(value.visible && value.intersections.frustum_boundary_ecef_m[index]);
             }, false),
             positions: new Cesium.CallbackProperty((time) => {
               const value = geometryAt(time);
-              const hit = value.visible && value.intersections.boundary_hits_ecef_m[index];
-              if (!hit) return undefined;
+              const endpoint = value.visible && value.intersections.frustum_boundary_ecef_m[index];
+              if (!endpoint) return undefined;
               return [
                 Cesium.Cartesian3.fromArray(value.intersections.origin_ecef_m),
-                Cesium.Cartesian3.fromArray(hit)
+                Cesium.Cartesian3.fromArray(endpoint)
               ];
             }, false),
-            width: 1,
+            width: 2,
+            arcType: Cesium.ArcType.NONE,
             material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
-              (time) => colorAt(time, 1.4), false
+              (time) => colorAt(time, 2.2), false
             ))
           }
         });
@@ -953,26 +954,52 @@
           polygon: {
             show: new Cesium.CallbackProperty((time) => {
               const value = geometryAt(time);
-              return Boolean(value.visible && value.intersections.coverage_ecef_m);
+              return Boolean(value.visible && value.intersections.frustum_boundary_ecef_m);
             }, false),
             hierarchy: new Cesium.CallbackProperty((time) => {
               const value = geometryAt(time);
-              const coverage = value.visible && value.intersections.coverage_ecef_m;
-              if (!coverage) return undefined;
+              const boundary = value.visible && value.intersections.frustum_boundary_ecef_m;
+              if (!boundary) return undefined;
               return new Cesium.PolygonHierarchy([
                 Cesium.Cartesian3.fromArray(value.intersections.origin_ecef_m),
-                Cesium.Cartesian3.fromArray(coverage[index]),
-                Cesium.Cartesian3.fromArray(coverage[(index + 1) % coverage.length])
+                Cesium.Cartesian3.fromArray(boundary[index]),
+                Cesium.Cartesian3.fromArray(boundary[(index + 1) % boundary.length])
               ]);
             }, false),
             perPositionHeight: true,
+            arcType: Cesium.ArcType.NONE,
             material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
-              (time) => colorAt(time, 0.42), false
+              (time) => colorAt(time, 0.78), false
             )),
             outline: false
           }
         });
       }
+      viewer.entities.add({
+        id: 'fixed-payload-frustum-cap-' + satellite.id,
+        name: satellite.id + ' fixed payload translucent FOV envelope',
+        polygon: {
+          show: new Cesium.CallbackProperty((time) => {
+            const value = geometryAt(time);
+            return Boolean(value.visible && value.intersections.frustum_boundary_ecef_m);
+          }, false),
+          hierarchy: new Cesium.CallbackProperty((time) => {
+            const value = geometryAt(time);
+            const boundary = value.visible && value.intersections.frustum_boundary_ecef_m;
+            return boundary
+              ? new Cesium.PolygonHierarchy(
+                boundary.map((point) => Cesium.Cartesian3.fromArray(point))
+              ) : undefined;
+          }, false),
+          perPositionHeight: true,
+          arcType: Cesium.ArcType.NONE,
+          material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
+            (time) => colorAt(time, 0.5), false
+          )),
+          outline: true,
+          outlineColor: Cesium.Color.WHITE.withAlpha(0.8)
+        }
+      });
       viewer.entities.add({
         id: 'fixed-payload-footprint-' + satellite.id,
         name: satellite.id + ' WGS84 ellipsoid footprint',
@@ -1095,7 +1122,7 @@
       });
       status.innerHTML = '<strong>Landsat 8 illustrative appearance</strong><br>'
         + modelCount + ' body model(s), ' + markerCount + ' fixed -Z payload marker(s). '
-        + frustumRayCount + ' sampled FOV boundary ray(s). Original satellite IDs remain unchanged; '
+        + frustumRayCount + ' sampled FOV boundary ray(s) with translucent side faces. Original satellite IDs remain unchanged; '
         + 'point/label geometry is retained as the load fallback. '
         + 'FOV is a square full-angle display assumption only.';
       setupFixedPayloadView(replay, stateAt);

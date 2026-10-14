@@ -6,6 +6,13 @@
   'use strict';
 
   const add = (a, b) => a.map((value, index) => value + b[index]);
+  const distance = (a, b) => Math.hypot(...a.map((value, index) => value - b[index]));
+
+  function pointAlong(origin, direction, length) {
+    const magnitude = Math.hypot(...direction);
+    if (!(magnitude > 0)) throw new Error('frustum direction must be non-zero');
+    return origin.map((value, index) => value + direction[index] * length / magnitude);
+  }
 
   function phaseStyle(phase) {
     if (phase === 'SLEWING') {
@@ -81,11 +88,19 @@
     if (hitCount === 0) status = 'NO_BOUNDARY_INTERSECTION';
     else if (hitCount !== boundaryHits.length) status = 'PARTIAL_HORIZON';
     if (!centerHit && status === 'COMPLETE') status = 'CENTER_MISS';
+    const hitRanges = boundaryHits.filter(Boolean).map((hit) => distance(frame.origin_ecef_m, hit));
+    const frustumRange = centerHit
+      ? distance(frame.origin_ecef_m, centerHit)
+      : hitRanges.length ? Math.min(...hitRanges) : 750000;
     return {
       origin_ecef_m: frame.origin_ecef_m,
       center_hit_ecef_m: centerHit,
       boundary_hits_ecef_m: boundaryHits,
       coverage_ecef_m: status === 'COMPLETE' ? boundaryHits : null,
+      frustum_boundary_ecef_m: frame.boundary_directions_ecef.map(
+        (direction) => pointAlong(frame.origin_ecef_m, direction, frustumRange)
+      ),
+      frustum_range_m: frustumRange,
       hit_count: hitCount,
       ray_count: boundaryHits.length,
       status: status,

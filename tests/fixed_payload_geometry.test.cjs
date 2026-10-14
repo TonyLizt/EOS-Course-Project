@@ -37,6 +37,8 @@ close(frame.center_direction_ecef, [-1, 0, 0]);
 const complete = geometry.intersectFrame(frame, unitSphereIntersection);
 assert.equal(complete.status, 'COMPLETE');
 assert.equal(complete.coverage_ecef_m.length, 12);
+assert.equal(complete.frustum_boundary_ecef_m.length, 12);
+assert.ok(complete.frustum_range_m > 0);
 close(complete.center_hit_ecef_m, [1, 0, 0]);
 
 let call = 0;
@@ -46,6 +48,7 @@ const partial = geometry.intersectFrame(frame, (origin, direction) => {
 });
 assert.equal(partial.status, 'PARTIAL_HORIZON');
 assert.equal(partial.coverage_ecef_m, null);
+assert.equal(partial.frustum_boundary_ecef_m.length, 12);
 assert.ok(partial.boundary_hits_ecef_m.some(Boolean));
 assert.ok(partial.boundary_hits_ecef_m.some((value) => value === null));
 
@@ -53,6 +56,8 @@ const none = geometry.intersectFrame(frame, () => null);
 assert.equal(none.status, 'NO_BOUNDARY_INTERSECTION');
 assert.equal(none.center_hit_ecef_m, null);
 assert.equal(none.coverage_ecef_m, null);
+assert.equal(none.frustum_boundary_ecef_m.length, 12);
+assert.equal(none.frustum_range_m, 750000);
 
 assert.equal(geometry.phaseStyle('SLEWING').name, 'slewing');
 assert.equal(geometry.phaseStyle('OBSERVING').name, 'observing');

@@ -10,6 +10,8 @@
 
 任務跳轉不再強制播放；否則 CZML 的高倍速可能在首幀就越過僅數秒的觀測。點擊後會暫停在原始任務開始時刻並要求立即重繪，使用者可確認模型、光錐與載荷狀態後自行按播放。
 
+視場顯示不再只有中心線與細邊界線：每對相鄰 FOV 邊界射線會建立半透明三角側面，並增加半透明端面與 2 px 邊框，形成可辨識的 3D 方錐。錐體是固定載荷 FOV 的顯示包絡；真實 WGS84 footprint 仍只在全部邊界射線有交點時繪製。部分地平線時會保留完整視錐，但不偽造完整地面覆蓋。
+
 ## 卫星整体姿态/固定载荷回放 commit 6 最终交付（2026-10-15，`feat/satellite-body-fixed-payload-replay`，待审核）
 
 正式 `SUCCEEDED` 运行的 `GET /api/runs/{run_id}/visualization/replay` 现在将 NASA Landsat 8 资产 manifest 与实际 GLB SHA-256 纳入回放/cache identity，返回受控资源来源、署名、大小与哈希。服务每次先重验场景、计划、配置和模型完整性，再以完整 `cache_key` 在进程内复用最多 16 个相同回放文档。回放文档无中间文件；既有轨道缓存机制保持不变。回放请求不写 SQLite，不变更正式计划、metrics、exports 或运行状态。
