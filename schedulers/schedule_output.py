@@ -23,7 +23,7 @@ from .constraint_model import Schedule
 from .evaluation_metrics import EvaluationMetrics
 
 # Set fonts to improve cross-platform text rendering in plots
-matplotlib.rcParams["font.sans-serif"] = ["SimHei", "Microsoft YaHei", "Arial Unicode MS"]
+matplotlib.rcParams["font.sans-serif"] = ["SimHei", "Microsoft YaHei", "Arial Unicode MS", "DejaVu Sans"]
 matplotlib.rcParams["axes.unicode_minus"] = False
 
 
@@ -40,6 +40,17 @@ def save_schedule_to_json(
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(schedule_to_dict(schedule, problem, metrics), f, ensure_ascii=False, indent=2)
+
+
+def schedule_to_dict(
+    schedule: Schedule,
+    problem: SchedulingProblem,
+    metrics: Optional[EvaluationMetrics] = None,
+) -> dict:
+    """将计划转换为既有导出格式，供 CLI 和第二阶段 Worker 共同复用。"""
 
     has_gs = len(problem.ground_stations) > 0
 
@@ -105,8 +116,7 @@ def save_schedule_to_json(
             "RV": metrics.robustness_variance,
         }
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, ensure_ascii=False, indent=2)
+    return result
 
 
 # ==============================

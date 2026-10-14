@@ -1,4 +1,64 @@
-# 第一阶段：运行 EOS-Bench 与自定义算法
+# 课程项目运行与版本记录
+
+## 第二阶段框架 v0.1.0（2026-10-13，Windows + Ubuntu 22.04 / WSL2）
+
+本节是当前运行入口；下文第一阶段的 Mac 路径仅保留为历史实验记录。第二阶段框架的模块边界、组员接入方式和已知限制见 [`docs/phase2/framework_handoff.md`](docs/phase2/framework_handoff.md)。
+
+当前交接分支为 `feat/phase2-framework`；小组完成非作者检查后再合并 `main`。在 `D:\Code\EOS-Course-Project` 中执行 `git fetch origin`、`git switch feat/phase2-framework` 后，再使用下方 WSL 命令。若本机已有同名工作树，直接进入该工作树，不在一个分支上重复切换。
+
+### 本次实现
+
+| 范围 | 变更与验证 |
+|---|---|
+| 系统包 `eos_system/` | 增加配置、公共契约、调度入口、独立核验、SQLite、Controller、最小参考 Worker、FastAPI 和无外部资源依赖的浏览器页面 |
+| 原内核复用 | `schedulers/schedule_output.py` 增加 `schedule_to_dict()`；原 `save_schedule_to_json()` 改用它，原 CLI 的 JSON 格式保持一致。`algorithms/heuristics.py` 把固定实验种子传入候选池，修复跨进程时同种子计划时间不一致的问题 |
+| 数据与运行 | 从只读 `/mnt/c/EOS-Bench` 派生 30 任务固定小实例到 `~/eos-course-runtime/scenarios/`；虚拟环境、SQLite/WAL、锁也在这个 WSL 目录 |
+| 仓库整理 | 忽略并清理历史误提交的 Python 字节码缓存；这些是生成物，组员从源码运行时会自行生成，不属于交付代码 |
+| 验证 | Ubuntu 22.04 / Python 3.10；旧单元测试、事务测试与真实 HTTP→Worker→核验→SQLite→JSON/CSV 闭环，以本次执行记录为准；不把本表当作未运行项目的通过证明 |
+
+### 2026-10-14 验收补记
+
+修复了核验期间取消与成功提交交错时可能残留 `VERIFYING` 的状态问题；增加对应事务测试。将接口和数据库目标设计稿（含 ER 图）放进 `docs/phase2/`，并在文件首页标出与当前实现的边界。Ubuntu 22.04 / Python 3.10.12 上实测：11 项单元测试通过；真实网页提交经独立 Worker、Controller 核验后入库，固定 1 星 30 任务实例完成 24 项，TCR=0.800；HTTP JSON/CSV 导出通过；旧 CLI 与新入口逐条对照 24 条 assignment 一致；篡改资源量被拒绝。演示场景 SHA-256 为 `00274bc1d4bce0ccf427edeac70b9742ad4fd7f21111e4969b9ce1c90c5342c0`。这些是框架验收，不代表尚未实现的三种传统算法、机器学习算法、独立 Daemon 或完整 Worker 故障恢复已经通过。
+
+### Ubuntu 22.04 首次准备
+
+在 Windows PowerShell 输入 `wsl -d Ubuntu-22.04` 后，于 Ubuntu 中执行：
+
+```bash
+sudo apt-get update
+sudo apt-get install -y python3-venv python3-pip
+mkdir -p ~/eos-course-runtime
+python3 -m venv ~/eos-course-runtime/.venv
+cd /mnt/d/Code/EOS-Course-Project
+~/eos-course-runtime/.venv/bin/python -m pip install -r requirements-system.txt
+~/eos-course-runtime/.venv/bin/python -m eos_system.prepare_demo --data-root /mnt/c/EOS-Bench
+~/eos-course-runtime/.venv/bin/python -m eos_system
+```
+
+Windows 浏览器打开 `http://127.0.0.1:8765/`。页面可登记场景、选择已有算法、提交/查看/取消实验及下载 JSON/CSV。API 文档位于 `http://127.0.0.1:8765/docs`。停止服务在启动终端按 `Ctrl+C`。不要使用 `uvicorn --reload` 或多个 Web worker，因为首版一个服务进程负责唯一 Controller。
+
+在另一个 Ubuntu 终端运行闭环检查：
+
+```bash
+cd /mnt/d/Code/EOS-Course-Project
+~/eos-course-runtime/.venv/bin/python -m unittest discover -s tests -v
+~/eos-course-runtime/.venv/bin/python scripts/smoke_system.py
+PYTHONHASHSEED=0 MPLBACKEND=Agg ~/eos-course-runtime/.venv/bin/python -m scripts.check_cli_parity
+~/eos-course-runtime/.venv/bin/python -m scripts.check_plan_rejection
+```
+
+本节不要求 Java/Orekit：固定预计算场景的调度和基础网页不使用它们。需要 Cesium 轨道生成时再参考下方第一阶段可视化说明。原始母场景不写入或修改；场景派生、数据库与锁集中在 `~/eos-course-runtime`，不向仓库散落运行产物。使用其他机器时通过 `EOS_RUNTIME_DIR` 与 `EOS_SCENARIO_DIR` 环境变量改变运行目录，代码不含固定盘符。
+
+### 下一次迭代接点
+
+- 何明涛：在 `eos_system/worker_reference.py` 的协议和 Controller 的进程边界上实现完整双 Pipe、取消确认、超时、进程组回收和大结果临时文件；替换参考 Worker 后复跑闭环。
+- 梁兆榮：在 `/api` 上升级页面、结果比较、Cesium/甘特图，并实现独立 Daemon；当前页面只保证配置、状态、计划表格和导出可用。
+- 刘懋兴：提供正式场景清单/哈希、训练来源分组、基线成对实验；当前自动登记只扫描固定场景目录。
+- 李泽同：继续完善 Controller 的恢复、算法 A/B/C/D 注册、ML D 训练和系统集成。
+
+---
+
+# 第一阶段：运行 EOS-Bench 与自定义算法（历史记录）
 
 本目录是官方 EOS-Bench 提交 `ee282656e8b2f6fd0d3cf84677b40966e2780ef3` 的独立 Git 工作树；当前开发分支可用 `git branch --show-current` 查看。原始仓库在 `/Users/tonylizt/Projects/EOS-Bench`，数据集在 `/Users/tonylizt/Documents/3rd/操作系统原理课程设计/EOS-Bench-data`。准备脚本只读取数据集，所有派生实例、计划和日志均写在本目录的 `output/`。
 

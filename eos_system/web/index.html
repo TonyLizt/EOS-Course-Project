@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EOS 课程调度系统</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div><p class="eyebrow">EOS · COURSE SYSTEM</p><h1>地球观测任务调度</h1></div>
+    <span id="health" class="badge">正在连接服务…</span>
+  </header>
+  <main class="layout">
+    <section class="card form-card">
+      <div class="section-title"><h2>新建实验</h2><p>选择登记场景和算法，提交后由独立 Worker 执行。</p></div>
+      <form id="run-form">
+        <label>场景<select id="scenario" required></select></label>
+        <label>算法<select id="algorithm" required></select></label>
+        <div class="two-cols">
+          <label>随机种子<input id="seed" type="number" min="0" value="42" required></label>
+          <label>算法预算 / 秒<input id="budget" type="number" min="1" max="600" value="60" required></label>
+        </div>
+        <label>任务放置模式<select id="placement"><option value="earliest">最早可行时间</option><option value="center">窗口中心</option></select></label>
+        <details><summary>实验参数</summary>
+          <div class="two-cols">
+            <label>未安排惩罚<input id="penalty" type="number" min="0" step="any" value="1000"></label>
+            <label>下传时长比<input id="downlink" type="number" min="0.01" step="any" value="1"></label>
+          </div>
+          <label>机动能力<select id="agility"><option>Standard-Agility</option><option>Low-Agility</option><option>High-Agility</option></select></label>
+          <label>非敏捷转向秒数<input id="transition" type="number" min="0" step="any" value="10"></label>
+          <label>算法参数 JSON<input id="params" value="{}" spellcheck="false"></label>
+        </details>
+        <button type="submit" id="submit">提交实验</button>
+        <p id="form-message" class="message" role="status"></p>
+      </form>
+    </section>
+
+    <section class="card list-card">
+      <div class="section-title inline"><div><h2>实验列表</h2><p>状态每两秒刷新一次。</p></div><button class="secondary" id="refresh" type="button">刷新</button></div>
+      <div class="table-wrap"><table><thead><tr><th>提交时间</th><th>场景</th><th>算法</th><th>状态</th><th>TCR</th></tr></thead><tbody id="runs"></tbody></table></div>
+    </section>
+
+    <section class="card detail-card">
+      <div class="section-title inline"><div><h2>实验详情</h2><p id="selected-run">选择列表中的实验</p></div><span id="detail-status" class="badge muted">尚未选择</span></div>
+      <div id="metrics" class="metrics"></div>
+      <div id="actions" class="actions" hidden>
+        <button class="secondary" id="cancel" type="button">取消实验</button>
+        <a id="export-json" class="link-button" href="#">导出 JSON</a>
+        <a id="export-csv" class="link-button" href="#">导出 CSV</a>
+      </div>
+      <p id="detail-error" class="error"></p>
+      <h3>运行记录</h3><ol id="events" class="events"></ol>
+      <h3>计划明细 <span id="assignment-count"></span></h3>
+      <div class="table-wrap"><table><thead><tr><th>任务</th><th>卫星</th><th>开始</th><th>结束</th></tr></thead><tbody id="assignments"></tbody></table></div>
+    </section>
+  </main>
+  <footer>框架 v0.1 · 正式结果由 Controller 核验并从 SQLite 提供</footer>
+</body>
+</html>
