@@ -22,6 +22,8 @@ from .deletion import remove_exported_files
 from .exporting import render_csv, render_json
 from .storage import Database, now
 from .visualization import OrbitUnavailable, orbit_cache_path
+from replay.document import build_replay_document
+from replay.read_only import ReplayInputError
 
 
 def _public_run(record: dict) -> dict:
@@ -232,6 +234,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         return FileResponse(target, media_type="application/json")
 
+    @app.get("/api/runs/{run_id}/visualization/replay")
+    def visualization_replay(run_id: str):
+        """Return a read-only display derivative; this never re-runs scheduling."""
+        record = successful_run(run_id)
+        profile = Path(__file__).resolve().parent.parent / "replay_configs" / "display-profile-v2.json"
+        try:
+            return build_replay_document(record, profile)
+        except (OSError, ValueError, ReplayInputError) as exc:
+            raise HTTPException(status_code=409, detail=f"回放输入不可用：{exc}") from exc
+
     @app.get("/visualization/gantt-page")
     def gantt_page():
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "gantt_viewer.html")
@@ -251,7 +263,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         successful_run(run_id)
         schedule = f"/api/runs/{run_id}/visualization/schedule"
         orbit = f"/api/runs/{run_id}/visualization/orbit.czml"
+        replay = f"/api/runs/{run_id}/visualization/replay"
         gantt = f"/visualization/gantt/{run_id}"
-        return RedirectResponse("/visualization/cesium-page?" + urlencode({"schedule": schedule, "czml": orbit, "gantt": gantt}))
+        return RedirectResponse("/visualization/cesium-page?" + urlencode({"schedule": schedule, "czml": orbit, "replay": replay, "gantt": gantt}))
 
     return app
