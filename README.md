@@ -16,7 +16,7 @@
 - FastAPI 和 Controller 在 WSL2 中运行；Worker 由 `spawn` 创建，通过两条单向 Pipe 交换控制消息和 JSON 事件。Worker 执行 `setsid()` 并报告 `started`，Controller 核验本次进程的 Linux 身份后才发送 `start`；候选由 Controller 独立核验，并在成功事务中写入 SQLite。
 - 算法注册表统一元数据、专属参数模型和 Worker 创建入口。现有算法经适配器接入；新算法可从空计划开始，不必沿用旧启发式流程。
 - 浏览器下载 JSON/CSV；选择目录输出方案后，成功实验还会在该目录的 `run_id/` 子目录保存正式文件。SQLite、锁和缓存默认位于 WSL Linux 文件系统。
-- 结果页复用旧甘特图和 Cesium 页面。甘特图读取同一 `run_id` 的正式计划；Cesium 轨道按场景 SHA-256 生成并缓存。轨道生成需要可选的 Java/Orekit 依赖和浏览器可访问 Cesium 在线资源。
+- 结果页复用甘特图和 Cesium 页面。甘特图读取同一 `run_id` 的正式计划；Cesium 轨道按场景 SHA-256 生成并缓存，并可显示 Landsat 8 示意本体、确定性任务姿态与固定载荷指向。轨道生成需要可选的 Java/Orekit 依赖和浏览器可访问 Cesium 在线资源。
 - 实验列表可翻页；在详情中可永久删除已结束的实验。删除会清理 SQLite 中该实验的配置、事件、尝试、计划、指标和导出记录，并尝试压缩数据库。
 
 当前分支的 W1/W2 已接通运行中协作取消、IPC 期限与已核验同 Session 后代的安全回收；`cancel_ack` 只确认收到取消，不代表 Worker 或后代已退出。Controller 停机时须等待后台执行线程结束，未结束则保留单实例锁。超过 4 MiB 的大结果文件通道（W3）、独立 Daemon、四种新算法、完整结果比较页面及跨 Controller 重启的孤儿回收仍未交付。能力和限制见 [W2 实施记录](docs/phase2/W2%20WorkerIPC%20%E4%B8%8E%20Controller%20%E5%8D%8F%E4%BD%9C%E5%AE%9E%E6%96%BD%E8%AF%B4%E6%98%8E%20v1.0.md)。
@@ -82,6 +82,10 @@ cd /mnt/d/Code/EOS-Course-Project
 ```
 
 首次查看一个场景时，服务会使用仓库的 `utils/orekit-data.zip` 生成 CZML，并缓存到 WSL 运行目录的 `visualizations/scenes/`；相同场景哈希的后续实验复用缓存。可视化轨道使用较稀的采样，仅影响画面文件，不改变调度输入和正式计划。旧的 `main_draw.py` CLI 仍可独立使用。
+
+成功实验的“Cesium 回放”现在还会请求 `GET /api/runs/{run_id}/visualization/replay`。服务只从已入库的正式计划和哈希相符的只读场景派生显示数据，不重跑算法，也不会将回放结果写回调度结果。页面使用 NASA Landsat 8 模型作为数据集卫星的**通用示意外观**，不会把 ALOS-2、AQUA 或 CARTOSAT-2C 改名为 Landsat 8；资产来源与验证见 [`docs/replay/landsat8-validation.md`](docs/replay/landsat8-validation.md)。
+
+当前本体姿态是以 ECEF 轨道位置和任务目标计算的几何指向示意，固定载荷始终使用同一相机—本体变换。它不是 Orekit 姿态或卫星动力学验证；若派生数据不可用，Cesium 保留原有点/标签显示。视锥、地面足迹与边界裁剪不在本轮 commit 1–3 内，详细交接见 [卫星回放 commit 1–3 记录](docs/phase2/satellite_replay_commits_1_3.md)。
 
 ## 开发与验证
 

@@ -1,5 +1,13 @@
 # 课程项目运行与版本记录
 
+## 卫星本体与固定载荷回放 commit 1–3（2026-10-14，`feat/satellite-body-fixed-payload-replay`，待审核）
+
+成功实验新增只读 `GET /api/runs/{run_id}/visualization/replay` 派生数据：校验已提交场景哈希与计划身份，按当前转移模型生成确定性 `SLEWING/OBSERVING` 时间段，不重跑调度、不改写母场景或正式计划。Cesium 页面使用 NASA Landsat 8 GLB 作通用示意外观，模型姿态与固定相机—本体变换分离，并保留原卫星 ID 和点/标签回退。新配置与资产来源、哈希、轴向假设见 [commit 1–3 专题交接](docs/phase2/satellite_replay_commits_1_3.md)。
+
+Ubuntu / Python 3 定向单元测试 **9/9** 通过，Node.js 固定载荷时间评估测试通过；真实场景派生检查确认源文件 SHA-256 不变。Landsat 8 GLB（780,280 bytes）已通过 CesiumJS 1.136 + Chromium 141 本地 HTTP 冒烟测试，生成 1 个模型 primitive，无浏览器控制台错误。完整 unittest 在既有 `test_http_cancel_uses_existing_route_and_temporary_database` 停滞，本轮未声称全量通过。当前姿态是几何指向示意，不是 Orekit 姿态/动力学验证；视锥、地面足迹、边界裁剪与第二固定载荷视图尚未实现。
+
+---
+
 ## Worker/IPC W1/W2 最终交付联调（2026-10-14，`feat/hmt-worker-ipc`，待何明涛与李泽同审核）
 
 修正 README、框架交接及算法接入说明中过期的“协作取消尚未实现”等描述，保留 W3、Daemon、A/B/C/D 和跨重启回收为未交付范围。新增三个真实 TCP 回环 HTTP → Controller → `spawn` Worker → 临时 SQLite 异常闭环，覆盖运行中取消（`CANCELLED`）、不合作求解超时（`TIMED_OUT/ALGORITHM_TIMEOUT`）和携同 Session 后代的 Worker 异常退出（`FAILED/IPC_DISCONNECTED`、退出码 23）；均无正式计划，直接 Worker 与可信后代无活跃残留。测试桩仅在隔离服务进程中装配，正式算法注册表及运行时代码未改。

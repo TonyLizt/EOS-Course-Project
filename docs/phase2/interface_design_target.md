@@ -1,6 +1,6 @@
 # 第二阶段接口设计文档（审核稿）
 
-> **文档状态：第二阶段目标设计，尚非全部已实现接口。** v0.2 框架当前可调用的路径、字段和限制以 [`framework_handoff.md`](framework_handoff.md)、`eos_system/contracts.py`、`eos_system/api.py` 及启动后的 `/docs` 为准。本文保留完整目标契约，供四人讨论后逐项落地；其中 A/B/C/D 算法、Daemon 与完整 Worker 可靠性接口仍待实现。
+> **文档状态：第二阶段目标设计，尚非全部已实现接口。** v0.2 框架当前可调用的路径、字段和限制以 [`framework_handoff.md`](framework_handoff.md)、`eos_system/contracts.py`、`eos_system/api.py` 及启动后的 `/docs` 为准。本文保留完整目标契约，供四人讨论后逐项落地；其中 A/B/C/D 算法、Daemon 与部分 Worker 可靠性接口仍待实现。已落地的卫星本体/固定载荷回放 commit 1–3 见 [`satellite_replay_commits_1_3.md`](satellite_replay_commits_1_3.md)。
 
 - 版本：v0.1，2026-10-13
 - 负责人：李泽同；对接：何明涛（Worker/IPC）、梁兆榮（页面/Daemon）、刘懋兴（场景/实验协议）
@@ -90,7 +90,10 @@ HTTP 提交体不包含 `run_id`、SHA、算法版本与时间戳；服务端补
 | `GET /api/runs/{run_id}` | 路径 UUID | 200；完整 `RunResult`；未成功时 `plan/metrics=null` | 404 不存在 |
 | `POST /api/runs/{run_id}/cancel` | 无 | 202；`cancel_requested=true`，状态可能尚未到 `CANCELLED` | 404 不存在、409 已终态且不可取消 |
 | `GET /api/runs/{run_id}/export?format=json` | `format=json|csv` | 200；附件。JSON 为既有可回放计划格式并附配置/出处；CSV 为单文件，每条 assignment 一行并重复本次指标，空计划保留一行空 assignment 汇总 | 404 不存在、409 尚未成功、422 格式错 |
+| `GET /api/runs/{run_id}/visualization/replay` | 无 | 200；从已提交成功计划派生回放 manifest、卫星/载荷配置及半开区间 `SLEWING/OBSERVING` 时间段；不重跑调度 | 404 不存在、409 尚无正式成功结果、场景缺失/哈希不符或回放配置无效 |
 | `GET /api/health` | 无 | 200；`status`、版本、Controller 实例 ID、时间、数据库可读状态 | 503 服务不健康 |
+
+卫星回放还使用 `GET /visualization/fixed-payload-state.js` 与 `GET /visualization/assets/satellites/landsat8.glb` 两个本地静态资源路径。`GET /visualization/cesium/{run_id}` 会将 `schedule`、`czml`、`replay` 和 `gantt` URL 作为查询参数传给 Cesium 页面。这些资源只影响显示层，不改变 `RunConfig`、SQLite 模式、Controller 状态或正式计划契约。
 
 `POST /api/runs` 示例：
 
