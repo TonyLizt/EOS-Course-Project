@@ -22,19 +22,12 @@ class Settings:
     startup_timeout_s: float = 30.0
     transfer_timeout_s: float = 30.0
     stop_grace_s: float = 2.0
-    replay_build_timeout_s: float = 600.0
-    max_replay_queued: int = 4
 
     @classmethod
     def from_env(cls) -> "Settings":
         runtime = Path(os.environ.get("EOS_RUNTIME_DIR", "~/eos-course-runtime")).expanduser().resolve()
         scenarios = Path(os.environ.get("EOS_SCENARIO_DIR", str(runtime / "scenarios"))).expanduser().resolve()
         return cls(runtime_dir=runtime, scenario_dir=scenarios)
-
-    @property
-    def replay_dir(self) -> Path:
-        """回放派生缓存与 SQLite 一样放在 WSL 本地运行目录。"""
-        return self.runtime_dir / "replays"
 
     @property
     def database_path(self) -> Path:
@@ -106,20 +99,3 @@ def list_scenarios(settings: Settings) -> list[dict]:
 
 def resolve_scenario(settings: Settings, scenario_id: str) -> tuple[Path, str]:
     return resolve_scenario_in(settings.scenario_dir, scenario_id)
-
-
-def algorithm_source_sha256() -> str:
-    """对当前算法及共享约束源码做稳定摘要；未把 Git HEAD 冒充实际运行字节。"""
-    project = Path(__file__).resolve().parent.parent
-    files = []
-    for folder in ("algorithms", "schedulers", "core"):
-        files.extend((project / folder).rglob("*.py"))
-    files.extend([project / "eos_system" / "algorithm_registry.py",
-                  project / "eos_system" / "verification.py"])
-    digest = hashlib.sha256()
-    for path in sorted(files, key=lambda item: item.relative_to(project).as_posix()):
-        digest.update(path.relative_to(project).as_posix().encode("utf-8"))
-        digest.update(b"\0")
-        digest.update(path.read_bytes())
-        digest.update(b"\0")
-    return digest.hexdigest()
