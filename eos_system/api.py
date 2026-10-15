@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import json
 import sqlite3
-import threading
 import uuid
-from collections import OrderedDict
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlencode
@@ -18,16 +15,13 @@ from fastapi.staticfiles import StaticFiles
 
 from . import VERSION
 from .algorithm_registry import get_algorithm, list_algorithms
-from .config import Settings, algorithm_source_sha256, list_scenarios_in, normalise_user_path, require_writable_directory, resolve_scenario_in
-from .contracts import DirectoryRegistration, ReplayRequest, RunConfig, RunRequest
+from .config import Settings, list_scenarios_in, normalise_user_path, require_writable_directory, resolve_scenario_in
+from .contracts import DirectoryRegistration, RunConfig, RunRequest
 from .controller import Controller
 from .deletion import remove_exported_files
 from .exporting import render_csv, render_json
 from .storage import Database, now
-from .replay_service import ReplayError, ReplayService, REPLAY_CONFIG_ID
 from .visualization import OrbitUnavailable, orbit_cache_path
-from replay.document import build_replay_document
-from replay.read_only import ReplayInputError
 
 
 def _public_run(record: dict) -> dict:
@@ -41,24 +35,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     database = Database(settings.database_path)
     database.ensure_defaults(settings.scenario_dir, settings.runtime_dir)
     controller = Controller(settings, database)
-    replay_cache: OrderedDict[str, dict] = OrderedDict()
-    replay_cache_lock = threading.Lock()
-    replay = ReplayService(settings, database)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
         controller.start()
         try:
-            replay.recover()
             yield
         finally:
-            try:
-                replay.close()
-            finally:
-                controller.stop()
+            controller.stop()
 
     app = FastAPI(title="EOS 课程调度系统", version=VERSION, lifespan=lifespan)
-    app.state.replay = replay
     web_dir = Path(__file__).parent / "web"
     app.mount("/static", StaticFiles(directory=web_dir), name="static")
 
@@ -66,12 +52,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def http_error(_: Request, exc: HTTPException):
         return JSONResponse(status_code=exc.status_code, content={"error": {
             "code": f"HTTP_{exc.status_code}", "message": str(exc.detail), "details": {},
-        }})
-
-    @app.exception_handler(ReplayError)
-    async def replay_error(_: Request, exc: ReplayError):
-        return JSONResponse(status_code=exc.status, content={"error": {
-            "code": exc.code, "message": exc.message, "details": {},
         }})
 
     @app.exception_handler(RequestValidationError)
@@ -106,9 +86,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def register_data_source(request: DirectoryRegistration):
         try:
             root = normalise_user_path(request.path)
-            replay_root = settings.replay_dir.resolve()
-            if root.is_relative_to(replay_root) or replay_root.is_relative_to(root):
-                raise ValueError("数据源目录不能包含回放运行缓存")
             for profile in database.list_output_profiles():
                 if profile["root_path"] and (root.is_relative_to(Path(profile["root_path"])) or Path(profile["root_path"]).is_relative_to(root)):
                     raise ValueError("数据源目录不能与已有文件输出目录重叠")
@@ -126,9 +103,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def register_output_profile(request: DirectoryRegistration):
         try:
             root = normalise_user_path(request.path)
-            replay_root = settings.replay_dir.resolve()
-            if root.is_relative_to(replay_root) or replay_root.is_relative_to(root):
-                raise ValueError("正式输出目录不能与回放缓存重叠")
             for source in database.list_data_sources():
                 source_root = Path(source["root_path"])
                 if root.is_relative_to(source_root) or source_root.is_relative_to(root):
@@ -164,8 +138,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         config = RunConfig(
             **request.model_dump(), run_id=str(uuid.uuid4()), scenario_sha256=digest,
             scenario_path=str(scene), output_kind=profile["kind"], output_root=profile["root_path"],
-            algorithm_version=spec.version,
-            algorithm_code_sha=algorithm_source_sha256(), created_at=now(),
+            algorithm_version=spec.version, created_at=now(),
         )
         try:
             run_id, _ = database.enqueue(config, settings.max_queued, idempotency_key)
@@ -195,7 +168,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 if deleted is None:
                     raise HTTPException(status_code=404, detail="实验不存在")
                 files_removed, warnings = remove_exported_files(deleted) if delete_files else (0, [])
-                warnings.extend(replay.cleanup_deleted(deleted["replay_ids"]))
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         try:
@@ -243,38 +215,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/runs/{run_id}/visualization/schedule")
     def visualization_schedule(run_id: str):
-        """保持旧页面使用的顶层计划结构，只附加正式计划的身份摘要。"""
-        record = successful_run(run_id)
-        source = database.get_replay_source(run_id)
-        schedule = json.loads(render_json(record))
-        schedule["plan_sha256"] = source["plan_sha256"]
-        schedule["provenance"]["plan_sha256"] = source["plan_sha256"]
-        return Response(json.dumps(schedule, ensure_ascii=False), media_type="application/json")
-
-    @app.post("/api/runs/{run_id}/replay")
-    def create_replay(run_id: str, request: ReplayRequest):
-        record, status = replay.request(run_id, request.replay_config_id)
-        return JSONResponse(status_code=status, content=replay.public(run_id, record))
-
-    @app.get("/api/runs/{run_id}/replay")
-    def current_replay(run_id: str, replay_config_id: str | None = None):
-        record = replay.current(run_id, replay_config_id)
-        return replay.public(run_id, record)
-
-    @app.get("/api/runs/{run_id}/replays/{replay_id}")
-    def exact_replay(run_id: str, replay_id: str):
-        return replay.public(run_id, replay.exact(run_id, replay_id))
-
-    @app.get("/api/runs/{run_id}/replays/{replay_id}/resources/{resource_key}")
-    def replay_resource(run_id: str, replay_id: str, resource_key: str,
-                        if_none_match: str | None = Header(default=None)):
-        content, descriptor = replay.read_resource(run_id, replay_id, resource_key)
-        etag = '"' + descriptor["sha256"] + '"'
-        if if_none_match == etag:
-            return Response(status_code=304, headers={"ETag": etag})
-        return Response(content, media_type=descriptor["mime"], headers={
-            "ETag": etag, "Cache-Control": "private, max-age=0, must-revalidate",
-        })
+        """旧页面直接读取的计划 JSON，不将页面查看计为一次文件导出。"""
+        return Response(render_json(successful_run(run_id)), media_type="application/json")
 
     @app.get("/api/runs/{run_id}/visualization/orbit.czml")
     def visualization_orbit(run_id: str):
@@ -290,26 +232,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         return FileResponse(target, media_type="application/json")
 
-    @app.get("/api/runs/{run_id}/visualization/replay")
-    def visualization_replay(run_id: str):
-        """Return a read-only display derivative; this never re-runs scheduling."""
-        record = successful_run(run_id)
-        profile = Path(__file__).resolve().parent.parent / "replay_configs" / "display-profile-v2.json"
-        try:
-            document = build_replay_document(record, profile)
-            cache_key = document["manifest"]["cache_key"]
-            with replay_cache_lock:
-                cached = replay_cache.get(cache_key)
-                if cached is not None:
-                    replay_cache.move_to_end(cache_key)
-                    return cached
-                replay_cache[cache_key] = document
-                while len(replay_cache) > 16:
-                    replay_cache.popitem(last=False)
-            return document
-        except (OSError, ValueError, ReplayInputError) as exc:
-            raise HTTPException(status_code=409, detail=f"回放输入不可用：{exc}") from exc
-
     @app.get("/visualization/gantt-page")
     def gantt_page():
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "gantt_viewer.html")
@@ -317,26 +239,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/visualization/cesium-page")
     def cesium_page():
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "cesium_viewer.html")
-
-    @app.get("/visualization/fixed-payload-state.js")
-    def fixed_payload_state_script():
-        return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "fixed-payload-state.js",
-                            media_type="text/javascript")
-
-    @app.get("/visualization/fixed-payload-geometry.js")
-    def fixed_payload_geometry_script():
-        return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "fixed-payload-geometry.js",
-                            media_type="text/javascript")
-
-    @app.get("/visualization/fixed-payload-view.js")
-    def fixed_payload_view_script():
-        return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "fixed-payload-view.js",
-                            media_type="text/javascript")
-
-    @app.get("/visualization/assets/satellites/landsat8.glb")
-    def landsat8_model():
-        return FileResponse(Path(__file__).resolve().parent.parent / "assets" / "satellites" / "landsat8.glb",
-                            media_type="model/gltf-binary")
 
     @app.get("/visualization/gantt/{run_id}")
     def open_gantt(run_id: str):
@@ -349,8 +251,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         successful_run(run_id)
         schedule = f"/api/runs/{run_id}/visualization/schedule"
         orbit = f"/api/runs/{run_id}/visualization/orbit.czml"
-        replay = f"/api/runs/{run_id}/visualization/replay"
         gantt = f"/visualization/gantt/{run_id}"
-        return RedirectResponse("/visualization/cesium-page?" + urlencode({"schedule": schedule, "czml": orbit, "replay": replay, "gantt": gantt}))
+        return RedirectResponse("/visualization/cesium-page?" + urlencode({"schedule": schedule, "czml": orbit, "gantt": gantt}))
 
     return app

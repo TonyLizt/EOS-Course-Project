@@ -1,5 +1,4 @@
 .venv/
-output/
 output_original_fallback/
 draw/orbit.czml
 draw/orekit-data.zip
@@ -8,3 +7,12 @@ __pycache__/
 .DS_Store
 __pycache__/
 *.py[cod]
+# Generated EOS-Bench scenario datasets
+/output/
+
+# Local dataset archives
+/input.zip
+/output.zip
+
+# Locally generated scenario hash report
+/experiments/reports/scenario_sha256.txt

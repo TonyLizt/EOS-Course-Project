@@ -5,9 +5,6 @@
   <title>Scenario - Satellite Schedule Viewer</title>
 
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Cesium.js"></script>
-  <script src="fixed-payload-state.js?v=20261015-5"></script>
-  <script src="fixed-payload-geometry.js?v=20261015-5"></script>
-  <script src="fixed-payload-view.js?v=20261015-5"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
 
   <style>
@@ -165,47 +162,6 @@
       margin-right: 8px;
     }
 
-    .asset-status {
-      font-size: 11px;
-      line-height: 1.45;
-      color: #cbd8ed;
-    }
-
-    .asset-status strong {
-      color: #ffc857;
-    }
-    #payloadViewportShell {
-      position: relative;
-      width: 236px;
-      height: 236px;
-      margin-top: 8px;
-      overflow: hidden;
-      background: #000;
-      border: 1px solid rgba(255, 255, 255, 0.22);
-    }
-    #payloadViewContainer {
-      position: absolute;
-      background: #000;
-    }
-    #payloadSatelliteList button, #togglePayloadView {
-      width: 100%;
-      margin: 3px 0;
-      padding: 5px 6px;
-      border: 1px solid rgba(255, 255, 255, 0.28);
-      background: rgba(25, 40, 75, 0.9);
-      color: #f5f5f5;
-      text-align: left;
-      cursor: pointer;
-    }
-    #payloadSatelliteList button.active {
-      border-color: #67b2ff;
-      background: rgba(45, 95, 170, 0.95);
-    }
-    #payloadViewStatus {
-      margin-top: 6px;
-      min-height: 30px;
-    }
-
     #openGanttBtn {
       padding: 5px 12px;
       font-size: 12px;
@@ -270,18 +226,6 @@
     <div class="panel-section">
       <h2>Simulation Time</h2>
       <div id="currentTime" class="small-text">-</div>
-    </div>
-
-    <div class="panel-section">
-      <h2>Satellite Appearance</h2>
-      <div id="assetStatus" class="asset-status">Point/label fallback active until replay data loads.</div>      <div id="sensorGeometryStatus" class="asset-status">Sensor geometry inactive.</div>
-    </div>
-    <div class="panel-section">
-      <h2>Fixed Payload View</h2>
-      <div id="payloadSatelliteList" class="small-text">Replay satellites unavailable.</div>
-      <button id="togglePayloadView" type="button">Hide fixed payload view</button>
-      <div id="payloadViewportShell"><div id="payloadViewContainer"></div></div>
-      <div id="payloadViewStatus" class="asset-status">No satellite selected.</div>
     </div>
   </div>
 
@@ -352,11 +296,6 @@
       return null;
     }
 
-    function schedulerTimeForCesium(value) {
-      const text = String(value || '').trim();
-      return /(?:Z|[+-]\d{2}:\d{2})$/i.test(text) ? text : text + 'Z';
-    }
-
     async function tryLoadSchedule() {
       const url = getScheduleUrl();
       if (!url) return null;
@@ -374,31 +313,13 @@
       }
     }
 
-    let replayLoadError = null;
-
-    async function tryLoadReplay() {
-      const url = new URLSearchParams(window.location.search).get('replay');
-      if (!url || !url.trim()) return null;
-      try {
-        const response = await fetch(url.trim());
-        if (!response.ok) throw new Error(response.status + ' ' + response.statusText);
-        return await response.json();
-      } catch (error) {
-        replayLoadError = error;
-        document.getElementById('assetStatus').textContent =
-          'Replay data unavailable; Cesium point/label fallback remains active. ' + error;
-        return null;
-      }
-    }
-
     // 第二阶段可按 run_id 传入场景专属 CZML；旧 CLI 没有参数时仍使用原路径。
     const czmlUrl = new URLSearchParams(window.location.search).get('czml') || 'orbit.czml';
     const czmlPromise = Cesium.CzmlDataSource.load(czmlUrl);
     const schedulePromise = tryLoadSchedule();
-    const replayPromise = tryLoadReplay();
 
-    Promise.all([czmlPromise, schedulePromise, replayPromise])
-      .then(function ([ds, schedule, replay]) {
+    Promise.all([czmlPromise, schedulePromise])
+      .then(function ([ds, schedule]) {
         viewer.dataSources.add(ds);
         viewer.zoomTo(ds).then(flyToEarthCenter);
 
@@ -407,7 +328,6 @@
         setupScheduleLink(schedule, ds);
         setupVisibilityControls(ds);
         setupGanttButton(schedule);
-        setupBodyModelsAndFixedPayloads(replay, ds);
       })
       .catch(function (error) {
         console.error('Error loading data:', error);
@@ -471,8 +391,8 @@
 
       const assignments = rawAssignments
         .map((a, idx) => {
-          const start = Cesium.JulianDate.fromIso8601(schedulerTimeForCesium(a.sat_start_time));
-          const end = Cesium.JulianDate.fromIso8601(schedulerTimeForCesium(a.sat_end_time));
+          const start = Cesium.JulianDate.fromIso8601(a.sat_start_time);
+          const end = Cesium.JulianDate.fromIso8601(a.sat_end_time);
           const durationSec = Cesium.JulianDate.secondsDifference(end, start);
           return {
             index: idx,
@@ -537,11 +457,8 @@
             const a = assignments.find((x) => x.index === idx);
             if (!a) return;
 
-            if (viewer._selectReplaySatellite) viewer._selectReplaySatellite(a.satellite_id);
-            viewer.clock.shouldAnimate = false;
-            viewer.clock.currentTime = Cesium.JulianDate.clone(a.start, viewer.clock.currentTime);
-            viewer.clock.tick();
-            viewer.scene.requestRender();
+            viewer.clock.currentTime = a.start;
+            viewer.clock.shouldAnimate = true;
 
             listDiv.querySelectorAll('.assignment-row').forEach((r) => {
               r.classList.toggle('active', r === row);
@@ -669,538 +586,6 @@
       if (tgtPointCb) {
         tgtPointCb.addEventListener('change', () => setTargetPointVisible(tgtPointCb.checked));
       }
-    }
-
-    function setupFixedPayloadView(replay, stateAt) {
-      if (!window.FixedPayloadView || !(replay.satellites || []).length) return;
-      const list = document.getElementById('payloadSatelliteList');
-      const shell = document.getElementById('payloadViewportShell');
-      const container = document.getElementById('payloadViewContainer');
-      const status = document.getElementById('payloadViewStatus');
-      const toggle = document.getElementById('togglePayloadView');
-      const satelliteById = new Map(replay.satellites.map((item) => [item.id, item]));
-      const missionById = new Map();
-      (replay.missions || []).forEach((mission) => {
-        const display = FixedPayloadView.missionDisplay(mission);
-        if (!display) return;
-        missionById.set(display.id, {
-          ...display,
-          position: Cesium.Cartesian3.fromDegrees(
-            display.longitude, display.latitude, display.altitude_m + 250
-          )
-        });
-      });
-      let selectedId = replay.satellites[0].id;
-      let visible = true;
-      let payloadViewer = null;
-      let payloadTargetEntity = null;
-      let viewportKey = null;
-
-      const selectedSensor = (state) => {
-        const satellite = satelliteById.get(selectedId);
-        if (!satellite) return null;
-        return satellite.sensors.find((item) => item.sensor_id === (state && state.sensor_id))
-          || satellite.sensors[0] || null;
-      };
-      const ensureViewer = () => {
-        if (payloadViewer) return payloadViewer;
-        payloadViewer = new Cesium.Viewer('payloadViewContainer', {
-          baseLayerPicker: false,
-          geocoder: false,
-          homeButton: false,
-          sceneModePicker: false,
-          navigationHelpButton: false,
-          animation: false,
-          timeline: false,
-          fullscreenButton: false,
-          infoBox: false,
-          selectionIndicator: false,
-          shouldAnimate: false,
-          useDefaultRenderLoop: false,
-          requestRenderMode: true
-        });
-        payloadViewer.clock.shouldAnimate = false;
-        payloadViewer.scene.screenSpaceCameraController.enableInputs = false;
-        payloadViewer.scene.globe.depthTestAgainstTerrain = false;
-        payloadTargetEntity = payloadViewer.entities.add({
-          id: 'fixed-payload-current-target',
-          name: 'Current replay mission target',
-          show: false,
-          position: Cesium.Cartesian3.ZERO,
-          point: {
-            pixelSize: 13,
-            color: Cesium.Color.YELLOW,
-            outlineColor: Cesium.Color.RED,
-            outlineWidth: 3,
-            disableDepthTestDistance: 1000000
-          },
-          label: {
-            text: '',
-            font: 'bold 14px sans-serif',
-            fillColor: Cesium.Color.YELLOW,
-            outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 3,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            pixelOffset: new Cesium.Cartesian2(0, -22),
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            disableDepthTestDistance: 1000000
-          }
-        });
-        viewer._payloadViewer = payloadViewer;
-        viewer._payloadTargetEntity = payloadTargetEntity;
-        return payloadViewer;
-      };
-      const applyViewport = (frustum) => {
-        const box = FixedPayloadView.viewportBox(
-          shell.clientWidth, shell.clientHeight, frustum.aspect_ratio
-        );
-        const key = [box.width, box.height, frustum.horizontal_full_fov_deg,
-          frustum.vertical_full_fov_deg].join(':');
-        if (key === viewportKey) return ensureViewer();
-        viewportKey = key;
-        container.style.width = box.width + 'px';
-        container.style.height = box.height + 'px';
-        container.style.left = box.left + 'px';
-        container.style.top = box.top + 'px';
-        const secondary = ensureViewer();
-        secondary.resize();
-        secondary.camera.frustum.aspectRatio = frustum.aspect_ratio;
-        secondary.camera.frustum.fov = Cesium.Math.toRadians(
-          frustum.aspect_ratio > 1
-            ? frustum.horizontal_full_fov_deg : frustum.vertical_full_fov_deg
-        );
-        secondary.camera.frustum.near = 10;
-        secondary.camera.frustum.far = 50000000;
-        return secondary;
-      };
-      const renderSelected = (time) => {
-        if (!visible) return;
-        const state = stateAt(selectedId, time);
-        const pose = FixedPayloadView.cameraPose(state);
-        const sensor = selectedSensor(state);
-        const mission = pose && pose.task_id ? missionById.get(pose.task_id) : null;
-        status.textContent = FixedPayloadView.statusText(selectedId, pose)
-          + (mission ? ' | target ' + mission.latitude.toFixed(4) + '°, '
-            + mission.longitude.toFixed(4) + '°' : '');
-        if (!pose || !sensor) {
-          if (payloadTargetEntity) payloadTargetEntity.show = false;
-          return;
-        }
-        const frustum = FixedPayloadView.opticalFrustum(sensor);
-        const secondary = applyViewport(frustum);
-        payloadTargetEntity.show = Boolean(mission);
-        if (mission) {
-          payloadTargetEntity.position = mission.position;
-          payloadTargetEntity.label.text = mission.label;
-        }
-        secondary.clock.currentTime = Cesium.JulianDate.clone(time, secondary.clock.currentTime);
-        secondary.camera.setView({
-          destination: Cesium.Cartesian3.fromArray(pose.position_ecef_m),
-          orientation: {
-            direction: Cesium.Cartesian3.fromArray(pose.direction_ecef),
-            up: Cesium.Cartesian3.fromArray(pose.up_ecef)
-          }
-        });
-        secondary.scene.requestRender();
-        secondary.render();
-      };
-      const selectSatellite = (satelliteId) => {
-        if (!satelliteById.has(satelliteId)) return false;
-        selectedId = satelliteId;
-        list.querySelectorAll('button').forEach((button) => {
-          button.classList.toggle('active', button.dataset.satelliteId === selectedId);
-        });
-        renderSelected(viewer.clock.currentTime);
-        return true;
-      };
-      viewer._selectReplaySatellite = selectSatellite;
-      const flyToMission = (missionId) => {
-        const mission = missionById.get(missionId);
-        if (!mission) return false;
-        viewer.trackedEntity = undefined;
-        viewer.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(
-            mission.longitude, mission.latitude, mission.altitude_m + 600000
-          ),
-          orientation: {
-            heading: 0,
-            pitch: -Cesium.Math.PI_OVER_TWO,
-            roll: 0
-          },
-          duration: 1.0
-        });
-        return true;
-      };
-      viewer._flyToReplayMission = flyToMission;
-
-      list.innerHTML = '';
-      replay.satellites.forEach((satellite) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.dataset.satelliteId = satellite.id;
-        button.textContent = satellite.id + ' [' + (satellite.maneuverability_type || 'unknown') + ']';
-        button.addEventListener('click', () => selectSatellite(satellite.id));
-        list.appendChild(button);
-      });
-      toggle.addEventListener('click', () => {
-        visible = !visible;
-        shell.style.display = visible ? 'block' : 'none';
-        toggle.textContent = visible ? 'Hide fixed payload view' : 'Show fixed payload view';
-        if (visible) renderSelected(viewer.clock.currentTime);
-      });
-      viewer.selectedEntityChanged.addEventListener((entity) => {
-        const id = entity && (entity.id || entity._id);
-        if (typeof id !== 'string') return;
-        if (!selectSatellite(id)) flyToMission(id);
-      });
-      viewer.clock.onTick.addEventListener((clock) => renderSelected(clock.currentTime));
-      window.addEventListener('resize', () => {
-        if (visible) renderSelected(viewer.clock.currentTime);
-      });
-      window.addEventListener('beforeunload', () => {
-        if (payloadViewer && !payloadViewer.isDestroyed()) payloadViewer.destroy();
-      }, { once: true });
-      selectSatellite(selectedId);
-    }
-
-    function setupSensorGeometry(satellite, stateAt) {
-      if (!window.FixedPayloadGeometry || !window.FixedPayloadState) return 0;
-      const samplesPerEdge = 4;
-      const statusMap = viewer._sensorGeometryStatuses || new Map();
-      viewer._sensorGeometryStatuses = statusMap;
-      if (!viewer._sensorGeometryStatusListener) {
-        viewer._sensorGeometryStatusListener = true;
-        viewer.clock.onTick.addEventListener(function () {
-          const values = Array.from(statusMap.values());
-          const active = values.filter((value) => value !== 'IDLE');
-          const complete = active.filter((value) => value === 'COMPLETE').length;
-          const partial = active.filter((value) => value === 'PARTIAL_HORIZON').length;
-          const missed = active.filter((value) =>
-            value === 'NO_BOUNDARY_INTERSECTION' || value === 'CENTER_MISS'
-          ).length;
-          document.getElementById('sensorGeometryStatus').textContent = active.length
-            ? 'WGS84 sensor geometry: ' + complete + ' complete, ' + partial
-              + ' partial horizon, ' + missed + ' no intersection.'
-            : 'Sensor frustums hidden: no satellite is slewing or observing at this time.';
-        });
-      }
-
-      let cachedKey = null;
-      let cachedGeometry = null;
-      const cartesianArray = (value) => [value.x, value.y, value.z];
-      const intersectWgs84 = (originArray, directionArray) => {
-        const origin = Cesium.Cartesian3.fromArray(originArray);
-        const direction = Cesium.Cartesian3.normalize(
-          Cesium.Cartesian3.fromArray(directionArray), new Cesium.Cartesian3()
-        );
-        const ray = new Cesium.Ray(origin, direction);
-        const interval = Cesium.IntersectionTests.rayEllipsoid(ray, Cesium.Ellipsoid.WGS84);
-        if (!interval) return null;
-        const distances = [interval.start, interval.stop]
-          .filter((value) => Number.isFinite(value) && value >= 0)
-          .sort((left, right) => left - right);
-        if (!distances.length) return null;
-        return cartesianArray(Cesium.Ray.getPoint(ray, distances[0], new Cesium.Cartesian3()));
-      };
-      const geometryAt = (time) => {
-        const key = Cesium.JulianDate.toIso8601(time, 3);
-        if (key === cachedKey) return cachedGeometry;
-        const state = stateAt(satellite.id, time);
-        const style = FixedPayloadGeometry.phaseStyle(state && state.phase);
-        if (!state || !style.visible) {
-          cachedKey = key;
-          cachedGeometry = { visible: false, style: style, status: 'IDLE' };
-          statusMap.set(satellite.id, 'IDLE');
-          return cachedGeometry;
-        }
-        const sensor = satellite.sensors.find((item) => item.sensor_id === state.sensor_id)
-          || satellite.sensors[0];
-        try {
-          const frame = FixedPayloadGeometry.sensorFrame(
-            state, sensor, FixedPayloadState.rotate, samplesPerEdge
-          );
-          const intersections = FixedPayloadGeometry.intersectFrame(frame, intersectWgs84);
-          if (!intersections) throw new Error('sensor frame intersections are unavailable');
-          cachedKey = key;
-          cachedGeometry = {
-            visible: true, style: style, intersections: intersections, status: intersections.status
-          };
-          statusMap.set(satellite.id, intersections.status);
-          return cachedGeometry;
-        } catch (error) {
-          console.warn('Sensor geometry unavailable for ' + satellite.id, error);
-          cachedKey = key;
-          cachedGeometry = { visible: false, style: style, status: 'GEOMETRY_MISSING' };
-          statusMap.set(satellite.id, 'GEOMETRY_MISSING');
-          return cachedGeometry;
-        }
-      };
-      const colorAt = (time, alphaScale) => {
-        const rgba = geometryAt(time).style.rgba;
-        return new Cesium.Color(rgba[0], rgba[1], rgba[2], rgba[3] * alphaScale);
-      };
-      const visibleIntersections = (time) => {
-        const value = geometryAt(time);
-        return value && value.visible && value.intersections ? value.intersections : null;
-      };
-      const frustumBoundary = (intersections) => intersections
-        && Array.isArray(intersections.frustum_boundary_ecef_m)
-        ? intersections.frustum_boundary_ecef_m : null;
-      const liftForDisplay = (array) => {
-        const point = Cesium.Cartesian3.fromArray(array);
-        const normal = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(
-          point, new Cesium.Cartesian3()
-        );
-        return Cesium.Cartesian3.add(
-          point,
-          Cesium.Cartesian3.multiplyByScalar(normal, 20, new Cesium.Cartesian3()),
-          new Cesium.Cartesian3()
-        );
-      };
-
-      viewer.entities.add({
-        id: 'fixed-payload-center-' + satellite.id,
-        name: satellite.id + ' sensor center ray and WGS84 ellipsoid hit',
-        polyline: {
-          show: new Cesium.CallbackProperty((time) => {
-            const intersections = visibleIntersections(time);
-            return Boolean(intersections && intersections.center_hit_ecef_m);
-          }, false),
-          positions: new Cesium.CallbackProperty((time) => {
-            const intersections = visibleIntersections(time);
-            if (!intersections || !intersections.center_hit_ecef_m) return undefined;
-            return [
-              Cesium.Cartesian3.fromArray(intersections.origin_ecef_m),
-              Cesium.Cartesian3.fromArray(intersections.center_hit_ecef_m)
-            ];
-          }, false),
-          width: 2,
-          material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
-            (time) => colorAt(time, 1.0), false
-          ))
-        }
-      });
-      viewer.entities.add({
-        id: 'fixed-payload-center-hit-' + satellite.id,
-        name: satellite.id + ' WGS84 center intersection; target altitude is separate',
-        position: new Cesium.CallbackProperty((time) => {
-          const intersections = visibleIntersections(time);
-          return intersections && intersections.center_hit_ecef_m
-            ? liftForDisplay(intersections.center_hit_ecef_m) : undefined;
-        }, false),
-        point: {
-          show: new Cesium.CallbackProperty((time) => {
-            const intersections = visibleIntersections(time);
-            return Boolean(intersections && intersections.center_hit_ecef_m);
-          }, false),
-          pixelSize: 7,
-          color: new Cesium.CallbackProperty((time) => colorAt(time, 2.5), false),
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 1
-        }
-      });
-
-      const rayCount = samplesPerEdge * 4;
-      for (let index = 0; index < rayCount; index += 1) {
-        viewer.entities.add({
-          id: 'fixed-payload-boundary-' + satellite.id + '-' + index,
-          polyline: {
-            show: new Cesium.CallbackProperty((time) => {
-              const boundary = frustumBoundary(visibleIntersections(time));
-              return Boolean(boundary && boundary[index]);
-            }, false),
-            positions: new Cesium.CallbackProperty((time) => {
-              const intersections = visibleIntersections(time);
-              const boundary = frustumBoundary(intersections);
-              const endpoint = boundary && boundary[index];
-              if (!intersections || !endpoint) return undefined;
-              return [
-                Cesium.Cartesian3.fromArray(intersections.origin_ecef_m),
-                Cesium.Cartesian3.fromArray(endpoint)
-              ];
-            }, false),
-            width: 2,
-            arcType: Cesium.ArcType.NONE,
-            material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
-              (time) => colorAt(time, 2.2), false
-            ))
-          }
-        });
-        viewer.entities.add({
-          id: 'fixed-payload-side-' + satellite.id + '-' + index,
-          polygon: {
-            show: new Cesium.CallbackProperty((time) => {
-              return Boolean(frustumBoundary(visibleIntersections(time)));
-            }, false),
-            hierarchy: new Cesium.CallbackProperty((time) => {
-              const intersections = visibleIntersections(time);
-              const boundary = frustumBoundary(intersections);
-              if (!intersections || !boundary || !boundary[index]
-                  || !boundary[(index + 1) % boundary.length]) return undefined;
-              return new Cesium.PolygonHierarchy([
-                Cesium.Cartesian3.fromArray(intersections.origin_ecef_m),
-                Cesium.Cartesian3.fromArray(boundary[index]),
-                Cesium.Cartesian3.fromArray(boundary[(index + 1) % boundary.length])
-              ]);
-            }, false),
-            perPositionHeight: true,
-            arcType: Cesium.ArcType.NONE,
-            material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
-              (time) => colorAt(time, 0.78), false
-            )),
-            outline: false
-          }
-        });
-      }
-      viewer.entities.add({
-        id: 'fixed-payload-frustum-cap-' + satellite.id,
-        name: satellite.id + ' fixed payload translucent FOV envelope',
-        polygon: {
-          show: new Cesium.CallbackProperty((time) => {
-            return Boolean(frustumBoundary(visibleIntersections(time)));
-          }, false),
-          hierarchy: new Cesium.CallbackProperty((time) => {
-            const boundary = frustumBoundary(visibleIntersections(time));
-            return boundary
-              ? new Cesium.PolygonHierarchy(
-                boundary.map((point) => Cesium.Cartesian3.fromArray(point))
-              ) : undefined;
-          }, false),
-          perPositionHeight: true,
-          arcType: Cesium.ArcType.NONE,
-          material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
-            (time) => colorAt(time, 0.5), false
-          )),
-          outline: true,
-          outlineColor: Cesium.Color.WHITE.withAlpha(0.8)
-        }
-      });
-      viewer.entities.add({
-        id: 'fixed-payload-footprint-' + satellite.id,
-        name: satellite.id + ' WGS84 ellipsoid footprint',
-        polygon: {
-          show: new Cesium.CallbackProperty((time) => {
-            const intersections = visibleIntersections(time);
-            return Boolean(intersections && intersections.coverage_ecef_m);
-          }, false),
-          hierarchy: new Cesium.CallbackProperty((time) => {
-            const intersections = visibleIntersections(time);
-            const coverage = intersections && intersections.coverage_ecef_m;
-            return coverage
-              ? new Cesium.PolygonHierarchy(coverage.map(liftForDisplay)) : undefined;
-          }, false),
-          perPositionHeight: true,
-          material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
-            (time) => colorAt(time, 0.7), false
-          )),
-          outline: true,
-          outlineColor: Cesium.Color.WHITE.withAlpha(0.65)
-        }
-      });
-      return rayCount;
-    }
-
-    function setupBodyModelsAndFixedPayloads(replay, ds) {
-      const status = document.getElementById('assetStatus');
-      if (!replay || !window.FixedPayloadState) {
-        status.textContent = replayLoadError
-          ? 'Replay data unavailable; Cesium point/label fallback remains active. ' + replayLoadError
-          : 'No replay sidecar; Cesium point/label fallback is active.';
-        return;
-      }
-      const targets = new Map();
-      (replay.missions || []).forEach((mission) => {
-        const location = mission.target_location;
-        targets.set(mission.id, Cesium.Cartesian3.fromDegrees(
-          Number(location.longitude), Number(location.latitude), Number(location.altitude_km || 0) * 1000
-        ));
-      });
-      const stateCache = new Map();
-      const toArray = (value) => value ? [value.x, value.y, value.z] : null;
-      const positionAt = (satelliteId, isoTime) => {
-        const entity = ds.entities.getById(satelliteId);
-        if (!entity || !entity.position) return null;
-        const time = typeof isoTime === 'string' ? Cesium.JulianDate.fromIso8601(isoTime) : isoTime;
-        return toArray(entity.position.getValue(time));
-      };
-      const targetPosition = (taskId) => toArray(targets.get(taskId));
-      const stateAt = (satelliteId, time) => {
-        const key = satelliteId + ':' + Cesium.JulianDate.toIso8601(time, 3);
-        if (stateCache.has(key)) return stateCache.get(key);
-        try {
-          const value = FixedPayloadState.evaluateSatelliteState(
-            replay, satelliteId, Cesium.JulianDate.toIso8601(time), positionAt, targetPosition
-          );
-          stateCache.clear();
-          stateCache.set(key, value);
-          return value;
-        } catch (error) {
-          console.warn('Fixed payload state unavailable for ' + satelliteId, error);
-          return null;
-        }
-      };
-      let modelCount = 0;
-      let markerCount = 0;
-      let frustumRayCount = 0;
-      (replay.satellites || []).forEach((satellite) => {
-        const entity = ds.entities.getById(satellite.id);
-        if (!entity || !entity.position) return;
-        const model = satellite.model;
-        if (model) {
-          const modelAxis = model.model_to_body_quaternion_xyzw;
-          entity.orientation = new Cesium.CallbackProperty((time, result) => {
-            const state = stateAt(satellite.id, time);
-            if (!state || !state.body_to_ecef_quaternion_xyzw) return undefined;
-            const value = FixedPayloadState.multiply(state.body_to_ecef_quaternion_xyzw, modelAxis);
-            if (!result) return new Cesium.Quaternion(value[0], value[1], value[2], value[3]);
-            result.x = value[0];
-            result.y = value[1];
-            result.z = value[2];
-            result.w = value[3];
-            return result;
-          }, false);
-          entity.model = new Cesium.ModelGraphics({
-            uri: model.uri,
-            minimumPixelSize: model.minimum_pixel_size,
-            maximumScale: model.maximum_scale,
-            runAnimations: false,
-            clampAnimations: true,
-            shadows: Cesium.ShadowMode.DISABLED
-          });
-          modelCount += 1;
-        }
-        viewer.entities.add({
-          id: 'fixed-payload-marker-' + satellite.id,
-          name: satellite.id + ' fixed payload -Z axis',
-          polyline: {
-            positions: new Cesium.CallbackProperty((time, result) => {
-              const state = stateAt(satellite.id, time);
-              if (!state || !state.position_ecef_m || !state.direction_ecef) return undefined;
-              const origin = Cesium.Cartesian3.fromArray(state.position_ecef_m);
-              const direction = Cesium.Cartesian3.fromArray(state.direction_ecef);
-              const endpoint = Cesium.Cartesian3.add(
-                origin, Cesium.Cartesian3.multiplyByScalar(direction, 80000, new Cesium.Cartesian3()),
-                new Cesium.Cartesian3()
-              );
-              if (!Array.isArray(result)) result = [];
-              result.length = 2;
-              result[0] = Cesium.Cartesian3.clone(origin, result[0]);
-              result[1] = Cesium.Cartesian3.clone(endpoint, result[1]);
-              return result;
-            }, false),
-            width: 2,
-            material: Cesium.Color.ORANGE
-          }
-        });
-        markerCount += 1;
-        frustumRayCount += setupSensorGeometry(satellite, stateAt);
-      });
-      status.innerHTML = '<strong>Landsat 8 illustrative appearance</strong><br>'
-        + modelCount + ' body model(s), ' + markerCount + ' fixed -Z payload marker(s). '
-        + frustumRayCount + ' sampled FOV boundary ray(s) with translucent side faces. Original satellite IDs remain unchanged; '
-        + 'point/label geometry is retained as the load fallback. '
-        + 'FOV is a square full-angle display assumption only.';
-      setupFixedPayloadView(replay, stateAt);
     }
 
     function setupGanttButton(schedule) {

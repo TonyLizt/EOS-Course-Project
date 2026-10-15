@@ -162,75 +162,19 @@ CREATE TABLE IF NOT EXISTS output_profiles (
 """
 
 
-REPLAY_SCHEMA = """
-CREATE TABLE IF NOT EXISTS replay_artifacts (
-  replay_id TEXT PRIMARY KEY NOT NULL,
-  run_id TEXT NOT NULL REFERENCES plans(run_id) ON DELETE RESTRICT,
-  scenario_id TEXT NOT NULL,
-  scenario_sha256 TEXT NOT NULL CHECK(length(scenario_sha256)=64),
-  plan_sha256 TEXT NOT NULL CHECK(length(plan_sha256)=64),
-  replay_config_id TEXT NOT NULL,
-  replay_config_version TEXT NOT NULL,
-  replay_config_json TEXT NOT NULL,
-  replay_config_sha256 TEXT NOT NULL CHECK(length(replay_config_sha256)=64),
-  algorithm_code_sha TEXT,
-  provenance_warning TEXT,
-  builder_code_sha TEXT NOT NULL,
-  builder_version TEXT NOT NULL,
-  propagation_version TEXT NOT NULL,
-  attitude_version TEXT NOT NULL,
-  geometry_version TEXT NOT NULL,
-  cache_key TEXT NOT NULL UNIQUE CHECK(length(cache_key)=64),
-  status TEXT NOT NULL CHECK(status IN ('BUILDING','READY','FAILED')),
-  build_attempt INTEGER NOT NULL CHECK(build_attempt>=1),
-  builder_pid INTEGER,
-  builder_start_token TEXT,
-  last_seq INTEGER NOT NULL DEFAULT 0 CHECK(last_seq>=0),
-  artifact_relative_directory TEXT,
-  manifest_json TEXT,
-  manifest_sha256 TEXT,
-  diagnostics_summary_json TEXT,
-  build_runtime_s REAL CHECK(build_runtime_s IS NULL OR build_runtime_s>=0),
-  error_code TEXT,
-  error_message TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  build_started_at TEXT,
-  build_finished_at TEXT,
-  CHECK(status!='READY' OR (
-    artifact_relative_directory IS NOT NULL AND manifest_json IS NOT NULL
-    AND manifest_sha256 IS NOT NULL AND build_runtime_s IS NOT NULL
-    AND build_finished_at IS NOT NULL AND error_code IS NULL
-  )),
-  CHECK(status!='FAILED' OR (error_code IS NOT NULL AND build_finished_at IS NOT NULL))
-);
-CREATE INDEX IF NOT EXISTS idx_replay_run_created ON replay_artifacts(run_id,created_at);
-CREATE INDEX IF NOT EXISTS idx_replay_status_updated ON replay_artifacts(status,updated_at);
-"""
-
-
 class Database:
     def __init__(self, path: Path):
         self.path = path
         path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as connection:
             version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1, 2, 3):
+            if version not in (0, 1, 2):
                 raise RuntimeError(f"数据库版本 {version} 比当前程序新")
-            if version in (1, 2):
-                # 在线备份会同时读取 WAL 中已提交的页；避免直接复制活跃数据库文件。
-                backup = path.with_name(path.name + ".pre-v3.bak")
-                if not backup.exists():
-                    with sqlite3.connect(backup) as destination:
-                        connection.backup(destination)
             if version == 0:
-                connection.executescript("BEGIN IMMEDIATE;\n" + SCHEMA + REPLAY_SCHEMA + "\nPRAGMA user_version=3;\nCOMMIT;")
+                connection.executescript("BEGIN IMMEDIATE;\n" + SCHEMA + "\nPRAGMA user_version=2;\nCOMMIT;")
             elif version == 1:
                 # 仅向前增加表和列，保留 v0.1 正式实验与导出记录。
-                connection.executescript("BEGIN IMMEDIATE;\n" + MIGRATION_1_TO_2 + REPLAY_SCHEMA + "\nPRAGMA user_version=3;\nCOMMIT;")
-            elif version == 2:
-                # 回放是正式结果的派生缓存；迁移只增加表和索引。
-                connection.executescript("BEGIN IMMEDIATE;\n" + REPLAY_SCHEMA + "\nPRAGMA user_version=3;\nCOMMIT;")
+                connection.executescript("BEGIN IMMEDIATE;\n" + MIGRATION_1_TO_2 + "\nPRAGMA user_version=2;\nCOMMIT;")
 
     @contextmanager
     def connect(self):
@@ -338,18 +282,6 @@ class Database:
         """记录正式状态之外的诊断事件，例如可选文件导出失败。"""
         with self.write() as db:
             self._event(db, run_id, attempt, "controller", None, kind, payload)
-
-    def record_attempt_exit(self, run_id: str, attempt: int, exit_code: int | None, diagnostics: dict) -> None:
-        """在原有 attempt 列和事件表中记录直接 Worker 的退出与回收。"""
-        with self.write() as db:
-            row = db.execute("SELECT 1 FROM run_attempts WHERE run_id=? AND attempt_no=?",
-                             (run_id, attempt)).fetchone()
-            if row is None:
-                return
-            db.execute("UPDATE run_attempts SET exit_code=? WHERE run_id=? AND attempt_no=?",
-                       (exit_code, run_id, attempt))
-            self._event(db, run_id, attempt, "controller", None, "WORKER_REAP",
-                        {"exit_code": exit_code, **diagnostics})
 
     def next_queued(self) -> dict | None:
         with self.connect() as db:
@@ -485,113 +417,6 @@ class Database:
             rows = db.execute("SELECT r.run_id,r.source_id,r.scenario_id,r.algorithm_id,r.output_profile_id,r.status,r.created_at,r.finished_at,m.TCR,m.completed_tasks FROM runs r LEFT JOIN metrics m ON r.run_id=m.run_id ORDER BY r.created_at DESC LIMIT ? OFFSET ?", (limit, offset)).fetchall()
             return {"items": [dict(row) for row in rows], "total": total, "limit": limit, "offset": offset}
 
-    def get_replay_source(self, run_id: str) -> dict | None:
-        """读取正式提交的计划身份；构建进程只接收这个快照，不接触 SQLite。"""
-        with self.connect() as db:
-            row = db.execute(
-                "SELECT r.run_id,r.status,r.scenario_id,r.scenario_sha256,r.algorithm_version,"
-                "r.config_json,p.plan_json,p.plan_sha256 FROM runs r "
-                "LEFT JOIN plans p ON p.run_id=r.run_id WHERE r.run_id=?", (run_id,)
-            ).fetchone()
-            return dict(row) if row else None
-
-    def get_replay(self, run_id: str, replay_id: str) -> dict | None:
-        with self.connect() as db:
-            row = db.execute("SELECT * FROM replay_artifacts WHERE run_id=? AND replay_id=?",
-                             (run_id, replay_id)).fetchone()
-            return dict(row) if row else None
-
-    def latest_replay(self, run_id: str, config_id: str) -> dict | None:
-        with self.connect() as db:
-            row = db.execute(
-                "SELECT * FROM replay_artifacts WHERE run_id=? AND replay_config_id=? "
-                "ORDER BY created_at DESC LIMIT 1", (run_id, config_id)
-            ).fetchone()
-            return dict(row) if row else None
-
-    def reserve_replay(self, values: dict) -> tuple[dict, bool]:
-        """唯一缓存键串行去重；bool 表示本请求需要启动新的构建 attempt。"""
-        with self.write() as db:
-            row = db.execute("SELECT * FROM replay_artifacts WHERE cache_key=?",
-                             (values["cache_key"],)).fetchone()
-            if row:
-                if row["status"] != "FAILED":
-                    return dict(row), False
-                attempt = row["build_attempt"] + 1
-                db.execute(
-                    "UPDATE replay_artifacts SET status='BUILDING',build_attempt=?,builder_pid=NULL,"
-                    "builder_start_token=NULL,last_seq=0,artifact_relative_directory=NULL,"
-                    "manifest_json=NULL,manifest_sha256=NULL,diagnostics_summary_json=NULL,"
-                    "build_runtime_s=NULL,error_code=NULL,error_message=NULL,"
-                    "updated_at=?,build_started_at=?,build_finished_at=NULL WHERE replay_id=?",
-                    (attempt, now(), now(), row["replay_id"])
-                )
-                new_row = db.execute("SELECT * FROM replay_artifacts WHERE replay_id=?",
-                                     (row["replay_id"],)).fetchone()
-                return dict(new_row), True
-            columns = tuple(values)
-            db.execute(
-                "INSERT INTO replay_artifacts (" + ",".join(columns) + ") VALUES ("
-                + ",".join("?" for _ in columns) + ")", tuple(values.values())
-            )
-            new_row = db.execute("SELECT * FROM replay_artifacts WHERE replay_id=?",
-                                 (values["replay_id"],)).fetchone()
-            return dict(new_row), True
-
-    def set_replay_process(self, replay_id: str, attempt: int, pid: int, token: str) -> bool:
-        with self.write() as db:
-            result = db.execute(
-                "UPDATE replay_artifacts SET builder_pid=?,builder_start_token=?,updated_at=? "
-                "WHERE replay_id=? AND build_attempt=? AND status='BUILDING'",
-                (pid, token, now(), replay_id, attempt)
-            )
-            return result.rowcount == 1
-
-    def publish_replay(self, replay_id: str, attempt: int, relative_dir: str,
-                       manifest_json: str, manifest_sha256: str,
-                       diagnostics_json: str, runtime_s: float) -> bool:
-        """文件先完成，再以当前 attempt 的条件更新发布数据库指针。"""
-        with self.write() as db:
-            result = db.execute(
-                "UPDATE replay_artifacts SET status='READY',artifact_relative_directory=?,"
-                "manifest_json=?,manifest_sha256=?,diagnostics_summary_json=?,build_runtime_s=?,"
-                "builder_pid=NULL,builder_start_token=NULL,updated_at=?,build_finished_at=? "
-                "WHERE replay_id=? AND build_attempt=? AND status='BUILDING'",
-                (relative_dir, manifest_json, manifest_sha256, diagnostics_json, runtime_s,
-                 now(), now(), replay_id, attempt)
-            )
-            return result.rowcount == 1
-
-    def fail_replay(self, replay_id: str, attempt: int, code: str, message: str) -> bool:
-        with self.write() as db:
-            result = db.execute(
-                "UPDATE replay_artifacts SET status='FAILED',error_code=?,error_message=?,"
-                "builder_pid=NULL,builder_start_token=NULL,updated_at=?,build_finished_at=? "
-                "WHERE replay_id=? AND build_attempt=? AND status='BUILDING'",
-                (code, message[:300], now(), now(), replay_id, attempt)
-            )
-            return result.rowcount == 1
-
-    def invalidate_replay(self, replay_id: str, code: str, message: str) -> bool:
-        with self.write() as db:
-            result = db.execute(
-                "UPDATE replay_artifacts SET status='FAILED',error_code=?,error_message=?,"
-                "artifact_relative_directory=NULL,manifest_json=NULL,manifest_sha256=NULL,"
-                "updated_at=?,build_finished_at=? WHERE replay_id=? AND status='READY'",
-                (code, message[:300], now(), now(), replay_id)
-            )
-            return result.rowcount == 1
-
-    def recover_replays(self) -> None:
-        """单实例 Controller 取得锁后将上次未完成的构建标记为失败。"""
-        with self.write() as db:
-            db.execute(
-                "UPDATE replay_artifacts SET status='FAILED',error_code='REPLAY_BUILD_INTERRUPTED',"
-                "error_message='Controller 重启，旧构建未发布',builder_pid=NULL,"
-                "builder_start_token=NULL,updated_at=?,build_finished_at=? WHERE status='BUILDING'",
-                (now(), now())
-            )
-
     def delete_finished_run(self, run_id: str) -> dict | None:
         """仅删除终态实验；所有关联记录在同一写事务内清理。"""
         with self.write() as db:
@@ -603,19 +428,11 @@ class Database:
             exports = [dict(item) for item in db.execute(
                 "SELECT format,status,artifact_path,artifact_sha256 FROM exports WHERE run_id=?", (run_id,)
             )]
-            replay_rows = db.execute(
-                "SELECT replay_id,status FROM replay_artifacts WHERE run_id=?", (run_id,)
-            ).fetchall()
-            if any(item["status"] == "BUILDING" for item in replay_rows):
-                raise ValueError("回放仍在构建；请等待构建结束后再删除实验")
-            # RESTRICT 外键要求先删派生缓存记录，再删正式计划。
-            db.execute("DELETE FROM replay_artifacts WHERE run_id=?", (run_id,))
             # 现有模式未启用级联删除；先删子表，最后删 runs，避免悬空正式结果。
             for table in ("exports", "metrics", "assignments", "plans", "run_events", "run_attempts"):
                 db.execute(f"DELETE FROM {table} WHERE run_id=?", (run_id,))
             db.execute("DELETE FROM runs WHERE run_id=?", (run_id,))
-            return {"run_id": run_id, "config": json.loads(row["config_json"]), "exports": exports,
-                    "replay_ids": [item["replay_id"] for item in replay_rows]}
+            return {"run_id": run_id, "config": json.loads(row["config_json"]), "exports": exports}
 
     def compact_after_delete(self) -> None:
         """删除后回收 SQLite 与 WAL 空间；失败不回滚已经提交的删除。"""
