@@ -1,5 +1,11 @@
 # 课程项目运行与版本记录
 
+## 卫星视图与回放后端集成验收（2026-10-15）
+
+建立 PR 前按协作规范先抓取并比较 `origin/main`。主分支比共同祖先新增回放后端 v0.3 两个提交；由于当前功能分支已有 14 个公开提交，本次不改写历史，而将最新 `origin/main` 合并到功能分支。冲突仅涉及 `COURSE_SETUP.md`、`README.md`、`docs/phase2/interface_design_target.md` 与 `eos_system/api.py`，均采用内容联集：保留 SQLite v3、`ReplayService` 及 `POST /api/runs/{run_id}/replay` 独立构建闭环，同时保留 `GET /api/runs/{run_id}/visualization/replay`、NASA Landsat 8 示意模型、3D 视锥、固定载荷视图、卫星追踪和任务点俯视交互。未覆盖 Controller、Worker、算法、正式计划或指标逻辑。
+
+在允许工作线程和独立子进程的 WSL 环境中，完整 Python `unittest discover -s tests -v` **115/115 通过**（94.256 秒），包括回放后端 v2→v3 迁移、HTTP 构建／复用／资源／删除闭环及既有进程回收测试；Node.js 固定载荷状态、几何、视图和回放验收 **4/4 组通过**，`git diff --check` 通过。受限沙箱会令最小 AnyIO `to_thread` 停滞，因此进程类测试的有效结果以上述正常 WSL 执行为准。
+
 # 卫星回放 commit 6 后续整合记录（2026-10-15）
 
 已将 `6a7c285` 之后的六个提交 `ed60809`、`79851bd`、`08d06b9`、`6422935`、`b5ebe21`、`a3622b1` 汇总为[专题交接](docs/phase2/satellite_replay_post_commit_6.md)：涵盖正式 schedule UTC 相容、CesiumJS 1.136 Quaternion 修正、精确任务跳转、半透明 3D 方锥、原生卫星选取/双击追踪恢复、callback 与浏览器缓存防护、Fixed Payload 任务点/坐标和主地球任务点 600 km 正下视。以成功实验 `965cfdc1-cb00-4500-b993-c20b8c23416c` 进行 Chromium 整页验收，无 render/page/console error；Python 定向 10/10、Node.js 4 组通过。API 路径、SQLite 模式、Controller/Worker、算法、正式计划与指标不变；完整 unittest 的既有停滞限制仍保留。
@@ -53,6 +59,14 @@ Node.js 几何/生命周期测试通过，覆盖中心命中、部分地平线�
 成功实验新增只读 `GET /api/runs/{run_id}/visualization/replay` 派生数据：校验已提交场景哈希与计划身份，按当前转移模型生成确定性 `SLEWING/OBSERVING` 时间段，不重跑调度、不改写母场景或正式计划。Cesium 页面使用 NASA Landsat 8 GLB 作通用示意外观，模型姿态与固定相机—本体变换分离，并保留原卫星 ID 和点/标签回退。新配置与资产来源、哈希、轴向假设见 [commit 1–3 专题交接](docs/phase2/satellite_replay_commits_1_3.md)。
 
 Ubuntu / Python 3 定向单元测试 **9/9** 通过，Node.js 固定载荷时间评估测试通过；真实场景派生检查确认源文件 SHA-256 不变。Landsat 8 GLB（780,280 bytes）已通过 CesiumJS 1.136 + Chromium 141 本地 HTTP 冒烟测试，生成 1 个模型 primitive，无浏览器控制台错误。完整 unittest 在既有 `test_http_cancel_uses_existing_route_and_temporary_database` 停滞，本轮未声称全量通过。当前姿态是几何指向示意，不是 Orekit 姿态/动力学验证；视锥、地面足迹、边界裁剪与第二固定载荷视图尚未实现。
+
+---
+
+## 第二阶段回放后端 v0.3（2026-10-14，`feat/replay-backend`，待李泽同审核）
+
+在正式成功实验之后增加独立的回放构建闭环：SQLite `user_version=3` 与 `replay_artifacts`、`POST /api/runs/{run_id}/replay`、回放状态和资源 GET、原甘特图 schedule 身份字段，以及按实验删除派生回放缓存。固定配置 `geometry-illustration-v2` 生成轨道 CZML、姿态示意样本、阶段区间、诊断和配置资源；Controller 校验哈希并发布 READY。旧 `GET /api/runs/{run_id}/visualization/orbit.czml` 保留到梁兆榮完成前端迁移，首次访问仍可能构建旧共享轨道缓存。当前姿态是展示示意，尚未宣称 Orekit TargetPointing 精确姿态；何明涛的正式回放消息型 IPC、梁兆榮的前端、刘懋兴的数据核验仍按交接文档继续。
+
+WSL Ubuntu 22.04 / Python 3.10.12：完整 `unittest discover -s tests -v` **105/105 通过**，包括新增 v2→v3 迁移及 HTTP→独立构建进程→READY→资源 ETag→删除闭环；`git diff --check` 通过。原 Orekit 导出器的单星 10 分钟/3 轨道样本缓存未命中实测约 179 秒，较大场景需单独预算测试。旧本机 SQLite 中 10 条终态测试实验按用户授权在 v3 迁移后删除，现 runs=0；输入场景和正式导出文件未删，迁移验收后的本机 `.pre-v3.bak` 已清理。工作树尚未 commit/推送。接口与任务交接见 [`docs/phase2/replay_backend_handoff.md`](docs/phase2/replay_backend_handoff.md)，当前 ER 图见 [`docs/phase2/database_current_v03.md`](docs/phase2/database_current_v03.md)。
 
 ---
 
