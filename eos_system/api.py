@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 import uuid
+from collections import OrderedDict
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlencode
@@ -24,6 +26,8 @@ from .exporting import render_csv, render_json
 from .storage import Database, now
 from .replay_service import ReplayError, ReplayService, REPLAY_CONFIG_ID
 from .visualization import OrbitUnavailable, orbit_cache_path
+from replay.document import build_replay_document
+from replay.read_only import ReplayInputError
 
 
 def _public_run(record: dict) -> dict:
@@ -37,6 +41,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     database = Database(settings.database_path)
     database.ensure_defaults(settings.scenario_dir, settings.runtime_dir)
     controller = Controller(settings, database)
+    replay_cache: OrderedDict[str, dict] = OrderedDict()
+    replay_cache_lock = threading.Lock()
     replay = ReplayService(settings, database)
 
     @asynccontextmanager
@@ -284,6 +290,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         return FileResponse(target, media_type="application/json")
 
+    @app.get("/api/runs/{run_id}/visualization/replay")
+    def visualization_replay(run_id: str):
+        """Return a read-only display derivative; this never re-runs scheduling."""
+        record = successful_run(run_id)
+        profile = Path(__file__).resolve().parent.parent / "replay_configs" / "display-profile-v2.json"
+        try:
+            document = build_replay_document(record, profile)
+            cache_key = document["manifest"]["cache_key"]
+            with replay_cache_lock:
+                cached = replay_cache.get(cache_key)
+                if cached is not None:
+                    replay_cache.move_to_end(cache_key)
+                    return cached
+                replay_cache[cache_key] = document
+                while len(replay_cache) > 16:
+                    replay_cache.popitem(last=False)
+            return document
+        except (OSError, ValueError, ReplayInputError) as exc:
+            raise HTTPException(status_code=409, detail=f"回放输入不可用：{exc}") from exc
+
     @app.get("/visualization/gantt-page")
     def gantt_page():
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "gantt_viewer.html")
@@ -291,6 +317,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/visualization/cesium-page")
     def cesium_page():
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "cesium_viewer.html")
+
+    @app.get("/visualization/fixed-payload-state.js")
+    def fixed_payload_state_script():
+        return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "fixed-payload-state.js",
+                            media_type="text/javascript")
+
+    @app.get("/visualization/fixed-payload-geometry.js")
+    def fixed_payload_geometry_script():
+        return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "fixed-payload-geometry.js",
+                            media_type="text/javascript")
+
+    @app.get("/visualization/fixed-payload-view.js")
+    def fixed_payload_view_script():
+        return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "fixed-payload-view.js",
+                            media_type="text/javascript")
+
+    @app.get("/visualization/assets/satellites/landsat8.glb")
+    def landsat8_model():
+        return FileResponse(Path(__file__).resolve().parent.parent / "assets" / "satellites" / "landsat8.glb",
+                            media_type="model/gltf-binary")
 
     @app.get("/visualization/gantt/{run_id}")
     def open_gantt(run_id: str):
@@ -303,7 +349,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         successful_run(run_id)
         schedule = f"/api/runs/{run_id}/visualization/schedule"
         orbit = f"/api/runs/{run_id}/visualization/orbit.czml"
+        replay = f"/api/runs/{run_id}/visualization/replay"
         gantt = f"/visualization/gantt/{run_id}"
-        return RedirectResponse("/visualization/cesium-page?" + urlencode({"schedule": schedule, "czml": orbit, "gantt": gantt}))
+        return RedirectResponse("/visualization/cesium-page?" + urlencode({"schedule": schedule, "czml": orbit, "replay": replay, "gantt": gantt}))
 
     return app

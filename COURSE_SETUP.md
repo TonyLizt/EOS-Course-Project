@@ -1,5 +1,67 @@
 # 课程项目运行与版本记录
 
+## 卫星视图与回放后端集成验收（2026-10-15）
+
+建立 PR 前按协作规范先抓取并比较 `origin/main`。主分支比共同祖先新增回放后端 v0.3 两个提交；由于当前功能分支已有 14 个公开提交，本次不改写历史，而将最新 `origin/main` 合并到功能分支。冲突仅涉及 `COURSE_SETUP.md`、`README.md`、`docs/phase2/interface_design_target.md` 与 `eos_system/api.py`，均采用内容联集：保留 SQLite v3、`ReplayService` 及 `POST /api/runs/{run_id}/replay` 独立构建闭环，同时保留 `GET /api/runs/{run_id}/visualization/replay`、NASA Landsat 8 示意模型、3D 视锥、固定载荷视图、卫星追踪和任务点俯视交互。未覆盖 Controller、Worker、算法、正式计划或指标逻辑。
+
+在允许工作线程和独立子进程的 WSL 环境中，完整 Python `unittest discover -s tests -v` **115/115 通过**（94.256 秒），包括回放后端 v2→v3 迁移、HTTP 构建／复用／资源／删除闭环及既有进程回收测试；Node.js 固定载荷状态、几何、视图和回放验收 **4/4 组通过**，`git diff --check` 通过。受限沙箱会令最小 AnyIO `to_thread` 停滞，因此进程类测试的有效结果以上述正常 WSL 执行为准。
+
+# 卫星回放 commit 6 后续整合记录（2026-10-15）
+
+已将 `6a7c285` 之后的六个提交 `ed60809`、`79851bd`、`08d06b9`、`6422935`、`b5ebe21`、`a3622b1` 汇总为[专题交接](docs/phase2/satellite_replay_post_commit_6.md)：涵盖正式 schedule UTC 相容、CesiumJS 1.136 Quaternion 修正、精确任务跳转、半透明 3D 方锥、原生卫星选取/双击追踪恢复、callback 与浏览器缓存防护、Fixed Payload 任务点/坐标和主地球任务点 600 km 正下视。以成功实验 `965cfdc1-cb00-4500-b993-c20b8c23416c` 进行 Chromium 整页验收，无 render/page/console error；Python 定向 10/10、Node.js 4 组通过。API 路径、SQLite 模式、Controller/Worker、算法、正式计划与指标不变；完整 unittest 的既有停滞限制仍保留。
+
+# 回放正式数据 UTC 兼容修正（2026-10-15）
+
+修正正式排程沿用既有 `scenario_loader` 语义、以无时区 ISO 字串表示 UTC，卻被 replay sidecar 拒絕為 409 的整合問題。HTTP 回放現在只在記憶體內為顯示資料補上明確 `+00:00`，不修改 SQLite、正式計畫或場景；瀏覽器也會保留實際 replay 載入錯誤，不再被後續 fallback 訊息覆蓋。以既有成功實驗 `47023229-6c42-4364-9831-3b56d72b4869` 唯讀實測，可產生 1 顆衛星、30 個任務、47 個階段及 Landsat 8 模型資源；Python 定向 10 項與四組 Node.js 測試通過。
+
+後續真實頁面複測發現 CesiumJS 1.136 不提供 `Quaternion.fromElements()`；模型姿態 callback 已改為該版本支援的 `Quaternion` 建構與 result 原地覆寫，避免 Viewer 停止渲染。
+
+同一輪 Chromium 真實頁面測試也確認，任務列表若直接把無時區 schedule 字串交給 Cesium，香港時區會把 `13:40` 解讀為 `05:40Z`，超出 CZML 時段後被時鐘夾回起點。頁面現在依排程器既有語義先補 UTC 再建立 `JulianDate`，點任務列可跳到正確觀測時段並啟用光錐與固定載荷視圖。
+
+任務跳轉不再強制播放；否則 CZML 的高倍速可能在首幀就越過僅數秒的觀測。點擊後會暫停在原始任務開始時刻並要求立即重繪，使用者可確認模型、光錐與載荷狀態後自行按播放。
+
+視場顯示不再只有中心線與細邊界線：每對相鄰 FOV 邊界射線會建立半透明三角側面，並增加半透明端面與 2 px 邊框，形成可辨識的 3D 方錐。錐體是固定載荷 FOV 的顯示包絡；真實 WGS84 footprint 仍只在全部邊界射線有交點時繪製。部分地平線時會保留完整視錐，但不偽造完整地面覆蓋。
+
+修復固定載荷選星曾覆蓋 Cesium 內建 `LEFT_CLICK`、導致衛星選取與追蹤入口消失的回歸。現在改為監聽 `selectedEntityChanged`：單擊衛星仍使用 Cesium 原生選取框／資訊框，雙擊或原生追蹤控制仍可跟隨衛星，且選取變更會同步更新 Fixed Payload View。
+
+修復視錐 callback 在 IDLE、任務端點或瀏覽器暫存舊版 geometry 腳本時直接索引不存在的第 16 條邊界、造成 Cesium 停止渲染。三個 replay JS URL 現在帶版本參數以避免新舊資源混用；所有中心線、邊界、側面、端面與 footprint callback 都先驗證可見 intersections 與陣列項目，缺資料時安全隱藏而非拋例外。
+
+Fixed Payload View 現在在活動任務期間以黃點、紅色外框、任務 ID 與經緯度標出當前地面目標，狀態列同步顯示座標。主地球單擊任務點會解除衛星追蹤，並以該點上方 600 km、正下視 `-90°` 的相機姿態飛到任務區；衛星的單擊選取與雙擊追蹤行為保持不變。
+
+## 卫星整体姿态/固定载荷回放 commit 6 最终交付（2026-10-15，`feat/satellite-body-fixed-payload-replay`，待审核）
+
+正式 `SUCCEEDED` 运行的 `GET /api/runs/{run_id}/visualization/replay` 现在将 NASA Landsat 8 资产 manifest 与实际 GLB SHA-256 纳入回放/cache identity，返回受控资源来源、署名、大小与哈希。服务每次先重验场景、计划、配置和模型完整性，再以完整 `cache_key` 在进程内复用最多 16 个相同回放文档。回放文档无中间文件；既有轨道缓存机制保持不变。回放请求不写 SQLite，不变更正式计划、metrics、exports 或运行状态。
+
+WSL2 Linux 6.18.33.2 / Python 3.10.12 / Node 24.20.0 / Intel Core Ultra 7 155H：Python 回放定向 **10/10**、Node.js 状态/几何/视图/总验收 **4 组通过**。正式交付测试确认两次请求复用同一缓存文档，三个 JS 和 GLB 静态路径可用，场景 SHA 和 SQLite 正式 run 快照前后一致。CesiumJS 1.136 + Chromium 141 通过 WGS84 几何与同钟视图冒烟；300 次×16 条边界射线求交为 17.8 ms，只代表本次隔离测试。两份保护场景哈希与登记值完全相同。
+
+有界全量 unittest 在 90 秒后仍停在既有 `test_http_cancel_uses_existing_route_and_temporary_database`（退出码 124），本交付不声称全量通过。当前姿态仍是几何指向示意，FOV 是方形全角假设，覆盖不含地形遮挡，第二 Viewer 是地图/椭球模拟视野而非真实遥感影像。完整 SHA、命令、资产、性能与限制见 [最终验证报告](docs/replay/final-validation.md)。
+
+---
+
+## 卫星回放 commit 5：同钟固定载荷视图（2026-10-14，`feat/satellite-body-fixed-payload-replay`，待审核）
+
+Cesium 页面新增“固定载荷视角渲染组件”：可从卫星列表、主地球实体或任务列表选星，显示原卫星 ID、当前任务、`IDLE/SLEWING/OBSERVING` 阶段和姿态质量。第二 Viewer 不加载主视图的卫星模型、视锥或标注，关闭自身动画推进与交互控制，每次只读主 Viewer 的权威时间及同一 `evaluateSatelliteState`。面板隐藏后停止额外渲染，切换卫星不增加时钟监听器，页面卸载时销毁第二 Viewer。
+
+传感器水平/垂直完整 FOV 保持原配置；光学纵横比按两个半角正切的比值计算，显示容器使用留白而不拉伸画面。Node.js 测试通过相机 pose、状态文本、FOV 和横/竖容器留白。CesiumJS 1.136 + Chromium 141 冒烟结果：180×180 有效画面、aspect ratio 1、FOV 45°、时间 `2026-01-01T00:00:05Z`、`shouldAnimate=false`、相机输入关闭，无控制台错误。新静态路径为 `GET /visualization/fixed-payload-view.js`；详见 [commit 5 交接记录](docs/phase2/satellite_replay_commit_5.md)。
+
+---
+
+## 卫星回放 commit 4：逐星视锥与 WGS84 覆盖（2026-10-14，`feat/satellite-body-fixed-payload-replay`，待审核）
+
+Cesium 主视图现在从同一固定载荷姿态生成中心视线与方形全角 FOV 边界采样，用原生 `IntersectionTests.rayEllipsoid` 求 WGS84 最近正向交点。每星独立显示视锥、椭球中心交点和 ECEF 覆盖：`SLEWING` 为琥珀色，`OBSERVING` 为绿色，原拍摄结束端点立即隐藏。部分射线越过地平线时只显示有效射线，不拼接错误多边形；全部无交点时清空覆盖。目标高度点与椭球交点保持不同语义，20 m 视觉抬高只用于避免地表闪烁。新静态路径为 `GET /visualization/fixed-payload-geometry.js`，无数据库、Controller、Worker、算法或指标变更。
+
+Node.js 几何/生命周期测试通过，覆盖中心命中、部分地平线、全部无交点、精确半开端点和多星独立阶段。CesiumJS 1.136 + Chromium 141 本地 HTTP 冒烟测试生成 16/16 条 WGS84 边界交点及 1 个覆盖 primitive，无控制台错误；同时发现并修正 CesiumJS 1.136 不提供 `Cartesian3.toArray()` 的兼容性问题。Python 回放定向测试 **9/9** 通过，详见 [commit 4 交接记录](docs/phase2/satellite_replay_commit_4.md)。固定载荷第二视图、选星与双视图同钟仍属 commit 5。
+
+---
+
+## 卫星本体与固定载荷回放 commit 1–3（2026-10-14，`feat/satellite-body-fixed-payload-replay`，待审核）
+
+成功实验新增只读 `GET /api/runs/{run_id}/visualization/replay` 派生数据：校验已提交场景哈希与计划身份，按当前转移模型生成确定性 `SLEWING/OBSERVING` 时间段，不重跑调度、不改写母场景或正式计划。Cesium 页面使用 NASA Landsat 8 GLB 作通用示意外观，模型姿态与固定相机—本体变换分离，并保留原卫星 ID 和点/标签回退。新配置与资产来源、哈希、轴向假设见 [commit 1–3 专题交接](docs/phase2/satellite_replay_commits_1_3.md)。
+
+Ubuntu / Python 3 定向单元测试 **9/9** 通过，Node.js 固定载荷时间评估测试通过；真实场景派生检查确认源文件 SHA-256 不变。Landsat 8 GLB（780,280 bytes）已通过 CesiumJS 1.136 + Chromium 141 本地 HTTP 冒烟测试，生成 1 个模型 primitive，无浏览器控制台错误。完整 unittest 在既有 `test_http_cancel_uses_existing_route_and_temporary_database` 停滞，本轮未声称全量通过。当前姿态是几何指向示意，不是 Orekit 姿态/动力学验证；视锥、地面足迹、边界裁剪与第二固定载荷视图尚未实现。
+
+---
+
 ## 第二阶段回放后端 v0.3（2026-10-14，`feat/replay-backend`，待李泽同审核）
 
 在正式成功实验之后增加独立的回放构建闭环：SQLite `user_version=3` 与 `replay_artifacts`、`POST /api/runs/{run_id}/replay`、回放状态和资源 GET、原甘特图 schedule 身份字段，以及按实验删除派生回放缓存。固定配置 `geometry-illustration-v2` 生成轨道 CZML、姿态示意样本、阶段区间、诊断和配置资源；Controller 校验哈希并发布 READY。旧 `GET /api/runs/{run_id}/visualization/orbit.czml` 保留到梁兆榮完成前端迁移，首次访问仍可能构建旧共享轨道缓存。当前姿态是展示示意，尚未宣称 Orekit TargetPointing 精确姿态；何明涛的正式回放消息型 IPC、梁兆榮的前端、刘懋兴的数据核验仍按交接文档继续。

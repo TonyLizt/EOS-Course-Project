@@ -1,10 +1,10 @@
-# 第二阶段框架交接说明（v0.2.1 框架 + W1/W2 功能分支）
+# 第二阶段框架交接说明（v0.2.1 框架 + W1/W2 + 卫星回放 commit 1–6 及后续整合）
 
-本文件记录 v0.2.1 框架及 `feat/hmt-worker-ipc` 当前已实现的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。
+本文件记录 v0.2.1 框架、`feat/hmt-worker-ipc` 与卫星回放 commit 1–6 及其真实页面后续修正的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。卫星回放的 commit 6 交付证据见 [`../replay/final-validation.md`](../replay/final-validation.md)，commit 6 后的兼容、视锥和交互修正见 [`satellite_replay_post_commit_6.md`](satellite_replay_post_commit_6.md)。
 
 ## 1. 当前闭环
 
-浏览器或 HTTP 客户端选择数据源、场景、算法和输出配置，提交实验。FastAPI 将配置写入 SQLite，Controller 启动独立参考 Worker，读取算法返回的计划，经共享约束模型复核后，把状态、计划、指标和事件持久化。结果可从数据库下载 JSON/CSV；若选文件输出，还会在指定目录下以运行 ID 为子目录保存相同内容。旧甘特图页面和 Cesium 页面通过按运行 ID 的 URL 读取数据库结果。轨道 CZML 按场景哈希缓存，首次生成可能较慢。
+浏览器或 HTTP 客户端选择数据源、场景、算法和输出配置，提交实验。FastAPI 将配置写入 SQLite，Controller 启动独立参考 Worker，读取算法返回的计划，经共享约束模型复核后，把状态、计划、指标和事件持久化。结果可从数据库下载 JSON/CSV；若选文件输出，还会在指定目录下以运行 ID 为子目录保存相同内容。甘特图和 Cesium 页面按运行 ID 读取正式结果；轨道 CZML 按场景哈希缓存，卫星本体/固定载荷数据则每次从已提交结果只读派生。
 
 入口：`python -m eos_system`。本地接口文档：`http://127.0.0.1:8765/docs`。默认只监听本机；同一数据库只运行一个 Controller 实例。
 
@@ -19,6 +19,10 @@
 | `eos_system/algorithm_registry.py` | 算法规格、参数校验、`Solver` 协议、旧算法适配 | 四位成员按 `algorithm_integration.md` 注册算法 |
 | `eos_system/exporting.py` | 数据库结果的 JSON/CSV 下载及文件输出 | 新导出格式以同一已入库快照为准 |
 | `eos_system/visualization.py` | CZML 缓存与生成进程 | 梁兆榮完善 Cesium 和甘特图交互 |
+| `replay/` 与 `replay_configs/` | 回放契约、输入完整性、manifest、任务阶段及可版本化显示配置 | 回放仅派生显示数据；不得向调度约束反向写入 |
+| `replay/assets.py` | 校验资产 manifest、受控路径及实际 GLB 哈希，将模型资源纳入 cache identity | 资产变更必须得到新 identity；不向浏览器暴露服务器绝对路径 |
+| `draw/cesium_viewer.html`、`draw/fixed-payload-state.js` 与 `draw/fixed-payload-geometry.js` | 按绝对时间求本体/载荷姿态，显示 GLB，用 Cesium WGS84 求逐星视锥、中心交点和覆盖 | 回放不可用时保留点/标签回退；正式链路总验收见 commit 6 |
+| `draw/fixed-payload-view.js` | 从同一姿态输出相机 pose，固定光学 FOV/纵横比，为选中星驱动无独立时钟的第二 Viewer；活动任务显示地面点、ID 与经纬度 | 只读主时钟；隐藏后不渲染；不向姿态增加镜头自由度 |
 
 ## 3. 配置与路径
 
@@ -49,6 +53,10 @@ python scripts/check_visualization.py <已成功的运行ID>
 - 本分支 W1/W2 已实现协作取消、有界 IPC 传输、运行期限、可信同 Session 后代回收及 Controller 持锁停机；`cancel_ack` 只确认收到请求。已核验 Worker 的正常完成不等于任意逃逸后代或跨重启孤儿都能回收；W3 大结果传输和独立 Daemon 留待后续。
 - 本地管理接口没有用户认证，服务应保持监听 `127.0.0.1`。
 - CZML 首次生成需要 Orekit/JVM；页面依赖 Cesium 在线资源，离线展示需后续打包资源。
+- Landsat 8 GLB 只是通用显示外观，不改变源场景的卫星 ID。模型—本体轴校准尚为单位四元数；当前姿态是几何指向示意，不是 Orekit 姿态或动力学验证。
+- commit 4 已实现视锥、椭球中心交点、ECEF 覆盖和部分/无交点降级，但仍采用方形全角显示假设，不包含地形遮挡或真实成像验证；见 [`satellite_replay_commit_4.md`](satellite_replay_commit_4.md)。
+- commit 5 已实现列表/地球/任务选星和与主时钟同步的固定载荷第二视图。第二 Viewer 显示的是地图/椭球模拟视野，不是真实遥感影像；见 [`satellite_replay_commit_5.md`](satellite_replay_commit_5.md)。
+- commit 6 后已补齐正式 schedule UTC 相容、CesiumJS 1.136 模型姿态、任务精确跳转、半透明 3D 方锥、原生选取/追踪、callback/浏览器缓存防护、载荷任务标记和任务点俯视；见 [`satellite_replay_post_commit_6.md`](satellite_replay_post_commit_6.md)。这些仍是显示交互，不改变调度可行性或正式结果。
 - 文件输出失败会留下数据库内已成功的计划与导出失败事件，便于重试；不会把有效计划改判为失败。
 
 ## 7. 实验数据清理

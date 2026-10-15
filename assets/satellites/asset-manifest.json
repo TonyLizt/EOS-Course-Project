@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "asset_id": "landsat8-nasa-display",
+      "source_page": "https://science.nasa.gov/3d-resources/landsat-8/",
+      "download_url": "https://assets.science.nasa.gov/content/dam/science/cds/3d/resources/model/landsat-8/Landsat%208.glb",
+      "source_filename": "Landsat 8.glb",
+      "credit": "NASA/Christopher R. Meaney",
+      "local_path": "assets/satellites/landsat8.glb",
+      "static_url": "/visualization/assets/satellites/landsat8.glb",
+      "downloaded_at": "2026-10-14",
+      "size_bytes": 780280,
+      "sha256": "8b599e867be20589cd35e55ed1d46da104299b430b1827b548a25d3fad0a314d",
+      "format": "glTF 2.0 GLB",
+      "required_extensions": ["KHR_draco_mesh_compression"],
+      "mesh_count": 1,
+      "material_count": 33,
+      "animation_count": 0,
+      "usage_conditions_checked": true,
+      "asset_specific_license_found": false,
+      "usage_note": "The NASA source page supplies the stated credit but no asset-specific software license. This project does not label the model MIT or Apache.",
+      "model_to_body_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+      "axis_calibration_status": "provisional_identity_visual_only",
+      "axis_calibration_note": "The GLB root has no rotation and is displayed with an identity model-to-body adapter. Its authored axes are not treated as sensor axes; fixed-payload geometry uses the independent camera-to-body mount.",
+      "role": "visual_appearance_only",
+      "identity_mapping": "generic illustrative appearance; satellite IDs and names remain unchanged",
+      "compatibility": {
+        "cesium_version": "1.136",
+        "browser": "Chromium 141.0.7390.37 (Playwright build 1194)",
+        "result": "passed",
+        "evidence": "HTTP 200; one Cesium Entity model primitive; visible geometry/materials; zero browser console errors",
+        "test_page": "tests/browser/landsat8-smoke.html"
+      }
+    }
+  ]
+}

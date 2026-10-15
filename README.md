@@ -16,7 +16,7 @@
 - FastAPI 和 Controller 在 WSL2 中运行；Worker 由 `spawn` 创建，通过两条单向 Pipe 交换控制消息和 JSON 事件。Worker 执行 `setsid()` 并报告 `started`，Controller 核验本次进程的 Linux 身份后才发送 `start`；候选由 Controller 独立核验，并在成功事务中写入 SQLite。
 - 算法注册表统一元数据、专属参数模型和 Worker 创建入口。现有算法经适配器接入；新算法可从空计划开始，不必沿用旧启发式流程。
 - 浏览器下载 JSON/CSV；选择目录输出方案后，成功实验还会在该目录的 `run_id/` 子目录保存正式文件。SQLite、锁和缓存默认位于 WSL Linux 文件系统。
-- 结果页复用旧甘特图和 Cesium 页面。甘特图读取同一 `run_id` 的正式计划；Cesium 轨道按场景 SHA-256 生成并缓存。轨道生成需要可选的 Java/Orekit 依赖和浏览器可访问 Cesium 在线资源。
+- 结果页复用甘特图和 Cesium 页面。甘特图读取同一 `run_id` 的正式计划；Cesium 轨道按场景 SHA-256 生成并缓存，并可显示 Landsat 8 示意本体、确定性任务姿态与固定载荷指向。轨道生成需要可选的 Java/Orekit 依赖和浏览器可访问 Cesium 在线资源。
 - 实验列表可翻页；在详情中可永久删除已结束的实验。删除会清理 SQLite 中该实验的配置、事件、尝试、计划、指标和导出记录，并尝试压缩数据库。
 
 当前分支的 W1/W2 已接通运行中协作取消、IPC 期限与已核验同 Session 后代的安全回收；`cancel_ack` 只确认收到取消，不代表 Worker 或后代已退出。Controller 停机时须等待后台执行线程结束，未结束则保留单实例锁。超过 4 MiB 的大结果文件通道（W3）、独立 Daemon、四种新算法、完整结果比较页面及跨 Controller 重启的孤儿回收仍未交付。能力和限制见 [W2 实施记录](docs/phase2/W2%20WorkerIPC%20%E4%B8%8E%20Controller%20%E5%8D%8F%E4%BD%9C%E5%AE%9E%E6%96%BD%E8%AF%B4%E6%98%8E%20v1.0.md)。
@@ -83,11 +83,21 @@ cd /mnt/d/Code/EOS-Course-Project
 
 首次查看一个场景时，服务会使用仓库的 `utils/orekit-data.zip` 生成 CZML，并缓存到 WSL 运行目录的 `visualizations/scenes/`；相同场景哈希的后续实验复用缓存。可视化轨道使用较稀的采样，仅影响画面文件，不改变调度输入和正式计划。旧的 `main_draw.py` CLI 仍可独立使用。
 
+成功实验的“Cesium 回放”现在还会请求 `GET /api/runs/{run_id}/visualization/replay`。服务只从已入库的正式计划和哈希相符的只读场景派生显示数据，不重跑算法，也不会将回放结果写回调度结果。页面使用 NASA Landsat 8 模型作为数据集卫星的**通用示意外观**，不会把 ALOS-2、AQUA 或 CARTOSAT-2C 改名为 Landsat 8；资产来源与验证见 [`docs/replay/landsat8-validation.md`](docs/replay/landsat8-validation.md)。
+
+当前本体姿态是以 ECEF 轨道位置和任务目标计算的几何指向示意，固定载荷始终使用同一相机—本体变换。它不是 Orekit 姿态或卫星动力学验证；若派生数据不可用，Cesium 保留原有点/标签显示。
+
+每颗星在转向和拍摄阶段会显示独立视锥：转向为琥珀色，拍摄为绿色，并在原 `sat_end_time` 隐藏。视场使用配置中明示的“方形完整角”显示假设，以 16 条边界、半透明侧面和端面形成可辨识的 3D 方锥；中心和边界射线通过 Cesium WGS84 椭球求交生成中心点与地面覆盖。部分视场越过地平线时保留视场包络但不画完整 footprint，无交点时不沿用旧地面几何。这些显示仅用于回放，不修正任务成功或指标。基础几何见 [commit 4 交接记录](docs/phase2/satellite_replay_commit_4.md)，commit 6 后的显示增强与兼容修正见[后续整合记录](docs/phase2/satellite_replay_post_commit_6.md)。
+
+左侧“Fixed Payload View”列出原卫星 ID 和机动类型；也可在主地球或任务列表点选卫星。第二 Viewer 持续显示选中星的固定载荷视野，并在活动任务期间标出任务 ID、经纬度和地面点。单击主地球卫星使用原生选取，双击可追踪；单击任务点会解除追踪并切到该点上方约 600 km 的正下视角。任务列表跳转会暂停在原开始时刻，避免高倍速越过短任务。画面按光学 FOV 比例留白，隐藏面板可停止额外渲染。基础设计见 [commit 5 交接记录](docs/phase2/satellite_replay_commit_5.md)，当前交互见[commit 6 后续整合记录](docs/phase2/satellite_replay_post_commit_6.md)。
+
+回放属于只读派生显示：重复请求以场景、正式计划、显示配置、模型资产和几何版本的完整 identity 去重，不写回 SQLite。模型本体的实际 SHA-256 也进入 manifest/cache key；资产被替换但配置 URL 不变时，不会误用旧 identity。完整验收环境、保护哈希、六个功能 commit 和已知限制见 [最终验证报告](docs/replay/final-validation.md)。
+
 ### 独立结果回放（后端参考实现）
 
 成功实验可以向 `POST /api/runs/{run_id}/replay` 提交 `{ "replay_config_id": "geometry-illustration-v2" }`。返回的 `replay_id` 用于轮询状态和读取 manifest 中的轨道、姿态、阶段、诊断与配置资源。相同输入和版本会复用缓存；回放失败不会改变正式计划或指标。详情见[回放后端交接](docs/phase2/replay_backend_handoff.md)。
 
-当前参考姿态是**几何目标指向示意**，固定传感器安装和视场解释也标为展示假设；尚未完成 Orekit TargetPointing 权威整星姿态及新 Cesium 交互。旧 Cesium 页面继续使用 `GET /api/runs/{run_id}/visualization/orbit.czml`，**该旧接口保留到梁兆榮完成前端迁移并验收**。新回放 GET 不启动构建，只有 POST 发起独立构建。
+当前参考姿态是**几何目标指向示意**，固定传感器安装和视场解释也标为展示假设；尚未完成 Orekit TargetPointing 权威整星姿态。Cesium 页面已提供模型、视锥、追踪及固定载荷交互，目前仍以旧轨道 CZML 配合只读 visualization sidecar；迁移到独立回放后端 manifest 资源后，才清退旧 `GET /api/runs/{run_id}/visualization/orbit.czml`。独立回放的 GET 不启动构建，只有 POST 发起构建。
 
 回放派生文件保存在 WSL 运行目录的 `replays/`，SQLite 模式为 v3。删除终态实验时同步清理该实验回放缓存；正在构建的实验暂不能删除。旧场景哈希轨道缓存跨实验共享，仍保留。
 
@@ -102,6 +112,10 @@ PYTHONHASHSEED=0 MPLBACKEND=Agg ~/eos-course-runtime/.venv/bin/python -m scripts
 ~/eos-course-runtime/.venv/bin/python -m scripts.check_plan_rejection
 # 安装可选轨道依赖后，传入任一成功实验的 run_id
 ~/eos-course-runtime/.venv/bin/python scripts/check_visualization.py <run_id>
+node tests/fixed_payload_state.test.cjs
+node tests/fixed_payload_geometry.test.cjs
+node tests/fixed_payload_view.test.cjs
+node tests/replay_acceptance.test.cjs
 ```
 
 组员开发前先读 [协作规范](docs/phase2/team_collaboration.md) 和 [算法接入说明](docs/phase2/algorithm_integration.md)；[当前数据库设计与 ER 图](docs/phase2/database_current_v03.md)记录落地模式。接口和数据库目标审核稿分别在 [接口设计](docs/phase2/interface_design_target.md)、[数据库目标设计](docs/phase2/database_design_target.md)。这些审核稿包含尚未完成的目标，当前字段以源码、`/docs` 和 [交接说明](docs/phase2/replay_backend_handoff.md) 为准。每次版本变化及实测证据记在 [COURSE_SETUP.md](COURSE_SETUP.md)。

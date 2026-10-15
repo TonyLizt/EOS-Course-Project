@@ -1,5 +1,7 @@
 # 第二阶段接口设计文档（审核稿）
 
+> **文档状态：第二阶段目标设计，尚非全部已实现接口。** v0.3 框架当前可调用的路径、字段和限制以 [`framework_handoff.md`](framework_handoff.md)、[`replay_backend_handoff.md`](replay_backend_handoff.md)、`eos_system/contracts.py`、`eos_system/api.py` 及启动后的 `/docs` 为准。本文保留完整目标契约，供四人讨论后逐项落地；其中 A/B/C/D 算法、Daemon 与部分 Worker 可靠性接口仍待实现。已落地的卫星本体/固定载荷回放见 [`satellite_replay_commits_1_3.md`](satellite_replay_commits_1_3.md)及后续 commit 4–6 交接记录。
+
 - 版本：v0.2，2026-10-14（整星姿态与固定镜头回放同步版）
 - 负责人：李泽同；对接：何明涛（Worker/IPC）、梁兆榮（页面/Daemon）、刘懋兴（场景/实验协议）
 - 适用环境：Windows 浏览器 + Ubuntu/WSL2 服务；回放后端参考实现已落地；精确 Orekit 姿态与前端待联调
@@ -11,7 +13,7 @@
 
 ## 当前实现校正（2026-10-14）
 
-本分支已实现第 9.2 节五个回放 HTTP 路由、SQLite v3、独立参考构建与受控资源。默认配置 ID 为 geometry-illustration-v2，姿态是明确标示的目标指向示意。第 9.7 节前端 evaluateSatelliteState(t) 和第 9.8 节完整消息型 IPC 仍待组员实现。
+本分支已实现第 9.2 节五个回放 HTTP 路由、SQLite v3、独立参考构建与受控资源。默认配置 ID 为 geometry-illustration-v2，姿态是明确标示的目标指向示意。第 9.7 节前端 `evaluateSatelliteState(t)`、模型、视锥、追踪与固定载荷视图已通过只读 visualization sidecar 落地；前端改读独立回放 manifest 资源及第 9.8 节完整消息型 IPC 仍待后续整合。
 
 旧 GET /api/runs/{run_id}/visualization/orbit.czml 暂时保留给原 Cesium 页面；缓存未命中时仍可能生成 CZML。梁兆榮完成新资源 URL 迁移并验收后，另 PR 清退。新的回放 GET 不发起构建；POST 才发起。现有 DELETE /api/runs/{run_id} 保留，BUILDING 回放时返回 409，其他回放缓存按 run 删除。
 
@@ -98,7 +100,12 @@ HTTP 提交体不包含 `run_id`、SHA、算法版本与时间戳；服务端补
 | `GET /api/runs/{run_id}` | 路径 UUID | 200；完整 `RunResult`；未成功时 `plan/metrics=null` | 404 不存在 |
 | `POST /api/runs/{run_id}/cancel` | 无 | 202；`cancel_requested=true`，状态可能尚未到 `CANCELLED` | 404 不存在、409 已终态且不可取消 |
 | `GET /api/runs/{run_id}/export?format=json` | `format=json|csv` | 200；附件。JSON 为既有可回放计划格式并附配置/出处；CSV 为单文件，每条 assignment 一行并重复本次指标，空计划保留一行空 assignment 汇总 | 404 不存在、409 尚未成功、422 格式错 |
+| `GET /api/runs/{run_id}/visualization/replay` | 无 | 200；从已提交成功计划派生回放 manifest、卫星/载荷配置及半开区间 `SLEWING/OBSERVING` 时间段；不重跑调度 | 404 不存在、409 尚无正式成功结果、场景缺失/哈希不符或回放配置无效 |
 | `GET /api/health` | 无 | 200；`status`、版本、Controller 实例 ID、时间、数据库可读状态 | 503 服务不健康 |
+
+卫星回放还使用 `GET /visualization/fixed-payload-state.js`、`GET /visualization/fixed-payload-geometry.js`、`GET /visualization/fixed-payload-view.js` 与 `GET /visualization/assets/satellites/landsat8.glb` 四个本地静态资源路径。几何脚本在浏览器中以同一固定载荷姿态构建射线，用 Cesium WGS84 椭球相交；第二视图脚本只从主 Viewer 时钟和同一姿态输出设置相机。这些路径不接受客户端输入的任意资源路径。`GET /visualization/cesium/{run_id}` 会将 `schedule`、`czml`、`replay` 和 `gantt` URL 作为查询参数传给 Cesium 页面。这些资源只影响显示层，不改变 `RunConfig`、SQLite 模式、Controller 状态或正式计划契约。
+
+回放 `cache_key` 包含场景 SHA、正式计划 SHA、显示配置 SHA、builder 代码/版本、传播/姿态/几何版本、资产 manifest SHA 和实际模型资源 bundle SHA。每次请求先重验只读输入和模型，通过后在进程内最多保留 16 个相同文档；该缓存不写数据库，服务重启后可重建。
 
 `POST /api/runs` 示例：
 
