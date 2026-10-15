@@ -1,5 +1,24 @@
 # EOS-Bench 场景审计、注册与成对实验协议
 
+## 2026-10-16 补充：Change E 的冻结重算与实验闸门
+
+当前 E1–E2 实现、真实测试证据、CLI 和 PR 草稿见 [epoch_fix_implementation.md](epoch_fix_implementation.md)。本节更新优先于下方保留的 2026-10-15 历史审计叙述；下方旧 HEAD、分支、未运行 JVM 等描述只对应当时那一轮工作。
+
+- E1 统一 `parse_orbit_epoch` 已接入 visibility 和生成器父进程预校验。英文月份采用固定映射，naive 旧日期按 UTC，带偏移转换到同一 UTC 时刻；错误明确失败，无执行时历元兜底。场景起点不能替代轨道历元。
+- E2 独立工具只读冻结 JSON，重算 observation_windows / communication_windows，固定 ensure=False；保留所有任务，包括零窗口任务。静态规范化 SHA 排除且仅排除这两个派生字段，原卫星/传感器/任务/地面站/未知配置/原历元字符串都不变。历史 ensure 已抽样后的最终坐标就是配对输入，不能重新随机生成。
+- 目前只支持现有单传感器 `{sat_id}_sensor` 映射。自定义或多传感器明确停止，交公共接口负责人确认；不静默改名或扩大核心模型。默认内存输入上限 64 MiB，未做大文件流式重建与压测。
+- 候选保存到显式独立目录；名称含 epoch_fixed_v1，原子创建、禁止覆盖。provenance 放该目录的 `provenance/` 子目录，最后发布作为完成标记；崩溃遗留的无匹配 sidecar 文件不是有效候选。不得扫描仍在重算的目录。
+- sidecar 绑定父场景字节 SHA、新场景字节 SHA、静态 SHA、工具实际源码 SHA、基线 Git SHA、解析/传播版本和数据包 SHA。内部 scenario_id 保留；registry_id 按现有 Manifest 的计数/天数/完整新 SHA 派生。当前 Manifest 不传播新增来源字段，需与 sidecar 并存，不能假称 API 已接入。
+- `provenance_status=verified` 仅表示本次来源哈希与静态一致性；`completion_status=complete` 不表示物理/调度已验收。E2 输出统一 candidate_only、formal_release_eligible=false；具体场景的 E3 与调度验收另行按 SHA 记录。小型等价格式测试不能代替真实场景与 Cesium 验收。
+- E4 新旧场景并存。受旧英文解析缺陷影响的派生窗口需要重建；历史数据不足的场景先标 unknown。所有用于新物理模型比较的基线和 A/B/C/D 都创建新 run 并重跑，不能搬用旧计划/指标。TP/TCR/BD/TM/RT 绑定同一约束、指标版本和场景 SHA。
+- ML 的训练/验证/测试按独立母场景分组；Legacy 与其修复对不可跨集合。受影响的窗口、角度、特征、标签需要重建和重新评估来源，不能只换场景 ID。
+- 无地面站的 comm=0 记录为 no_ground_station_configured，不推断射频通信能力。当前仰角/TargetPointing Euler 约束不代表固定镜头 FOV、真实初始姿态、四元数转向或链路预算已被验证；Change P 独立实施。
+- E3 由梁兆榮及系统集成确认 UTC/参考系/显示一致性和版本缓存；E5 由李泽同、何明涛、梁兆榮确认新注册身份、Worker/核验与 UI。保持 W2 IPC 和历史 run/plan/metrics，变更 E 默认不迁移业务表。
+
+本轮没有打开真实 Legacy 场景或 output/，没有对历史档案执行重建、登记或算法实验；以下原始审计内容保留供历史比较。
+
+---
+
 审计日期：2026-10-15。负责人边界：刘懋兴负责数据准备、来源分组和实验协议；公共 API、Controller、数据库及算法注册变更交李泽同或对应负责人确认。
 
 本次只读源码审计基于工作区 `main`、HEAD `7597539ef6a5f25764e6a145b31fa517140f9d83`。这只是**审计代码版本**，不是历史场景生成版本。未打开、扫描或复制 `output/`，未执行生成器、调度器、Benchmark、Orekit/JVM、ML 训练。仅实现独立脚本、合成测试和文档；未建立新分支或 worktree，未提交。

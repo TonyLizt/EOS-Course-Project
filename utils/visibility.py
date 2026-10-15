@@ -18,6 +18,7 @@ import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Iterable, List, Optional, Tuple
+from utils.time_parsing import parse_orbit_epoch
 
 # ====== Domain models (from core/models.py) ======
 from core.models import (
@@ -489,44 +490,13 @@ def _extract_orbit_params(sat: Satellite) -> Dict[str, object]:
         "raan_deg": float(op.right_ascension_of_ascending_node),
         "argp_deg": float(op.argument_of_perigee),
         "m_deg": float(op.mean_anomaly),
-        "epoch_dt": _parse_epoch(op.initial_representation_Epoch),
+        "epoch_dt": _parse_epoch(op.initial_representation_Epoch, satellite_id=sat.id),
     }
 
 
-def _parse_epoch(epoch: object) -> datetime:
-    """Support multiple epoch formats for compatibility with existing JSON and string formats."""
-    if isinstance(epoch, datetime):
-        return _to_utc(epoch)
-
-    # Number: treated as UNIX seconds
-    if isinstance(epoch, (int, float)):
-        return datetime.fromtimestamp(float(epoch), tz=timezone.utc)
-
-    s = str(epoch).strip()
-
-    # ISO 8601
-    try:
-        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
-        return _to_utc(dt)
-    except Exception:
-        pass
-
-    # Fallback for common formats
-    for fmt in (
-        "%Y-%m-%d %H:%M:%S",
-        "%Y/%m/%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y/%m/%dT%H:%M:%S",
-    ):
-        try:
-            dt = datetime.strptime(s, fmt)
-            return dt.replace(tzinfo=timezone.utc)
-        except Exception:
-            continue
-
-    # Final fallback: treat as current UTC time to avoid an immediate crash.
-    # This may affect visibility results, so the input should be corrected early.
-    return datetime.now(tz=timezone.utc)
+def _parse_epoch(epoch: object, *, satellite_id=None) -> datetime:
+    """Compatibility entry point; invalid epochs fail instead of changing orbit phase."""
+    return parse_orbit_epoch(epoch, satellite_id=satellite_id)
 
 
 def _get_sat_att_limits_deg(sat: Satellite, default: Tuple[float, float, float]) -> Tuple[float, float, float]:
