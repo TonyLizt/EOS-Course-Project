@@ -8,3 +8,12 @@ __pycache__/
 .DS_Store
 __pycache__/
 *.py[cod]
+# Generated EOS-Bench scenario datasets
+/experiments/scenarios/
+
+# Local dataset archives
+/input.zip
+/output.zip
+
+# Locally generated scenario hash report
+/experiments/reports/scenario_sha256.txt
