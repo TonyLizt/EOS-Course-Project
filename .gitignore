@@ -8,3 +8,8 @@ __pycache__/
 .DS_Store
 __pycache__/
 *.py[cod]
+
+# Local EOS-Bench archives and generated hash report
+/input.zip
+/output.zip
+/experiments/reports/scenario_sha256.txt
