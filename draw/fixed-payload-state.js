@@ -93,6 +93,25 @@
   }
   // 服务端 READY 样本是正式页面的姿态来源；缓存索引避免每帧全表筛选。
   const sampleIndexes = new WeakMap();
+  // The same bounded degree-five position interpolation as replay/runtime.py.
+  // UTC microsecond indexing and quaternion SLERP retain their P0 semantics.
+  function interpolatePosition(rows, time, lower) {
+    const count = Math.min(6, rows.length);
+    const first = Math.max(0, Math.min(lower - Math.floor((count - 2) / 2), rows.length - count));
+    const nodes = rows.slice(first, first + count);
+    const offsets = nodes.map(row => Number(row.instant - time) / 1000000);
+    const exact = offsets.indexOf(0);
+    if (exact >= 0) return nodes[exact].position_ecef_m.slice();
+    const position = [0, 0, 0];
+    for (let j = 0; j < count; j++) {
+      let coefficient = 1;
+      for (let k = 0; k < count; k++) {
+        if (j !== k) coefficient *= -offsets[k] / (offsets[j] - offsets[k]);
+      }
+      for (let axis = 0; axis < 3; axis++) position[axis] += coefficient * nodes[j].position_ecef_m[axis];
+    }
+    return position;
+  }
   function sampleState(replay, satelliteId, time) {
     let index = sampleIndexes.get(replay);
     if (!index) {
@@ -123,7 +142,7 @@
     const a=rows[lo], b=rows[hi];
     const u=b.instant===a.instant ? 0 : Number(t-a.instant)/Number(b.instant-a.instant);
     const body=slerp(a.body_to_ecef_quaternion_xyzw,b.body_to_ecef_quaternion_xyzw,u);
-    const position=add(scale(a.position_ecef_m,1-u),scale(b.position_ecef_m,u));
+    const position=interpolatePosition(rows,t,lo);
     const satellite=index.satellites.get(satelliteId);
     // 各星阶段预解析，按绝对时间二分定位；不在每个图元 callback 中扫描全体任务。
     const segments=index.segments.get(satelliteId) || [];

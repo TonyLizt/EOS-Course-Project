@@ -86,6 +86,8 @@ cd /mnt/d/Code/EOS-Course-Project
 
 成功实验需要先点击“构建回放”；页面显式 POST 后查询 BUILDING/READY/FAILED 状态，失败可重试。Cesium 页面从同一个 manifest 读取五种 READY 资源；选星、播放、拖动和跳转只消费已有样本，不会重新运行算法。配置 ID 从 `GET /api/replay-configs` 获取，当前默认 `fixed-payload-illustration-v1`。
 
+轨道位置现在使用真实 60 秒 Orekit 节点和局部五阶插值，CZML 与 READY 消费端采用一致的曲线插值规则；旧缓存保留，新构建由既有步长及源码身份隔离。姿态自适应采样和 SLERP 不变。三轨道局部精度及稀疏历史数据限制见[轨道插值验收](docs/phase2/orbit_interpolation_fix_2026-10-17.md)；此修复不会重算正式调度计划。
+
 回放由独立进程只读正式计划及场景生成，服务校验输入/计划/配置/模型与资源哈希后发布，不修改正式 assignment 或 metrics.RT。轨道缓存身份包括历元解析与传播环境，旧 v1 缓存不会冒充修复后的 v2。姿态首选 5 秒，按时域/星数/任务端点余量确定有效步长，目标 100000 样本；本批 10/20/50 星约 10/20/135 秒，保留任务和转向端点。硬上限仍为 200000 样本、每资源 64 MiB。
 
 页面保留甘特图、卫星本体、独立视锥、WGS84 椭球覆盖、选星/追踪、任务点俯视、精确任务跳转和同钟固定载荷视图。NASA Landsat 8 仅作为通用外观，原卫星 ID 不改名；安装旋转与方形完整 FOV 是明示的展示假设，几何指向与 SLERP 不等于真实动力学或拍摄成功。非敏捷星只给对地示意。模型来源见[资产说明](docs/replay/landsat8-validation.md)。

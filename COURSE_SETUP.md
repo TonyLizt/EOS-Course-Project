@@ -1,3 +1,12 @@
+## 轨道插值专项修复（2026-10-17）
+
+- 系统采用真实 60 秒 Orekit 轨道节点、局部五阶位置插值和标准 CZML Lagrange 元数据，修复 300 秒线性弦误差；保留 P0 UTC/微秒/非整终点与姿态 SLERP。
+- 独立三轨道局部验收最大误差由 93.187 km 降至 0.0133 m；真实 Cesium/READY 对照通过，135 秒 READY 最大约 1.645 m。Python 274/274、Node 5/5，四份候选 SHA 不变，无正式计划生成。
+- 分支 fix/orbit-interpolation 依赖未合入 main 的 P0 12f8849；提交前已 fetch/rebase main。缓存键结构/v2 不变，步长及源码身份隔离新缓存；无历史数据删除。规模性能及最终发布仍待审核。
+- 详细证据、成本、限制与英文 PR 草稿见 [轨道插值验收](docs/phase2/orbit_interpolation_fix_2026-10-17.md)。以下保留原历史记录。
+
+---
+
 ## E3 / E4 时间语义修复（任务日期 2026-10-16，验收完成 2026-10-17）
 
 - 修复分支 fix/e3-e4-time-semantics，从最新 main daf4254 创建；提交前再次 fetch/rebase，不在 audit 分支或 main 开发。
