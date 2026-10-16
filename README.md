@@ -92,7 +92,7 @@ cd /mnt/d/Code/EOS-Course-Project
 
 回放由独立进程只读正式计划及场景生成，服务校验输入/计划/配置/模型与资源哈希后发布，不修改正式 assignment 或 metrics.RT。轨道缓存身份包括历元解析与传播环境，旧 v1 缓存不会冒充修复后的 v2。姿态首选 5 秒，按时域/星数/任务端点余量确定有效步长，目标 100000 样本；本批 10/20/50 星约 10/20/135 秒，保留任务和转向端点。硬上限仍为 200000 样本、每资源 64 MiB。
 
-页面保留甘特图、卫星本体、独立视锥、WGS84 椭球覆盖、选星/追踪、任务点俯视、精确任务跳转和同钟固定载荷视图。主地球支持鼠标滚轮、右键拖曳、触屏 pinch，以及 Chromium/Safari 类触控板双指捏合缩放。NASA Landsat 8 仅作为通用外观，原卫星 ID 不改名；安装旋转与方形完整 FOV 是明示的展示假设，几何指向与 SLERP 不等于真实动力学或拍摄成功。非敏捷星只给对地示意。模型来源见[资产说明](docs/replay/landsat8-validation.md)。
+页面保留甘特图、卫星本体、独立视锥、WGS84 椭球覆盖、选星/追踪、任务点俯视、精确任务跳转和同钟固定载荷视图。卫星 CZML 点不再绘制，标签与轨道线保留。主跟随相机明确使用由卫星位置生成的 ENU 框架，不读取卫星本体姿态；因此本体与固定镜头仍按回放 quaternion 机动，而使用者相机不会随姿态或自动参考框架判定翻转。任务列和 Fixed Payload View 选星会同步主 Viewer 的选中实体；若使用者已开启跟随，跟随对象同步切换，否则不会擅自开启跟随。主地球支持鼠标滚轮、右键拖曳、触屏 pinch，以及 Chromium/Safari 类触控板双指捏合缩放。NASA Landsat 8 仅作为通用外观，原卫星 ID 不改名；安装旋转与方形完整 FOV 是明示的展示假设，几何指向与 SLERP 不等于真实动力学或拍摄成功。非敏捷星只给对地示意。模型来源见[资产说明](docs/replay/landsat8-validation.md)。
 
 实验保存原场景绝对路径和 SHA-256。若目录之后搬移，回放可在其他已登记数据源中找到同一 `scenario_id`，但只有字节 SHA-256 与正式实验完全一致时才采用；不会用同名的新场景替换历史输入。
 
@@ -125,7 +125,10 @@ node tests/fixed_payload_state.test.cjs
 node tests/fixed_payload_geometry.test.cjs
 node tests/fixed_payload_view.test.cjs
 node tests/replay_acceptance.test.cjs
+node tests/satellite_follow.test.cjs
 ```
+
+可选真实浏览器相机连续性测试位于 `tests/browser/camera-continuity-smoke.*`；它以 60x 连续运行约 31 秒，并覆盖暂停、继续、切星、本体姿态持续变化与主相机方向/距离突变检查。
 
 组员开发前先读 [协作规范](docs/phase2/team_collaboration.md) 和 [算法接入说明](docs/phase2/algorithm_integration.md)；[当前数据库设计与 ER 图](docs/phase2/database_current_v03.md)记录落地模式。接口和数据库目标审核稿分别在 [接口设计](docs/phase2/interface_design_target.md)、[数据库目标设计](docs/phase2/database_design_target.md)。这些审核稿包含尚未完成的目标，当前字段以源码、`/docs` 和 [交接说明](docs/phase2/replay_backend_handoff.md) 为准。每次版本变化及实测证据记在 [COURSE_SETUP.md](COURSE_SETUP.md)。
 
