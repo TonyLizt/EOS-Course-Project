@@ -19,6 +19,7 @@ from schedulers.constraint_model import Assignment, TimePlacementStrategy
 
 from algorithms.random_utils import make_rng
 from utils.continuous_exposure import planning_exposure, ExposureStatus
+from schedulers.observation_geometry import validate_observation_interval
 
 
 def _estimate_data_volume_GB(problem: SchedulingProblem, w, sat_start, sat_end) -> float:
@@ -117,6 +118,11 @@ def enumerate_task_candidates(
 
     def push_candidate(w, sat_start, sat_end, sat_angles=None, cw=None, gs_start=None, gs_end=None):
         """Push the generated candidate configuration into the list."""
+        if not validate_observation_interval(
+            problem, w.satellite_id, task.id, sat_start, sat_end,
+            step_s=min(1.0, float(getattr(w, "time_step", 1.0) or 1.0)),
+        ).feasible:
+            return
         cands.append(
             Assignment(
                 task_id=task.id,
