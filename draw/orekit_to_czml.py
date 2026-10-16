@@ -44,6 +44,28 @@ def init_orekit(data_path: str = "orekit-data.zip") -> None:
 
 
 # ========= 2. Propagate the orbit with Orekit to obtain ground latitude, longitude, and altitude =========
+def _sample_times(start_dt: datetime, end_dt: datetime, step_s: float):
+    """Closed orbit display grid, including an off-grid end exactly once.
+
+    Historical naive input means UTC, as in parse_orbit_epoch. Observation
+    windows use their separate half-open visibility_grid_v2 contract.
+    """
+    start_dt = parse_orbit_epoch(start_dt, field_name="start_dt")
+    end_dt = parse_orbit_epoch(end_dt, field_name="end_dt")
+    if not math.isfinite(step_s) or step_s <= 0:
+        raise ValueError("step_s must be a finite positive number")
+    step = timedelta(seconds=step_s)
+    if step <= timedelta(0):
+        raise ValueError("step_s must be at least datetime's microsecond resolution")
+    if end_dt < start_dt:
+        raise ValueError("end_dt must not precede start_dt")
+    current = start_dt
+    while current < end_dt:
+        yield current
+        current += min(step, end_dt - current)
+    yield end_dt
+
+
 def propagate_satellite_groundtrack(
         # Six orbital elements, where a is in meters and angles are in degrees
         a_m: float,
@@ -77,15 +99,10 @@ def propagate_satellite_groundtrack(
     from org.orekit.propagation.analytical import KeplerianPropagator
     from org.orekit.utils import IERSConventions, Constants
 
-    # Standardize all datetimes as UTC-aware
-    def to_utc(dt: datetime) -> datetime:
-        if dt.tzinfo is None:
-            return dt.replace(tzinfo=timezone.utc)
-        return dt.astimezone(timezone.utc)
-
-    epoch_dt = to_utc(epoch_dt)
-    start_dt = to_utc(start_dt)
-    end_dt = to_utc(end_dt)
+    # One explicit input boundary: historical naive values mean UTC.
+    epoch_dt = parse_orbit_epoch(epoch_dt, field_name="epoch_dt")
+    start_dt = parse_orbit_epoch(start_dt, field_name="start_dt")
+    end_dt = parse_orbit_epoch(end_dt, field_name="end_dt")
 
     epoch_date = datetime_to_absolutedate(epoch_dt)
     _ = TimeScalesFactory.getUTC()
@@ -114,10 +131,7 @@ def propagate_satellite_groundtrack(
     propagator = KeplerianPropagator(orbit)
 
     samples: list[dict] = []
-    current_dt = start_dt
-    step_td = timedelta(seconds=step_s)
-
-    while current_dt <= end_dt:
+    for current_dt in _sample_times(start_dt, end_dt, step_s):
         date = datetime_to_absolutedate(current_dt)
 
         state = propagator.propagate(date)
@@ -138,8 +152,6 @@ def propagate_satellite_groundtrack(
             }
         )
 
-        current_dt += step_td
-
     return samples
 
 
@@ -155,8 +167,14 @@ def build_czml(
     missions: Same as before, one target point per mission
     sat_orbit_trail_time: {sat_id: orbital period in seconds, used for path.trailTime}
     """
-    # If there are no satellites at all, raise an error directly
-    non_empty_sats = {sid: s for sid, s in sat_samples.items() if s}
+    # Normalize copies before any comparison/subtraction; never mutate callers.
+    # The shared historical contract treats naive datetimes as UTC.
+    non_empty_sats = {
+        sid: [dict(sample, time=parse_orbit_epoch(
+            sample.get("time"), satellite_id=sid, field_name=f"sample.time[{index}]"))
+              for index, sample in enumerate(samples)]
+        for sid, samples in sat_samples.items() if samples
+    }
     if not non_empty_sats:
         raise ValueError("sat_samples is empty or all satellite sample lists are empty, cannot generate CZML")
 
@@ -174,8 +192,7 @@ def build_czml(
     assert global_start is not None and global_end is not None
 
     def to_iso_z(dt: datetime) -> str:
-        dt = dt.astimezone(timezone.utc)
-        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        return dt.isoformat().replace("+00:00", "Z")
 
     epoch_str = to_iso_z(global_start)
     end_str = to_iso_z(global_end)

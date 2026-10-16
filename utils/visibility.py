@@ -17,7 +17,7 @@ import math
 import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
 from utils.time_parsing import parse_orbit_epoch
 
 # ====== Domain models (from core/models.py) ======
@@ -40,6 +40,7 @@ from core.models import (
 _VM_STARTED = False
 _DATA_LOADED = False
 _CONTEXT: "_OrekitContext | None" = None
+VISIBILITY_ALGORITHM_VERSION = "visibility_grid_v2"
 
 
 def _to_utc(dt: datetime) -> datetime:
@@ -225,6 +226,49 @@ def _build_keplerian_orbit(
 # -----------------------------------------------------------------------------
 
 
+def _scan_visibility_grid(
+    start_dt: datetime,
+    end_dt: datetime,
+    step_s: float,
+    evaluate: Callable[[datetime], dict],
+) -> Tuple[List[Tuple[datetime, datetime]], List[dict], List[dict]]:
+    """Scan every fine-grid point in [start, end), without coarse pruning.
+
+    Entry is the first visible grid point; exit is the first nonvisible point
+    or the clipped horizon. A single transition is bracketed within one step,
+    but events wholly between adjacent samples are not guaranteed detectable.
+    Keep samples and attitude arrays on the same scenario-anchored grid.
+    """
+    start_dt, end_dt = _to_utc(start_dt), _to_utc(end_dt)
+    if not math.isfinite(step_s) or step_s <= 0:
+        raise ValueError("step_s must be a finite positive number")
+    fine_td = timedelta(seconds=step_s)
+    if fine_td <= timedelta(0):
+        raise ValueError("step_s must be at least datetime's microsecond resolution")
+    if end_dt <= start_dt:
+        raise ValueError("end_dt must be after start_dt")
+    samples: List[dict] = []
+    visible_attitudes: List[dict] = []
+    windows: List[Tuple[datetime, datetime]] = []
+    window_start: Optional[datetime] = None
+    t = start_dt
+    while t < end_dt:
+        sample = evaluate(t)
+        samples.append(sample)
+        if sample["visible"]:
+            visible_attitudes.append({key: sample[key] for key in (
+                "time", "elevation_deg", "off_nadir_deg", "yaw_deg", "pitch_deg", "roll_deg")})
+            if window_start is None:
+                window_start = t
+        elif window_start is not None:
+            windows.append((window_start, t))
+            window_start = None
+        t += fine_td
+    if window_start is not None:
+        windows.append((window_start, end_dt))
+    return windows, samples, visible_attitudes
+
+
 def compute_visibility_and_attitude(
     *,
     a_m: float,
@@ -246,7 +290,11 @@ def compute_visibility_and_attitude(
     min_elevation_deg: float = 5.0,
     coarse_step_min: float = 60.0,
 ) -> Tuple[List[Tuple[datetime, datetime]], List[dict], List[dict]]:
-    """Return (visibility_windows, samples, visible_attitudes).
+    """Return windows and synchronized samples on the complete fine UTC grid.
+
+    ``coarse_step_min`` (historically seconds despite its name) is retained as
+    a compatibility argument only. Coarse elevation hits cannot safely prune
+    unseen short passes; all fine-grid points are now evaluated.
     """
     # Ensure Orekit context is initialized, once per process in multiprocessing
     if _CONTEXT is None:
@@ -268,8 +316,10 @@ def compute_visibility_and_attitude(
     start_dt = _to_utc(start_dt)
     end_dt = _to_utc(end_dt)
 
-    if step_s <= 0:
-        raise ValueError("step_s must be a positive number")
+    if not math.isfinite(step_s) or step_s <= 0:
+        raise ValueError("step_s must be a finite positive number")
+    if not math.isfinite(coarse_step_min) or coarse_step_min <= 0:
+        raise ValueError("coarse_step_min must be a finite positive number")
 
 
     # -------- Target point and attitude model --------
@@ -284,25 +334,21 @@ def compute_visibility_and_attitude(
 
     # Orbit and propagator (orbit can be cached)
     orbit = _build_keplerian_orbit(ctx, a_m, e, i_deg, raan_deg, argp_deg, m_deg, epoch_dt)
-    propagator = KeplerianPropagator(orbit, attitude_provider)
+    # Geometry must not implicitly solve TargetPointing at every grid point.
+    # Keep the same Keplerian PV provider; request target attitude only after
+    # elevation passes. No new state cache or coarse interval pruning.
+    propagator = KeplerianPropagator(orbit)
 
     min_el_rad = math.radians(float(min_elevation_deg))
-
-    step_fine = float(step_s)
-    coarse_step = max(step_fine, float(coarse_step_min))
-
-    fine_td = timedelta(seconds=step_fine)
-    coarse_td = timedelta(seconds=coarse_step)
 
     # The target position in ITRF is reusable and will be transformed to the
     # inertial frame at each timestamp
     target_in_itrf = ctx.earth.transform(target_geo)
 
     def eval_full(dt: datetime) -> dict:
-        """Propagate once and compute elevation, off-nadir, yaw, pitch, roll, and visibility."""
+        """Evaluate every grid point, solving target attitude only above elevation."""
         date = datetime_to_absolutedate(dt)
-        state = propagator.propagate(date)
-        pv = state.getPVCoordinates(ctx.inertial)
+        pv = propagator.propagateOrbit(date).getPVCoordinates(ctx.inertial)
         sat_pos = pv.getPosition()
 
         elevation_rad = target_frame.getElevation(sat_pos, ctx.inertial, date)
@@ -325,7 +371,7 @@ def compute_visibility_and_attitude(
             off_nadir_deg = math.degrees(float(off_nadir_rad))
 
             try:
-                rotation = state.getAttitude().getRotation()
+                rotation = attitude_provider.getAttitude(propagator, date, ctx.inertial).getRotation()
                 angles = rotation.getAngles(RotationOrder.ZYX, RotationConvention.FRAME_TRANSFORM)
                 yaw_deg = math.degrees(float(angles[0]))
                 pitch_deg = math.degrees(float(angles[1]))
@@ -351,124 +397,7 @@ def compute_visibility_and_attitude(
             "roll_deg": roll_deg,
         }
 
-    # ------------------------------------------------------------------
-    # A) step_fine >= coarse_step_min: directly scan the full range
-    # ------------------------------------------------------------------
-    if step_fine >= coarse_step_min - 1e-9:
-        samples: List[dict] = []
-        visible_attitudes: List[dict] = []
-        windows: List[Tuple[datetime, datetime]] = []
-
-        last_visible = False
-        window_start: Optional[datetime] = None
-
-        t = start_dt
-        while t <= end_dt:
-            s = eval_full(t)
-            samples.append(s)
-
-            if s["visible"]:
-                visible_attitudes.append(
-                    {
-                        "time": s["time"],
-                        "elevation_deg": s["elevation_deg"],
-                        "off_nadir_deg": s["off_nadir_deg"],
-                        "yaw_deg": s["yaw_deg"],
-                        "pitch_deg": s["pitch_deg"],
-                        "roll_deg": s["roll_deg"],
-                    }
-                )
-
-            if s["visible"] and not last_visible:
-                window_start = t
-            elif (not s["visible"]) and last_visible and window_start is not None:
-                windows.append((window_start, t))
-                window_start = None
-
-            last_visible = bool(s["visible"])
-            t += fine_td
-
-        if last_visible and window_start is not None:
-            windows.append((window_start, end_dt))
-
-        return windows, samples, visible_attitudes
-
-    # ------------------------------------------------------------------
-    # B) Two-stage algorithm:
-    #    coarse scan for geometrically visible elevation intervals,
-    #    then fine scan for attitude constraints inside candidate intervals
-    # ------------------------------------------------------------------
-
-    # 1) Coarse scan: only check elevation > min_elevation
-    geom_intervals: List[Tuple[datetime, datetime]] = []
-    last_geom = False
-    geom_start: Optional[datetime] = None
-
-    t = start_dt
-    while t <= end_dt:
-        date = datetime_to_absolutedate(t)
-        state = propagator.propagate(date)
-        sat_pos = state.getPVCoordinates(ctx.inertial).getPosition()
-        el = target_frame.getElevation(sat_pos, ctx.inertial, date)
-        geom_vis = bool(el > min_el_rad)
-
-        if geom_vis and not last_geom:
-            geom_start = t
-        elif (not geom_vis) and last_geom and geom_start is not None:
-            geom_intervals.append((geom_start, t))
-            geom_start = None
-
-        last_geom = geom_vis
-        t += coarse_td
-
-    if last_geom and geom_start is not None:
-        geom_intervals.append((geom_start, end_dt))
-
-    if not geom_intervals:
-        return [], [], []
-
-    # 2) Fine scan inside candidate intervals
-    samples = []
-    visible_attitudes = []
-    windows: List[Tuple[datetime, datetime]] = []
-
-    last_visible = False
-    window_start = None
-
-    for (g_start, g_end) in geom_intervals:
-        local_start = max(start_dt, g_start - fine_td)
-        local_end = min(end_dt, g_end + fine_td)
-
-        t = local_start
-        while t <= local_end:
-            s = eval_full(t)
-            samples.append(s)
-
-            if s["visible"]:
-                visible_attitudes.append(
-                    {
-                        "time": s["time"],
-                        "elevation_deg": s["elevation_deg"],
-                        "off_nadir_deg": s["off_nadir_deg"],
-                        "yaw_deg": s["yaw_deg"],
-                        "pitch_deg": s["pitch_deg"],
-                        "roll_deg": s["roll_deg"],
-                    }
-                )
-
-            if s["visible"] and not last_visible:
-                window_start = t
-            elif (not s["visible"]) and last_visible and window_start is not None:
-                windows.append((window_start, t))
-                window_start = None
-
-            last_visible = bool(s["visible"])
-            t += fine_td
-
-    if last_visible and window_start is not None:
-        windows.append((window_start, end_dt))
-
-    return windows, samples, visible_attitudes
+    return _scan_visibility_grid(start_dt, end_dt, float(step_s), eval_full)
 
 
 # -----------------------------------------------------------------------------
@@ -545,7 +474,7 @@ def _build_time_windows_from_visible_attitudes(
     tws: List[TimeWindow] = []
     for (ws, we) in visibility_windows:
         # Visible sample points inside the window.
-        idxs = [i for i, t in enumerate(times) if (t >= ws and t < we + timedelta(microseconds=1))]
+        idxs = [i for i, t in enumerate(times) if ws <= t < we]
         if not idxs:
             continue
 

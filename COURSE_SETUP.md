@@ -1,3 +1,14 @@
+## E3 / E4 时间语义修复（任务日期 2026-10-16，验收完成 2026-10-17）
+
+- 修复分支 fix/e3-e4-time-semantics，从最新 main daf4254 创建；提交前再次 fetch/rebase，不在 audit 分支或 main 开发。
+- 恢复已验收的 visibility_grid_v2 / lazy_target_attitude_v1；GPM/M009、M020 进入误差上界 0.494436 / 0.543927 秒，内层窗口和姿态同步。
+- CZML 共享 UTC 入口保留微秒、显式包含非整采样终点；固定载荷内部状态改用整数微秒，JSON/API/缓存 v2 契约和插值方式不变。
+- 最终 Python 267/267（含小范围 Orekit）、Node 四组通过；真实 Cesium 时间/650 秒末端/微秒状态检查通过。四候选 SHA/静态不变，Manifest 4 WARN、0 FAIL；无整场重算、正式注册或 benchmark。
+- 300 秒显示插值仍有约 58–94 km 中间点误差，连续曝光保护、正式来源和显示最终审核待负责人确认；未宣称正式发布完成。
+- 详情、环境对照、SHA 和实际命令见 [e3_e4_fix_report_2026-10-16.md](docs/phase2/e3_e4_fix_report_2026-10-16.md)。主目录五份既有未跟踪文件保持原样。
+
+---
+
 ## v0.3.2：六场景接入与规模适配（2026-10-16）
 
 - 分支 feat/six-scenario-scale-adaptation，基于 main f0997ed（PR #11）；李泽同已授权本轮提交、推送及 PR 交接。

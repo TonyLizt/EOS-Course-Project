@@ -72,10 +72,24 @@
     const angle = Math.acos(Math.max(-1, Math.min(1, cosine)));
     return normalizeQuaternion(add(scale(qa, Math.sin((1 - t) * angle) / Math.sin(angle)), scale(qb, Math.sin(t * angle) / Math.sin(angle))));
   }
-  const milliseconds = (value) => new Date(value).getTime();
+  // Keep integer UTC microseconds internally. Date alone drops the final
+  // three fractional digits; floating epoch milliseconds cannot represent them.
+  function microseconds(value) {
+    let text = value;
+    if (typeof text === 'string') {
+      text = text.trim();
+      // The existing legacy scheduler contract defines naive timestamps as UTC.
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(text)) text += 'Z';
+    }
+    const ms = new Date(text).getTime();
+    if (!Number.isFinite(ms)) throw new Error('invalid UTC replay time: ' + String(value));
+    const fraction = typeof text === 'string' && text.match(/\.(\d+)(?:Z|[+-]\d{2}:\d{2})$/);
+    const us = fraction ? BigInt(fraction[1].slice(0, 6).padEnd(6, '0')) : 0n;
+    return BigInt(ms) * 1000n + us % 1000n;
+  }
   function phaseAt(segments, satelliteId, time) {
-    const instant = milliseconds(time);
-    return segments.find((segment) => segment.satellite_id === satelliteId && milliseconds(segment.start_time) <= instant && instant < milliseconds(segment.end_time)) || null;
+    const instant = microseconds(time);
+    return segments.find((segment) => segment.satellite_id === satelliteId && microseconds(segment.start_time) <= instant && instant < microseconds(segment.end_time)) || null;
   }
   // 服务端 READY 样本是正式页面的姿态来源；缓存索引避免每帧全表筛选。
   const sampleIndexes = new WeakMap();
@@ -86,18 +100,18 @@
       for (const satellite of replay.satellites) index.satellites.set(satellite.id,satellite);
       for (const row of replay.samples) {
         if (!index.samples.has(row.satellite_id)) index.samples.set(row.satellite_id, []);
-        index.samples.get(row.satellite_id).push({...row, instant: milliseconds(row.time)});
+        index.samples.get(row.satellite_id).push({...row, instant: microseconds(row.time)});
       }
       for (const row of replay.segments) {
         if (!index.segments.has(row.satellite_id)) index.segments.set(row.satellite_id,[]);
-        index.segments.get(row.satellite_id).push({...row,start:milliseconds(row.start_time),end:milliseconds(row.end_time)});
+        index.segments.get(row.satellite_id).push({...row,start:microseconds(row.start_time),end:microseconds(row.end_time)});
       }
-      for (const rows of index.samples.values()) rows.sort((a,b) => a.instant-b.instant);
-      for (const rows of index.segments.values()) rows.sort((a,b) => a.start-b.start);
+      for (const rows of index.samples.values()) rows.sort((a,b) => Number(a.instant-b.instant));
+      for (const rows of index.segments.values()) rows.sort((a,b) => Number(a.start-b.start));
       sampleIndexes.set(replay,index);
     }
     const rows = index.samples.get(satelliteId) || [];
-    const t = milliseconds(time);
+    const t = microseconds(time);
     if (!rows.length || t < rows[0].instant || t > rows[rows.length-1].instant) {
       return {satellite_id:satelliteId, phase:'IDLE', quality:'missing', warnings:['ORBIT_DATA_MISSING']};
     }
@@ -107,7 +121,7 @@
       if (rows[mid].instant<=t) lo=mid; else hi=mid;
     }
     const a=rows[lo], b=rows[hi];
-    const u=b.instant===a.instant ? 0 : (t-a.instant)/(b.instant-a.instant);
+    const u=b.instant===a.instant ? 0 : Number(t-a.instant)/Number(b.instant-a.instant);
     const body=slerp(a.body_to_ecef_quaternion_xyzw,b.body_to_ecef_quaternion_xyzw,u);
     const position=add(scale(a.position_ecef_m,1-u),scale(b.position_ecef_m,u));
     const satellite=index.satellites.get(satelliteId);
@@ -137,7 +151,7 @@
     if (!position) return { satellite_id: satelliteId, phase: 'IDLE', quality: 'missing', warnings: ['ORBIT_DATA_MISSING'] };
     const satellite = replay.satellites.find((item) => item.id === satelliteId);
     if (!satellite) throw new Error('unknown satellite: ' + satelliteId);
-    const timeline = replay.segments.filter((item) => item.satellite_id === satelliteId).sort((a, b) => milliseconds(a.start_time) - milliseconds(b.start_time));
+    const timeline = replay.segments.filter((item) => item.satellite_id === satelliteId).sort((a, b) => Number(microseconds(a.start_time) - microseconds(b.start_time)));
     const active = phaseAt(timeline, satelliteId, time);
     const observations = timeline.filter((item) => item.phase === 'OBSERVING');
     let cameraQuaternion, taskId = active && active.task_id, sensorId = active && active.sensor_id;
@@ -150,10 +164,10 @@
       const next = observations.find((item) => item.assignment_ordinal === active.assignment_ordinal);
       const qa = pointingQuaternion(positionAt(satelliteId, previous.end_time), targetPosition(previous.task_id));
       const qb = pointingQuaternion(positionAt(satelliteId, next.start_time), targetPosition(next.task_id));
-      const u = (milliseconds(time) - milliseconds(active.start_time)) / (milliseconds(active.end_time) - milliseconds(active.start_time));
+      const u = Number(microseconds(time) - microseconds(active.start_time)) / Number(microseconds(active.end_time) - microseconds(active.start_time));
       cameraQuaternion = slerp(qa, qb, u);
     } else {
-      const earlier = observations.filter((item) => milliseconds(item.end_time) <= milliseconds(time)).pop();
+      const earlier = observations.filter((item) => microseconds(item.end_time) <= microseconds(time)).pop();
       const anchor = earlier || observations[0];
       cameraQuaternion = anchor
         ? pointingQuaternion(positionAt(satelliteId, earlier ? anchor.end_time : anchor.start_time), targetPosition(anchor.task_id))
