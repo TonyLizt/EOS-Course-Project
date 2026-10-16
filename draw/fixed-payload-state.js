@@ -82,15 +82,21 @@
   function sampleState(replay, satelliteId, time) {
     let index = sampleIndexes.get(replay);
     if (!index) {
-      index = new Map();
+      index = {samples:new Map(), satellites:new Map(), segments:new Map()};
+      for (const satellite of replay.satellites) index.satellites.set(satellite.id,satellite);
       for (const row of replay.samples) {
-        if (!index.has(row.satellite_id)) index.set(row.satellite_id, []);
-        index.get(row.satellite_id).push({...row, instant: milliseconds(row.time)});
+        if (!index.samples.has(row.satellite_id)) index.samples.set(row.satellite_id, []);
+        index.samples.get(row.satellite_id).push({...row, instant: milliseconds(row.time)});
       }
-      for (const rows of index.values()) rows.sort((a,b) => a.instant-b.instant);
+      for (const row of replay.segments) {
+        if (!index.segments.has(row.satellite_id)) index.segments.set(row.satellite_id,[]);
+        index.segments.get(row.satellite_id).push({...row,start:milliseconds(row.start_time),end:milliseconds(row.end_time)});
+      }
+      for (const rows of index.samples.values()) rows.sort((a,b) => a.instant-b.instant);
+      for (const rows of index.segments.values()) rows.sort((a,b) => a.start-b.start);
       sampleIndexes.set(replay,index);
     }
-    const rows = index.get(satelliteId) || [];
+    const rows = index.samples.get(satelliteId) || [];
     const t = milliseconds(time);
     if (!rows.length || t < rows[0].instant || t > rows[rows.length-1].instant) {
       return {satellite_id:satelliteId, phase:'IDLE', quality:'missing', warnings:['ORBIT_DATA_MISSING']};
@@ -104,8 +110,16 @@
     const u=b.instant===a.instant ? 0 : (t-a.instant)/(b.instant-a.instant);
     const body=slerp(a.body_to_ecef_quaternion_xyzw,b.body_to_ecef_quaternion_xyzw,u);
     const position=add(scale(a.position_ecef_m,1-u),scale(b.position_ecef_m,u));
-    const satellite=replay.satellites.find(item => item.id===satelliteId);
-    const active=phaseAt(replay.segments,satelliteId,time);
+    const satellite=index.satellites.get(satelliteId);
+    // 各星阶段预解析，按绝对时间二分定位；不在每个图元 callback 中扫描全体任务。
+    const segments=index.segments.get(satelliteId) || [];
+    let left=0,right=segments.length;
+    while(left<right) {
+      const mid=(left+right)>>1;
+      if(segments[mid].start<=t) left=mid+1; else right=mid;
+    }
+    const candidate=segments[left-1];
+    const active=candidate && t<candidate.end ? candidate : null;
     const sensor=satellite.sensors.find(item => active && item.sensor_id===active.sensor_id) || satellite.sensors[0];
     const camera=multiply(body,sensor ? sensor.sensor_mount_quaternion_xyzw : [0,0,0,1]);
     return {

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "replay_config_id": "fixed-payload-illustration-v1",
-  "config_version": "1.0.0",
+  "config_version": "1.1.0",
   "attitude_mode": "body_pointing_fixed_sensor",
   "attitude_source": "geometry_pointing_illustration",
   "idle_attitude_policy": "hold_ecef_v1",
@@ -13,7 +13,12 @@
   "camera_axes": "forward=-Z,right=+X,up=+Y",
   "display_sampling_policy": {
     "attitude_step_s": 5.0,
-    "preserve_task_and_slew_endpoints": true
+    "preserve_task_and_slew_endpoints": true,
+    "strategy": "adaptive_budget_v1",
+    "preferred_attitude_step_s": 5.0,
+    "max_attitude_step_s": 300.0,
+    "target_samples": 100000,
+    "max_samples": 200000
   },
   "sensors": [],
   "models": [

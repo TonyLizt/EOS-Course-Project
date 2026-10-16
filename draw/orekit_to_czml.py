@@ -10,6 +10,7 @@ import json
 import os
 import math
 from utils.time_parsing import parse_orbit_epoch
+from replay.scene import load_display_scene
 from datetime import datetime, timedelta, timezone
 
 # ========= 1. Start JVM + Orekit initialization =========
@@ -316,8 +317,8 @@ def demo(
     if not os.path.exists(scenario_path):
         raise FileNotFoundError(f"Scenario file not found: {scenario_path}")
 
-    with open(scenario_path, "r", encoding="utf-8") as f:
-        scenario = json.load(f)
+    # 回放只保留静态投影，不复制大型观测窗口数组。
+    scenario = load_display_scene(scenario_path)
 
     satellites = scenario.get("satellites", [])
     if not satellites:

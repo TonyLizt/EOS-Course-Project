@@ -44,7 +44,8 @@ def propagation_identity() -> str:
     identity = (str(data), stat.st_size if stat else 0, stat.st_mtime_ns if stat else 0,
                 stat.st_ctime_ns if stat else 0, wrapper,
                 *(sha256_file(project/name) for name in (
-                    "utils/time_parsing.py", "draw/orekit_to_czml.py", "utils/visibility.py")))
+                    "utils/time_parsing.py", "draw/orekit_to_czml.py", "utils/visibility.py",
+                    "replay/scene.py", "eos_system/orbit_generate.py")))
     return "epoch-parser-v1-" + _propagation_signature(identity)
 
 def orbit_cache_file(settings: Settings, scenario_sha: str) -> Path:

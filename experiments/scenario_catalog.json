@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "description": "刘懋兴准备的六份只读 Legacy 场景；来源与物理验收仍未证实",
+  "groups": [
+    {
+      "source_id": "bundled-small",
+      "name": "刘懋兴场景 · 小型（4份）",
+      "directory": "small"
+    },
+    {
+      "source_id": "bundled-medium",
+      "name": "刘懋兴场景 · 中型（2份）",
+      "directory": "medium"
+    }
+  ],
+  "scenarios": [
+    {
+      "path": "medium/Scenario_S1_Sats50_M100_T3.0d_dist1.json",
+      "sha256": "58b12c20a0c933736fc6005d947e359b0dac1b309d10eac003b49e8fb211b929",
+      "size_bytes": 82331229,
+      "scenario_id": "Scenario_S1_Sats50_M100_T3.0d_dist1",
+      "internal_scenario_id": "Scenario_S1",
+      "satellite_count": 50,
+      "mission_count": 100,
+      "duration_s": 259200.0,
+      "creation_time": "2025-11-18T12:00:00",
+      "scenario_physics_version": "legacy_unknown",
+      "provenance_status": "unknown"
+    },
+    {
+      "path": "medium/Scenario_S2_Sats50_M100_T3.0d_dist0.json",
+      "sha256": "665ac26c011a57ec1743910ebf63946e5a0f626bf13a63b2e71a9e65b7c748b7",
+      "size_bytes": 156798369,
+      "scenario_id": "Scenario_S2_Sats50_M100_T3.0d_dist0",
+      "internal_scenario_id": "Scenario_S2",
+      "satellite_count": 50,
+      "mission_count": 100,
+      "duration_s": 259200.0,
+      "creation_time": "2025-11-18T12:00:00",
+      "scenario_physics_version": "legacy_unknown",
+      "provenance_status": "unknown"
+    },
+    {
+      "path": "small/Scenario_S1_Sats10_M20_T1.0d_dist1.json",
+      "sha256": "d01e91232fde765cc69534b8334610a062042e3d321b37d7d89dffa68ef1e3fc",
+      "size_bytes": 1366102,
+      "scenario_id": "Scenario_S1_Sats10_M20_T1.0d_dist1",
+      "internal_scenario_id": "Scenario_S1",
+      "satellite_count": 10,
+      "mission_count": 20,
+      "duration_s": 86400.0,
+      "creation_time": "2025-11-18T12:00:00",
+      "scenario_physics_version": "legacy_unknown",
+      "provenance_status": "unknown"
+    },
+    {
+      "path": "small/Scenario_S1_Sats20_M20_T1.0d_dist1.json",
+      "sha256": "99459574e746c022709ed287b39e47ef9f5e310de44161e5e0699b923688136e",
+      "size_bytes": 2595039,
+      "scenario_id": "Scenario_S1_Sats20_M20_T1.0d_dist1",
+      "internal_scenario_id": "Scenario_S1",
+      "satellite_count": 20,
+      "mission_count": 20,
+      "duration_s": 86400.0,
+      "creation_time": "2025-11-18T12:00:00",
+      "scenario_physics_version": "legacy_unknown",
+      "provenance_status": "unknown"
+    },
+    {
+      "path": "small/Scenario_S2_Sats10_M20_T1.0d_dist0.json",
+      "sha256": "04452c8d55dd7024be5a300cb56c59aadf99589f709224904c64a2f0d29240d5",
+      "size_bytes": 1961621,
+      "scenario_id": "Scenario_S2_Sats10_M20_T1.0d_dist0",
+      "internal_scenario_id": "Scenario_S2",
+      "satellite_count": 10,
+      "mission_count": 20,
+      "duration_s": 86400.0,
+      "creation_time": "2025-11-18T12:00:00",
+      "scenario_physics_version": "legacy_unknown",
+      "provenance_status": "unknown"
+    },
+    {
+      "path": "small/Scenario_S2_Sats20_M20_T1.0d_dist0.json",
+      "sha256": "fb8ef1e9382175aeaa9b01518e4200333d2ee33c0d0eb0b5337648afbec1aed5",
+      "size_bytes": 5313474,
+      "scenario_id": "Scenario_S2_Sats20_M20_T1.0d_dist0",
+      "internal_scenario_id": "Scenario_S2",
+      "satellite_count": 20,
+      "mission_count": 20,
+      "duration_s": 86400.0,
+      "creation_time": "2025-11-18T12:00:00",
+      "scenario_physics_version": "legacy_unknown",
+      "provenance_status": "unknown"
+    }
+  ]
+}

@@ -19,6 +19,7 @@ from .config import Settings, sha256_file
 from .storage import Database, compact_json, now
 from .worker_process import read_proc, WorkerGroup, reap_worker
 from .visualization import propagation_identity
+from replay.scene import load_display_scene
 from replay.runtime import CONFIG_ID, display_config, source_bundle_sha, validate_document
 
 REPLAY_CONFIG_ID = CONFIG_ID
@@ -184,8 +185,8 @@ class ReplayService:
         if sha256_file(scene_path) != source["scenario_sha256"]:
             raise ReplayError(409, "SCENARIO_CHANGED", "正式场景文件哈希已改变")
         try:
-            scene = json.loads(scene_path.read_text(encoding="utf-8"))
-            config = (display_config(scene, self._project) if config_id == REPLAY_CONFIG_ID
+            scene = load_display_scene(scene_path)
+            config = (display_config(scene, self._project, json.loads(source["plan_json"])) if config_id == REPLAY_CONFIG_ID
                       else _legacy_config_for_scene(scene))
         except (OSError, ValueError, KeyError, TypeError) as exc:
             raise ReplayError(409, "REPLAY_CONFIG_INCOMPATIBLE", str(exc)) from exc

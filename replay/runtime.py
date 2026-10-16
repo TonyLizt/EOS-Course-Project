@@ -15,9 +15,9 @@ from utils.time_parsing import parse_orbit_epoch
 from .contracts import ReplayConfig
 from .manifest import canonical_bytes
 from .timeline import phase_at
+from .sampling import MAX_SAMPLES, sampling_policy
 
 CONFIG_ID = "fixed-payload-illustration-v1"
-MAX_SAMPLES = 200_000
 WGS84_A = 6378137.0
 WGS84_E2 = 6.69437999014e-3
 
@@ -130,9 +130,13 @@ def source_bundle_sha(project: Path) -> str:
     return digest.hexdigest()
 
 
-def display_config(scene: dict, project: Path) -> dict:
+def display_config(scene: dict, project: Path, plan: dict | None = None) -> dict:
     """版本化模板只提供展示规则；载荷 ID/FOV 由本场景逐星展开，不写回场景。"""
     config = json.loads((project / "replay_configs/fixed-payload-illustration-v1.json").read_text(encoding="utf-8"))
+    # 配置快照绑定实际规模与正式计划，缓存身份也随有效采样步长变化。
+    duration = ( _time(plan["end_time"]) - _time(plan["start_time"]) ).total_seconds() if plan else float(scene["metadata"]["duration"])
+    count = len(plan["assignments"]) if plan else len(scene.get("missions", []))
+    config["display_sampling_policy"] = sampling_policy(duration, len(scene.get("satellites", [])), count)
     sensors = []
     for satellite in scene.get("satellites", []):
         for sensor in satellite.get("observation_capability", {}).get("sensors", []):
@@ -185,6 +189,11 @@ def attitude_samples(document: dict, packets: list[dict]) -> tuple[list[dict], l
                               float(m["target_location"].get("altitude_km", 0))*1000)
                for m in document["missions"]}
     samples, warnings = [], []
+    policy = document["replay_config"]["display_sampling_policy"]
+    if step > policy.get("preferred_attitude_step_s", step):
+        warnings.append({"code":"ADAPTIVE_SAMPLING_COARSENED", "attitude_step_s":step,
+                         "note":"只降低规则展示采样频率，任务和转向端点全部保留"})
+
     for satellite in document["satellites"]:
         sid = satellite["id"]
         orbit = orbits.get(sid)

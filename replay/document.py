@@ -12,6 +12,7 @@ from .contracts import ReplayConfig
 from .manifest import canonical_bytes, code_sha
 from .read_only import ReplayInputError
 from .timeline import build_task_phases
+from .scene import file_sha256, load_display_scene
 
 
 def _scheduler_utc_text(value: str) -> str:
@@ -46,11 +47,10 @@ def _display_plan(plan: dict) -> dict:
 
 def build_replay_document(record: dict, config_path: Path | None = None, *, config_data: dict | None = None) -> dict:
     scenario_path = Path(record["config"]["scenario_path"])
-    scenario_bytes = scenario_path.read_bytes()
-    scenario_sha = hashlib.sha256(scenario_bytes).hexdigest()
+    scenario_sha = file_sha256(scenario_path)
     if scenario_sha != record["config"]["scenario_sha256"]:
         raise ReplayInputError("scenario bytes differ from the committed run hash")
-    scenario = json.loads(scenario_bytes)
+    scenario = load_display_scene(scenario_path)
     plan = record["plan"]
     if not isinstance(plan, dict) or plan.get("scenario_id") != scenario.get("scenario_id"):
         raise ReplayInputError("committed plan and scenario identities differ")

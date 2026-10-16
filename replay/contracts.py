@@ -140,8 +140,18 @@ class ReplayConfig:
         if not isinstance(sampling, dict) or sampling.get("preserve_task_and_slew_endpoints") is not True:
             raise ReplayConfigError("display sampling must preserve task and slew endpoints")
         step = sampling.get("attitude_step_s")
-        if not isinstance(step, (int, float)) or not math.isfinite(step) or not (0 < step <= 300):
+        if isinstance(step, bool) or not isinstance(step, (int, float)) or not math.isfinite(step) or not (0 < step <= 300):
             raise ReplayConfigError("attitude_step_s must be in (0, 300]")
+        if sampling.get("strategy") == "adaptive_budget_v1":
+            # 服务端写入的实际步长、端点预算和估计上界也须能独立校验。
+            for key in ("target_samples", "max_samples", "boundary_reserve",
+                        "estimated_sample_upper_bound"):
+                value = sampling.get(key)
+                if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                    raise ReplayConfigError("invalid adaptive sampling budget: " + key)
+            if not (sampling["estimated_sample_upper_bound"] <= sampling["target_samples"]
+                    <= sampling["max_samples"] <= 200_000):
+                raise ReplayConfigError("adaptive sampling budgets are inconsistent")
         raw_sensors = data.get("sensors")
         if not isinstance(raw_sensors, list):
             raise ReplayConfigError("sensors must be a list")

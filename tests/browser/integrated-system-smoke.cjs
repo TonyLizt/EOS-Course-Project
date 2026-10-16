@@ -25,7 +25,7 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     });
     const page = await context.newPage();
     await page.goto(info.url);
-    await page.waitForFunction(() => document.querySelector('#health').textContent.includes('0.3.1'));
+    await page.waitForFunction(() => document.querySelector('#health').textContent.includes('服务已连接'));
     await page.click('details.location-setup > summary');
     await page.selectOption('#register-kind','output');
     await page.fill('#register-name','隔离浏览器测试输出');

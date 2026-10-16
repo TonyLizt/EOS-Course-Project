@@ -2,6 +2,7 @@
 const $ = (id) => document.getElementById(id);
 let selectedId = null;
 let currentAlgorithms = [];
+let currentScenarios = [];
 let outputProfiles = [];
 let replayConfigId = null;
 let replayPendingId = null;
@@ -33,6 +34,7 @@ async function bootstrap() {
     currentAlgorithms = algorithms.items;
     $("algorithm").innerHTML = currentAlgorithms.map((a) => `<option value="${escapeHtml(a.algorithm_id)}">${escapeHtml(a.name)}</option>`).join("");
     await loadScenarios();
+    if(sources.catalog_warnings?.length) $("register-message").textContent=sources.catalog_warnings.join("；");
     updateHints();
     await refresh();
   } catch (error) {
@@ -45,9 +47,33 @@ async function loadScenarios() {
   const sourceId = $("source").value;
   if (!sourceId) return;
   const scenarios = await api(`/api/scenarios?source_id=${encodeURIComponent(sourceId)}`);
-  $("scenario").innerHTML = scenarios.items.map((s) => `<option value="${escapeHtml(s.scenario_id)}">${escapeHtml(s.name)}</option>`).join("");
-  $("form-message").textContent = scenarios.items.length ? "" : "该数据源没有直接存放的 JSON 场景文件。";
+  currentScenarios=scenarios.items;
+  $("scenario").innerHTML = currentScenarios.map(s => {
+    const unavailable=s.availability && s.availability!=='ready';
+    const suffix=s.satellite_count ? " · "+s.satellite_count+"星/"+s.mission_count+"任务" : "";
+    return '<option value="'+escapeHtml(s.scenario_id)+'"'+(unavailable ? ' disabled' : '')+'>'
+      +escapeHtml(s.name+suffix+(unavailable ? "（文件未就绪）" : ""))+'</option>';
+  }).join("");
+  const ready=currentScenarios.find(s => !s.availability || s.availability==='ready');
+  if(ready) $("scenario").value=ready.scenario_id;
+  $("submit").disabled=!ready;
+  updateScenarioHint();
+  $("form-message").textContent = currentScenarios.length ? (ready ? "" : "场景文件未就绪，请完成 Git LFS 下载并核对 SHA。") : "该数据源没有直接存放的 JSON 场景文件。";
 }
+
+function updateScenarioHint() {
+  const scene=currentScenarios.find(s => s.scenario_id===$("scenario").value);
+  if(!scene) { $("scenario-hint").textContent="";return; }
+  if(!scene.catalog_id) {
+    $("scenario-hint").textContent="自定义数据源；提交时重新核对场景与来源 SHA。";return;
+  }
+  const policy=scene.replay_preview;
+  $("scenario-hint").textContent=scene.satellite_count+" 颗卫星 · "+scene.mission_count
+    +" 个任务 · "+(scene.duration_s/86400)+" 天 · "+(scene.size_bytes/1048576).toFixed(1)
+    +" MiB；物理版本 legacy_unknown（用于流程与基线测试，尚未完成 E3/E4）。"
+    +"回放预计 "+policy.attitude_step_s+" 秒采样，保留任务/转向端点，实际以计划快照为准。";
+}
+$("scenario").addEventListener("change",updateScenarioHint);
 
 function updateHints() {
   const algorithm = currentAlgorithms.find((a) => a.algorithm_id === $("algorithm").value);
@@ -209,7 +235,9 @@ async function refreshReplay(runId) {
     const state=await api('/api/runs/'+encodeURIComponent(runId)+'/replay');
     if (selectedId!==runId) return;
     const labels={NOT_REQUESTED:'尚未构建',BUILDING:'正在构建',READY:'已就绪',FAILED:'构建失败'};
-    $("replay-status").textContent='回放：'+labels[state.replay_status]+(state.error ? ' · '+state.error.message : '');
+    const sampling=state.manifest?.sampling_policy;
+    const summary=sampling ? ' · 展示采样 '+sampling.attitude_step_s+' 秒，保留任务端点' : '';
+    $("replay-status").textContent='回放：'+labels[state.replay_status]+summary+(state.error ? ' · '+state.error.message : '');
     $("build-replay").disabled=state.replay_status==='BUILDING' || replayPendingId===runId;
     $("build-replay").textContent=state.replay_status==='FAILED' ? '重试构建回放' : state.replay_status==='READY' ? '复用已就绪回放' : '构建回放';
   } catch(error) {
