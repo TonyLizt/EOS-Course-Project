@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
   <link rel="icon" href="data:,">
@@ -9,13 +9,14 @@
   <script defer src="/static/app.js"></script>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">跳到主要內容</a>
   <header class="topbar">
     <div><p class="eyebrow">EOS · COURSE SYSTEM</p><h1>地球观测任务调度</h1></div>
-    <span id="health" class="badge">正在连接服务…</span>
+    <span id="health" class="badge" role="status" aria-live="polite">正在連接服務…</span>
   </header>
-  <main class="layout">
-    <section class="card form-card">
-      <div class="section-title"><h2>新建实验</h2><p>选择登记场景和算法，提交后由独立 Worker 执行。</p></div>
+  <main class="layout" id="main-content" tabindex="-1">
+    <section class="card form-card" aria-labelledby="create-heading">
+      <div class="section-title"><h2 id="create-heading">新建實驗</h2><p>選擇登記場景和算法，提交後由獨立 Worker 執行。</p></div>
       <form id="run-form">
         <label>数据源<select id="source" required></select></label>
         <label>场景<select id="scenario" required></select></label>
@@ -50,33 +51,33 @@
       </details>
     </section>
 
-    <section class="card list-card">
-      <div class="section-title inline"><div><h2>实验列表</h2><p id="run-count">状态每两秒刷新一次。</p></div><button class="secondary" id="refresh" type="button">刷新</button></div>
-      <div class="table-wrap"><table><thead><tr><th>提交时间</th><th>场景</th><th>算法</th><th>状态</th><th>TCR</th></tr></thead><tbody id="runs"></tbody></table></div>
+    <section class="card list-card" aria-labelledby="runs-heading">
+      <div class="section-title inline"><div><h2 id="runs-heading">實驗列表</h2><p id="run-count">狀態每兩秒刷新一次。</p></div><div class="toolbar"><button class="secondary" id="toggle-refresh" type="button" aria-pressed="false">暫停自動更新</button><button class="secondary" id="refresh" type="button">立即刷新</button></div></div>
+      <div class="table-wrap" tabindex="0" aria-label="實驗列表，可水平捲動"><table><caption class="sr-only">已提交的調度實驗</caption><thead><tr><th scope="col">提交時間</th><th scope="col">場景</th><th scope="col">算法</th><th scope="col">狀態</th><th scope="col">TCR</th></tr></thead><tbody id="runs"></tbody></table></div>
       <div class="list-footer"><button class="secondary" id="previous-page" type="button">上一页</button><span id="page-label"></span><button class="secondary" id="next-page" type="button">下一页</button></div>
       <p id="list-message" class="message" role="status"></p>
     </section>
 
-    <section class="card detail-card">
-      <div class="section-title inline"><div><h2>实验详情</h2><p id="selected-run">选择列表中的实验</p></div><span id="detail-status" class="badge muted">尚未选择</span></div>
+    <section class="card detail-card" aria-labelledby="detail-heading">
+      <div class="section-title inline"><div><h2 id="detail-heading">實驗詳情</h2><p id="selected-run">選擇列表中的實驗</p></div><span id="detail-status" class="badge muted" role="status">尚未選擇</span></div>
       <div id="metrics" class="metrics"></div>
       <div id="actions" class="actions" hidden>
         <button class="secondary" id="cancel" type="button">取消实验</button>
         <a id="export-json" class="link-button" href="#">导出 JSON</a>
         <a id="export-csv" class="link-button" href="#">导出 CSV</a>
-        <a id="open-gantt" class="link-button secondary" href="#" target="_blank" rel="noopener">甘特图</a>
+        <a id="open-gantt" class="link-button secondary" href="#" target="_blank" rel="noopener" aria-label="在新視窗開啟甘特圖">甘特圖</a>
         <button class="secondary" id="build-replay" type="button" hidden>构建回放</button>
-        <a id="open-cesium" class="link-button secondary" href="#" target="_blank" rel="noopener">Cesium 回放</a>
+        <a id="open-cesium" class="link-button secondary" href="#" target="_blank" rel="noopener" aria-label="在新視窗開啟 Cesium 回放">Cesium 回放</a>
         <button class="danger" id="delete-run" type="button">永久删除实验</button>
       </div>
       <label class="delete-option" id="delete-option" hidden><input id="delete-files" type="checkbox">同时删除本实验在服务器输出目录中的正式 JSON/CSV 文件</label>
       <p id="replay-status" class="hint" role="status"></p>
       <p id="scenario-provenance" class="hint"></p>
-      <p id="detail-error" class="error"></p>
+      <p id="detail-error" class="error" role="alert"></p>
       <h3>服务器输出文件</h3><ul id="files" class="files"></ul>
       <h3>运行记录</h3><ol id="events" class="events"></ol>
       <h3>计划明细 <span id="assignment-count"></span></h3>
-      <div class="table-wrap"><table><thead><tr><th>任务</th><th>卫星</th><th>开始</th><th>结束</th></tr></thead><tbody id="assignments"></tbody></table></div>
+      <div class="table-wrap" tabindex="0" aria-label="計畫明細，可水平捲動"><table><caption class="sr-only">所選實驗的任務計畫</caption><thead><tr><th scope="col">任務</th><th scope="col">衛星</th><th scope="col">開始</th><th scope="col">結束</th></tr></thead><tbody id="assignments"></tbody></table></div>
     </section>
   </main>
   <footer>框架 v0.3.3 · 正式结果由 Controller 核验并从 SQLite 提供</footer>

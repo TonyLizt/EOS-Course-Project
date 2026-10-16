@@ -39,17 +39,21 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     const started=Date.now();
     await view.goto(info.url+await page.locator('#open-cesium').getAttribute('href'),{waitUntil:'domcontentloaded',timeout:90000});
     await view.waitForFunction(()=>document.querySelector('#assetStatus').textContent.includes('50 body model'),null,{timeout:120000});
-    await view.locator('.assignment-row').first().click();
+    await view.locator('.assignment-select').first().click();
     await view.waitForTimeout(3000);
     const result=await view.evaluate(()=>{
       const assignment=viewer._scenarioAssignments[0],ds=viewer.dataSources.get(0);
       const now=viewer.clock.currentTime,body=ds.entities.getById(assignment.satellite_id);
       return {time:Cesium.JulianDate.toIso8601(now),expected:Cesium.JulianDate.toIso8601(assignment.start),
+        expectedSatellite:assignment.satellite_id,
         satelliteCount:viewer._satelliteEntities.length,hasBodyPosition:!!body.position.getValue(now),
         hasBodyOrientation:!!body.orientation.getValue(now),shouldAnimate:viewer.clock.shouldAnimate,
         secondaryShouldAnimate:viewer._payloadViewer.clock.shouldAnimate,
         secondaryTime:Cesium.JulianDate.toIso8601(viewer._payloadViewer.clock.currentTime),
         payload:document.querySelector('#payloadViewStatus').textContent,
+        payloadTileCount:document.querySelectorAll('.payload-tile').length,
+        selectedPayloadTile:document.querySelector('.payload-tile.is-selected')?.dataset.satelliteId,
+        geometryStatus:document.querySelector('.assignment-visibility')?.textContent,
         models:document.querySelector('#assetStatus').textContent,
         sampling:document.querySelector('#replayBuildStatus').textContent,
         sceneFrame:viewer.scene.frameState?.frameNumber ?? viewer.scene._frameState?.frameNumber};
@@ -61,6 +65,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     assert.equal(result.hasBodyOrientation,true);
     assert.equal(result.shouldAnimate,false);
     assert.equal(result.secondaryShouldAnimate,false);
+    assert.equal(result.payloadTileCount,50);
+    assert.equal(result.selectedPayloadTile,result.expectedSatellite);
+    assert.equal(result.geometryStatus,'Earth blocked');
     assert.ok(result.payload.includes('OBSERVING'),JSON.stringify(result));
     assert.ok(result.sampling.includes('135 秒'),result.sampling);
     assert.equal(posts.length,0,'只打开 READY 结果不得触发额外 POST');
