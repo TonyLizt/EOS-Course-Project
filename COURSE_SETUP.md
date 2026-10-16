@@ -1,3 +1,13 @@
+## v0.3.3：回放路径恢复与触控板缩放（2026-10-16）
+
+- 分支 `fix/cesium-replay-usability`，基于最新 main `daf4254`；不重复或回退 v0.3.2 的六场景清单与规模适配。
+- 正式场景原绝对路径失效时，回放只在已登记数据源中按 `scenario_id` 查找，并以正式 SHA-256 完全匹配后重定位；符号链接、未登记路径与同名不同内容仍拒绝。
+- 主 Cesium Viewer 新增触控板捏合缩放：Chromium `Ctrl+wheel` 与 Safari 类 gesture 映射到相机缩放；保留 Cesium 原滚轮、右键拖曳与触屏 pinch。
+- 打开 Cesium 页面仍只执行无副作用 GET；未构建时由用户显式点击按钮才 POST，避免查看页面自动启动 Orekit/JVM 与大量派生文件工作。FAILED 仍需显式重试。
+- 定向验证：Python 2/2、Node 5/5 通过（含 50 星索引）；`git diff --check` 通过。完整 Python 前 10 项通过后停在既有 `test_http_cancel_uses_existing_route_and_temporary_database`，240 秒 timeout 中止且无残留进程，不声称全量通过。已知限制：任务列选星与主 Viewer trackedEntity 尚未同步，跟随镜头问题另行修复。
+
+---
+
 ## v0.3.2：六场景接入与规模适配（2026-10-16）
 
 - 分支 feat/six-scenario-scale-adaptation，基于 main f0997ed（PR #11）；李泽同已授权本轮提交、推送及 PR 交接。

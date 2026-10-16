@@ -502,7 +502,7 @@ class Database:
         """读取正式提交的计划身份；构建进程只接收这个快照，不接触 SQLite。"""
         with self.connect() as db:
             row = db.execute(
-                "SELECT r.run_id,r.status,r.scenario_id,r.scenario_sha256,r.algorithm_version,"
+                "SELECT r.run_id,r.status,r.source_id,r.scenario_id,r.scenario_sha256,r.algorithm_version,"
                 "r.config_json,p.plan_json,p.plan_sha256 FROM runs r "
                 "LEFT JOIN plans p ON p.run_id=r.run_id WHERE r.run_id=?", (run_id,)
             ).fetchone()

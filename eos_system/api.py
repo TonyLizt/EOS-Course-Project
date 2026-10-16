@@ -332,6 +332,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "fixed-payload-view.js",
                             media_type="text/javascript")
 
+    @app.get("/visualization/trackpad-zoom.js")
+    def trackpad_zoom_script():
+        return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "trackpad-zoom.js",
+                            media_type="text/javascript")
+
     @app.get("/visualization/assets/satellites/landsat8.glb")
     def landsat8_model(sha: str | None = None):
         model_path = Path(__file__).resolve().parent.parent / "assets/satellites/landsat8.glb"
