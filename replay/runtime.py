@@ -103,10 +103,24 @@ def _position_at(samples: list[tuple[datetime, tuple[float, float, float]]],
             lo = mid
         else:
             hi = mid
-    fraction = (when - samples[lo][0]).total_seconds() / (
-        samples[hi][0] - samples[lo][0]).total_seconds()
-    return tuple(samples[lo][1][i] * (1 - fraction) + samples[hi][1][i] * fraction
-                 for i in range(3))
+    if when == samples[lo][0]:
+        return samples[lo][1]
+    # Six local true positions define a degree-five Lagrange interpolant.
+    # Work in relative seconds, never large Unix timestamps. Small/legacy
+    # inputs naturally use their available degree (two points remain linear).
+    count = min(6, len(samples))
+    first = max(0, min(lo - (count - 2) // 2, len(samples) - count))
+    nodes = samples[first:first + count]
+    offsets = [(time - when).total_seconds() for time, _ in nodes]
+    result = [0.0, 0.0, 0.0]
+    for j, (_, position) in enumerate(nodes):
+        coefficient = 1.0
+        for k in range(count):
+            if j != k:
+                coefficient *= -offsets[k] / (offsets[j] - offsets[k])
+        for axis in range(3):
+            result[axis] += coefficient * position[axis]
+    return tuple(result)
 
 
 

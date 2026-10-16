@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 
 from replay.scene import file_sha256
+from .visualization import ORBIT_STEP_S
 
 from draw.orekit_to_czml import demo
 
@@ -17,7 +18,7 @@ def main() -> None:
     parser.add_argument("--scenario", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--orekit-data", required=True)
-    parser.add_argument("--orbit-step-s", type=float, default=300.0)
+    parser.add_argument("--orbit-step-s", type=float, default=ORBIT_STEP_S)
     args = parser.parse_args()
     source = Path(args.orekit_data)
     if source.is_file():

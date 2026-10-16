@@ -20,7 +20,7 @@ class OrbitUnavailable(RuntimeError):
     """Java/Orekit 缺失或轨道生成失败时的受控错误。"""
 
 
-ORBIT_STEP_S = 300
+ORBIT_STEP_S = 60
 ORBIT_CACHE_VERSION = 2
 
 

@@ -248,6 +248,8 @@ def build_czml(
             "position": {
                 "epoch": epoch_str,
                 "cartographicDegrees": carto,
+                "interpolationAlgorithm": "LAGRANGE",
+                "interpolationDegree": 5,
             },
             "path": {
                 "show": True,
