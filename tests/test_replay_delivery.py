@@ -103,6 +103,7 @@ class ReplayDeliveryTests(unittest.TestCase):
                 "/visualization/fixed-payload-geometry.js",
                 "/visualization/fixed-payload-view.js",
                 "/visualization/trackpad-zoom.js",
+                "/visualization/replay-build-policy.js",
                 "/visualization/assets/satellites/landsat8.glb",
             ):
                 endpoint = next(

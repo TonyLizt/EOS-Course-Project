@@ -46,8 +46,6 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     console.log('ROOT_UI_OK '+JSON.stringify({emptyRun,exports,download:download.suggestedFilename()}));
     await page.locator('tr[data-id="'+info.run_id+'"]').click();
     await page.waitForFunction(id => document.querySelector('#selected-run').textContent===id,info.run_id);
-    await page.click('#build-replay');
-    await page.waitForFunction(() => document.querySelector('#replay-status').textContent.includes('已就绪'),null,{timeout:40000});
     const view = await context.newPage();
     await view.goto(info.url+await page.locator('#open-cesium').getAttribute('href'),{waitUntil:'domcontentloaded',timeout:60000});
     await view.waitForFunction(() => document.querySelector('#assetStatus').textContent.includes('2 body model'),null,{timeout:60000});
@@ -82,7 +80,7 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     assert.ok(endpoint.includes('IDLE'),endpoint);
     assert.equal(requests.filter(r => r.url.includes('/visualization/orbit.czml')).length,0);
     assert.equal(requests.filter(r => r.method==='POST' && r.url.endsWith('/replay')).length,1);
-    // 视图的播放、跳转均不得触发第二次构建。
+    // 首次打开自动申请一次；视图的播放、跳转均不得触发第二次构建。
     console.log('CESIUM_UI_OK '+JSON.stringify({result,endpoint,legacyOrbitRequests:0,errors,failedResponses}));
     assert.equal(errors.length,0,JSON.stringify({errors,failedResponses}));
     await view.close();

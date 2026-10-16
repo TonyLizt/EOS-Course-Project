@@ -32,8 +32,8 @@
 - 分支 `fix/cesium-replay-usability`，基于最新 main `daf4254`；不重复或回退 v0.3.2 的六场景清单与规模适配。
 - 正式场景原绝对路径失效时，回放只在已登记数据源中按 `scenario_id` 查找，并以正式 SHA-256 完全匹配后重定位；符号链接、未登记路径与同名不同内容仍拒绝。
 - 主 Cesium Viewer 新增触控板捏合缩放：Chromium `Ctrl+wheel` 与 Safari 类 gesture 映射到相机缩放；保留 Cesium 原滚轮、右键拖曳与触屏 pinch。
-- 打开 Cesium 页面仍只执行无副作用 GET；未构建时由用户显式点击按钮才 POST，避免查看页面自动启动 Orekit/JVM 与大量派生文件工作。FAILED 仍需显式重试。
- - 定向验证：Python 2/2、Node 5/5 通过（含 50 星索引）；`git diff --check` 通过。完整 Python 前 10 项通过后停在既有 `test_http_cancel_uses_existing_route_and_temporary_database`，240 秒 timeout 中止且无残留进程，不声称全量通过。已知限制：任务列选星与主 Viewer trackedEntity 尚未同步，跟随镜头问题另行修复。
+- 成功实验首次打开 Cesium 页面时先 GET 状态；NOT_REQUESTED 自动 POST 一次并轮询至 READY。自动申请或构建失败后不循环重试，只保留显式“重试构建回放”；READY 页面不额外 POST。
+- 定向验证：Python 2/2、Node 6/6 通过（含自动构建状态策略与 50 星索引）；浏览器验收脚本改为从 NOT_REQUESTED 直接打开 Cesium 并要求恰好一次 POST，当前环境无 Playwright/Chromium，未执行真实浏览器；`git diff --check` 通过。完整 Python 前 10 项通过后停在既有 `test_http_cancel_uses_existing_route_and_temporary_database`，240 秒 timeout 中止且无残留进程，不声称全量通过。已知限制：任务列选星与主 Viewer trackedEntity 尚未同步，跟随镜头问题另行修复。
 
 ---
 

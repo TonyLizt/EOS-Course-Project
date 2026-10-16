@@ -9,6 +9,7 @@
   <script src="fixed-payload-state.js?v=20261016-scale-1"></script>
   <script src="fixed-payload-geometry.js?v=20261016-scale-1"></script>
   <script src="fixed-payload-view.js?v=20261016-scale-1"></script>
+  <script src="replay-build-policy.js?v=20261016-auto-build-1"></script>
   <script src="trackpad-zoom.js?v=20261016-trackpad-1"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
 
@@ -423,15 +424,25 @@
       const message=document.getElementById('replayBuildStatus');
       let state=await readJson(statusUrl);
       while (state.replay_status!=='READY') {
-        if (state.replay_status==='BUILDING') {
+        const action=ReplayBuildPolicy.action(state.replay_status);
+        if (action==='AUTO_BUILD') {
           buildButton.hidden=true;
-          message.textContent='回放正在构建；本页仅查询状态，不会重新运行算法。';
+          message.textContent='回放尚未构建，正在自动申请构建…';
+          try {
+            state=await readJson(statusUrl,{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({replay_config_id:state.replay_config_id})});
+          } catch (error) {
+            state={...state,replay_status:'FAILED',error:{message:error.message}};
+          }
+        } else if (action==='POLL') {
+          buildButton.hidden=true;
+          message.textContent='回放正在构建；读取已冻结的正式计划，不会重新运行调度算法。';
           await new Promise(resolve => setTimeout(resolve,1000));
           state=await readJson(state.status_url);
         } else {
-          message.textContent=state.error ? '构建失败：'+state.error.message : '回放尚未构建。';
+          message.textContent=state.error ? '构建失败：'+state.error.message : '无法自动构建回放。';
           buildButton.hidden=false;
-          buildButton.textContent=state.replay_status==='FAILED' ? '重试构建回放' : '构建回放';
+          buildButton.textContent='重试构建回放';
           await new Promise(resolve => { buildButton.onclick=resolve; });
           buildButton.hidden=true;
           try {
@@ -440,7 +451,7 @@
           } catch (error) {
             message.textContent='无法申请构建：'+error.message;
             buildButton.hidden=false;
-            // 回到循环等待下一次明确点击；错误不会要求重复点击两次。
+            // 自动申请或人工重试失败后保留按钮，不进行无限自动重试。
             state={...state,replay_status:'FAILED',error:{message:error.message}};
           }
         }
