@@ -43,6 +43,7 @@ from core.models import (
 )
 
 from core.scenario import Scenario, ScenarioMetadata, generate_missions_dict
+from utils.time_parsing import parse_orbit_epoch
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -419,10 +420,13 @@ def run_all_scenarios(
             print(f"[WARN] Satellite data file does not exist: {sat_json}, skipping")
             continue
 
-        # Read once in the main process only to get n_sat
+        # Read once and validate epochs before submitting any pool work.
         # (no longer passing the large dictionary to subprocesses)
         with open(sat_json, "r", encoding="utf-8") as f:
             sat_dict = json.load(f)
+        for satellite_id, satellite_data in sat_dict.items():
+            epoch = satellite_data[7] if isinstance(satellite_data, list) and len(satellite_data) > 7 else None
+            parse_orbit_epoch(epoch, satellite_id=satellite_id)
         n_sat = len(sat_dict)
         print(f"[INFO] Read satellite file {sat_json.name}, containing {n_sat} satellites")
 
