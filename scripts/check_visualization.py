@@ -1,39 +1,52 @@
-"""对一个已成功实验检查正式计划、旧页面入口与 CZML 回放。"""
-
+"""检查已成功实验的统一 READY 回放；构建须显式加 --build。"""
 from __future__ import annotations
-
 import argparse
+import hashlib
 import json
+import time
 from urllib.error import HTTPError
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
-
-def get(url: str):
+def read(url, *, payload=None):
+    request = Request(url, data=json.dumps(payload).encode() if payload is not None else None,
+                      headers={"Content-Type":"application/json"} if payload is not None else {})
     try:
-        return urlopen(url, timeout=660)
+        with urlopen(request, timeout=660) as response:
+            return response.read()
     except HTTPError as exc:
-        print(f"请求失败 {exc.code}：{exc.read().decode('utf-8', errors='replace')[:600]}")
-        raise
+        raise RuntimeError(f"{exc.code}: {exc.read().decode(errors='replace')[:600]}") from exc
 
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run_id")
     parser.add_argument("--base", default="http://127.0.0.1:8765")
+    parser.add_argument("--build", action="store_true", help="显式申请/重试独立回放")
+    parser.add_argument("--check-legacy-orbit", action="store_true", help="额外验证旧 orbit GET；可能生成共享轨道缓存")
     args = parser.parse_args()
-    root = f"{args.base}/api/runs/{args.run_id}/visualization"
-    with get(root + "/schedule") as response:
-        plan = json.load(response)
+    root = f"{args.base.rstrip('/')}/api/runs/{args.run_id}"
+    plan = json.loads(read(root+"/visualization/schedule"))
     assert plan["provenance"]["run_id"] == args.run_id
-    with get(f"{args.base}/visualization/gantt/{args.run_id}") as response:
-        assert "Satellite Observation Gantt Chart" in response.read().decode("utf-8")
-    with get(f"{args.base}/visualization/cesium/{args.run_id}") as response:
-        assert "Cesium" in response.read().decode("utf-8")
-    with get(root + "/orbit.czml") as response:
-        packets = json.load(response)
-    assert packets and packets[0]["id"] == "document"
-    print(f"回放接口通过：{len(plan['assignments'])} 条计划，{len(packets)} 个 CZML 包")
-
+    configs = json.loads(read(args.base+"/api/replay-configs"))
+    state = json.loads(read(root+"/replay", payload={"replay_config_id":configs["default_id"]}) if args.build
+                       else read(root+"/replay"))
+    deadline = time.monotonic()+660
+    while state["replay_status"] == "BUILDING" and time.monotonic() < deadline:
+        time.sleep(.5)
+        state = json.loads(read(args.base+state["status_url"]))
+    if state["replay_status"] != "READY":
+        raise RuntimeError(f"回放未 READY：{state['replay_status']}；首次构建请加 --build；{state.get('error')}")
+    manifest = state["manifest"]
+    assert manifest["plan_sha256"] == plan["plan_sha256"]
+    for key, item in manifest["resources"].items():
+        content = read(args.base+item["url"])
+        assert len(content) == item["size_bytes"]
+        assert hashlib.sha256(content).hexdigest() == item["sha256"], key
+    for page in ("gantt", "cesium"):
+        read(f"{args.base}/visualization/{page}/{args.run_id}")
+    if args.check_legacy_orbit:
+        packets = json.loads(read(root+"/visualization/orbit.czml"))
+        assert packets and packets[0]["id"] == "document"
+    print(f"统一回放检查通过：{len(plan['assignments'])} 条正式 assignment，5 种哈希匹配资源；{state['replay_id']}")
 
 if __name__ == "__main__":
     main()

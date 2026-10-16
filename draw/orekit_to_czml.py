@@ -9,6 +9,7 @@ satellite and mission visualization data for Cesium.
 import json
 import os
 import math
+from utils.time_parsing import parse_orbit_epoch
 from datetime import datetime, timedelta, timezone
 
 # ========= 1. Start JVM + Orekit initialization =========
@@ -331,7 +332,7 @@ def demo(
         # 可视化轨道采样可稀于调度时间步；不修改场景或正式 assignment。
         step_s = max(step_s, float(orbit_step_s))
 
-    start_dt = datetime.fromisoformat(start_iso).replace(tzinfo=timezone.utc)
+    start_dt = parse_orbit_epoch(start_iso, field_name="metadata.creation_time")
     end_dt = start_dt + timedelta(seconds=duration_s)
 
     print(f"[*] Scenario: {scenario.get('scenario_id', 'Unknown')}")
@@ -359,14 +360,8 @@ def demo(
         m_deg = float(op["mean_anomaly_deg"])
 
         epoch_str = op["epoch"]
-        try:
-            epoch_dt = datetime.fromisoformat(epoch_str.replace("Z", "+00:00"))
-        except ValueError:
-            epoch_dt = datetime.strptime(epoch_str, "%d %b %Y %H:%M:%S.%f")
-        if epoch_dt.tzinfo is None:
-            epoch_dt = epoch_dt.replace(tzinfo=timezone.utc)
-        else:
-            epoch_dt = epoch_dt.astimezone(timezone.utc)
+        # 与窗口生成共享 UTC 解析；不能把偏移时刻重新贴 UTC 标签。
+        epoch_dt = parse_orbit_epoch(epoch_str, satellite_id=sat["id"])
 
         print(
             f"    Satellite {sat_id}: a={a_m:.1f} m, e={e}, i={i_deg} deg, "

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "recorded_from_code_sha": "051f2861563ced2b00d77fe2776d0fad992949a6",
+  "files": [
+    {
+      "path": "scenarios/demo-s1-30_Sats1_M30_T1d_seed20260927.json",
+      "size_bytes": 285876,
+      "sha256": "00274bc1d4bce0ccf427edeac70b9742ad4fd7f21111e4969b9ce1c90c5342c0",
+      "role": "read_only_scenario"
+    },
+    {
+      "path": "scenarios/demo-s3-30_Sats3_M30_T0.25d_seed20260927.json",
+      "size_bytes": 323360,
+      "sha256": "71058543bcf5040e0108f4c1a0d233cefe5f7e88401fe377f44ee0d3b0b83a72",
+      "role": "read_only_scenario"
+    }
+  ],
+  "notes": [
+    "Paths are repository-relative and source files are not rewritten by replay.",
+    "A committed successful plan and metrics are registered by run_id at build time because no plan file was supplied with these scenarios."
+  ]
+}

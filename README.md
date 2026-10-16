@@ -4,22 +4,24 @@
 
 本项目不是 EOS-Bench 官方仓库。上游研究平台、论文和数据的出处见[来源与致谢](#来源与致谢)；课程系统的新增实现主要位于 `eos_system/`。
 
+当前修复范围、验收及每位成员下一步见[修复与集成交接](docs/phase2/restore_integration_handoff.md)。接口/数据库审核稿中的未来功能与当前实现已分别说明。
+
 ## 背景与目标
 
 地球观测卫星需要在有限的可见窗口中安排拍摄和下传任务，同时满足卫星姿态切换、传感器、存储、电量和地面站等约束。EOS-Bench 提供场景与统一调度内核。课程第二阶段进一步关注操作系统层面的真实进程、IPC、排队、同步、取消、故障恢复，以及可复现的算法实验。
 
 本组计划完成三种机制不同的传统算法和一种机器学习算法。新算法会通过同一注册、运行和核验边界进入系统；本仓库当前可选的 `completion_first`、`adaptive_repair` 属于已有基线，**不计作这四种新算法的交付**。
 
-## 当前能力（v0.2.1）
+## 当前能力（v0.3.1 修复与集成）
 
 - 浏览器选择**已登记的数据源、场景、算法和输出方案**，提交、取消并查看实验状态与正式结果。
-- FastAPI 和 Controller 在 WSL2 中运行；参考 Worker 由 `spawn` 创建为独立进程，以 JSON 字节通过单向 Pipe 回传候选计划。Controller 独立核验，成功事务写入 SQLite。
+- FastAPI 和 Controller 在 WSL2 中运行；Worker 由 `spawn` 创建，通过两条单向 Pipe 交换控制消息和 JSON 事件。Worker 执行 `setsid()` 并报告 `started`，Controller 核验本次进程的 Linux 身份后才发送 `start`；候选由 Controller 独立核验，并在成功事务中写入 SQLite。
 - 算法注册表统一元数据、专属参数模型和 Worker 创建入口。现有算法经适配器接入；新算法可从空计划开始，不必沿用旧启发式流程。
 - 浏览器下载 JSON/CSV；选择目录输出方案后，成功实验还会在该目录的 `run_id/` 子目录保存正式文件。SQLite、锁和缓存默认位于 WSL Linux 文件系统。
-- 结果页复用旧甘特图和 Cesium 页面。甘特图读取同一 `run_id` 的正式计划；Cesium 轨道按场景 SHA-256 生成并缓存。轨道生成需要可选的 Java/Orekit 依赖和浏览器可访问 Cesium 在线资源。
+- 结果页复用甘特图和 Cesium 页面。甘特图读取同一 `run_id` 的正式计划；Cesium 轨道按场景 SHA-256 生成并缓存，并可显示 Landsat 8 示意本体、确定性任务姿态与固定载荷指向。轨道生成需要可选的 Java/Orekit 依赖和浏览器可访问 Cesium 在线资源。
 - 实验列表可翻页；在详情中可永久删除已结束的实验。删除会清理 SQLite 中该实验的配置、事件、尝试、计划、指标和导出记录，并尝试压缩数据库。
 
-当前参考 Worker 的协作取消、后代进程回收和大结果文件通道，以及独立 Daemon、四种新算法、完整结果比较页面，仍属于后续开发。各模块实际边界见 [框架交接说明](docs/phase2/framework_handoff.md)。
+当前分支的 W1/W2 已接通运行中协作取消、IPC 期限与已核验同 Session 后代的安全回收；`cancel_ack` 只确认收到取消，不代表 Worker 或后代已退出。Controller 停机时须等待后台执行线程结束，未结束则保留单实例锁。超过 4 MiB 的大结果文件通道（W3）、独立 Daemon、四种新算法、完整结果比较页面及跨 Controller 重启的孤儿回收仍未交付。能力和限制见 [W2 实施记录](docs/phase2/W2%20WorkerIPC%20%E4%B8%8E%20Controller%20%E5%8D%8F%E4%BD%9C%E5%AE%9E%E6%96%BD%E8%AF%B4%E6%98%8E%20v1.0.md)。
 
 ## 运行流程
 
@@ -81,7 +83,19 @@ cd /mnt/d/Code/EOS-Course-Project
 ~/eos-course-runtime/.venv/bin/python -m pip install -r requirements-visualization.txt
 ```
 
-首次查看一个场景时，服务会使用仓库的 `utils/orekit-data.zip` 生成 CZML，并缓存到 WSL 运行目录的 `visualizations/scenes/`；相同场景哈希的后续实验复用缓存。可视化轨道使用较稀的采样，仅影响画面文件，不改变调度输入和正式计划。旧的 `main_draw.py` CLI 仍可独立使用。
+成功实验需要先点击“构建回放”；页面显式 POST 后查询 BUILDING/READY/FAILED 状态，失败可重试。Cesium 页面从同一个 manifest 读取五种 READY 资源；选星、播放、拖动和跳转只消费已有样本，不会重新运行算法。配置 ID 从 `GET /api/replay-configs` 获取，当前默认 `fixed-payload-illustration-v1`。
+
+回放由独立进程只读正式计划及场景生成，服务校验输入/计划/配置/模型与资源哈希后发布，不修改正式 assignment 或 metrics.RT。轨道缓存身份包括历元解析与传播环境，旧 v1 缓存不会冒充修复后的 v2。姿态默认 5 秒采样并保留精确任务端点；首版上限 200000 个样本、每资源 64 MiB。
+
+页面保留甘特图、卫星本体、独立视锥、WGS84 椭球覆盖、选星/追踪、任务点俯视、精确任务跳转和同钟固定载荷视图。NASA Landsat 8 仅作为通用外观，原卫星 ID 不改名；安装旋转与方形完整 FOV 是明示的展示假设，几何指向与 SLERP 不等于真实动力学或拍摄成功。非敏捷星只给对地示意。模型来源见[资产说明](docs/replay/landsat8-validation.md)。
+
+**旧 `GET /api/runs/{run_id}/visualization/orbit.czml` 继续保留到组员完成前端迁移复核。**当前课程页面已改读 READY 资源；旧 `visualization/replay` GET 只读取同一 READY 文档，未构建时返回 409。旧配置 `geometry-illustration-v2` 与离线 CLI 暂保留为兼容入口。
+
+### 数据版本与当前限制
+
+保留数据 Manifest 审计、E1 确定性历元解析与 E2 独立重算工具；新实验保存场景来源快照。来源不明的历史数据标为 `legacy_unknown`；E2 待验收候选不得因登记目录自动转成正式实验数据。本次未重算或转正真实场景；完整 E3/E4、四种新算法、W3、Daemon 和最终比较页面仍待开发。
+
+SQLite 模式为 v3；回放文件位于运行目录的 `replays/`。删除终态实验同步清理本实验派生缓存，BUILDING 时拒绝删除；共享轨道缓存不随单个实验删除。两视图使用随 Cesium 发布的底图，避免依赖个人 Ion token；脚本/底图仍从固定版本 CDN 加载，离线资源包尚未交付。
 
 ## 开发与验证
 
@@ -93,10 +107,14 @@ cd /mnt/d/Code/EOS-Course-Project
 PYTHONHASHSEED=0 MPLBACKEND=Agg ~/eos-course-runtime/.venv/bin/python -m scripts.check_cli_parity
 ~/eos-course-runtime/.venv/bin/python -m scripts.check_plan_rejection
 # 安装可选轨道依赖后，传入任一成功实验的 run_id
-~/eos-course-runtime/.venv/bin/python scripts/check_visualization.py <run_id>
+~/eos-course-runtime/.venv/bin/python scripts/check_visualization.py <run_id> --build
+node tests/fixed_payload_state.test.cjs
+node tests/fixed_payload_geometry.test.cjs
+node tests/fixed_payload_view.test.cjs
+node tests/replay_acceptance.test.cjs
 ```
 
-组员接入算法请先读 [算法接入说明](docs/phase2/algorithm_integration.md)；[当前数据库设计与 ER 图](docs/phase2/database_current_v02.md)记录落地模式。接口和数据库目标审核稿分别在 [接口设计](docs/phase2/interface_design_target.md)、[数据库目标设计](docs/phase2/database_design_target.md)。这些审核稿包含尚未完成的目标，当前字段以源码、`/docs` 和 [交接说明](docs/phase2/framework_handoff.md) 为准。每次版本变化及实测证据记在 [COURSE_SETUP.md](COURSE_SETUP.md)。
+组员开发前先读 [协作规范](docs/phase2/team_collaboration.md) 和 [算法接入说明](docs/phase2/algorithm_integration.md)；[当前数据库设计与 ER 图](docs/phase2/database_current_v03.md)记录落地模式。接口和数据库目标审核稿分别在 [接口设计](docs/phase2/interface_design_target.md)、[数据库目标设计](docs/phase2/database_design_target.md)。这些审核稿包含尚未完成的目标，当前字段以源码、`/docs` 和 [交接说明](docs/phase2/replay_backend_handoff.md) 为准。每次版本变化及实测证据记在 [COURSE_SETUP.md](COURSE_SETUP.md)。
 
 ## 项目分工
 

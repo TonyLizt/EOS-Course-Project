@@ -11,6 +11,7 @@ from schedulers.schedule_output import schedule_to_dict
 
 from .algorithm_registry import SolveContext, Solver, get_algorithm, make_context
 from .contracts import RunConfig
+from .provenance import verify_provenance
 
 
 def build_constraint_model(problem, config: RunConfig) -> ConstraintModel:
@@ -27,6 +28,7 @@ def build_constraint_model(problem, config: RunConfig) -> ConstraintModel:
 
 def prepare(config: RunConfig) -> tuple[Solver, SchedulingProblem, ConstraintModel, SolveContext]:
     """加载只读场景并构造调度器；耗时不计入算法搜索预算。"""
+    verify_provenance(config)
     spec = get_algorithm(config.algorithm_id)
     problem = load_scheduling_problem_from_json(Path(config.scenario_path))
     constraint_model = build_constraint_model(problem, config)
