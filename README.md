@@ -12,7 +12,7 @@
 
 本组计划完成三种机制不同的传统算法和一种机器学习算法。新算法会通过同一注册、运行和核验边界进入系统；本仓库当前可选的 `completion_first`、`adaptive_repair` 属于已有基线，**不计作这四种新算法的交付**。
 
-## 当前能力（v0.3.2 六场景接入与规模适配）
+## 当前能力（v0.3.3 回放易用性修复）
 
 - 浏览器选择**已登记的数据源、场景、算法和输出方案**，提交、取消并查看实验状态与正式结果。
 - 启动时自动登记六份 LFS 场景（小型 4、中型 2），相对仓库定位；展示规模、来源和采样预算，缺文件/LFS 指针/SHA 不符时提供诊断，已有同目录登记复用。
@@ -84,7 +84,7 @@ cd /mnt/d/Code/EOS-Course-Project
 ~/eos-course-runtime/.venv/bin/python -m pip install -r requirements-visualization.txt
 ```
 
-成功实验需要先点击“构建回放”；单纯打开 Cesium 页面只执行无副作用 GET，不会自动启动较重的 Orekit/JVM 构建或写派生缓存。用户显式点击后页面 POST，并查询 BUILDING/READY/FAILED 状态；失败可重试。Cesium 页面从同一个 manifest 读取五种 READY 资源；选星、播放、拖动和跳转只消费已有样本，不会重新运行算法。配置 ID 从 `GET /api/replay-configs` 获取，当前默认 `fixed-payload-illustration-v1`。
+成功实验首次打开 Cesium 页面时，页面先 GET 状态；若为 NOT_REQUESTED，会自动 POST 一次构建并轮询 BUILDING/READY。构建读取已冻结的正式场景和计划，不会重新运行调度算法。自动申请或构建失败后停止自动重试，显示“重试构建回放”供用户确认。Cesium 页面从同一个 manifest 读取五种 READY 资源；选星、播放、拖动和跳转只消费已有样本，不会重复构建。配置 ID 从 `GET /api/replay-configs` 获取，当前默认 `fixed-payload-illustration-v1`。
 
 回放由独立进程只读正式计划及场景生成，服务校验输入/计划/配置/模型与资源哈希后发布，不修改正式 assignment 或 metrics.RT。轨道缓存身份包括历元解析与传播环境，旧 v1 缓存不会冒充修复后的 v2。姿态首选 5 秒，按时域/星数/任务端点余量确定有效步长，目标 100000 样本；本批 10/20/50 星约 10/20/135 秒，保留任务和转向端点。硬上限仍为 200000 样本、每资源 64 MiB。
 
