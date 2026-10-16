@@ -91,6 +91,20 @@ def terminal(f,state):
     raise AssertionError("回放未在测试上限内结束")
 
 class IntegratedReplayTests(unittest.TestCase):
+    def test_replay_relocates_identical_scenario_from_registered_source(self):
+        with fixture() as f:
+            relocated = f.root / "relocated"
+            relocated.mkdir()
+            replacement = relocated / f.scene.name
+            f.scene.rename(replacement)
+            f.db.add_data_source("relocated", "relocated", relocated)
+
+            config, resolved = f.app.state.replay._snapshot(
+                f.db.get_replay_source(f.run_id), CONFIG_ID
+            )
+            self.assertEqual(resolved, replacement)
+            self.assertEqual(config["replay_config_id"], CONFIG_ID)
+
     def test_committed_plan_to_published_samples_and_compatibility(self):
         with fixture() as f:
             before=compact_json(f.db.get_run(f.run_id))

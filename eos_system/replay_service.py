@@ -15,7 +15,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from .config import Settings, sha256_file
+from .config import Settings, resolve_scenario_in, sha256_file
 from .storage import Database, compact_json, now
 from .worker_process import read_proc, WorkerGroup, reap_worker
 from .visualization import propagation_identity
@@ -177,13 +177,36 @@ class ReplayService:
         if config_id not in {REPLAY_CONFIG_ID, LEGACY_CONFIG_ID}:
             raise ReplayError(404, "REPLAY_CONFIG_NOT_FOUND", "展示配置未登记")
 
+    def _scenario_path(self, source: dict, run_config: dict) -> Path:
+        """在已登记数据源中按正式 SHA 重定位被搬移的场景。"""
+        original = Path(run_config["scenario_path"])
+        mismatched = False
+        if not original.is_symlink() and original.is_file():
+            if sha256_file(original) == source["scenario_sha256"]:
+                return original
+            mismatched = True
+
+        sources = self.database.list_data_sources()
+        sources.sort(key=lambda item: item["source_id"] != source["source_id"])
+        for item in sources:
+            try:
+                candidate, digest = resolve_scenario_in(
+                    Path(item["root_path"]), source["scenario_id"]
+                )
+            except (FileNotFoundError, ValueError):
+                continue
+            if candidate == original:
+                continue
+            if digest == source["scenario_sha256"]:
+                return candidate
+            mismatched = True
+        if mismatched:
+            raise ReplayError(409, "SCENARIO_CHANGED", "正式场景文件哈希已改变")
+        raise ReplayError(409, "SCENARIO_UNAVAILABLE", "正式场景文件已不存在")
+
     def _snapshot(self, source: dict, config_id: str) -> tuple[dict, Path]:
         run_config = json.loads(source["config_json"])
-        scene_path = Path(run_config["scenario_path"])
-        if not scene_path.is_file() or scene_path.is_symlink():
-            raise ReplayError(409, "SCENARIO_UNAVAILABLE", "正式场景文件已不存在")
-        if sha256_file(scene_path) != source["scenario_sha256"]:
-            raise ReplayError(409, "SCENARIO_CHANGED", "正式场景文件哈希已改变")
+        scene_path = self._scenario_path(source, run_config)
         try:
             scene = load_display_scene(scene_path)
             config = (display_config(scene, self._project, json.loads(source["plan_json"])) if config_id == REPLAY_CONFIG_ID

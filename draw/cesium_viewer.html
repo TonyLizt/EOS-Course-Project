@@ -9,6 +9,7 @@
   <script src="fixed-payload-state.js?v=20261016-scale-1"></script>
   <script src="fixed-payload-geometry.js?v=20261016-scale-1"></script>
   <script src="fixed-payload-view.js?v=20261016-scale-1"></script>
+  <script src="trackpad-zoom.js?v=20261016-trackpad-1"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
 
   <style>
@@ -324,6 +325,7 @@
       timeline: true,
       shouldAnimate: true
     });
+    TrackpadZoom.install(viewer, Cesium);
 
     function flyToEarthCenter() {
       const center = Cesium.Cartesian3.fromDegrees(0.0, 0.0, 4.0e7);
