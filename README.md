@@ -12,7 +12,7 @@
 
 本组计划完成三种机制不同的传统算法和一种机器学习算法。新算法会通过同一注册、运行和核验边界进入系统；本仓库当前可选的 `completion_first`、`adaptive_repair` 属于已有基线，**不计作这四种新算法的交付**。
 
-## 当前能力（v0.3.2 六场景接入与规模适配）
+## 当前能力（v0.3.3 回放易用性修复）
 
 - 浏览器选择**已登记的数据源、场景、算法和输出方案**，提交、取消并查看实验状态与正式结果。
 - 启动时自动登记六份 LFS 场景（小型 4、中型 2），相对仓库定位；展示规模、来源和采样预算，缺文件/LFS 指针/SHA 不符时提供诊断，已有同目录登记复用。
@@ -84,11 +84,13 @@ cd /mnt/d/Code/EOS-Course-Project
 ~/eos-course-runtime/.venv/bin/python -m pip install -r requirements-visualization.txt
 ```
 
-成功实验需要先点击“构建回放”；页面显式 POST 后查询 BUILDING/READY/FAILED 状态，失败可重试。Cesium 页面从同一个 manifest 读取五种 READY 资源；选星、播放、拖动和跳转只消费已有样本，不会重新运行算法。配置 ID 从 `GET /api/replay-configs` 获取，当前默认 `fixed-payload-illustration-v1`。
+成功实验首次打开 Cesium 页面时，页面先 GET 状态；若为 NOT_REQUESTED，会自动 POST 一次构建并轮询 BUILDING/READY。构建读取已冻结的正式场景和计划，不会重新运行调度算法。自动申请或构建失败后停止自动重试，显示“重试构建回放”供用户确认。Cesium 页面从同一个 manifest 读取五种 READY 资源；选星、播放、拖动和跳转只消费已有样本，不会重复构建。配置 ID 从 `GET /api/replay-configs` 获取，当前默认 `fixed-payload-illustration-v1`。
 
 回放由独立进程只读正式计划及场景生成，服务校验输入/计划/配置/模型与资源哈希后发布，不修改正式 assignment 或 metrics.RT。轨道缓存身份包括历元解析与传播环境，旧 v1 缓存不会冒充修复后的 v2。姿态首选 5 秒，按时域/星数/任务端点余量确定有效步长，目标 100000 样本；本批 10/20/50 星约 10/20/135 秒，保留任务和转向端点。硬上限仍为 200000 样本、每资源 64 MiB。
 
-页面保留甘特图、卫星本体、独立视锥、WGS84 椭球覆盖、选星/追踪、任务点俯视、精确任务跳转和同钟固定载荷视图。NASA Landsat 8 仅作为通用外观，原卫星 ID 不改名；安装旋转与方形完整 FOV 是明示的展示假设，几何指向与 SLERP 不等于真实动力学或拍摄成功。非敏捷星只给对地示意。模型来源见[资产说明](docs/replay/landsat8-validation.md)。
+页面保留甘特图、卫星本体、独立视锥、WGS84 椭球覆盖、选星/追踪、任务点俯视、精确任务跳转和同钟固定载荷视图。卫星 CZML 点不再绘制，标签与轨道线保留。主跟随相机明确使用由卫星位置生成的 ENU 框架，不读取卫星本体姿态；因此本体与固定镜头仍按回放 quaternion 机动，而使用者相机不会随姿态或自动参考框架判定翻转。任务列和 Fixed Payload View 选星会同步主 Viewer 的选中实体；若使用者已开启跟随，跟随对象同步切换，否则不会擅自开启跟随。主地球支持鼠标滚轮、右键拖曳、触屏 pinch，以及 Chromium/Safari 类触控板双指捏合缩放。NASA Landsat 8 仅作为通用外观，原卫星 ID 不改名；安装旋转与方形完整 FOV 是明示的展示假设，几何指向与 SLERP 不等于真实动力学或拍摄成功。非敏捷星只给对地示意。模型来源见[资产说明](docs/replay/landsat8-validation.md)。
+
+实验保存原场景绝对路径和 SHA-256。若目录之后搬移，回放可在其他已登记数据源中找到同一 `scenario_id`，但只有字节 SHA-256 与正式实验完全一致时才采用；不会用同名的新场景替换历史输入。
 
 **旧 `GET /api/runs/{run_id}/visualization/orbit.czml` 继续保留到组员完成前端迁移复核。**当前课程页面已改读 READY 资源；旧 `visualization/replay` GET 只读取同一 READY 文档，未构建时返回 409。旧配置 `geometry-illustration-v2` 与离线 CLI 暂保留为兼容入口。
 
@@ -119,7 +121,10 @@ node tests/fixed_payload_state.test.cjs
 node tests/fixed_payload_geometry.test.cjs
 node tests/fixed_payload_view.test.cjs
 node tests/replay_acceptance.test.cjs
+node tests/satellite_follow.test.cjs
 ```
+
+可选真实浏览器相机连续性测试位于 `tests/browser/camera-continuity-smoke.*`；它以 60x 连续运行约 31 秒，并覆盖暂停、继续、切星、本体姿态持续变化与主相机方向/距离突变检查。
 
 组员开发前先读 [协作规范](docs/phase2/team_collaboration.md) 和 [算法接入说明](docs/phase2/algorithm_integration.md)；[当前数据库设计与 ER 图](docs/phase2/database_current_v03.md)记录落地模式。接口和数据库目标审核稿分别在 [接口设计](docs/phase2/interface_design_target.md)、[数据库目标设计](docs/phase2/database_design_target.md)。这些审核稿包含尚未完成的目标，当前字段以源码、`/docs` 和 [交接说明](docs/phase2/replay_backend_handoff.md) 为准。每次版本变化及实测证据记在 [COURSE_SETUP.md](COURSE_SETUP.md)。
 
