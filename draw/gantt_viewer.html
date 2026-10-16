@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Satellite Observation Gantt Chart</title>
   <style>
     html, body {
@@ -15,6 +16,13 @@
       overflow: hidden;
     }
 
+    .skip-link {
+      position: fixed; z-index: 100; top: 8px; left: 8px; padding: 10px 14px;
+      border-radius: 5px; background: #ffd166; color: #111827; font-weight: 800;
+      transform: translateY(-160%);
+    }
+    .skip-link:focus { transform: translateY(0); }
+
     #root {
       box-sizing: border-box;
       width: 100%;
@@ -24,7 +32,7 @@
       flex-direction: column;
     }
 
-    h2 {
+    h1 {
       margin: 4px 0 4px 0;
       font-size: 18px;
       color: #67b2ff;
@@ -32,7 +40,7 @@
 
     .small-text {
       font-size: 12px;
-      opacity: 0.8;
+      color: #cbd8ed;
       margin-bottom: 6px;
     }
 
@@ -46,12 +54,13 @@
 
     #timeRangeLabel {
       font-size: 12px;
-      opacity: 0.9;
+      color: #e3ecfa;
     }
 
     #sourceLabel {
       font-size: 11px;
-      opacity: 0.7;
+      color: #c4d2e8;
+      overflow-wrap: anywhere;
     }
 
     #mainArea {
@@ -88,7 +97,7 @@
       display: flex;
       justify-content: space-between;
       font-size: 11px;
-      opacity: 0.85;
+      color: #d6e4f7;
       margin-top: 2px;
     }
 
@@ -115,7 +124,7 @@
       flex: 0 0 auto;
       padding-right: 8px;
       text-align: right;
-      opacity: 0.9;
+      color: #e3ecfa;
       font-weight: 500;
     }
 
@@ -143,6 +152,10 @@
       cursor: default;
       color: #000;
       font-weight: 600;
+      min-width: 24px;
+      min-height: 24px;
+      border: 0;
+      text-align: left;
     }
 
     .gantt-bar.sat-0 { background: rgba(56,189,248,0.9); }
@@ -153,7 +166,7 @@
 
     #legend {
       font-size: 11px;
-      opacity: 0.8;
+      color: #cbd8ed;
       margin-top: 4px;
     }
 
@@ -165,11 +178,29 @@
       padding: 6px 8px;
       margin-top: 4px;
     }
+    :where(a, button, [tabindex]):focus-visible {
+      outline: 3px solid #ffd166;
+      outline-offset: 3px;
+      z-index: 3;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+    @media (max-width: 600px) {
+      html, body { height: auto; min-height: 100%; overflow: auto; }
+      #root { min-height: 100vh; padding: 10px; }
+      #infoBar { align-items: flex-start; flex-direction: column; gap: 4px; }
+      #timeAxis { margin-left: 82px; }
+      .gantt-sat-label { width: 82px; font-size: 10px; overflow-wrap: anywhere; }
+      #ganttScroll { overflow-x: auto; }
+      #ganttContainer, #timeAxis { min-width: 680px; }
+    }
   </style>
 </head>
 <body>
-  <div id="root">
-    <h2>Satellite Observation Gantt Chart</h2>
+  <a class="skip-link" href="#mainArea">Skip to Gantt chart</a>
+  <main id="root">
+    <h1>Satellite Observation Gantt Chart</h1>
     <div class="small-text">
       X-axis represents UTC time, Y-axis represents Satellites. Each bar indicates an observation interval for a specific task.
     </div>
@@ -179,7 +210,7 @@
       <div id="sourceLabel"></div>
     </div>
 
-    <div id="mainArea">
+    <div id="mainArea" tabindex="0" aria-label="Satellite observation schedule chart; horizontally and vertically scrollable">
       <div id="timeAxis"></div>
       <div id="ganttScroll">
         <div id="ganttContainer"></div>
@@ -190,8 +221,8 @@
       Tip: Hover over bars to view satellite/task details and exact start/end times.
     </div>
 
-    <div id="errorBox" style="display:none;"></div>
-  </div>
+    <div id="errorBox" role="alert" style="display:none;"></div>
+  </main>
 
   <script>
     // Logic to read schedule parameter from URL
@@ -332,7 +363,8 @@
         const leftPct = ((s - minT) / totalSpan) * 100;
         const widthPct = ((e - s) / totalSpan) * 100;
 
-        const bar = document.createElement('div');
+        const bar = document.createElement('button');
+        bar.type = 'button';
         bar.className = 'gantt-bar sat-' + (idx % 5);
         bar.style.left = leftPct + '%';
         bar.style.width = Math.max(widthPct, 0.5) + '%';
@@ -342,6 +374,7 @@
           'Sat: ' + d.satellite_id + ' | Task: ' + d.task_id + '\n' +
           'Start: ' + d.start_iso + '\n' +
           'End  : ' + d.end_iso;
+        bar.setAttribute('aria-label', bar.title.replace(/\n/g, '. '));
 
         timeline.appendChild(bar);
       });

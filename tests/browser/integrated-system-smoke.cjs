@@ -49,23 +49,33 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     const view = await context.newPage();
     await view.goto(info.url+await page.locator('#open-cesium').getAttribute('href'),{waitUntil:'domcontentloaded',timeout:60000});
     await view.waitForFunction(() => document.querySelector('#assetStatus').textContent.includes('2 body model'),null,{timeout:60000});
-    await view.locator('.assignment-row').first().click();
+    const payloadTiles = view.locator('.payload-tile');
+    assert.equal(await payloadTiles.count(),2);
+    assert.equal(await view.locator('.payload-tile.is-selected').count(),0);
+    await view.locator('.assignment-select').first().click();
     await view.waitForTimeout(1200);
     const result = await view.evaluate(() => {
       const ds=viewer.dataSources.get(0), now=viewer.clock.currentTime;
       const body=ds.entities.getById('sat-a');
       const cone=viewer.entities.getById('fixed-payload-frustum-cap-sat-a');
+      const nodeTransforms=body.model.nodeTransformations.getValue(now);
+      const recenter=nodeTransforms['Pivot-Layer_0'].translation;
       return {
         time:Cesium.JulianDate.toIso8601(now), animate:viewer.clock.shouldAnimate,
         bodyPosition:!!body.position.getValue(now),bodyOrientation:!!body.orientation.getValue(now),
         satellitePoint:Cesium.defined(body.point),satellitePath:Cesium.defined(body.path),
         trackingFrame:body.trackingReferenceFrame,
+        modelRecenter:[recenter.x,recenter.y,recenter.z],
         enuTrackingFrame:Cesium.TrackingReferenceFrame.ENU,
         selectedId:viewer.selectedEntity && viewer.selectedEntity.id,
         cone:typeof cone.show==='boolean' ? cone.show : cone.show.getValue(now),
         payload:document.querySelector('#payloadViewStatus').textContent,
         models:document.querySelector('#assetStatus').textContent,
-        secondaryAnimate:viewer._payloadViewer.clock.shouldAnimate
+        secondaryAnimate:viewer._payloadViewer.clock.shouldAnimate,
+        payloadTileCount:document.querySelectorAll('.payload-tile').length,
+        selectedPayloadTile:document.querySelector('.payload-tile.is-selected')?.dataset.satelliteId,
+        selectedPayloadPressed:document.querySelector('.payload-tile.is-selected')?.getAttribute('aria-pressed'),
+        geometryStatus:document.querySelector('.assignment-visibility')?.textContent
       };
     });
     assert.ok(result.time.startsWith('2026-01-01T00:00:10'),JSON.stringify(result));
@@ -76,7 +86,13 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     assert.equal(result.satellitePoint,false);
     assert.equal(result.satellitePath,true);
     assert.equal(result.trackingFrame,result.enuTrackingFrame);
+    assert.ok(Math.abs(result.modelRecenter[1]-3.6797085867)<1e-9,JSON.stringify(result));
+    assert.ok(Math.abs(result.modelRecenter[2]+3.6108138651)<1e-9,JSON.stringify(result));
     assert.equal(result.selectedId,'sat-a');
+    assert.equal(result.payloadTileCount,2);
+    assert.equal(result.selectedPayloadTile,'sat-a');
+    assert.equal(result.selectedPayloadPressed,'true');
+    assert.equal(result.geometryStatus,'Visible');
     assert.equal(result.cone,true);
     assert.ok(result.payload.includes('OBSERVING'),JSON.stringify(result));
     await view.evaluate(() => {
@@ -86,6 +102,10 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await view.waitForTimeout(300);
     const endpoint = await view.evaluate(() => document.querySelector('#payloadViewStatus').textContent);
     assert.ok(endpoint.includes('IDLE'),endpoint);
+    await view.keyboard.press('Escape');
+    await view.waitForTimeout(400);
+    assert.equal(await view.locator('.payload-tile.is-selected').count(),0);
+    assert.ok((await view.locator('#payloadViewStatus').innerText()).includes('1 × 1'));
     assert.equal(requests.filter(r => r.url.includes('/visualization/orbit.czml')).length,0);
     assert.equal(requests.filter(r => r.method==='POST' && r.url.endsWith('/replay')).length,1);
     // 首次打开自动申请一次；视图的播放、跳转均不得触发第二次构建。

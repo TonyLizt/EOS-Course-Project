@@ -10,6 +10,8 @@
   const scale = (a, s) => a.map((v) => v * s);
   const dot = (a, b) => a.reduce((sum, v, i) => sum + v * b[i], 0);
   const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const WGS84_A = 6378137.0;
+  const WGS84_B = 6356752.314245179;
   function normalize(a) {
     const length = Math.sqrt(dot(a, a));
     if (!Number.isFinite(length) || length < 1e-12) throw new Error('cannot normalize zero/non-finite vector');
@@ -77,9 +79,24 @@
     const instant = milliseconds(time);
     return segments.find((segment) => segment.satellite_id === satelliteId && milliseconds(segment.start_time) <= instant && instant < milliseconds(segment.end_time)) || null;
   }
+  function targetVisibility(position, target) {
+    if (!Array.isArray(position) || !Array.isArray(target)
+        || position.length < 3 || target.length < 3) return 'UNKNOWN';
+    // A target can see the satellite only when it is above the tangent plane
+    // of the WGS84 ellipsoid at that target.  This catches schedule/replay
+    // mismatches before an occluded target is presented as observable.
+    const normal = [
+      target[0] / (WGS84_A * WGS84_A),
+      target[1] / (WGS84_A * WGS84_A),
+      target[2] / (WGS84_B * WGS84_B)
+    ];
+    const aboveHorizon = dot(sub(position, target), normal);
+    return Number.isFinite(aboveHorizon) && aboveHorizon > 0
+      ? 'VISIBLE' : 'EARTH_OCCLUDED';
+  }
   // 服务端 READY 样本是正式页面的姿态来源；缓存索引避免每帧全表筛选。
   const sampleIndexes = new WeakMap();
-  function sampleState(replay, satelliteId, time) {
+  function sampleState(replay, satelliteId, time, targetPosition) {
     let index = sampleIndexes.get(replay);
     if (!index) {
       index = {samples:new Map(), satellites:new Map(), segments:new Map()};
@@ -122,17 +139,24 @@
     const active=candidate && t<candidate.end ? candidate : null;
     const sensor=satellite.sensors.find(item => active && item.sensor_id===active.sensor_id) || satellite.sensors[0];
     const camera=multiply(body,sensor ? sensor.sensor_mount_quaternion_xyzw : [0,0,0,1]);
+    const target = active && active.task_id && typeof targetPosition === 'function'
+      ? targetPosition(active.task_id) : null;
+    const visibility = active ? targetVisibility(position, target) : 'NOT_APPLICABLE';
+    const geometryValid = !active || visibility === 'VISIBLE';
+    const warnings = (replay.warnings || []).slice();
+    if (visibility === 'EARTH_OCCLUDED') warnings.push('TARGET_EARTH_OCCLUDED');
     return {
       satellite_id:satelliteId, position_ecef_m:position,
       body_to_ecef_quaternion_xyzw:body, camera_to_ecef_quaternion_xyzw:camera,
       direction_ecef:rotate(camera,[0,0,-1]), up_ecef:rotate(camera,[0,1,0]),
       phase:active ? active.phase : 'IDLE', task_id:active && active.task_id,
       sensor_id:active && active.sensor_id, activation_time:active && active.activation_time,
-      cone_visible:Boolean(active), quality:a.quality, warnings:replay.warnings || []
+      cone_visible:Boolean(active) && geometryValid, target_visibility:visibility,
+      geometry_valid:geometryValid, quality:a.quality, warnings:warnings
     };
   }
   function evaluateSatelliteState(replay, satelliteId, time, positionAt, targetPosition) {
-    if (Array.isArray(replay.samples)) return sampleState(replay, satelliteId, time);
+    if (Array.isArray(replay.samples)) return sampleState(replay, satelliteId, time, targetPosition);
     const position = positionAt(satelliteId, time);
     if (!position) return { satellite_id: satelliteId, phase: 'IDLE', quality: 'missing', warnings: ['ORBIT_DATA_MISSING'] };
     const satellite = replay.satellites.find((item) => item.id === satelliteId);
@@ -163,14 +187,21 @@
     const sensor = satellite.sensors.find((item) => item.sensor_id === sensorId) || satellite.sensors[0];
     const mount = sensor ? sensor.sensor_mount_quaternion_xyzw : [0, 0, 0, 1];
     const bodyQuaternion = multiply(cameraQuaternion, conjugate(mount));
+    const target = taskId && typeof targetPosition === 'function' ? targetPosition(taskId) : null;
+    const visibility = active ? targetVisibility(position, target) : 'NOT_APPLICABLE';
+    const geometryValid = !active || visibility === 'VISIBLE';
+    const warnings = (replay.warnings || []).slice();
+    if (visibility === 'EARTH_OCCLUDED') warnings.push('TARGET_EARTH_OCCLUDED');
     return {
       satellite_id: satelliteId, position_ecef_m: position,
       body_to_ecef_quaternion_xyzw: bodyQuaternion, camera_to_ecef_quaternion_xyzw: cameraQuaternion,
       direction_ecef: rotate(cameraQuaternion, [0, 0, -1]), up_ecef: rotate(cameraQuaternion, [0, 1, 0]),
       phase: active ? active.phase : 'IDLE', task_id: taskId, sensor_id: sensorId,
-      activation_time: active && active.activation_time, cone_visible: Boolean(active),
-      quality: replay.manifest.attitude_source, warnings: replay.warnings || []
+      activation_time: active && active.activation_time,
+      cone_visible: Boolean(active) && geometryValid, target_visibility: visibility,
+      geometry_valid: geometryValid, quality: replay.manifest.attitude_source, warnings: warnings
     };
   }
-  return { normalizeQuaternion, multiply, rotate, pointingQuaternion, slerp, phaseAt, evaluateSatelliteState };
+  return { normalizeQuaternion, multiply, rotate, pointingQuaternion, slerp, phaseAt,
+    targetVisibility, evaluateSatelliteState };
 }));
