@@ -349,10 +349,12 @@ def recompute_file(scenario, out, *, calculator=None, data_path=None,
     info_before = build_info()
     data_file = None
     data_sha = None
+    window_boundary_version = None
     if calculator is None:
-        from utils.visibility import _find_orekit_data_zip
+        from utils.visibility import _find_orekit_data_zip, VISIBILITY_ALGORITHM_VERSION
         data_file = _find_orekit_data_zip(data_path)
         data_sha = file_sha256(data_file)
+        window_boundary_version = VISIBILITY_ALGORITHM_VERSION
     candidate, validation = recompute_data(scene, calculator=calculator, data_path=data_path)
     payload = canonical_bytes(candidate) + b"\n"
     result_sha = hashlib.sha256(payload).hexdigest()
@@ -370,6 +372,7 @@ def recompute_file(scenario, out, *, calculator=None, data_path=None,
             pass
     provenance = dict(info_before, scenario_physics_version=PHYSICS_VERSION,
                       epoch_parser_version=EPOCH_PARSER_VERSION, propagation_version=propagation_version,
+                      window_boundary_version=window_boundary_version,
                       orekit_data_sha256=data_sha, parent_scenario_sha256=source_sha,
                       source_scenario_id=scene["scenario_id"], scenario_sha256=result_sha,
                       static_data_sha256=digest(static_data(candidate)),

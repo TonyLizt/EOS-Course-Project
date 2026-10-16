@@ -56,3 +56,22 @@ for(let i=0;i<50;i++) {
 }
 assert.equal(state.evaluateSatelliteState(many,'absent','2026-01-01T00:00:03Z',forbidden,forbidden).quality,'missing');
 console.log('50-satellite indexed state isolation passed');
+
+// Microsecond phase boundaries and READY interpolation must not pass through
+// Date's millisecond truncation. These are new regressions, not changed oracles.
+const microSegments=[{satellite_id:'S1',phase:'OBSERVING',task_id:'micro',sensor_id:'camera',
+ start_time:'2025-11-18T12:00:00.123456Z',end_time:'2025-11-18T12:00:00.123458Z'}];
+assert.equal(state.phaseAt(microSegments,'S1','2025-11-18T12:00:00.123455Z'),null);
+assert.equal(state.phaseAt(microSegments,'S1','2025-11-18T20:00:00.123456+08:00').task_id,'micro');
+assert.equal(state.phaseAt(microSegments,'S1','2025-11-18T12:00:00.123457Z').task_id,'micro');
+assert.equal(state.phaseAt(microSegments,'S1','2025-11-18T12:00:00.123458Z'),null);
+const microReplay={...replay,segments:microSegments,samples:[
+ {...replay.samples[0],time:'2025-11-18T12:00:00.123456Z',position_ecef_m:[7000000,0,0]},
+ {...replay.samples[1],time:'2025-11-18T12:00:00.123458Z',position_ecef_m:[7000002,0,0]}
+]};
+const microMiddle=state.evaluateSatelliteState(microReplay,'S1','2025-11-18T12:00:00.123457Z',forbidden,forbidden);
+close(microMiddle.position_ecef_m,[7000001,0,0]);
+assert.equal(microMiddle.phase,'OBSERVING');
+assert.equal(state.evaluateSatelliteState(microReplay,'S1','2025-11-18T12:00:00.123458Z',forbidden,forbidden).phase,'IDLE');
+assert.throws(()=>state.phaseAt(microSegments,'S1','not-a-time'),/time/i);
+console.log('microsecond phase and READY interpolation passed');
