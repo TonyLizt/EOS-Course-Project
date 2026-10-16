@@ -75,6 +75,7 @@ def build(job_path: Path) -> None:
                 "algorithm_code_sha":job["algorithm_code_sha"],
                 "provenance_warning":job["provenance_warning"],
                 "scenario_provenance":job["run_config"].get("scenario_provenance",{}),
+                "sampling_policy":document["replay_config"]["display_sampling_policy"],
                 "diagnostics_summary":{"warning_count":len(document["warnings"])+len(document["diagnostics"]),
                                        "sample_count":len(samples),"segment_count":len(document["segments"])}}
     _write(directory/"manifest.json", manifest)

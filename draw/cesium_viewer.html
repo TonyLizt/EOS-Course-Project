@@ -6,9 +6,9 @@
   <title>Scenario - Satellite Schedule Viewer</title>
 
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Cesium.js"></script>
-  <script src="fixed-payload-state.js?v=20261016-integrated-1"></script>
-  <script src="fixed-payload-geometry.js?v=20261016-integrated-1"></script>
-  <script src="fixed-payload-view.js?v=20261016-integrated-1"></script>
+  <script src="fixed-payload-state.js?v=20261016-scale-1"></script>
+  <script src="fixed-payload-geometry.js?v=20261016-scale-1"></script>
+  <script src="fixed-payload-view.js?v=20261016-scale-1"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
 
   <style>
@@ -443,7 +443,9 @@
           }
         }
       }
-      message.textContent='回放已就绪 · 几何展示示意；不代表真实机动或拍摄成功。';
+      const policy=state.manifest.sampling_policy;
+      message.textContent='回放已就绪 · '+(policy ? '展示采样 '+policy.attitude_step_s+' 秒；任务/转向端点保留。' : '')
+        +'几何示意，不代表真实机动或拍摄成功。';
       buildButton.hidden=true;
       const resources=state.manifest.resources;
       const [ds,schedule,replay]=await Promise.all([
@@ -1177,6 +1179,7 @@
         ));
       });
       const stateCache = new Map();
+      let stateCacheTime = null;
       const toArray = (value) => value ? [value.x, value.y, value.z] : null;
       const positionAt = (satelliteId, isoTime) => {
         const entity = ds.entities.getById(satelliteId);
@@ -1186,14 +1189,15 @@
       };
       const targetPosition = (taskId) => toArray(targets.get(taskId));
       const stateAt = (satelliteId, time) => {
-        const key = satelliteId + ':' + Cesium.JulianDate.toIso8601(time);
-        if (stateCache.has(key)) return stateCache.get(key);
+        const instant=Cesium.JulianDate.toIso8601(time);
+        // 同一帧按星缓存；50 星的模型/视锥/载荷可复用，最多保留一个时刻。
+        if(stateCacheTime!==instant) {stateCache.clear();stateCacheTime=instant;}
+        if (stateCache.has(satelliteId)) return stateCache.get(satelliteId);
         try {
           const value = FixedPayloadState.evaluateSatelliteState(
             replay, satelliteId, Cesium.JulianDate.toIso8601(time), positionAt, targetPosition
           );
-          stateCache.clear();
-          stateCache.set(key, value);
+          stateCache.set(satelliteId, value);
           return value;
         } catch (error) {
           console.warn('Fixed payload state unavailable for ' + satelliteId, error);

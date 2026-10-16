@@ -1,6 +1,6 @@
 # 当前数据库设计与 ER 图（v0.3 回放后端）
 
-- 更新：2026-10-16；程序 v0.3.1；实现分支：fix/restore-integrated-phase2；物理模式以 eos_system/storage.py 为准。
+- 更新：2026-10-16；程序 v0.3.2；实现分支：fix/restore-integrated-phase2；物理模式以 eos_system/storage.py 为准。
 - 运行位置：Ubuntu 22.04/WSL2 的 EOS_RUNTIME_DIR/results.sqlite3。Windows 浏览器只通过 HTTP 使用。
 - 当前 PRAGMA user_version=3。新库直接创建 v3；v1/v2 库先做 SQLite 在线备份，再在一个事务内增加回放表和索引。版本高于 3 拒绝启动。
 
@@ -74,3 +74,9 @@ Controller 启动取得单实例锁后，将旧 BUILDING 标 FAILED/REPLAY_BUILD
 本次保持 user_version=3，不增加新的来源表；RunConfig 的 scenario_provenance 存入 runs.config_json，旧记录缺失时使用空对象。新请求记录物理版本、父场景 SHA、epoch/传播版本及来源 sidecar SHA；Worker 准备与独立核验复查快照。JSON/CSV 导出与回放 manifest 保留来源。来源字段不会自动证明物理验收通过；正式证据由数据负责人提供。
 
 回放提交与实验删除共用服务锁；资源读取和缓存删除互斥。READY 资源损坏落 FAILED，失败重试递增 build_attempt。缓存包含实际源码与模型内容身份、传播环境身份，不能仅以 Git HEAD 或场景文件名判定相同。当前资源文件格式与限制见[修复集成交接](restore_integration_handoff.md)。
+
+## v0.3.2 登记与预算补充
+
+ER 关系与模式仍 v3。内置目录使用现有 data_sources，相对仓库定位；同路径手工项复用，重复启动不重复插入，与输出重叠则警告且不登记。旧 run 路径与来源快照不回填。
+
+实际步长、样本目标和端点余量保存于现有 replay_config_json 及 manifest.sampling_policy，通过配置 SHA 参与缓存，不增加逐帧 SQLite 表。清单来源仍 unknown，不是物理验收注册。见[六场景交接](six_scenario_scale_handoff.md)。

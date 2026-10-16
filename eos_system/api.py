@@ -25,6 +25,7 @@ from .storage import Database, now
 from .replay_service import ReplayError, ReplayService, REPLAY_CONFIG_ID
 from .visualization import OrbitUnavailable, orbit_cache_path
 from .provenance import capture_provenance
+from .scenario_catalog import ScenarioCatalog
 from .config import sha256_file
 
 
@@ -38,6 +39,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
     database = Database(settings.database_path)
     database.ensure_defaults(settings.scenario_dir, settings.runtime_dir)
+    catalog = ScenarioCatalog(Path(__file__).resolve().parent.parent)
+    catalog_warnings = catalog.register_sources(database)
     controller = Controller(settings, database)
     replay = ReplayService(settings, database)
 
@@ -94,11 +97,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         source = database.get_data_source(source_id)
         if source is None:
             raise HTTPException(status_code=404, detail="数据源未登记")
-        return {"source_id": source_id, "items": list_scenarios_in(Path(source["root_path"]), source_id)}
+        return {"source_id": source_id, "items": catalog.list_scenarios(Path(source["root_path"]), source_id)}
 
     @app.get("/api/data-sources")
     def data_sources():
-        return {"items": database.list_data_sources()}
+        return {"items": database.list_data_sources(), "catalog_warnings": catalog_warnings}
 
     @app.post("/api/data-sources", status_code=201)
     def register_data_source(request: DirectoryRegistration):
@@ -155,6 +158,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="数据源或输出方案未登记")
         try:
             scene, digest = resolve_scenario_in(Path(source["root_path"]), request.scenario_id)
+            catalog.verify_identity(scene, digest)
             provenance = capture_provenance(scene, digest)
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -255,7 +259,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"default_id": REPLAY_CONFIG_ID, "items": [{
             "replay_config_id":REPLAY_CONFIG_ID, "name":"固定载荷回放（几何示意）",
             "supports_viewer":True, "attitude_source":"geometry_pointing_illustration",
-            "attitude_step_s":5, "max_samples":200000,
+            # 兼容旧客户端的字段，但明确它是首选值；实际步长读 READY manifest。
+            "attitude_step_s":5, "attitude_step_is_preferred":True,
+            "sampling_strategy":"adaptive_budget_v1", "preferred_attitude_step_s":5,
+            "target_samples":100000, "max_samples":200000, "max_attitude_step_s":300,
         }]}
 
     @app.post("/api/runs/{run_id}/replay")

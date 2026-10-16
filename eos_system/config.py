@@ -10,6 +10,7 @@ import os
 import re
 import tempfile
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 
@@ -77,6 +78,23 @@ def require_writable_directory(path: Path) -> None:
         raise ValueError(f"输出目录不可写：{path}") from exc
 
 
+@lru_cache(maxsize=64)
+def _catalog_sha256(path: str, size: int, modified: int, changed: int) -> str:
+    """仅目录列表复用未变化文件的 SHA；实验提交仍调用 sha256_file 重新校验。"""
+    return sha256_file(Path(path))
+
+
+def _listing_sha(path: Path) -> str:
+    stat = path.stat()
+    digest = _catalog_sha256(str(path.resolve()), stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+    after = path.stat()
+    if (stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns) != (
+        after.st_size, after.st_mtime_ns, after.st_ctime_ns
+    ):
+        raise ValueError("列目录期间场景发生变化，请刷新后重试")
+    return digest
+
+
 def list_scenarios_in(root: Path, source_id: str) -> list[dict]:
     """只列出已登记目录中的直接子文件，防止页面指定任意磁盘路径。"""
     if not root.is_dir():
@@ -85,7 +103,7 @@ def list_scenarios_in(root: Path, source_id: str) -> list[dict]:
     for path in sorted(root.glob("*.json")):
         if not path.is_file() or path.is_symlink():
             continue
-        result.append({"source_id": source_id, "scenario_id": path.stem, "name": path.stem, "sha256": sha256_file(path)})
+        result.append({"source_id": source_id, "scenario_id": path.stem, "name": path.stem, "sha256": _listing_sha(path)})
     return result
 
 

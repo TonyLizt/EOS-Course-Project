@@ -270,6 +270,19 @@ class Database:
                        "ON CONFLICT(profile_id) DO UPDATE SET root_path=excluded.root_path",
                        (str(artifacts.resolve()), now()))
 
+    def ensure_catalog_source(self, source_id: str, name: str, root: Path) -> None:
+        """内置场景随仓库定位；重复启动/已有手工登记均不产生同路径重复项。"""
+        with self.write() as db:
+            existing = db.execute("SELECT source_id FROM data_sources WHERE root_path=?",
+                                  (str(root),)).fetchone()
+            if existing:
+                return
+            db.execute(
+                "INSERT INTO data_sources(source_id,name,root_path,created_at) VALUES (?,?,?,?) "
+                "ON CONFLICT(source_id) DO UPDATE SET name=excluded.name,root_path=excluded.root_path",
+                (source_id, name, str(root), now()),
+            )
+
     def list_data_sources(self) -> list[dict]:
         with self.connect() as db:
             return [dict(row) for row in db.execute("SELECT * FROM data_sources ORDER BY created_at,source_id")]
