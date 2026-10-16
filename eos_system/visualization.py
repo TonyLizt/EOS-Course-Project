@@ -20,7 +20,10 @@ class OrbitUnavailable(RuntimeError):
     """Java/Orekit 缺失或轨道生成失败时的受控错误。"""
 
 
-ORBIT_STEP_S = 60
+# Display-orbit sampling is independent from the scenario's 1 s visibility
+# grid.  At 300 s Cesium's former linear interpolation cut across a LEO orbit
+# by as much as 92 km; 30 s samples use a distinct ``s30`` cache identity.
+ORBIT_STEP_S = 30
 ORBIT_CACHE_VERSION = 2
 
 

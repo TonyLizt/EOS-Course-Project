@@ -20,6 +20,12 @@ from eos_system.storage import Database, now
 from eos_system.visualization import ORBIT_CACHE_VERSION, ORBIT_STEP_S, orbit_cache_path, orbit_cache_file
 
 
+class OrbitCacheIdentityTests(unittest.TestCase):
+    def test_dense_display_samples_have_distinct_cache_identity(self):
+        self.assertEqual(ORBIT_STEP_S, 30)
+        self.assertEqual(ORBIT_CACHE_VERSION, 2)
+
+
 class RegistryTests(unittest.TestCase):
     def test_custom_algorithm_can_define_its_own_nested_parameters(self):
         class OwnParams(AlgorithmParams):
