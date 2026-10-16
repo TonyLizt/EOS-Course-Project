@@ -36,8 +36,29 @@
       return true;
     }
 
+    function follow(satelliteId, viewFrom) {
+      const entity = entities.get(satelliteId);
+      if (!entity) return false;
+      if (viewFrom) entity.viewFrom = viewFrom;
+      viewer._cameraControlGeneration = (viewer._cameraControlGeneration || 0) + 1;
+      viewer._cameraControlSource = 'fixed-payload-grid';
+      viewer.selectedEntity = entity;
+      viewer.trackedEntity = entity;
+      return true;
+    }
+
+    function stopAutoFollow(satelliteId) {
+      if (entityId(viewer.trackedEntity) !== satelliteId) return false;
+      viewer._cameraControlGeneration = (viewer._cameraControlGeneration || 0) + 1;
+      viewer._cameraControlSource = 'fixed-payload-grid-release';
+      viewer.trackedEntity = undefined;
+      return true;
+    }
+
     viewer._selectMainSatellite = select;
-    return { entities, select };
+    viewer._followMainSatellite = follow;
+    viewer._stopMainSatelliteAutoFollow = stopAutoFollow;
+    return { entities, select, follow, stopAutoFollow };
   }
 
   return { install };

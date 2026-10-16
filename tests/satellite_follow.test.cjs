@@ -29,4 +29,15 @@ viewer.trackedEntity = target;
 assert.equal(controller.select('SAT-A'), true);
 assert.equal(viewer.trackedEntity, target, 'non-satellite camera ownership must not be overwritten');
 assert.equal(controller.select('unknown'), false);
+
+const viewFrom = { x: 0, y: -120, z: 35 };
+assert.equal(controller.follow('SAT-B', viewFrom), true);
+assert.equal(viewer.selectedEntity, satelliteB);
+assert.equal(viewer.trackedEntity, satelliteB);
+assert.equal(satelliteB.viewFrom, viewFrom);
+assert.equal(viewer._cameraControlSource, 'fixed-payload-grid');
+assert.equal(controller.stopAutoFollow('SAT-A'), false, 'must not release another owner');
+assert.equal(controller.stopAutoFollow('SAT-B'), true);
+assert.equal(viewer.trackedEntity, undefined);
+assert.equal(viewer._cameraControlSource, 'fixed-payload-grid-release');
 console.log('satellite follow tests passed');

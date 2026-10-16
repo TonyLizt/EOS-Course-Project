@@ -350,6 +350,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "satellite-follow.js",
                             media_type="text/javascript")
 
+    @app.get("/visualization/camera-diagnostics.js")
+    def camera_diagnostics_script():
+        return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "camera-diagnostics.js",
+                            media_type="text/javascript")
+
     @app.get("/visualization/replay-build-policy.js")
     def replay_build_policy_script():
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "replay-build-policy.js",

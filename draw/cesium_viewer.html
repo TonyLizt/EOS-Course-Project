@@ -12,7 +12,8 @@
   <script src="fixed-payload-view.js?v=20261016-scale-1"></script>
   <script src="replay-build-policy.js?v=20261016-auto-build-1"></script>
   <script src="trackpad-zoom.js?v=20261016-trackpad-1"></script>
-  <script src="satellite-follow.js?v=20261016-camera-frame-1"></script>
+  <script src="satellite-follow.js?v=20261017-auto-follow-1"></script>
+  <script src="camera-diagnostics.js?v=20261017-1"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
 
   <style>
@@ -256,7 +257,8 @@
     }
     .payload-tile:hover { border-color: #9bd1ff; }
     .payload-tile.is-selected {
-      grid-column: 1 / -1;
+      grid-column: span 2;
+      grid-row: span 2;
       border-color: #67b2ff;
       box-shadow: 0 0 0 2px #0b1020, 0 0 0 5px #67b2ff;
     }
@@ -405,7 +407,7 @@
         <button id="togglePayloadView" type="button" aria-expanded="true"
           aria-controls="payloadSatelliteGrid">Hide grid</button>
       </div>
-      <p class="payload-grid-hint" id="payloadGridHint">All fixed-camera feeds are square. Select one to expand it to a 4 × 4 focus tile; select it again or press Escape to return to 1 × 1.</p>
+      <p class="payload-grid-hint" id="payloadGridHint">All fixed-camera feeds are square. Select one to expand it to a 2 × 2 focus tile and follow that satellite; select it again or press Escape to return to 1 × 1.</p>
       <div id="payloadSatelliteGrid" role="group" aria-label="Satellite fixed-camera feeds" aria-describedby="payloadGridHint"></div>
       <div id="payloadRenderStage" aria-hidden="true" inert><div id="payloadViewContainer"></div></div>
       <div id="payloadViewStatus" class="asset-status" role="status" aria-live="polite">Replay satellites unavailable.</div>
@@ -458,6 +460,9 @@
       cesiumRoot, { childList: true, subtree: true }
     );
     TrackpadZoom.install(viewer, Cesium);
+    CameraDiagnostics.install(viewer, Cesium, {
+      enabled: new URLSearchParams(window.location.search).get('debug_camera') === '1'
+    });
 
     function flyToEarthCenter() {
       const center = Cesium.Cartesian3.fromDegrees(0.0, 0.0, 4.0e7);
@@ -1019,7 +1024,7 @@
           : 'Geometry unavailable';
         tile.button.classList.toggle('is-occluded', Boolean(pose && pose.geometry_valid === false));
         tile.button.setAttribute('aria-label', FixedPayloadView.statusText(satelliteId, pose)
-          + (selectedId === satelliteId ? '. Selected 4 by 4 focus tile.' : '. 1 by 1 tile.'));
+          + (selectedId === satelliteId ? '. Selected 2 by 2 focus tile.' : '. 1 by 1 tile.'));
         if (!pose || !sensor) return;
         const frustum = FixedPayloadView.opticalFrustum(sensor);
         const secondary = applyRenderer(frustum);
@@ -1049,7 +1054,7 @@
         });
         status.textContent = selectedId
           ? FixedPayloadView.statusText(selectedId, stateAt(selectedId, viewer.clock.currentTime))
-            + ' · 4 × 4 focus tile'
+            + ' · 2 × 2 focus tile · auto-follow active'
           : 'All ' + replay.satellites.length + ' fixed-camera feeds · 1 × 1 tiles';
       };
       const setSelection = (satelliteId) => {
@@ -1124,9 +1129,16 @@
           const wasSelected = selectedId === satellite.id;
           selectSatellite(satellite.id, true);
           if (wasSelected) {
+            if (viewer._stopMainSatelliteAutoFollow) {
+              viewer._stopMainSatelliteAutoFollow(satellite.id);
+            }
             if (viewer.selectedEntity && viewer.selectedEntity.id === satellite.id) {
               viewer.selectedEntity = undefined;
             }
+          } else if (viewer._followMainSatellite) {
+            viewer._followMainSatellite(
+              satellite.id, new Cesium.Cartesian3(0, -120, 35)
+            );
           } else if (viewer._selectMainSatellite) viewer._selectMainSatellite(satellite.id);
         });
         grid.appendChild(button);
@@ -1162,6 +1174,9 @@
       });
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && selectedId) {
+          if (viewer._stopMainSatelliteAutoFollow) {
+            viewer._stopMainSatelliteAutoFollow(selectedId);
+          }
           selectSatellite(null, false);
           if (viewer.selectedEntity && satelliteById.has(viewer.selectedEntity.id)) {
             viewer.selectedEntity = undefined;

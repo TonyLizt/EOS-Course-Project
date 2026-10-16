@@ -48,7 +48,14 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await page.waitForFunction(id => document.querySelector('#selected-run').textContent===id,info.run_id);
     const view = await context.newPage();
     await view.goto(info.url+await page.locator('#open-cesium').getAttribute('href'),{waitUntil:'domcontentloaded',timeout:60000});
-    await view.waitForFunction(() => document.querySelector('#assetStatus').textContent.includes('2 body model'),null,{timeout:60000});
+    await view.waitForFunction(() => document.querySelector('#assetStatus').textContent.includes('2 body model'),null,{timeout:60000})
+      .catch(async error => {
+        const pageState=await view.evaluate(() => ({
+          asset:document.querySelector('#assetStatus')?.textContent,
+          replay:document.querySelector('#replayBuildStatus')?.textContent
+        }));
+        throw new Error(error.message+' '+JSON.stringify({pageState,errors,failedResponses}));
+      });
     const payloadTiles = view.locator('.payload-tile');
     assert.equal(await payloadTiles.count(),2);
     assert.equal(await view.locator('.payload-tile.is-selected').count(),0);
@@ -106,10 +113,40 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await view.waitForTimeout(400);
     assert.equal(await view.locator('.payload-tile.is-selected').count(),0);
     assert.ok((await view.locator('#payloadViewStatus').innerText()).includes('1 × 1'));
+    await payloadTiles.first().click();
+    await view.waitForTimeout(800);
+    const autoFollow = await view.evaluate(() => {
+      const tile=document.querySelector('.payload-tile.is-selected');
+      const entity=viewer.trackedEntity;
+      const position=entity.position.getValue(viewer.clock.currentTime);
+      return {
+        trackedId:entity && entity.id,
+        selectedId:viewer.selectedEntity && viewer.selectedEntity.id,
+        gridColumnStart:getComputedStyle(tile).gridColumnStart,
+        gridRowStart:getComputedStyle(tile).gridRowStart,
+        range:Cesium.Cartesian3.distance(viewer.camera.positionWC,position),
+        cameraBeforeEscape:Cesium.Cartesian3.clone(viewer.camera.positionWC)
+      };
+    });
+    assert.equal(autoFollow.trackedId,'sat-a');
+    assert.equal(autoFollow.selectedId,'sat-a');
+    assert.equal(autoFollow.gridColumnStart,'span 2');
+    assert.equal(autoFollow.gridRowStart,'span 2');
+    assert.ok(autoFollow.range<500,JSON.stringify(autoFollow));
+    await view.keyboard.press('Escape');
+    await view.waitForTimeout(400);
+    const released = await view.evaluate(before => ({
+      trackedId:viewer.trackedEntity && viewer.trackedEntity.id,
+      selectedTiles:document.querySelectorAll('.payload-tile.is-selected').length,
+      cameraDelta:Cesium.Cartesian3.distance(viewer.camera.positionWC,before)
+    }),autoFollow.cameraBeforeEscape);
+    assert.equal(released.trackedId,undefined);
+    assert.equal(released.selectedTiles,0);
+    assert.ok(released.cameraDelta<1,JSON.stringify(released));
     assert.equal(requests.filter(r => r.url.includes('/visualization/orbit.czml')).length,0);
     assert.equal(requests.filter(r => r.method==='POST' && r.url.endsWith('/replay')).length,1);
     // 首次打开自动申请一次；视图的播放、跳转均不得触发第二次构建。
-    console.log('CESIUM_UI_OK '+JSON.stringify({result,endpoint,legacyOrbitRequests:0,errors,failedResponses}));
+    console.log('CESIUM_UI_OK '+JSON.stringify({result,endpoint,autoFollow,released,legacyOrbitRequests:0,errors,failedResponses}));
     assert.equal(errors.length,0,JSON.stringify({errors,failedResponses}));
     await view.close();
     await page.locator('tr[data-id="'+emptyRun+'"]').click();

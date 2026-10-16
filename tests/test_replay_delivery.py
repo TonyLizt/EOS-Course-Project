@@ -104,6 +104,7 @@ class ReplayDeliveryTests(unittest.TestCase):
                 "/visualization/fixed-payload-view.js",
                 "/visualization/trackpad-zoom.js",
                 "/visualization/satellite-follow.js",
+                "/visualization/camera-diagnostics.js",
                 "/visualization/replay-build-policy.js",
                 "/visualization/assets/satellites/landsat8.glb",
             ):
