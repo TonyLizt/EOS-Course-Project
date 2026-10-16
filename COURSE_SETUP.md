@@ -1,3 +1,14 @@
+## E3 / E4 最新 main 独立审查（2026-10-16）
+
+- 基线 main daf4254（PR #12），分支 codex/e3-e4-audit；新增只读审查工具和报告，不改生产实现/接口/数据库。
+- 整秒 UTC、EME2000/ITRF 对照及缓存 v2 隔离通过；四份候选静态/SHA 一致，当前 Manifest 为 4 WARN、0 FAIL，原侧车仍 candidate_only。
+- 阻断：CZML 小数秒丢失（本例最高约 941 m 错位）、非整倍数末端缺覆盖；当前 main 尚缺 grid_v2/lazy 集成，GPM/M009、M020 局部复验仍截短 26/49 秒。
+- 专项 Python 131 项：129 通过、1 跳过、1 失败（审查工作树 LFS 指针；主目录六份 ready）。回放集成和 Node 四组通过；全量 Python 存在 Controller/HTTP FAIL 并在 240 秒超时，未宣称整体通过。
+- E3/E4 尚未放行；先关闭时间/扫描/连续拍摄策略及来源审核事项，再由负责人审核发布包、注册并创建新算法实验。不得沿用旧指标。Cesium 浏览器插值仍由梁兆榮验收。
+- 完整证据、复现命令、四候选表及后续顺序见 [e3_e4_main_audit_2026-10-16.md](docs/phase2/e3_e4_main_audit_2026-10-16.md)。
+
+---
+
 ## v0.3.2：六场景接入与规模适配（2026-10-16）
 
 - 分支 feat/six-scenario-scale-adaptation，基于 main f0997ed（PR #11）；李泽同已授权本轮提交、推送及 PR 交接。
