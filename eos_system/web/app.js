@@ -3,6 +3,8 @@ const $ = (id) => document.getElementById(id);
 let selectedId = null;
 let currentAlgorithms = [];
 let outputProfiles = [];
+let replayConfigId = null;
+let replayPendingId = null;
 const pageSize = 30;
 let pageOffset = 0;
 let deletingRunId = null;
@@ -20,13 +22,14 @@ async function api(path, options = {}) {
 
 async function bootstrap() {
   try {
-    const [health, sources, profiles, algorithms] = await Promise.all([
-      api("/api/health"), api("/api/data-sources"), api("/api/output-profiles"), api("/api/algorithms")
+    const [health, sources, profiles, algorithms, replayConfigs] = await Promise.all([
+      api("/api/health"), api("/api/data-sources"), api("/api/output-profiles"), api("/api/algorithms"), api("/api/replay-configs")
     ]);
     $("health").textContent = `服务已连接 · ${health.version}`;
     $("source").innerHTML = sources.items.map((s) => `<option value="${escapeHtml(s.source_id)}">${escapeHtml(s.name)}</option>`).join("");
     outputProfiles = profiles.items;
     $("output-profile").innerHTML = profiles.items.map((p) => `<option value="${escapeHtml(p.profile_id)}">${escapeHtml(p.name)}</option>`).join("");
+    replayConfigId = replayConfigs.default_id;
     currentAlgorithms = algorithms.items;
     $("algorithm").innerHTML = currentAlgorithms.map((a) => `<option value="${escapeHtml(a.algorithm_id)}">${escapeHtml(a.name)}</option>`).join("");
     await loadScenarios();
@@ -147,6 +150,9 @@ async function refresh() {
 }
 
 function clearDetail() {
+  $("replay-status").textContent = "";
+  $("scenario-provenance").textContent = "";
+  $("build-replay").hidden = true;
   $("selected-run").textContent = "选择列表中的实验";
   $("detail-status").textContent = "尚未选择";
   $("detail-status").className = "badge muted";
@@ -178,6 +184,10 @@ function showDetail(run) {
   $("export-csv").href = `/api/runs/${encodeURIComponent(run.run_id)}/export?format=csv`;
   $("open-gantt").href = `/visualization/gantt/${encodeURIComponent(run.run_id)}`;
   $("open-cesium").href = `/visualization/cesium/${encodeURIComponent(run.run_id)}`;
+  $("scenario-provenance").textContent = "场景物理版本："+(run.config.scenario_provenance?.scenario_physics_version || "legacy_unknown")+"；来源："+(run.config.scenario_provenance?.provenance_status || "unknown");
+  $("build-replay").hidden = run.status !== "SUCCEEDED";
+  if (run.status === "SUCCEEDED") refreshReplay(run.run_id);
+  else $("replay-status").textContent = "";
   $("detail-error").textContent = run.error ? `${run.error.code}: ${run.error.message}` : "";
   const files = (run.exports || []).filter((item) => item.artifact_path || item.error_message);
   $("files").innerHTML = files.length ? files.map((item) => `<li>${escapeHtml(item.format.toUpperCase())} · ${escapeHtml(item.artifact_path || item.error_message)}</li>`).join("")
@@ -193,6 +203,41 @@ function showDetail(run) {
   $("assignments").innerHTML = assignments.slice(0, 100).map((a) => `<tr><td>${escapeHtml(a.task_id)}</td><td>${escapeHtml(a.satellite_id)}</td><td>${escapeHtml(a.sat_start_time)}</td><td>${escapeHtml(a.sat_end_time)}</td></tr>`).join("");
 }
 
+// 轮询只 GET；独立按钮才 POST，避免页面刷新、选星触发昂贵构建。
+async function refreshReplay(runId) {
+  try {
+    const state=await api('/api/runs/'+encodeURIComponent(runId)+'/replay');
+    if (selectedId!==runId) return;
+    const labels={NOT_REQUESTED:'尚未构建',BUILDING:'正在构建',READY:'已就绪',FAILED:'构建失败'};
+    $("replay-status").textContent='回放：'+labels[state.replay_status]+(state.error ? ' · '+state.error.message : '');
+    $("build-replay").disabled=state.replay_status==='BUILDING' || replayPendingId===runId;
+    $("build-replay").textContent=state.replay_status==='FAILED' ? '重试构建回放' : state.replay_status==='READY' ? '复用已就绪回放' : '构建回放';
+  } catch(error) {
+    if(selectedId===runId) $("replay-status").textContent='回放查询失败：'+error.message;
+  }
+}
+$("build-replay").addEventListener("click",async () => {
+  if(!selectedId || !replayConfigId) return;
+  const runId=selectedId;
+  replayPendingId=runId;
+  $("build-replay").disabled=true;
+  let requestError=null;
+  try {
+    await api('/api/runs/'+encodeURIComponent(runId)+'/replay',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({replay_config_id:replayConfigId})
+    });
+    await refreshReplay(runId);
+  } catch(error) {
+    requestError=error;
+  } finally {
+    replayPendingId=null;
+    if(selectedId===runId) {
+      await refreshReplay(runId);
+      if(requestError) $("replay-status").textContent='构建申请失败：'+requestError.message;
+    }
+  }
+});
 $("cancel").addEventListener("click", async () => {
   if (!selectedId) return;
   try { await api(`/api/runs/${encodeURIComponent(selectedId)}/cancel`, {method:"POST"}); await refresh(); }

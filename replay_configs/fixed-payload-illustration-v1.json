@@ -1,0 +1,38 @@
+{
+  "schema_version": 2,
+  "replay_config_id": "fixed-payload-illustration-v1",
+  "config_version": "1.0.0",
+  "attitude_mode": "body_pointing_fixed_sensor",
+  "attitude_source": "geometry_pointing_illustration",
+  "idle_attitude_policy": "hold_ecef_v1",
+  "initial_display_policy": "first_task_start_attitude",
+  "earth_model": "WGS84_ellipsoid",
+  "reference_frame": "ECEF",
+  "quaternion_order": "xyzw",
+  "rotation_direction": "body_to_ecef",
+  "camera_axes": "forward=-Z,right=+X,up=+Y",
+  "display_sampling_policy": {
+    "attitude_step_s": 5.0,
+    "preserve_task_and_slew_endpoints": true
+  },
+  "sensors": [],
+  "models": [
+    {
+      "satellite_id": "*",
+      "model_asset_id": "landsat8-nasa-display",
+      "uri": "/visualization/assets/satellites/landsat8.glb",
+      "model_to_body_quaternion_xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "minimum_pixel_size": 42.0,
+      "maximum_scale": 200000.0,
+      "appearance_label": "Landsat 8 示意外觀",
+      "role": "visual_appearance_only",
+      "fallback": "cesium_point_and_label"
+    }
+  ],
+  "thruster_effect_mode": "disabled"
+}

@@ -18,6 +18,7 @@ from schedulers.transition_utils import delta_g_between
 
 from .config import sha256_file
 from .contracts import RunConfig
+from .provenance import verify_provenance
 from .runner import build_constraint_model
 
 
@@ -36,6 +37,7 @@ def _slice_angles(payload, offset: int, count: int):
 
 def verify_candidate(config: RunConfig, candidate: dict, runtime_s: float) -> tuple[dict, dict]:
     """重建每条 assignment，验证可行性并重新计算所有正式指标。"""
+    verify_provenance(config)
     path = Path(config.scenario_path)
     if sha256_file(path) != config.scenario_sha256:
         raise ValueError("场景文件与实验配置中的 SHA-256 不一致")

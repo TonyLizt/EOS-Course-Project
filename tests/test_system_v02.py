@@ -16,7 +16,7 @@ from eos_system.contracts import RunConfig
 from eos_system.deletion import remove_exported_files
 from eos_system.exporting import persist_directory_exports
 from eos_system.storage import Database, now
-from eos_system.visualization import ORBIT_CACHE_VERSION, ORBIT_STEP_S, orbit_cache_path
+from eos_system.visualization import ORBIT_CACHE_VERSION, ORBIT_STEP_S, orbit_cache_path, orbit_cache_file
 
 
 class RegistryTests(unittest.TestCase):
@@ -64,7 +64,7 @@ class MigrationAndExportTests(unittest.TestCase):
                 """)
             Database(path)
             with sqlite3.connect(path) as db:
-                self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 2)
+                self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 3)
                 self.assertEqual(db.execute("SELECT run_id FROM runs").fetchone()[0], "old-run")
                 fields = {row[1] for row in db.execute("PRAGMA table_info(runs)")}
                 self.assertTrue({"source_id", "output_profile_id"}.issubset(fields))
@@ -191,7 +191,7 @@ class ReplayTests(unittest.TestCase):
             root = Path(temp)
             settings = Settings(runtime_dir=root, scenario_dir=root / "scenarios")
             digest = "a" * 64
-            cache = root / "visualizations" / "scenes" / f"{digest}-v{ORBIT_CACHE_VERSION}-s{ORBIT_STEP_S}.czml"
+            cache = orbit_cache_file(settings, digest)
             cache.parent.mkdir(parents=True)
             cache.write_text("[]", encoding="utf-8")
             self.assertEqual(orbit_cache_path(settings, root / "scenarios" / "missing.json", digest), cache)

@@ -29,6 +29,7 @@ def render_json(record: dict) -> bytes:
         "algorithm_id": record["config"]["algorithm_id"],
         "algorithm_version": record["config"]["algorithm_version"],
         "seed": record["config"]["seed"],
+        "scenario_provenance": record["config"].get("scenario_provenance", {}),
     }
     return (json.dumps(plan, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
 
@@ -37,7 +38,8 @@ def render_csv(record: dict) -> bytes:
     output = io.StringIO(newline="")
     fields = ["run_id", "source_id", "scenario_id", "algorithm_id", "task_id", "satellite_id", "sensor_id",
               "sat_start_time", "sat_end_time", "ground_station_id", "gs_start_time", "gs_end_time",
-              "completed_tasks", "total_tasks", "TP", "TCR", "BD", "TM", "RT"]
+              "completed_tasks", "total_tasks", "TP", "TCR", "BD", "TM", "RT",
+              "scenario_sha256", "scenario_physics_version", "parent_scenario_sha256", "algorithm_code_sha"]
     writer = csv.DictWriter(output, fieldnames=fields)
     writer.writeheader()
     metrics = record["metrics"]
@@ -45,6 +47,10 @@ def render_csv(record: dict) -> bytes:
         "run_id": record["run_id"], "source_id": record["config"].get("source_id", "runtime"),
         "scenario_id": record["config"]["scenario_id"],
         "algorithm_id": record["config"]["algorithm_id"],
+        "scenario_sha256": record["config"]["scenario_sha256"],
+        "algorithm_code_sha": record["config"].get("algorithm_code_sha"),
+        "scenario_physics_version": record["config"].get("scenario_provenance",{}).get("scenario_physics_version","legacy_unknown"),
+        "parent_scenario_sha256": record["config"].get("scenario_provenance",{}).get("parent_scenario_sha256"),
         **{key: metrics[key] for key in ("completed_tasks", "total_tasks", "TP", "TCR", "BD", "TM", "RT")},
     }
     # 空计划也保留一行实验摘要，避免只得到 CSV 表头。

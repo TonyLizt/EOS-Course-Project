@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import fcntl
+import hashlib
+import importlib.metadata
+import json
+from functools import lru_cache
 import os
 import subprocess
 import sys
@@ -17,15 +21,43 @@ class OrbitUnavailable(RuntimeError):
 
 
 ORBIT_STEP_S = 300
-ORBIT_CACHE_VERSION = 1
+ORBIT_CACHE_VERSION = 2
 
+
+
+@lru_cache(maxsize=8)
+def _propagation_signature(identity: tuple) -> str:
+    """以文件指纹作为缓存入参，数据包内容变化时重算实际 SHA。"""
+    data_path = Path(identity[0])
+    data_sha = sha256_file(data_path) if data_path.is_file() else "missing"
+    return hashlib.sha256(json.dumps([identity, data_sha], sort_keys=True).encode()).hexdigest()
+
+def propagation_identity() -> str:
+    """解析/传播源码、wrapper 与数据包都进入轨道身份，不只依赖场景名。"""
+    project = Path(__file__).resolve().parent.parent
+    data = project / "utils/orekit-data.zip"
+    stat = data.stat() if data.is_file() else None
+    try:
+        wrapper = importlib.metadata.version("orekit_jpype")
+    except importlib.metadata.PackageNotFoundError:
+        wrapper = "unavailable"
+    identity = (str(data), stat.st_size if stat else 0, stat.st_mtime_ns if stat else 0,
+                stat.st_ctime_ns if stat else 0, wrapper,
+                *(sha256_file(project/name) for name in (
+                    "utils/time_parsing.py", "draw/orekit_to_czml.py", "utils/visibility.py")))
+    return "epoch-parser-v1-" + _propagation_signature(identity)
+
+def orbit_cache_file(settings: Settings, scenario_sha: str) -> Path:
+    """纯路径计算，供查询、构建和固定缓存测试共同使用；不创建文件。"""
+    key = f"{scenario_sha}-v{ORBIT_CACHE_VERSION}-s{ORBIT_STEP_S}-{propagation_identity()[-16:]}"
+    return settings.runtime_dir / "visualizations/scenes" / (key + ".czml")
 
 def orbit_cache_path(settings: Settings, scene_path: Path, expected_sha256: str) -> Path:
     """同一场景哈希只生成一次；进程锁避免并发请求看到半写文件。"""
     cache_dir = settings.runtime_dir / "visualizations" / "scenes"
     cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_key = f"{expected_sha256}-v{ORBIT_CACHE_VERSION}-s{ORBIT_STEP_S}"
-    target = cache_dir / f"{cache_key}.czml"
+    target = orbit_cache_file(settings, expected_sha256)
+    cache_key = target.stem
     lock_path = cache_dir / f"{cache_key}.lock"
     with lock_path.open("a+") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)

@@ -1,3 +1,19 @@
+## v0.3.1：恢复被覆盖功能并统一回放（2026-10-16）
+
+- 分支 fix/restore-integrated-phase2，基于 main 74f2516；从 a43a826 按文件恢复 W2 Worker/IPC、SQLite v3、独立回放、NASA 示意模型/视锥/固定载荷页面和测试/协作文档。保留 PR #7/#8 的数据 Manifest、六份 LFS 场景、E1/E2，不整次 revert 或改写 main。
+- 程序版本 v0.3.1，数据库仍 v3；旧 v1/v2 在线备份后增量迁移。本次未清空实际实验库。
+- 当前页面统一消费 POST → BUILDING/READY/FAILED → manifest 五资源。新增 GET /api/replay-configs，默认 fixed-payload-illustration-v1；旧 geometry 配置保留适配。旧 visualization/replay GET 改读同一 READY 文档。
+- 旧 GET /api/runs/{run_id}/visualization/orbit.czml **继续保留到梁兆榮完成前端迁移复核**；清退另开 PR。正式新页面不再调用它。
+- 场景/计划/配置、实际源码/模型、传播环境进入身份，轨道缓存 v2；共享 UTC parser 接入 CZML。服务独立校验有限位置/单位四元数/时间覆盖，失败不改变正式成功结果。构建回收复用 W2 身份保护，阻止删除竞争，发布不保留私有 job/log。
+- 新实验冻结 scenario_provenance，旧数据标为 legacy_unknown，E2 candidate 不自动转正；Worker 与核验复查来源，导出/回放保留来源。不把来源 sidecar 代替 E3/E4 物理验收。
+- 模型/相机/视锥/覆盖使用同一 READY 样本，5 秒示意采样并补精确端点；非敏捷只对地示意。双视图移除个人 Ion token 依赖，使用 Cesium 随包底图。首版上限 200000 样本、每资源 64 MiB；不宣称真实机动、动力学或离线部署完成。
+- 最终完整 Python：236 项（234 通过、2 可选跳过），127.380 秒；真实 CZML 等价 UTC 导出 1/1、E2 含真实 Orekit 44/44 分别通过。Node.js 四组通过；真实 Chrome 隔离网页完成配置/提交/下载/构建/模型/视锥/双视图/任务端点/删除，无 page/console error，旧 orbit GET 0 次。两任务记录只用于显示验收，另用空场景真实 Worker 链路，不冒称真实物理或算法成果。
+- 最终保护核对：历史删除 51/51 路径恢复；六份 LFS 场景 SHA 全匹配（合计 250365834 字节），输入与 E1/E2 原文件无改动。统一回放 CLI 和旧 orbit GET 隔离 HTTP 验收通过；git diff --check、实际改动文件语法/空白及关键文档链接检查通过。
+- 临时服务与测试数据自动清理；README 改为当前课程系统说明并保留 EOS-Bench 等上游来源，接口与数据库 ER 文档同步，恢复的历史交接标明时点。当前交接及阶段二剩余任务见 [restore_integration_handoff.md](docs/phase2/restore_integration_handoff.md)。
+- 本地实现与验收已完成；李泽同已确认进行一次本地 commit，本次不推送、不创建 PR。本记录以下保留历史上下文。
+
+---
+
 ## Change E：轨道历元修复 E1–E2（2026-10-16，fix/orbit-epoch-parsing）
 
 基于 HEAD `753d2677f51965121006829475e775f95c1a4a44`，按 v0.9 实施计划和 v0.3 接口/数据库设计实现确定性轨道历元解析与独立窗口重算工具。英文月份使用固定映射，带偏移转换 UTC，非法历元明确报卫星上下文；移除当前 UTC 回退，并在生成器提交进程池前预校验。
@@ -9,6 +25,138 @@
 ---
 
 # 课程项目运行与版本记录
+
+## 卫星视图与回放后端集成验收（2026-10-15）
+
+建立 PR 前按协作规范先抓取并比较 `origin/main`。主分支比共同祖先新增回放后端 v0.3 两个提交；由于当前功能分支已有 14 个公开提交，本次不改写历史，而将最新 `origin/main` 合并到功能分支。冲突仅涉及 `COURSE_SETUP.md`、`README.md`、`docs/phase2/interface_design_target.md` 与 `eos_system/api.py`，均采用内容联集：保留 SQLite v3、`ReplayService` 及 `POST /api/runs/{run_id}/replay` 独立构建闭环，同时保留 `GET /api/runs/{run_id}/visualization/replay`、NASA Landsat 8 示意模型、3D 视锥、固定载荷视图、卫星追踪和任务点俯视交互。未覆盖 Controller、Worker、算法、正式计划或指标逻辑。
+
+在允许工作线程和独立子进程的 WSL 环境中，完整 Python `unittest discover -s tests -v` **115/115 通过**（94.256 秒），包括回放后端 v2→v3 迁移、HTTP 构建／复用／资源／删除闭环及既有进程回收测试；Node.js 固定载荷状态、几何、视图和回放验收 **4/4 组通过**，`git diff --check` 通过。受限沙箱会令最小 AnyIO `to_thread` 停滞，因此进程类测试的有效结果以上述正常 WSL 执行为准。
+
+# 卫星回放 commit 6 后续整合记录（2026-10-15）
+
+已将 `6a7c285` 之后的六个提交 `ed60809`、`79851bd`、`08d06b9`、`6422935`、`b5ebe21`、`a3622b1` 汇总为[专题交接](docs/phase2/satellite_replay_post_commit_6.md)：涵盖正式 schedule UTC 相容、CesiumJS 1.136 Quaternion 修正、精确任务跳转、半透明 3D 方锥、原生卫星选取/双击追踪恢复、callback 与浏览器缓存防护、Fixed Payload 任务点/坐标和主地球任务点 600 km 正下视。以成功实验 `965cfdc1-cb00-4500-b993-c20b8c23416c` 进行 Chromium 整页验收，无 render/page/console error；Python 定向 10/10、Node.js 4 组通过。API 路径、SQLite 模式、Controller/Worker、算法、正式计划与指标不变；完整 unittest 的既有停滞限制仍保留。
+
+# 回放正式数据 UTC 兼容修正（2026-10-15）
+
+修正正式排程沿用既有 `scenario_loader` 语义、以无时区 ISO 字串表示 UTC，卻被 replay sidecar 拒絕為 409 的整合問題。HTTP 回放現在只在記憶體內為顯示資料補上明確 `+00:00`，不修改 SQLite、正式計畫或場景；瀏覽器也會保留實際 replay 載入錯誤，不再被後續 fallback 訊息覆蓋。以既有成功實驗 `47023229-6c42-4364-9831-3b56d72b4869` 唯讀實測，可產生 1 顆衛星、30 個任務、47 個階段及 Landsat 8 模型資源；Python 定向 10 項與四組 Node.js 測試通過。
+
+後續真實頁面複測發現 CesiumJS 1.136 不提供 `Quaternion.fromElements()`；模型姿態 callback 已改為該版本支援的 `Quaternion` 建構與 result 原地覆寫，避免 Viewer 停止渲染。
+
+同一輪 Chromium 真實頁面測試也確認，任務列表若直接把無時區 schedule 字串交給 Cesium，香港時區會把 `13:40` 解讀為 `05:40Z`，超出 CZML 時段後被時鐘夾回起點。頁面現在依排程器既有語義先補 UTC 再建立 `JulianDate`，點任務列可跳到正確觀測時段並啟用光錐與固定載荷視圖。
+
+任務跳轉不再強制播放；否則 CZML 的高倍速可能在首幀就越過僅數秒的觀測。點擊後會暫停在原始任務開始時刻並要求立即重繪，使用者可確認模型、光錐與載荷狀態後自行按播放。
+
+視場顯示不再只有中心線與細邊界線：每對相鄰 FOV 邊界射線會建立半透明三角側面，並增加半透明端面與 2 px 邊框，形成可辨識的 3D 方錐。錐體是固定載荷 FOV 的顯示包絡；真實 WGS84 footprint 仍只在全部邊界射線有交點時繪製。部分地平線時會保留完整視錐，但不偽造完整地面覆蓋。
+
+修復固定載荷選星曾覆蓋 Cesium 內建 `LEFT_CLICK`、導致衛星選取與追蹤入口消失的回歸。現在改為監聽 `selectedEntityChanged`：單擊衛星仍使用 Cesium 原生選取框／資訊框，雙擊或原生追蹤控制仍可跟隨衛星，且選取變更會同步更新 Fixed Payload View。
+
+修復視錐 callback 在 IDLE、任務端點或瀏覽器暫存舊版 geometry 腳本時直接索引不存在的第 16 條邊界、造成 Cesium 停止渲染。三個 replay JS URL 現在帶版本參數以避免新舊資源混用；所有中心線、邊界、側面、端面與 footprint callback 都先驗證可見 intersections 與陣列項目，缺資料時安全隱藏而非拋例外。
+
+Fixed Payload View 現在在活動任務期間以黃點、紅色外框、任務 ID 與經緯度標出當前地面目標，狀態列同步顯示座標。主地球單擊任務點會解除衛星追蹤，並以該點上方 600 km、正下視 `-90°` 的相機姿態飛到任務區；衛星的單擊選取與雙擊追蹤行為保持不變。
+
+## 卫星整体姿态/固定载荷回放 commit 6 最终交付（2026-10-15，`feat/satellite-body-fixed-payload-replay`，待审核）
+
+正式 `SUCCEEDED` 运行的 `GET /api/runs/{run_id}/visualization/replay` 现在将 NASA Landsat 8 资产 manifest 与实际 GLB SHA-256 纳入回放/cache identity，返回受控资源来源、署名、大小与哈希。服务每次先重验场景、计划、配置和模型完整性，再以完整 `cache_key` 在进程内复用最多 16 个相同回放文档。回放文档无中间文件；既有轨道缓存机制保持不变。回放请求不写 SQLite，不变更正式计划、metrics、exports 或运行状态。
+
+WSL2 Linux 6.18.33.2 / Python 3.10.12 / Node 24.20.0 / Intel Core Ultra 7 155H：Python 回放定向 **10/10**、Node.js 状态/几何/视图/总验收 **4 组通过**。正式交付测试确认两次请求复用同一缓存文档，三个 JS 和 GLB 静态路径可用，场景 SHA 和 SQLite 正式 run 快照前后一致。CesiumJS 1.136 + Chromium 141 通过 WGS84 几何与同钟视图冒烟；300 次×16 条边界射线求交为 17.8 ms，只代表本次隔离测试。两份保护场景哈希与登记值完全相同。
+
+有界全量 unittest 在 90 秒后仍停在既有 `test_http_cancel_uses_existing_route_and_temporary_database`（退出码 124），本交付不声称全量通过。当前姿态仍是几何指向示意，FOV 是方形全角假设，覆盖不含地形遮挡，第二 Viewer 是地图/椭球模拟视野而非真实遥感影像。完整 SHA、命令、资产、性能与限制见 [最终验证报告](docs/replay/final-validation.md)。
+
+---
+
+## 卫星回放 commit 5：同钟固定载荷视图（2026-10-14，`feat/satellite-body-fixed-payload-replay`，待审核）
+
+Cesium 页面新增“固定载荷视角渲染组件”：可从卫星列表、主地球实体或任务列表选星，显示原卫星 ID、当前任务、`IDLE/SLEWING/OBSERVING` 阶段和姿态质量。第二 Viewer 不加载主视图的卫星模型、视锥或标注，关闭自身动画推进与交互控制，每次只读主 Viewer 的权威时间及同一 `evaluateSatelliteState`。面板隐藏后停止额外渲染，切换卫星不增加时钟监听器，页面卸载时销毁第二 Viewer。
+
+传感器水平/垂直完整 FOV 保持原配置；光学纵横比按两个半角正切的比值计算，显示容器使用留白而不拉伸画面。Node.js 测试通过相机 pose、状态文本、FOV 和横/竖容器留白。CesiumJS 1.136 + Chromium 141 冒烟结果：180×180 有效画面、aspect ratio 1、FOV 45°、时间 `2026-01-01T00:00:05Z`、`shouldAnimate=false`、相机输入关闭，无控制台错误。新静态路径为 `GET /visualization/fixed-payload-view.js`；详见 [commit 5 交接记录](docs/phase2/satellite_replay_commit_5.md)。
+
+---
+
+## 卫星回放 commit 4：逐星视锥与 WGS84 覆盖（2026-10-14，`feat/satellite-body-fixed-payload-replay`，待审核）
+
+Cesium 主视图现在从同一固定载荷姿态生成中心视线与方形全角 FOV 边界采样，用原生 `IntersectionTests.rayEllipsoid` 求 WGS84 最近正向交点。每星独立显示视锥、椭球中心交点和 ECEF 覆盖：`SLEWING` 为琥珀色，`OBSERVING` 为绿色，原拍摄结束端点立即隐藏。部分射线越过地平线时只显示有效射线，不拼接错误多边形；全部无交点时清空覆盖。目标高度点与椭球交点保持不同语义，20 m 视觉抬高只用于避免地表闪烁。新静态路径为 `GET /visualization/fixed-payload-geometry.js`，无数据库、Controller、Worker、算法或指标变更。
+
+Node.js 几何/生命周期测试通过，覆盖中心命中、部分地平线、全部无交点、精确半开端点和多星独立阶段。CesiumJS 1.136 + Chromium 141 本地 HTTP 冒烟测试生成 16/16 条 WGS84 边界交点及 1 个覆盖 primitive，无控制台错误；同时发现并修正 CesiumJS 1.136 不提供 `Cartesian3.toArray()` 的兼容性问题。Python 回放定向测试 **9/9** 通过，详见 [commit 4 交接记录](docs/phase2/satellite_replay_commit_4.md)。固定载荷第二视图、选星与双视图同钟仍属 commit 5。
+
+---
+
+## 卫星本体与固定载荷回放 commit 1–3（2026-10-14，`feat/satellite-body-fixed-payload-replay`，待审核）
+
+成功实验新增只读 `GET /api/runs/{run_id}/visualization/replay` 派生数据：校验已提交场景哈希与计划身份，按当前转移模型生成确定性 `SLEWING/OBSERVING` 时间段，不重跑调度、不改写母场景或正式计划。Cesium 页面使用 NASA Landsat 8 GLB 作通用示意外观，模型姿态与固定相机—本体变换分离，并保留原卫星 ID 和点/标签回退。新配置与资产来源、哈希、轴向假设见 [commit 1–3 专题交接](docs/phase2/satellite_replay_commits_1_3.md)。
+
+Ubuntu / Python 3 定向单元测试 **9/9** 通过，Node.js 固定载荷时间评估测试通过；真实场景派生检查确认源文件 SHA-256 不变。Landsat 8 GLB（780,280 bytes）已通过 CesiumJS 1.136 + Chromium 141 本地 HTTP 冒烟测试，生成 1 个模型 primitive，无浏览器控制台错误。完整 unittest 在既有 `test_http_cancel_uses_existing_route_and_temporary_database` 停滞，本轮未声称全量通过。当前姿态是几何指向示意，不是 Orekit 姿态/动力学验证；视锥、地面足迹、边界裁剪与第二固定载荷视图尚未实现。
+
+---
+
+## 第二阶段回放后端 v0.3（2026-10-14，`feat/replay-backend`，待李泽同审核）
+
+在正式成功实验之后增加独立的回放构建闭环：SQLite `user_version=3` 与 `replay_artifacts`、`POST /api/runs/{run_id}/replay`、回放状态和资源 GET、原甘特图 schedule 身份字段，以及按实验删除派生回放缓存。固定配置 `geometry-illustration-v2` 生成轨道 CZML、姿态示意样本、阶段区间、诊断和配置资源；Controller 校验哈希并发布 READY。旧 `GET /api/runs/{run_id}/visualization/orbit.czml` 保留到梁兆榮完成前端迁移，首次访问仍可能构建旧共享轨道缓存。当前姿态是展示示意，尚未宣称 Orekit TargetPointing 精确姿态；何明涛的正式回放消息型 IPC、梁兆榮的前端、刘懋兴的数据核验仍按交接文档继续。
+
+WSL Ubuntu 22.04 / Python 3.10.12：完整 `unittest discover -s tests -v` **105/105 通过**，包括新增 v2→v3 迁移及 HTTP→独立构建进程→READY→资源 ETag→删除闭环；`git diff --check` 通过。原 Orekit 导出器的单星 10 分钟/3 轨道样本缓存未命中实测约 179 秒，较大场景需单独预算测试。旧本机 SQLite 中 10 条终态测试实验按用户授权在 v3 迁移后删除，现 runs=0；输入场景和正式导出文件未删，迁移验收后的本机 `.pre-v3.bak` 已清理。工作树尚未 commit/推送。接口与任务交接见 [`docs/phase2/replay_backend_handoff.md`](docs/phase2/replay_backend_handoff.md)，当前 ER 图见 [`docs/phase2/database_current_v03.md`](docs/phase2/database_current_v03.md)。
+
+---
+
+## Worker/IPC W1/W2 最终交付联调（2026-10-14，`feat/hmt-worker-ipc`，待何明涛与李泽同审核）
+
+修正 README、框架交接及算法接入说明中过期的“协作取消尚未实现”等描述，保留 W3、Daemon、A/B/C/D 和跨重启回收为未交付范围。新增三个真实 TCP 回环 HTTP → Controller → `spawn` Worker → 临时 SQLite 异常闭环，覆盖运行中取消（`CANCELLED`）、不合作求解超时（`TIMED_OUT/ALGORITHM_TIMEOUT`）和携同 Session 后代的 Worker 异常退出（`FAILED/IPC_DISCONNECTED`、退出码 23）；均无正式计划，直接 Worker 与可信后代无活跃残留。测试桩仅在隔离服务进程中装配，正式算法注册表及运行时代码未改。
+
+WSL2 Ubuntu 22.04 / Python 3.10.12：HTTP 故障专题两轮各 **3/3**、完整 unittest **103/103**、`git diff --check` 通过。隔离成功闭环复跑 `completion_first` 24/30、TCR=0.800，SQLite attempt 1、exit_code 0、一份正式计划；JSON/CSV、旧 CLI 计划对照与篡改候选拒绝均通过。临时场景 SHA-256 为 `192eb635644fcdbc86854912704345494fe36d8cffb828c5000cff9221a9b84e`；母场景只读，临时数据库、服务和测试产物均已清理。Controller 交接及剩余可靠性边界见 W2 专题说明第 13 节。
+
+---
+
+## Worker/IPC W2-C 启动与取消竞争修复（2026-10-14，`feat/hmt-worker-ipc`，待人工复核）
+
+`Controller._execute()` 只有尚未决定取消、超时或停机时才将 `start` 入队。若 `USER_CANCEL` 或 `CONTROLLER_STOP` 先于 `start`，随后到达的 `started` 不再触发算法；也不向等待首条 `start` 的 Worker 单独发送 `cancel`，而是按原有有界回收裁决。真实 `spawn` 测试在 `setsid()` 后延迟 `started`，验证用户取消最终 `CANCELLED`、Controller 停机最终 `FAILED/CONTROLLER_STOP`，两者均没有发送 `start` 或执行算法准备。原有已排队 `start` 的阻塞写测试保持覆盖。W2-C 专题 **28 项连续三轮通过**，完整 unittest **100 项通过**，`git diff --check` 通过。HTTP、SQLite 模式、Solver、IPC 协议及 Linux 身份/信号机制未变；详情见 W2 设计说明。
+
+---
+
+## Worker/IPC W2-C 最终审核定向修复（2026-10-14，`feat/hmt-worker-ipc`，待人工复核）
+
+修复了 Worker 独立 Session 从未确认时，合法候选与退出码 0 可能绕过清理身份检查而提交成功的问题。Controller 现在等本次 Worker 的 `started` 到达，再通过内核 `/proc` 身份及 pidfd 确认独立 Session，才发送旧格式 `start`；正式成功前再次检查本 attempt 的身份确认与 start 放行。未确认身份的候选记明确失败和诊断；启动期用户取消仍按有界直接进程回收裁决，不向 Controller 所在进程组发信号。WSL2 隔离环境中 W2-C 专题 **26 项连续三轮通过**、Controller 取消/超时/进程身份专题 **50 项通过**、完整 unittest **98 项通过**、`git diff --check` 通过。生产 Worker、HTTP、SQLite 模式、算法签名及 IPC 协议未改。剩余边界见现有 W2 设计说明。
+
+---
+
+## Worker/IPC W2-C 首轮审核后定向修复（2026-10-14，`feat/hmt-worker-ipc`，待人工复核）
+
+`WorkerGroup.refresh()` 现在可在本 attempt 已确认独立 session、且组长 pidfd 仍固定身份时，于组长退出后继续发现同组后代；新成员经 PGID、SID、boot_id、starttime 和 pidfd 复核后仅接受逐进程信号，不向已退出组长的缓存 PGID 发 `killpg`。pidfd 获取遇 `ESRCH` 后若确认进程已消失或结束，不误报清理不完整；活跃但无法固定、权限或存在性不明则保留风险，并在后续确认退出后清除。真实 `spawn` 测试增加组长立即崩溃后首次发现后代、Controller 闭环回收、扫描与 pidfd 打开之间子进程退出、以及活跃未固定成员的风险消退。WSL2 隔离环境中 W2-C 专题 **23 项连续五轮通过**、完整 unittest **95 项通过**，`git diff --check` 通过，未见活跃测试后代。本轮未改 Controller 停机、HTTP、SQLite 模式、算法接口及 W1/W2-A/W2-B 协议或超时裁决。最后一次扫描后的新后代、逃逸 session、pidfd 不可用及跨 Controller 重启清扫仍无完整保证。详情见 W2 设计说明的本轮记录。
+
+---
+
+## Worker/IPC W2-C（2026-10-14，`feat/hmt-worker-ipc`，待集成审核）
+
+新增 Linux `/proc` 启动身份、独立 PGID/SID 与 pidfd 核验；只在当前组长身份仍可证明时发送进程组信号，组长退出后用事先固定的 pidfd 回收已识别后代。Controller 停机时停止领取新 attempt、向当前 Worker 请求停止、有限等待执行线程；若线程仍活跃则报错并保留 flock，退出后才解锁。内部停机中断记 `FAILED/CONTROLLER_STOP`；原取消/超时优先级和公共 HTTP、SQLite 模式、状态、算法及 IPC 契约不变。WSL2 Ubuntu 22.04 / Python 3.10.12 独立临时环境的完整 unittest **91 项通过**；W2-C 进程组 12 项、停机 7 项分别独立重复三轮通过，`git diff --check` 通过。已识别同组后代在测试后无活跃残留；逃逸后代、扫描间隙及跨 Controller 重启旧进程仍不能保证回收。详见 [`docs/phase2/W2 WorkerIPC 与 Controller 协作实施说明 v1.0.md`](docs/phase2/W2%20WorkerIPC%20%E4%B8%8E%20Controller%20%E5%8D%8F%E4%BD%9C%E5%AE%9E%E6%96%BD%E8%AF%B4%E6%98%8E%20v1.0.md)。
+
+---
+
+## Worker/IPC W2-B（2026-10-14，`feat/hmt-worker-ipc`，待审核）
+
+Controller 使用单线程非阻塞 Pipe 帧收发，给 start/cancel 写入、启动准备、搜索总墙钟、单帧传输和候选后退出设置单调时钟期限；直接 Worker 依次有界 join、terminate、kill。复用现有 `run_attempts.exit_code` 和小型诊断事件记录退出与 IPC 错误，Worker 不写数据库。人工审核后修复不同 `seq` 重复候选刷新退出期限、零长度帧误分类两项缺陷；同 `seq` 仍去重。WSL2 Ubuntu 22.04 / Python 3.10.12 的独立临时目录中，`python -m unittest discover -s tests -v` **72 项通过**，其中 W2-B 专题 21 项真实 spawn 故障/回收测试；原 W2-A HTTP 闭环、正常成功及 SQLite 事务测试保持通过。HTTP、SQLite 物理模式、状态枚举、算法接口、双 Pipe、协议版本及 4 MiB 限额未变。`Process.start()` 自身无法由现有单线程状态机抢占；后代进程组回收、Controller 安全停机和崩溃后旧进程清扫仍待 W2-C。详见 [`docs/phase2/W2 WorkerIPC 与 Controller 协作实施说明 v1.0.md`](docs/phase2/W2%20WorkerIPC%20%E4%B8%8E%20Controller%20%E5%8D%8F%E4%BD%9C%E5%AE%9E%E6%96%BD%E8%AF%B4%E6%98%8E%20v1.0.md)。
+
+---
+
+## Worker/IPC W2-A（2026-10-14，`feat/hmt-worker-ipc`）
+
+Controller 已接通 W1 的运行中协作取消：本 attempt 一次性发送完整 `cancel`，继续读取并去重 `cancel_ack`，在直接 Worker 退出后裁决 `CANCELLED`；取消候选仍受统一核验和 SQLite 成功事务保护。保留旧 `start`、双单向 Pipe、HTTP、SQLite 模式及算法签名。WSL2 Ubuntu 22.04 / Python 3.10.12 的独立临时目录中，完整单元测试 **51 项通过**（新增 Controller 专题 14 项，含真实 spawn 与 ASGI HTTP → Worker → SQLite 闭环）。同步 Pipe 的严格抗阻塞、完整超时和单 Worker 回收诊断待 W2-B；后代进程组清理与安全停机待 W2-C。因此本阶段建议 **FUNCTIONAL PASS / RELIABILITY PENDING**。详见 [`docs/phase2/W2 WorkerIPC 与 Controller 协作实施说明 v1.0.md`](docs/phase2/W2%20WorkerIPC%20%E4%B8%8E%20Controller%20%E5%8D%8F%E4%BD%9C%E5%AE%9E%E6%96%BD%E8%AF%B4%E6%98%8E%20v1.0.md)。
+
+---
+
+## Worker/IPC W1 补充验收（2026-10-14，`feat/hmt-worker-ipc`）
+
+基于 `906fe70` 增加 5 项真实 Linux `spawn` 子进程测试，覆盖协作取消的跨进程可见性、不合作求解桩的 2 秒有界退出、控制 Pipe EOF、求解异常和事件 Pipe 断链。求解桩在子进程内安装，场景位于临时目录；测试端的 `terminate/kill` 仅作为失败时清理兜底，本次测试未触发。WSL2 Ubuntu 22.04 / Python 3.10.12 虚拟环境中，完整单元测试 **37 项通过**，`git diff --check` 通过。未修改 Worker 业务源码、Controller、HTTP 或 SQLite；完整取消和进程组回收仍待 W2。详见 [`docs/phase2/worker_ipc_w1.md`](docs/phase2/worker_ipc_w1.md)。
+
+---
+
+## Worker/IPC W1（2026-10-14，`feat/hmt-worker-ipc`）
+
+在 v0.2.1 参考 Worker 中增加控制 Pipe 持续监听、协议字段和身份校验，以及接入 `SolveContext.is_cancelled()` 的线程安全取消标记。Worker 主线程独占 IPC 读写和事件序号，求解线程运行算法；收到取消后发送 `cancel_ack`，已取消的算法返回结果不会作为候选上报。保持旧 Controller `start` 消息兼容，未改 HTTP、SQLite 或算法公共签名。WSL2 Ubuntu 22.04 / Python 3.10.12 的虚拟环境中，基线 18 项和修改后 32 项单元测试通过；新增测试使用临时目录和测试桩，未执行服务端集成测试。Controller 发送取消命令、硬超时和进程组回收仍待 W2；大结果文件载体待 W3。详细协议与限制见 [`docs/phase2/worker_ipc_w1.md`](docs/phase2/worker_ipc_w1.md)。
+
+---
+
+## 第二阶段组员协作规范（2026-10-14）
+
+新增 [`docs/phase2/team_collaboration.md`](docs/phase2/team_collaboration.md)，明确每项工作新建分支、经 PR 审核后合入 `main`、代码与对应专题文档及本记录同步提交的流程；列出四人职责、文档映射、PR 检查项和 Windows + WSL2 的协作方式。README 增加入口。本次只改文档，不改变运行行为。
+
+---
 
 ## 第二阶段框架 v0.2.1（2026-10-14，Windows + Ubuntu 22.04 / WSL2）
 
@@ -240,18 +388,3 @@ cd /Users/tonylizt/Projects/EOS-Course-Project
 脚本生成／覆盖 `draw/orbit.czml`，随后自动打开浏览器；也可手动访问终端打印的 `http://localhost:8080/draw/cesium_viewer.html?schedule=...` 地址。页面左侧显示 TP、TCR 等指标，中间播放轨道与目标，右侧列出观测区间；右上角的 **Gantt Chart** 可打开同一计划的甘特图。本机已验证该示例加载 187 个任务、TCR = 0.935、TP = 1045，且页面与 CZML、计划文件均可访问。生成的 CZML 约 25 MB，固定文件名会被下一次展示覆盖；它不改变输入 JSON。若 8080 已被占用，换用 `--port 8081` 等空闲端口。
 
 **停止网页：** 保持启动它的终端运行，演示结束后在该终端按 `Ctrl+C`；服务停止后网页不能继续加载本地文件。若终端已丢失，先用 `lsof -nP -iTCP:8080 -sTCP:LISTEN` 确认对应进程，再停止那个进程，不要盲目结束其他占用端口的程序。
-
-
----
-
-## 独立场景审计与实验协议（2026-10-15）
-
-在当前 main 工作区新增 `scripts/build_scenario_manifest.py`、`tests/test_scenario_manifest.py`、`docs/phase2/scenario_experiment_protocol.md`；本节仅追加，历史记录保持原样。未创建分支/worktree，未提交或推送。只读审计代码 HEAD 为 `7597539ef6a5f25764e6a145b31fa517140f9d83`，不得当成历史场景生成版本。指定的 team_collaboration.md 不存在，参考现有框架交接与算法接入文档。
-
-工具仅登记用户明确指定的已完成归档目录，拒绝项目 input/output，报告与输入目录隔离且不覆盖既有报告。完整 SHA-256 区分文件内容身份与内部 scenario_id；统计外层观测条目、内层片段、机会覆盖率与通信片段，提供 PASS/WARN/FAIL 检查。两遍分块哈希结合文件属性检测读取变化；ijson 按外层条目解析，无 ijson 时仅允许不超过 16 MiB 的标准库回退。历史版本、种子和来源未记录则留空，不以当前 HEAD 或文件名猜测。
-
-实测：现有 WSL Ubuntu 22.04 / Python 3.10.12 + ijson，新增单元测试 47 项通过、0 失败、0 跳过，最终一轮耗时 0.123 秒；全部使用 TemporaryDirectory 中的小型合成数据，包含流式/标准库一致性、路径隔离、读取变化、无效引用和身份冲突。--help 已执行；临时演示实际生成 CSV、JSON 清单和验证报告，1 个观测外层条目包含 2 个片段，覆盖 1 个任务，状态 PASS。Windows Python 补充测试被沙箱临时目录 ACL 阻断，未记为通过；未改系统权限或安装依赖。
-
-本次没有扫描、读取、复制或修改 output 中的 Scenario，没有向运行中的进程发送信号，没有运行生成器/调度器/Benchmark/Orekit/JVM。原有核心源码、算法、input 和正式结果均未修改。未核验任何正式场景，不宣称它们全部 PASS；git diff --check 及白名单范围检查见本次交付。源码审计发现英文月份历元可能回退当前时间、同名直接导出覆盖、内部 ID 跨批次复用和固定镜头 FOV 未进入窗口判定等风险，均只记录，不修改运行代码。
-
-完整审计依据、指标公式、成对实验/ML 来源分组、未来姿态谱系以及全部生成结束后的安全归档与登记步骤见 [场景实验协议](docs/phase2/scenario_experiment_protocol.md)。API/SQLite 的 registry_id、来源家族、生成元信息和母子谱系接入需李泽同确认，本次未修改公共契约。

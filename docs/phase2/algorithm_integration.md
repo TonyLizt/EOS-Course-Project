@@ -20,7 +20,7 @@
 | `context: SolveContext` | 随机种子、算法搜索预算、目标权重、已校验的专属参数和取消查询函数。 |
 | 返回值 `Schedule` | 候选计划。Worker 将其转为 JSON 兼容数据；Controller 对每条 assignment 重建、检查来源窗口/资源/共享约束并重新计算指标。 |
 
-当前参考 Worker 尚未实现协作取消，`context.is_cancelled()` 只是预留接口；Controller 对预算到期的 Worker 仍有强制终止责任。模型准备和场景加载发生在 `SEARCHING` 阶段之前，`solve()` 的时间才计入算法运行秒数。
+当前分支的 Worker 已将线程安全取消标记接入 `context.is_cancelled()`；运行中取消由 Controller 通过控制 Pipe 发送，`cancel_ack` 不表示算法或进程已退出。算法应主动轮询该回调；不合作算法仍由 Controller 按期限回收。模型准备和场景加载发生在 `SEARCHING` 阶段之前，`solve()` 的时间才计入算法运行秒数。现有 `LegacySearchAdapter` 已通过真实 HTTP → Worker → 核验 → SQLite 基线闭环，但旧算法本身不保证主动响应取消。
 
 ## 3. 接入形状
 

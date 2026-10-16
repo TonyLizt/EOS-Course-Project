@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fixed payload WGS84 geometry smoke</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Cesium.js"></script>
+  <script src="/draw/fixed-payload-state.js"></script>
+  <script src="/draw/fixed-payload-geometry.js"></script>
+  <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css">
+  <style>html, body, #view { width: 100%; height: 100%; margin: 0; }</style>
+</head>
+<body>
+  <div id="view"></div>
+  <script>
+    window.geometrySmoke = { ready: false, error: null };
+    try {
+      const viewer = new Cesium.Viewer('view', {
+        baseLayer: false,
+        baseLayerPicker: false,
+        geocoder: false,
+        animation: false,
+        timeline: false
+      });
+      const toArray = (value) => [value.x, value.y, value.z];
+      const origin = toArray(Cesium.Cartesian3.fromDegrees(0, 0, 700000));
+      const target = toArray(Cesium.Cartesian3.fromDegrees(0, 0, 0));
+      const quaternion = FixedPayloadState.pointingQuaternion(origin, target);
+      const frame = FixedPayloadGeometry.sensorFrame({
+        position_ecef_m: origin,
+        body_to_ecef_quaternion_xyzw: quaternion,
+        camera_to_ecef_quaternion_xyzw: quaternion
+      }, {
+        sensor_offset_body_m: [0, 0, 0],
+        horizontal_full_fov_deg: 20,
+        vertical_full_fov_deg: 20,
+        fov_interpretation: 'square_full_angle_display_assumption'
+      }, FixedPayloadState.rotate, 4);
+      const intersect = (rayOrigin, rayDirection) => {
+        const ray = new Cesium.Ray(
+          Cesium.Cartesian3.fromArray(rayOrigin),
+          Cesium.Cartesian3.normalize(Cesium.Cartesian3.fromArray(rayDirection), new Cesium.Cartesian3())
+        );
+        const interval = Cesium.IntersectionTests.rayEllipsoid(ray, Cesium.Ellipsoid.WGS84);
+        if (!interval) return null;
+        const distance = [interval.start, interval.stop]
+          .filter((value) => Number.isFinite(value) && value >= 0)
+          .sort((left, right) => left - right)[0];
+        return distance == null ? null : toArray(
+          Cesium.Ray.getPoint(ray, distance, new Cesium.Cartesian3())
+        );
+      };
+      const geometry = FixedPayloadGeometry.intersectFrame(frame, intersect);
+      if (geometry.status !== 'COMPLETE') throw new Error('unexpected status: ' + geometry.status);
+      const benchmarkIterations = 300;
+      const benchmarkStart = performance.now();
+      for (let index = 0; index < benchmarkIterations; index += 1) {
+        const measured = FixedPayloadGeometry.intersectFrame(frame, intersect);
+        if (measured.status !== 'COMPLETE') throw new Error('benchmark geometry degraded');
+      }
+      const benchmarkMs = performance.now() - benchmarkStart;
+      viewer.entities.add({
+        polygon: {
+          hierarchy: new Cesium.PolygonHierarchy(
+            geometry.coverage_ecef_m.map((point) => Cesium.Cartesian3.fromArray(point))
+          ),
+          perPositionHeight: true,
+          material: Cesium.Color.LIME.withAlpha(0.45)
+        }
+      });
+      geometry.boundary_hits_ecef_m.forEach((hit) => viewer.entities.add({
+        polyline: {
+          positions: [Cesium.Cartesian3.fromArray(origin), Cesium.Cartesian3.fromArray(hit)],
+          width: 1,
+          material: Cesium.Color.ORANGE
+        }
+      }));
+      viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(0, 0, 3000000) });
+      window.geometrySmoke = {
+        ready: true,
+        status: geometry.status,
+        rayCount: geometry.ray_count,
+        hitCount: geometry.hit_count,
+        primitiveCount: viewer.scene.primitives.length,
+        benchmarkIterations: benchmarkIterations,
+        benchmarkMs: benchmarkMs
+      };
+    } catch (error) {
+      window.geometrySmoke = { ready: true, error: String(error && error.stack || error) };
+    }
+  </script>
+</body>
+</html>
