@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Cesium.js"></script>
+  <script src="../../draw/satellite-follow.js"></script>
+  <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css">
+  <style>html,body,#view{width:100%;height:100%;margin:0;overflow:hidden}</style>
+</head>
+<body><div id="view"></div>
+<script>
+  const viewer = new Cesium.Viewer('view', {
+    animation: false, timeline: false, baseLayer: false,
+    baseLayerPicker: false, imageryProvider: false,
+    terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+    geocoder: false, homeButton: false, sceneModePicker: false,
+    navigationHelpButton: false, infoBox: true, selectionIndicator: true
+  });
+  const start = Cesium.JulianDate.fromIso8601('2026-01-01T00:00:00Z');
+  const stop = Cesium.JulianDate.addSeconds(start, 2400, new Cesium.JulianDate());
+  const source = new Cesium.CustomDataSource('camera-continuity');
+  function orbitPosition(phase) {
+    const property = new Cesium.SampledPositionProperty(Cesium.ReferenceFrame.FIXED);
+    for (let seconds = 0; seconds <= 2400; seconds += 5) {
+      const angle = phase + seconds * 2 * Math.PI / 5400;
+      property.addSample(
+        Cesium.JulianDate.addSeconds(start, seconds, new Cesium.JulianDate()),
+        new Cesium.Cartesian3(7000000 * Math.cos(angle), 7000000 * Math.sin(angle), 350000 * Math.sin(angle * 0.7))
+      );
+    }
+    property.setInterpolationOptions({
+      interpolationDegree: 1, interpolationAlgorithm: Cesium.LinearApproximation
+    });
+    return property;
+  }
+  function addSatellite(id, phase) {
+    return source.entities.add({
+      id, position: orbitPosition(phase),
+      orientation: new Cesium.CallbackProperty((time, result) => {
+        const seconds = Cesium.JulianDate.secondsDifference(time, start);
+        return Cesium.Quaternion.fromAxisAngle(
+          Cesium.Cartesian3.UNIT_X, seconds * 0.8 + phase, result
+        );
+      }, false),
+      viewFrom: new Cesium.Cartesian3(0, -450000, 220000),
+      point: { pixelSize: 8, color: Cesium.Color.CYAN },
+      path: { show: true, width: 2, material: Cesium.Color.YELLOW }
+    });
+  }
+  const first = addSatellite('SAT-A', 0);
+  addSatellite('SAT-B', 0.002);
+  viewer.dataSources.add(source).then(() => {
+    window.followController = SatelliteFollow.install(
+      viewer, source, ['SAT-A', 'SAT-B'], Cesium.TrackingReferenceFrame.ENU
+    );
+    viewer.selectedEntity = first;
+    viewer.trackedEntity = first;
+    viewer.clock.startTime = Cesium.JulianDate.clone(start);
+    viewer.clock.stopTime = Cesium.JulianDate.clone(stop);
+    viewer.clock.currentTime = Cesium.JulianDate.clone(start);
+    viewer.clock.clockRange = Cesium.ClockRange.CLAMPED;
+    viewer.clock.clockStep = Cesium.ClockStep.SYSTEM_CLOCK_MULTIPLIER;
+    viewer.clock.multiplier = 60;
+    viewer.clock.shouldAnimate = true;
+    window.cameraContinuityReady = true;
+  });
+</script></body></html>

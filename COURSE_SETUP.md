@@ -4,7 +4,8 @@
 - 正式场景原绝对路径失效时，回放只在已登记数据源中按 `scenario_id` 查找，并以正式 SHA-256 完全匹配后重定位；符号链接、未登记路径与同名不同内容仍拒绝。
 - 主 Cesium Viewer 新增触控板捏合缩放：Chromium `Ctrl+wheel` 与 Safari 类 gesture 映射到相机缩放；保留 Cesium 原滚轮、右键拖曳与触屏 pinch。
 - 成功实验首次打开 Cesium 页面时先 GET 状态；NOT_REQUESTED 自动 POST 一次并轮询至 READY。自动申请或构建失败后不循环重试，只保留显式“重试构建回放”；READY 页面不额外 POST。
-- 定向验证：Python 2/2、Node 6/6 通过（含自动构建状态策略与 50 星索引）；浏览器验收脚本改为从 NOT_REQUESTED 直接打开 Cesium 并要求恰好一次 POST，当前环境无 Playwright/Chromium，未执行真实浏览器；`git diff --check` 通过。完整 Python 前 10 项通过后停在既有 `test_http_cancel_uses_existing_route_and_temporary_database`，240 秒 timeout 中止且无残留进程，不声称全量通过。已知限制：任务列选星与主 Viewer trackedEntity 尚未同步，跟随镜头问题另行修复。
+- 主 Viewer 的卫星跟随从 Cesium 每帧 `AUTODETECT` 改为显式 ENU 位置框架；物理本体 quaternion 只驱动模型与固定载荷，不再参与使用者相机参考框架。任务列及 Fixed Payload View 选星同步主 Viewer；已在跟随时切换跟随对象，未跟随时只选中。卫星 CZML point 移除，标签、轨迹、姿态、视锥、目标与任务连线保留。
+- 定向验证：Python 2/2、Node 7/7 通过（含自动构建、相机控制、触控板、50 星索引）；真实 Chromium 整合页验证 point/path、ENU 框架、任务选星、自动构建一次且无 console/page/资源错误。另以持续改变本体 quaternion 的双星轨道进行 60x 连续 31 秒（暂停 1 秒、切星一次）验收：推进 1802.760 模拟秒，141 个有效量测帧最大相机方向步进 0.925°，跟随距离固定 500899.191 m，暂停漂移 0 秒；相邻 1 秒本体四元数点积绝对值 0.921，确认姿态未冻结。无错误。`git diff --check` 通过。完整 Python 前 10 项通过后停在既有 `test_http_cancel_uses_existing_route_and_temporary_database`，240 秒 timeout 中止且无残留进程，不声称全量通过。
 
 ---
 

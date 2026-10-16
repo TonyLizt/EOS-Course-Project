@@ -11,6 +11,7 @@
   <script src="fixed-payload-view.js?v=20261016-scale-1"></script>
   <script src="replay-build-policy.js?v=20261016-auto-build-1"></script>
   <script src="trackpad-zoom.js?v=20261016-trackpad-1"></script>
+  <script src="satellite-follow.js?v=20261016-camera-frame-1"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
 
   <style>
@@ -257,10 +258,6 @@
         Satellite Labels
       </label>
       <label class="toggle-row">
-        <input type="checkbox" id="toggleSatPoint" checked />
-        Satellite Points
-      </label>
-      <label class="toggle-row">
         <input type="checkbox" id="toggleTargetLabel" checked />
         Ground Target Labels
       </label>
@@ -279,7 +276,7 @@
       <h2>Satellite Appearance</h2>
       <button id="requestReplay" type="button" hidden>构建回放</button>
       <div id="replayBuildStatus" role="status"></div>
-      <div id="assetStatus" class="asset-status">Point/label fallback active until replay data loads.</div>      <div id="sensorGeometryStatus" class="asset-status">Sensor geometry inactive.</div>
+      <div id="assetStatus" class="asset-status">Orbit/label data loading.</div>      <div id="sensorGeometryStatus" class="asset-status">Sensor geometry inactive.</div>
     </div>
     <div class="panel-section">
       <h2>Fixed Payload View</h2>
@@ -398,7 +395,7 @@
       } catch (error) {
         replayLoadError = error;
         document.getElementById('assetStatus').textContent =
-          'Replay data unavailable; Cesium point/label fallback remains active. ' + error;
+          'Replay data unavailable; Cesium orbit/label fallback remains active. ' + error;
         return null;
       }
     }
@@ -613,6 +610,7 @@
             if (!a) return;
 
             if (viewer._selectReplaySatellite) viewer._selectReplaySatellite(a.satellite_id);
+            if (viewer._selectMainSatellite) viewer._selectMainSatellite(a.satellite_id);
             viewer.clock.shouldAnimate = false;
             viewer.clock.currentTime = Cesium.JulianDate.clone(a.start, viewer.clock.currentTime);
             viewer.clock.tick();
@@ -699,6 +697,9 @@
         const e = allEntities[i];
         if (Cesium.defined(e.path)) {
           satellites.push(e);
+          // The model/label identifies a satellite; keep its orbit path but do
+          // not render the CZML point underneath the body model.
+          e.point = undefined;
         } else if (Cesium.defined(e.point)) {
           targets.push(e);
         }
@@ -709,7 +710,6 @@
 
       const satTrackCb = document.getElementById('toggleSatTrack');
       const satLabelCb = document.getElementById('toggleSatLabel');
-      const satPointCb = document.getElementById('toggleSatPoint');
       const tgtLabelCb = document.getElementById('toggleTargetLabel');
       const tgtPointCb = document.getElementById('toggleTargetPoint');
 
@@ -718,9 +718,6 @@
       }
       function setSatLabelVisible(show) {
         satellites.forEach((s) => { if (s.label) s.label.show = show; });
-      }
-      function setSatPointVisible(show) {
-        satellites.forEach((s) => { if (s.point) s.point.show = show; });
       }
       function setTargetLabelVisible(show) {
         targets.forEach((t) => { if (t.label) t.label.show = show; });
@@ -734,9 +731,6 @@
       }
       if (satLabelCb) {
         satLabelCb.addEventListener('change', () => setSatLabelVisible(satLabelCb.checked));
-      }
-      if (satPointCb) {
-        satPointCb.addEventListener('change', () => setSatPointVisible(satPointCb.checked));
       }
       if (tgtLabelCb) {
         tgtLabelCb.addEventListener('change', () => setTargetLabelVisible(tgtLabelCb.checked));
@@ -915,7 +909,10 @@
         button.type = 'button';
         button.dataset.satelliteId = satellite.id;
         button.textContent = satellite.id + ' [' + (satellite.maneuverability_type || 'unknown') + ']';
-        button.addEventListener('click', () => selectSatellite(satellite.id));
+        button.addEventListener('click', () => {
+          selectSatellite(satellite.id);
+          if (viewer._selectMainSatellite) viewer._selectMainSatellite(satellite.id);
+        });
         list.appendChild(button);
       });
       toggle.addEventListener('click', () => {
@@ -1180,8 +1177,8 @@
       const status = document.getElementById('assetStatus');
       if (!replay || !window.FixedPayloadState) {
         status.textContent = replayLoadError
-          ? 'Replay data unavailable; Cesium point/label fallback remains active. ' + replayLoadError
-          : 'No replay sidecar; Cesium point/label fallback is active.';
+          ? 'Replay data unavailable; Cesium orbit/label fallback remains active. ' + replayLoadError
+          : 'No replay sidecar; Cesium orbit/label fallback is active.';
         return;
       }
       const targets = new Map();
@@ -1281,10 +1278,16 @@
         markerCount += 1;
         frustumRayCount += setupSensorGeometry(satellite, stateAt);
       });
+      if (window.SatelliteFollow) {
+        SatelliteFollow.install(
+          viewer, ds, (replay.satellites || []).map((satellite) => satellite.id),
+          Cesium.TrackingReferenceFrame.ENU
+        );
+      }
       status.innerHTML = '<strong>Landsat 8 illustrative appearance</strong><br>'
         + modelCount + ' body model(s), ' + markerCount + ' fixed -Z payload marker(s). '
         + frustumRayCount + ' sampled FOV boundary ray(s) with translucent side faces. Original satellite IDs remain unchanged; '
-        + 'point/label geometry is retained as the load fallback. '
+        + 'satellite point graphics are removed while labels and orbit tracks remain available. '
         + 'FOV is a square full-angle display assumption only.';
       setupFixedPayloadView(replay, stateAt);
     }

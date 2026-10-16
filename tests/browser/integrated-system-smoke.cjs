@@ -58,6 +58,10 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
       return {
         time:Cesium.JulianDate.toIso8601(now), animate:viewer.clock.shouldAnimate,
         bodyPosition:!!body.position.getValue(now),bodyOrientation:!!body.orientation.getValue(now),
+        satellitePoint:Cesium.defined(body.point),satellitePath:Cesium.defined(body.path),
+        trackingFrame:body.trackingReferenceFrame,
+        enuTrackingFrame:Cesium.TrackingReferenceFrame.ENU,
+        selectedId:viewer.selectedEntity && viewer.selectedEntity.id,
         cone:typeof cone.show==='boolean' ? cone.show : cone.show.getValue(now),
         payload:document.querySelector('#payloadViewStatus').textContent,
         models:document.querySelector('#assetStatus').textContent,
@@ -69,6 +73,10 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     assert.equal(result.secondaryAnimate,false);
     assert.equal(result.bodyPosition,true);
     assert.equal(result.bodyOrientation,true);
+    assert.equal(result.satellitePoint,false);
+    assert.equal(result.satellitePath,true);
+    assert.equal(result.trackingFrame,result.enuTrackingFrame);
+    assert.equal(result.selectedId,'sat-a');
     assert.equal(result.cone,true);
     assert.ok(result.payload.includes('OBSERVING'),JSON.stringify(result));
     await view.evaluate(() => {
