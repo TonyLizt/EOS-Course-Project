@@ -24,6 +24,9 @@ from .config import sha256_file
 from .contracts import RunConfig
 from .provenance import verify_provenance
 from .runner import build_constraint_model
+from schedulers.preview_exposure import candidate_exposure
+from .planning_preview import audit_preview
+import time
 
 
 def _time(value: str | None) -> datetime | None:
@@ -72,7 +75,7 @@ def verify_candidate(config: RunConfig, candidate: dict, runtime_s: float) -> tu
         if not windows:
             raise ValueError(f"任务不在来源窗口内：{task_id}")
         window = windows[0]
-        planning = planning_exposure(window, start, end, task.required_duration)
+        planning = candidate_exposure(problem, window, start, end, task.required_duration)
         if planning.status is not ExposureStatus.PLANNING_FEASIBLE:
             raise ContinuousCertificationError(planning.status, planning.reason)
         if int(item["orbit_number"]) != window.orbit_number:
@@ -144,6 +147,11 @@ def verify_candidate(config: RunConfig, candidate: dict, runtime_s: float) -> tu
     official = schedule_to_dict(schedule, problem)
     metric_data = asdict(metrics)
     metric_data.update({"completed_tasks": len(seen_tasks), "total_tasks": len(problem.tasks)})
+    if config.execution_mode == 'planning_preview':
+        from utils.continuous_exposure import _RUNTIME
+        runtime = getattr(_RUNTIME, 'value', None)
+        receipt = audit_preview(config, official, deadline=runtime[0] if runtime else time.monotonic()+30)
+        return official, metric_data, receipt
     receipt = certify_schedule(path, official, run_id=config.run_id,
                                scenario_sha=config.scenario_sha256,
                                data_path=os.environ.get("EOS_OREKIT_DATA"))

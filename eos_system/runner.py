@@ -16,6 +16,7 @@ from .provenance import verify_provenance
 
 def build_constraint_model(problem, config: RunConfig) -> ConstraintModel:
     """运行和复核必须调用同一个构造函数，防止约束参数漂移。"""
+    problem.execution_mode = config.execution_mode
     return ConstraintModel(
         problem=problem,
         placement_mode=config.placement_mode,

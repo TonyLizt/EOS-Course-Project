@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .contracts import RunConfig
+from .planning_preview import PreviewReceipt, PreviewRecord, validate_preview
 
 
 TERMINAL = {"SUCCEEDED", "FAILED", "CANCELLED", "TIMED_OUT"}
@@ -341,6 +342,7 @@ class Database:
                     # run_id/时间是服务端生成值；比较用户提交部分而非这些值。
                     current = json.loads(previous["config_json"])
                     incoming = config.model_dump()
+                    current.setdefault('execution_mode', 'formal')
                     for key in ("run_id", "created_at"):
                         current.pop(key, None)
                         incoming.pop(key, None)
@@ -366,7 +368,7 @@ class Database:
         )
 
     def record_system_event(self, run_id: str, attempt: int | None, kind: str, payload: dict | None = None) -> None:
-        if kind == "CONTINUOUS_CERTIFIED":
+        if kind in {"CONTINUOUS_CERTIFIED", "PREVIEW_VALIDATED"}:
             raise ValueError("certification events are reserved for finish_success")
         """记录正式状态之外的诊断事件，例如可选文件导出失败。"""
         with self.write() as db:
@@ -481,6 +483,36 @@ class Database:
                            (status, code, now(), run_id, attempt))
             self._event(db, run_id, attempt, "controller", None, status, {"code": code})
 
+    def finish_preview(self, run_id, attempt, plan, metrics, verify_s, *, receipt, deadline):
+        """A separate commit path; never issues CONTINUOUS_CERTIFIED or a formal receipt."""
+        def guard():
+            check_deadline(deadline)
+        with self.write(before_commit=guard) as db:
+            row = db.execute('SELECT status,cancel_requested_at,config_json FROM runs WHERE run_id=? AND current_attempt=?',
+                             (run_id, attempt)).fetchone()
+            if not row or row['status'] != 'VERIFYING' or row['cancel_requested_at']:
+                return False
+            if not isinstance(receipt, PreviewReceipt):
+                raise ValueError('Controller preview receipt required')
+            evidence = validate_preview(receipt.evidence(), json.loads(row['config_json']), plan)
+            guard()
+            plan_json = compact_json(plan)
+            db.execute('INSERT INTO plans(run_id,attempt_no,scenario_id,plan_json,plan_sha256,verified_at) VALUES (?,?,?,?,?,?)',
+                       (run_id, attempt, plan['scenario_id'], plan_json, hashlib.sha256(plan_json.encode()).hexdigest(), now()))
+            for index, item in enumerate(plan['assignments']):
+                db.execute('INSERT INTO assignments(run_id,ordinal,task_id,satellite_id,sensor_id,sat_start_time,sat_end_time,ground_station_id,gs_start_time,gs_end_time,assignment_json) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+                    (run_id,index,item['task_id'],item['satellite_id'],item['sensor_id'],item['sat_start_time'],item['sat_end_time'],
+                     item.get('ground_station_id'),item.get('gs_start_time'),item.get('gs_end_time'),compact_json(item)))
+            db.execute('INSERT INTO metrics(run_id,completed_tasks,total_tasks,TP,TCR,BD,TM,RT,RV,mip_gap,computed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+                (run_id,metrics['completed_tasks'],metrics['total_tasks'],metrics['task_profit'],metrics['task_completion_rate'],
+                 metrics['balance_degree'],metrics['timeliness_metric'],metrics['runtime_efficiency'],metrics['robustness_variance'],metrics['mip_gap'],now()))
+            self._event(db, run_id, attempt, 'controller', None, 'PREVIEW_VALIDATED', evidence)
+            db.execute("UPDATE run_attempts SET outcome='SUCCEEDED',ended_at=?,algorithm_runtime_s=?,verification_runtime_s=? WHERE run_id=? AND attempt_no=?",
+                       (now(),metrics['runtime_efficiency'],verify_s,run_id,attempt))
+            db.execute("UPDATE runs SET status='SUCCEEDED',updated_at=?,finished_at=? WHERE run_id=?", (now(),now(),run_id))
+            self._event(db, run_id, attempt, 'controller', None, 'SUCCEEDED', {'result_kind':'planning_preview'})
+            return True
+
     def request_cancel(self, run_id: str) -> tuple[str, bool] | None:
         with self.write() as db:
             row = db.execute("SELECT status,current_attempt,cancel_requested_at FROM runs WHERE run_id=?", (run_id,)).fetchone()
@@ -539,6 +571,20 @@ class Database:
             evidence = next((event["payload"] for event in reversed(result["events"])
                              if event["event_type"] == "CONTINUOUS_CERTIFIED"
                              and event["source"] == "controller"), None)
+            if result['config'].get('execution_mode') == 'planning_preview':
+                preview = next((event['payload'] for event in reversed(result['events'])
+                    if event['event_type'] == 'PREVIEW_VALIDATED' and event['source'] == 'controller'), None)
+                result['result_kind'] = 'planning_preview'
+                result['continuous_certification'] = {'status':'NOT_CERTIFIED', 'reason':'PLANNING_PREVIEW_ONLY'}
+                try:
+                    if result['status'] != 'SUCCEEDED' or not plan or hashlib.sha256(plan['plan_json'].encode()).hexdigest() != plan['plan_sha256']:
+                        raise ValueError('no valid preview plan')
+                    result['preview_validation'] = validate_preview(preview, result['config'], result['plan'])
+                    return PreviewRecord(result)
+                except (ValueError, TypeError, KeyError):
+                    result['plan'] = None
+                    return result
+            result['result_kind'] = 'formal'
             try:
                 if result["status"] != "SUCCEEDED" or result["plan"] is None:
                     raise ValueError("no certified successful plan")
@@ -565,6 +611,7 @@ class Database:
             items = [dict(row) for row in rows]
         for item in items:
             detail = self.get_run(item["run_id"])
+            item['result_kind'] = detail.get('result_kind', 'formal') if detail else 'formal'
             item["continuous_certification_status"] = detail["continuous_certification"]["status"] if detail else "INCONCLUSIVE"
         return {"items": items, "total": total, "limit": limit, "offset": offset}
 

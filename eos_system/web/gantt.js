@@ -106,6 +106,7 @@
   window.addEventListener('scroll', hideTooltip, true);
   let resizeFrame; new ResizeObserver(() => { cancelAnimationFrame(resizeFrame); resizeFrame = requestAnimationFrame(() => { if (data.length) render(); }); }).observe($('timeAxis'));
   fetch(scheduleUrl).then(async r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).then(schedule => {
+    if (schedule.result_kind === 'planning_preview') $('sourceLabel').textContent = '规划预览 · 未取得正式连续认证 · ' + scheduleUrl;
     data = T.normalize(schedule.assignments || []);
     if (!data.length) throw new Error('此排程没有有效观测记录。');
     const first = Math.min(...data.map(a => a.start)), last = Math.max(...data.map(a => a.end));

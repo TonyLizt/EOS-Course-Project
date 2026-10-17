@@ -27,6 +27,7 @@ from .storage import Database
 from .verification import verify_candidate
 from .worker_reference import CANCEL_GRACE_S, PROTOCOL_VERSION, worker_main
 from .worker_process import WorkerGroup, reap_worker
+from .planning_preview import PreviewReceipt, validate_preview
 
 
 VERIFICATION_TIMEOUT_S = 30.0
@@ -149,6 +150,11 @@ class Controller:
             if not ok:
                 raise value
             plan, metrics, receipt = value
+            if config.execution_mode == 'planning_preview':
+                if not isinstance(receipt, PreviewReceipt):
+                    raise ValueError('missing Controller preview receipt')
+                validate_preview(receipt.evidence(), config.model_dump(), plan)
+                return plan, metrics, receipt, deadline
             if not isinstance(receipt, CertificationReceipt):
                 raise ContinuousCertificationError(ExposureStatus.ERROR, "MISSING_CONTROLLER_RECEIPT")
             validate_certification(receipt.evidence(), run_id=config.run_id,
@@ -415,7 +421,8 @@ class Controller:
             try:
                 plan, metrics, receipt, certification_deadline = self._verify_with_deadline(config, candidate, reported_runtime)
             except ContinuousCertificationError as exc:
-                code = "CONTROLLER_STOP" if self._stop.is_set() else "CONTINUOUS_" + exc.status.value
+                prefix = 'PREVIEW_' if config.execution_mode == 'planning_preview' else 'CONTINUOUS_'
+                code = "CONTROLLER_STOP" if self._stop.is_set() else prefix + exc.status.value
                 self.database.finish_failure(config.run_id, attempt, "FAILED", code, str(exc))
                 return
             with self.finalization_lock:
@@ -424,8 +431,12 @@ class Controller:
                     return
                 try:
                     check_deadline(certification_deadline)
-                    succeeded = self.database.finish_success(config.run_id, attempt, plan, metrics,
-                        time.perf_counter() - verify_started, certification=receipt, deadline=certification_deadline)
+                    if config.execution_mode == 'planning_preview':
+                        succeeded = self.database.finish_preview(config.run_id, attempt, plan, metrics,
+                            time.perf_counter()-verify_started, receipt=receipt, deadline=certification_deadline)
+                    else:
+                        succeeded = self.database.finish_success(config.run_id, attempt, plan, metrics,
+                            time.perf_counter() - verify_started, certification=receipt, deadline=certification_deadline)
                 except ContinuousCertificationError as exc:
                     self.database.finish_failure(config.run_id, attempt, "FAILED", "CONTINUOUS_" + exc.status.value, str(exc))
                     return
@@ -434,7 +445,8 @@ class Controller:
                     self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED_DURING_VERIFY", "核验期间已取消")
                 else:
                     try:
-                        persist_directory_exports(self.database, config)
+                        if config.execution_mode == 'formal':
+                            persist_directory_exports(self.database, config)
                     except (OSError, ValueError) as exc:
                         # 正式计划已在库中提交，外部目录故障只记诊断事件，不篡改成功状态。
                         self.database.record_system_event(config.run_id, attempt, "EXPORT_FAILED", {"message": str(exc)[:300]})

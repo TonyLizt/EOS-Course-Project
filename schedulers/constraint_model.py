@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 
 from schedulers.transition_utils import compute_transition_time_agile, delta_g_between
 from utils.continuous_exposure import planning_exposure, ExposureStatus
+from schedulers.preview_exposure import candidate_exposure
 from typing import List, Dict, Optional, Protocol
 from datetime import datetime, timedelta
 
@@ -293,9 +294,15 @@ class ConstraintModel:
         windows = [w for w in task.windows if w.window_id == assignment.sat_window_id
                    and w.satellite_id == assignment.satellite_id
                    and w.sensor_id == assignment.sensor_id]
-        if not any(planning_exposure(w, assignment.sat_start_time, assignment.sat_end_time,
+        if not any(candidate_exposure(self.problem, w, assignment.sat_start_time, assignment.sat_end_time,
                    task.required_duration).status is ExposureStatus.PLANNING_FEASIBLE for w in windows):
             return False
+        if getattr(self.problem, 'execution_mode', 'formal') == 'planning_preview':
+            from schedulers.observation_geometry import validate_observation_interval
+            result = validate_observation_interval(self.problem, assignment.satellite_id,
+                assignment.task_id, assignment.sat_start_time, assignment.sat_end_time)
+            if not result.checked or not result.feasible:
+                return False
         return self.check_discrete_assignment(assignment, schedule)
 
     def check_discrete_assignment(self, assignment: Assignment, schedule: Schedule) -> bool:

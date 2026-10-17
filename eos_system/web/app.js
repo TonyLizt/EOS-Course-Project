@@ -11,6 +11,7 @@ let pageOffset = 0;
 let deletingRunId = null;
 let autoRefresh = true;
 let refreshGeneration = 0;
+let scenarioGeneration = 0;
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
@@ -28,7 +29,7 @@ async function bootstrap() {
     const [health, sources, profiles, algorithms, replayConfigs] = await Promise.all([
       api("/api/health"), api("/api/data-sources"), api("/api/output-profiles"), api("/api/algorithms"), api("/api/replay-configs")
     ]);
-    $("health").textContent = `服务已连接 · ${health.version}`;
+    $("health").textContent = `服务已连接 · ${health.version} · 控制台 ${health.ui?.build_id || '版本未提供'}`;
     $("source").innerHTML = sources.items.map((s) => `<option value="${escapeHtml(s.source_id)}">${escapeHtml(s.name)}</option>`).join("");
     outputProfiles = profiles.items;
     $("output-profile").innerHTML = profiles.items.map((p) => `<option value="${escapeHtml(p.profile_id)}">${escapeHtml(p.name)}</option>`).join("");
@@ -47,9 +48,12 @@ async function bootstrap() {
 }
 
 async function loadScenarios() {
+  const generation = ++scenarioGeneration;
   const sourceId = $("source").value;
+  const previous = $("scenario").value;
   if (!sourceId) return;
-  const scenarios = await api(`/api/scenarios?source_id=${encodeURIComponent(sourceId)}`);
+  const scenarios = await api(`/api/scenarios?source_id=${encodeURIComponent(sourceId)}&execution_mode=${encodeURIComponent($("execution-mode").value)}`);
+  if (generation !== scenarioGeneration) return;
   currentScenarios=scenarios.items;
   $("scenario").innerHTML = currentScenarios.map(s => {
     const unavailable=s.availability && s.availability!=='ready';
@@ -57,7 +61,10 @@ async function loadScenarios() {
     return '<option value="'+escapeHtml(s.scenario_id)+'"'+(unavailable ? ' disabled' : '')+'>'
       +escapeHtml(s.name+suffix+(unavailable ? "（文件未就绪）" : ""))+'</option>';
   }).join("");
-  const ready=currentScenarios.find(s => !s.availability || s.availability==='ready');
+  const available = currentScenarios.filter(s => !s.availability || s.availability === 'ready');
+  const ready = available.find(s => s.scenario_id === previous || s.scenario_id === previous + '_epoch_fixed_v1')
+    || [...available].sort((a,b) => (a.satellite_count ?? Infinity) - (b.satellite_count ?? Infinity)
+      || (a.mission_count ?? Infinity) - (b.mission_count ?? Infinity))[0];
   if(ready) $("scenario").value=ready.scenario_id;
   $("submit").disabled=!ready;
   updateScenarioHint();
@@ -72,6 +79,10 @@ function updateScenarioHint() {
 $("scenario").addEventListener("change",updateScenarioHint);
 
 function updateHints() {
+  if ($("execution-mode").value === 'planning_preview') {
+    for (const option of $("output-profile").options) option.disabled = outputProfiles.find(p => p.profile_id === option.value)?.kind === 'directory';
+    $("output-profile").value = outputProfiles.find(p => p.kind === 'download')?.profile_id || '';
+  }
   const algorithm = currentAlgorithms.find((a) => a.algorithm_id === $("algorithm").value);
   const properties = Object.keys(algorithm?.parameters?.properties || {});
   $("algorithm-hint").textContent = algorithm ? `${algorithm.description || ""} 参数：${properties.length ? properties.join("、") : "无"}` : "";
@@ -79,9 +90,21 @@ function updateHints() {
   $("output-hint").textContent = profile?.kind === "directory"
     ? `正式 JSON/CSV 将保存到 ${profile.root_path}/<run_id>/；浏览器仍可下载。`
     : "只提供浏览器下载；数据库与运行状态仍保存在 WSL 运行目录。";
+  if ($("execution-mode").value === 'planning_preview') $("output-hint").textContent = '规划预览保存数据库记录并支持比较和回放；不生成正式认证 JSON/CSV 文件。';
 }
 
 $("source").addEventListener("change", () => loadScenarios().catch((error) => { $("form-message").textContent = error.message; }));
+$("execution-mode").addEventListener("change", () => {
+  const preview = $("execution-mode").value === 'planning_preview';
+  $("mode-hint").textContent = preview
+    ? '规划预览：可比较和回放；曝光采样检查不构成连续区间证明，不得作为正式认证计划导出。'
+    : '正式认证：保留严格连续认证门禁；缺少可信物理来源或连续区间证明时不会发布成功计划。';
+  for (const option of $("output-profile").options) {
+    option.disabled = preview && outputProfiles.find(p => p.profile_id === option.value)?.kind === 'directory';
+  }
+  if (preview) $("output-profile").value = outputProfiles.find(p => p.kind === 'download')?.profile_id || '';
+  loadScenarios().catch(error => { $("form-message").textContent = error.message; });
+});
 $("algorithm").addEventListener("change", updateHints);
 $("output-profile").addEventListener("change", updateHints);
 
@@ -114,6 +137,7 @@ function buildRequest() {
   const params = JSON.parse($("params").value || "{}");
   if (params === null || Array.isArray(params) || typeof params !== "object") throw new Error("算法参数必须是 JSON 对象");
   return {
+    execution_mode: $("execution-mode").value,
     source_id: $("source").value,
     scenario_id: $("scenario").value,
     algorithm_id: $("algorithm").value,
@@ -210,15 +234,15 @@ function clearDetail() {
 function showDetail(run) {
   if (window.ConsoleUI) window.ConsoleUI.detail(run);
   $("selected-run").textContent = run.run_id;
-  $("detail-status").textContent = run.status;
+  $("detail-status").textContent = run.status + (run.result_kind === 'planning_preview' ? ' · 规划预览' : '');
   $("detail-status").className = `badge ${["FAILED","CANCELLED","TIMED_OUT"].includes(run.status) ? "failed" : ["RUNNING","QUEUED","VERIFYING"].includes(run.status) ? "running" : ""}`;
   $("actions").hidden = false;
   $("cancel").disabled = ["SUCCEEDED","FAILED","CANCELLED","TIMED_OUT"].includes(run.status) || run.cancel_requested;
   $("delete-run").disabled = deletingRunId === run.run_id || !["SUCCEEDED","FAILED","CANCELLED","TIMED_OUT"].includes(run.status);
   $("delete-option").hidden = !(run.exports || []).some((item) => item.artifact_path);
   if ($("delete-option").hidden) $("delete-files").checked = false;
-  $("export-json").hidden = run.status !== "SUCCEEDED" || !run.plan;
-  $("export-csv").hidden = run.status !== "SUCCEEDED" || !run.plan;
+  $("export-json").hidden = run.status !== "SUCCEEDED" || !run.plan || run.result_kind === 'planning_preview';
+  $("export-csv").hidden = run.status !== "SUCCEEDED" || !run.plan || run.result_kind === 'planning_preview';
   $("open-gantt").hidden = run.status !== "SUCCEEDED" || !run.plan;
   $("open-cesium").hidden = run.status !== "SUCCEEDED" || !run.plan;
   $("export-json").href = `/api/runs/${encodeURIComponent(run.run_id)}/export?format=json`;
@@ -232,7 +256,9 @@ function showDetail(run) {
   $("detail-error").textContent = run.error ? `${run.error.code}: ${run.error.message}` : "";
   const files = (run.exports || []).filter((item) => item.artifact_path || item.error_message);
   $("files").innerHTML = files.length ? files.map((item) => `<li>${escapeHtml(item.format.toUpperCase())} · ${escapeHtml(item.artifact_path || item.error_message)}</li>`).join("")
-    : "<li>此实验没有服务器目录文件；可使用上方浏览器下载。</li>";
+    : run.result_kind === 'planning_preview' ? '<li>规划预览不生成正式输出文件；请使用 Gantt / Cesium 分析结果。</li>'
+      : run.status === 'SUCCEEDED' && run.plan ? '<li>此实验没有服务器目录文件；可使用上方浏览器下载。</li>'
+      : '<li>此实验没有可下载的正式结果。</li>';
   const m = run.metrics;
   $("metrics").innerHTML = m ? [
     ["完成任务", `${m.completed_tasks} / ${m.total_tasks}`], ["TCR", `${(m.TCR * 100).toFixed(1)}%`],

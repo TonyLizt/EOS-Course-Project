@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import sqlite3
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Literal
 from urllib.parse import urlencode
 
 from fastapi import FastAPI, Header, HTTPException, Query, Request
@@ -27,6 +29,7 @@ from .visualization import OrbitUnavailable, orbit_cache_path
 from .provenance import capture_provenance
 from .scenario_catalog import ScenarioCatalog
 from .config import sha256_file
+from .planning_preview import require_preview_record, preview_schedule
 
 
 def _public_run(record: dict) -> dict:
@@ -61,7 +64,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.controller = controller
     app.state.database = database
     web_dir = Path(__file__).parent / "web"
+    web_digest = hashlib.sha256()
+    for asset in sorted(web_dir.iterdir()):
+        if asset.suffix in {".html", ".js", ".css"}:
+            web_digest.update(asset.name.encode())
+            web_digest.update(asset.read_bytes())
+    ui_build_id = web_digest.hexdigest()[:12]
     app.mount("/static", StaticFiles(directory=web_dir), name="static")
+
+    @app.middleware("http")
+    async def current_ui(request: Request, call_next):
+        response = await call_next(request)
+        if request.url.path == "/" or request.url.path.startswith("/static/") or request.url.path == "/visualization/gantt-page":
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["X-EOS-UI-Build"] = ui_build_id
+        return response
 
     @app.exception_handler(HTTPException)
     async def http_error(_: Request, exc: HTTPException):
@@ -90,14 +108,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def health():
         with database.connect() as connection:
             connection.execute("SELECT 1").fetchone()
-        return {"status": "ok", "version": VERSION, "controller_instance_id": controller.instance_id, "time": now()}
+        return {"status": "ok", "version": VERSION, "controller_instance_id": controller.instance_id, "time": now(),
+                "ui": {"name": "统一调度控制台", "build_id": ui_build_id}}
 
     @app.get("/api/scenarios")
-    def scenarios(source_id: str = "runtime"):
+    def scenarios(source_id: str = "runtime", execution_mode: Literal['formal','planning_preview'] = 'formal'):
         source = database.get_data_source(source_id)
         if source is None:
             raise HTTPException(status_code=404, detail="数据源未登记")
-        return {"source_id": source_id, "items": catalog.list_scenarios(Path(source["root_path"]), source_id)}
+        return {"source_id": source_id, "items": catalog.list_scenarios(Path(source["root_path"]), source_id,
+            planning_preview=execution_mode == 'planning_preview')}
 
     @app.get("/api/data-sources")
     def data_sources():
@@ -156,6 +176,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         profile = database.get_output_profile(request.output_profile_id)
         if source is None or profile is None:
             raise HTTPException(status_code=404, detail="数据源或输出方案未登记")
+        if request.execution_mode == 'planning_preview' and profile['kind'] != 'download':
+            raise HTTPException(status_code=422, detail='规划预览不能写入正式输出目录，请选择仅浏览器下载。')
         try:
             scene, digest = resolve_scenario_in(Path(source["root_path"]), request.scenario_id)
             catalog.verify_identity(scene, digest)
@@ -240,14 +262,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         media = "application/json" if format == "json" else "text/csv"
         return Response(content, media_type=media, headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
-    def successful_run(run_id: str) -> dict:
+    def successful_run(run_id: str, *, allow_preview: bool = True) -> dict:
         record = database.get_run(run_id)
         if record is None:
             raise HTTPException(status_code=404, detail="实验不存在")
         if record["status"] != "SUCCEEDED" or record["plan"] is None or record["metrics"] is None:
             raise HTTPException(status_code=409, detail="实验尚无正式成功结果")
         try:
-            require_certified_record(record)
+            if allow_preview and record['config'].get('execution_mode') == 'planning_preview':
+                require_preview_record(record)
+            else:
+                require_certified_record(record)
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return record
@@ -257,7 +282,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """保持旧页面使用的顶层计划结构，只附加正式计划的身份摘要。"""
         record = successful_run(run_id)
         source = database.get_replay_source(run_id)
-        schedule = json.loads(render_json(record))
+        schedule = (preview_schedule(record) if record.get('result_kind') == 'planning_preview'
+                    else json.loads(render_json(record)))
         schedule["plan_sha256"] = source["plan_sha256"]
         schedule["provenance"]["plan_sha256"] = source["plan_sha256"]
         return Response(json.dumps(schedule, ensure_ascii=False), media_type="application/json")

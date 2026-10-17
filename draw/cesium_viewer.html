@@ -359,6 +359,7 @@
   <a class="skip-link" href="#rightPanel" style="left:190px">Skip to replay panels</a>
   <h1 class="sr-only">EOS satellite schedule Cesium replay</h1>
   <aside id="leftPanel" aria-label="Metrics and display controls">
+    <p id="previewModeStatus" role="status" class="small-text" hidden></p>
     <div class="panel-section">
       <h2>Metrics</h2>
       <div id="metrics">
@@ -516,7 +517,13 @@
           console.warn('Schedule file load failed:', r.status, r.statusText);
           return null;
         }
-        return await r.json();
+        const schedule = await r.json();
+        if (schedule.result_kind === 'planning_preview') {
+          const status = document.getElementById('previewModeStatus');
+          status.hidden = false;
+          status.textContent = '规划预览：曝光采样检查通过；未取得正式连续认证，回放仅供分析。';
+        }
+        return schedule;
       } catch (error) {
         console.warn('Schedule file load failed:', error);
         return null;

@@ -20,6 +20,8 @@
     <section class="card form-card" aria-labelledby="create-heading">
       <div class="section-title"><h2 id="create-heading">运行调度</h2><p>共用场景与实验条件，按算法创建独立 Run，由现有 Worker 队列执行。</p></div>
       <form id="run-form">
+        <label>实验模式<select id="execution-mode"><option value="planning_preview">规划预览（可运行、比较和回放；未经正式连续认证）</option><option value="formal">正式认证（需要可信窗口与连续区间证明）</option></select></label>
+        <p id="mode-hint" class="hint">规划预览保留来源、窗口、资源和转向约束，并进行真实曝光采样检查；不能作为正式认证结果导出。</p>
         <label>数据源<select id="source" required></select></label>
         <label>场景<select id="scenario" required></select></label>
         <p id="scenario-hint" class="hint" role="status"></p>
@@ -101,6 +103,6 @@
     </section>
   </main>
   <dialog id="algorithm-dialog" aria-labelledby="algorithm-dialog-title"><div class="inline"><h2 id="algorithm-dialog-title">算法详情</h2><button type="button" id="close-algorithm-dialog" class="secondary">关闭</button></div><div id="algorithm-description"></div></dialog>
-  <footer>框架 v0.3.3 · 正式结果由 Controller 核验并从 SQLite 提供</footer>
+  <footer>统一调度控制台 · Run 与结果由现有 Controller 和 SQLite 提供</footer>
 </body>
 </html>

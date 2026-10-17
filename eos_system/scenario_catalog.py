@@ -56,12 +56,14 @@ class ScenarioCatalog:
             database.ensure_catalog_source(group["source_id"], group["name"], root)
         return warnings
 
-    def list_scenarios(self, root: Path, source_id: str) -> list[dict]:
+    def list_scenarios(self, root: Path, source_id: str, *, planning_preview: bool = False) -> list[dict]:
         """目录列表附带可信的规模信息；SHA 不符/未下载时仍可看见原因。"""
-        result = list_scenarios_in(root, source_id)
+        result = list_scenarios_in(root, source_id, planning_preview=planning_preview)
         by_name = {row["scenario_id"]: row for row in result}
         for path, entry in self.entries.items():
             if path.parent != root.resolve():
+                continue
+            if entry['scenario_id'] + '_epoch_fixed_v1' in by_name:
                 continue
             row = by_name.get(entry["scenario_id"])
             if row is None:

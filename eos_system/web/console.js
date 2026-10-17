@@ -7,7 +7,8 @@
   const terminal = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'TIMED_OUT']);
   const E = escapeHtml;
   const verification = run => run.status === 'SUCCEEDED'
-    ? `Controller 已提交 · 连续认证 ${run.continuous_certification?.status || '未提供'}`
+    ? (run.result_kind === 'planning_preview' ? '规划预览完成 · 曝光采样通过 · 未获正式连续认证'
+       : `Controller 已提交 · 连续认证 ${run.continuous_certification?.status || '未提供'}`)
     : (run.error?.message || '未提交正式计划');
   let activeAlgorithm = '', detailRun = null, comparing = false, submitting = false;
   try { JSON.parse(sessionStorage.getItem('eos-comparison') || '[]').slice(0, 12).forEach(id => selected.add(id)); } catch (_) { /* Optional storage. */ }
@@ -37,7 +38,7 @@
   function detail(run) {
     detailRun = run;
     $('run-algorithm-info').hidden = !run;
-    $('run-config').textContent = run ? JSON.stringify({config: run.config, continuous_certification: run.continuous_certification || null}, null, 2) : '';
+    $('run-config').textContent = run ? JSON.stringify({config: run.config, continuous_certification: run.continuous_certification || null, preview_validation: run.preview_validation || null}, null, 2) : '';
     const last = run?.attempts?.at(-1);
     $('run-summary').textContent = run ? `${run.config.algorithm_id} ${run.config.algorithm_version} · ${run.config.scenario_id} · 提交 ${run.created_at} · 开始 ${last?.started_at || '尚未开始'} · 结束 ${run.finished_at || '尚未结束'} · ${verification(run)}` : '';
     if (run) cache.set(run.run_id, run);
