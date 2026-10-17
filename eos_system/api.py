@@ -20,7 +20,7 @@ from .config import Settings, algorithm_source_sha256, list_scenarios_in, normal
 from .contracts import DirectoryRegistration, ReplayRequest, RunConfig, RunRequest
 from .controller import Controller
 from .deletion import remove_exported_files
-from .exporting import render_csv, render_json
+from .exporting import render_csv, render_json, require_certified_record
 from .storage import Database, now
 from .replay_service import ReplayError, ReplayService, REPLAY_CONFIG_ID
 from .visualization import OrbitUnavailable, orbit_cache_path
@@ -229,6 +229,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 raise HTTPException(status_code=404, detail="实验不存在")
             if record["status"] != "SUCCEEDED" or record["plan"] is None or record["metrics"] is None:
                 raise HTTPException(status_code=409, detail="实验尚无正式成功结果")
+            try:
+                require_certified_record(record)
+            except ValueError as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
             public = _public_run(record)
             content = render_json(public) if format == "json" else render_csv(public)
             database.record_export(run_id, format, content)
@@ -242,6 +246,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="实验不存在")
         if record["status"] != "SUCCEEDED" or record["plan"] is None or record["metrics"] is None:
             raise HTTPException(status_code=409, detail="实验尚无正式成功结果")
+        try:
+            require_certified_record(record)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         return record
 
     @app.get("/api/runs/{run_id}/visualization/schedule")

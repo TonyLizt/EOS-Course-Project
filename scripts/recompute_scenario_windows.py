@@ -261,6 +261,7 @@ def recompute_data(scene, *, calculator=None, data_path=None):
 
 def build_info():
     files = ("scripts/recompute_scenario_windows.py", "utils/time_parsing.py", "utils/visibility.py",
+             "utils/continuous_exposure.py",
              "scripts/build_scenario_manifest.py", "core/models.py")
     info = {"source_files_sha256": {name: file_sha256(ROOT / name) for name in files},
             "python_version": sys.version.split()[0], "base_git_sha": None, "recompute_tool_git_sha": None,
@@ -370,9 +371,14 @@ def recompute_file(scenario, out, *, calculator=None, data_path=None,
             propagation_version = "orekit-keplerian/orekit_jpype-" + importlib.metadata.version("orekit_jpype")
         except importlib.metadata.PackageNotFoundError:
             pass
+    from utils.continuous_exposure import window_generation_record
+    generation = (window_generation_record(scene["metadata"]["time_step"], **visibility_settings(scene))
+                  if calculator is None else None)
     provenance = dict(info_before, scenario_physics_version=PHYSICS_VERSION,
                       epoch_parser_version=EPOCH_PARSER_VERSION, propagation_version=propagation_version,
                       window_boundary_version=window_boundary_version,
+                      window_generation=generation,
+                      continuous_certification={"status": "NOT_RUN", "reason": "window precision is not continuity proof"},
                       orekit_data_sha256=data_sha, parent_scenario_sha256=source_sha,
                       source_scenario_id=scene["scenario_id"], scenario_sha256=result_sha,
                       static_data_sha256=digest(static_data(candidate)),

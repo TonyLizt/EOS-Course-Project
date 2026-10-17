@@ -35,6 +35,8 @@ class AdaptiveRepairTests(unittest.TestCase):
             start_time=self.start + timedelta(seconds=second),
             end_time=self.start + timedelta(seconds=second + 10),
             non_agile_data={"roll_angle": 0.0, "pitch_angle": 0.0, "yaw_angle": 0.0},
+            planning_evidence={"trusted":True,"version":"visibility_exit_refined_v3",
+                               "step_s":1.0,"evidence_sha256":"UNIT_TEST_SYNTHETIC_WINDOW"},
         ) for i, second in enumerate(starts)]
         self.problem.tasks[tid] = SchedulingTask(
             id=tid, priority=priority, required_duration=10, windows=windows,

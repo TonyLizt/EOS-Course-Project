@@ -156,6 +156,10 @@ def _delayed_started_reference(ready, release, start_received, algorithm_entered
 
 class ControllerShutdownTests(unittest.TestCase):
     def setUp(self):
+        from certification_fixtures import unit_certify
+        certification_patch = patch("eos_system.verification.certify_schedule", side_effect=unit_certify)
+        certification_patch.start()
+        self.addCleanup(certification_patch.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         root = Path(self.temp.name)

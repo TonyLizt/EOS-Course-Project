@@ -9,6 +9,10 @@ from dataclasses import asdict
 from datetime import datetime
 import math
 from pathlib import Path
+import os
+from utils.continuous_exposure import (certify_schedule, CertificationReceipt, planning_exposure,
+                                       ExposureStatus, ContinuousCertificationError)
+from utils.time_parsing import parse_orbit_epoch
 
 from schedulers.constraint_model import Assignment, Schedule
 from schedulers.evaluation_metrics import compute_evaluation_metrics
@@ -23,7 +27,7 @@ from .runner import build_constraint_model
 
 
 def _time(value: str | None) -> datetime | None:
-    return datetime.fromisoformat(value) if value else None
+    return parse_orbit_epoch(value).replace(tzinfo=None) if value else None
 
 
 def _slice_angles(payload, offset: int, count: int):
@@ -35,7 +39,7 @@ def _slice_angles(payload, offset: int, count: int):
     return payload
 
 
-def verify_candidate(config: RunConfig, candidate: dict, runtime_s: float) -> tuple[dict, dict]:
+def verify_candidate(config: RunConfig, candidate: dict, runtime_s: float) -> tuple[dict, dict, CertificationReceipt]:
     """重建每条 assignment，验证可行性并重新计算所有正式指标。"""
     verify_provenance(config)
     path = Path(config.scenario_path)
@@ -44,7 +48,7 @@ def verify_candidate(config: RunConfig, candidate: dict, runtime_s: float) -> tu
     problem = load_scheduling_problem_from_json(path)
     if candidate.get("scenario_id") != problem.scenario_id:
         raise ValueError("候选计划和输入场景 ID 不一致")
-    if candidate.get("start_time") != problem.start_time.isoformat() or candidate.get("end_time") != problem.end_time.isoformat():
+    if _time(candidate.get("start_time")) != problem.start_time or _time(candidate.get("end_time")) != problem.end_time:
         raise ValueError("候选计划的场景时间范围不一致")
     raw_assignments = candidate.get("assignments")
     if not isinstance(raw_assignments, list):
@@ -52,7 +56,7 @@ def verify_candidate(config: RunConfig, candidate: dict, runtime_s: float) -> tu
     schedule = Schedule()
     seen_tasks: set[str] = set()
     constraint_model = build_constraint_model(problem, config)
-    for item in sorted(raw_assignments, key=lambda row: row["sat_start_time"]):
+    for item in sorted(raw_assignments, key=lambda row: _time(row["sat_start_time"])):
         task_id = item["task_id"]
         if task_id in seen_tasks or task_id not in problem.tasks:
             raise ValueError(f"重复或不存在的任务：{task_id}")
@@ -68,9 +72,14 @@ def verify_candidate(config: RunConfig, candidate: dict, runtime_s: float) -> tu
         if not windows:
             raise ValueError(f"任务不在来源窗口内：{task_id}")
         window = windows[0]
+        planning = planning_exposure(window, start, end, task.required_duration)
+        if planning.status is not ExposureStatus.PLANNING_FEASIBLE:
+            raise ContinuousCertificationError(planning.status, planning.reason)
         if int(item["orbit_number"]) != window.orbit_number:
             raise ValueError(f"轨道编号与来源窗口不符：{task_id}")
         duration = (end - start).total_seconds()
+        from utils.continuous_exposure import exposure_times
+        exposure_times(start, end, task.required_duration)
         if abs(duration - task.required_duration) > 1e-6:
             raise ValueError(f"任务时长与场景定义不符：{task_id}")
         step = float(window.time_step or 1.0)
@@ -135,4 +144,7 @@ def verify_candidate(config: RunConfig, candidate: dict, runtime_s: float) -> tu
     official = schedule_to_dict(schedule, problem)
     metric_data = asdict(metrics)
     metric_data.update({"completed_tasks": len(seen_tasks), "total_tasks": len(problem.tasks)})
-    return official, metric_data
+    receipt = certify_schedule(path, official, run_id=config.run_id,
+                               scenario_sha=config.scenario_sha256,
+                               data_path=os.environ.get("EOS_OREKIT_DATA"))
+    return official, metric_data, receipt

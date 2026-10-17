@@ -132,7 +132,9 @@ def algorithm_source_sha256() -> str:
     files = []
     for folder in ("algorithms", "schedulers", "core"):
         files.extend((project / folder).rglob("*.py"))
-    files.extend([project / "eos_system" / "algorithm_registry.py",
+    files.extend([project / "utils" / "continuous_exposure.py",
+                  project / "utils" / "visibility.py", project / "utils" / "time_parsing.py",
+                  project / "eos_system" / "algorithm_registry.py",
                   project / "eos_system" / "verification.py"])
     digest = hashlib.sha256()
     for path in sorted(files, key=lambda item: item.relative_to(project).as_posix()):

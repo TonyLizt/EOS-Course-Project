@@ -10,6 +10,9 @@ import math
 import multiprocessing as mp
 import os
 import threading
+import queue
+from utils.continuous_exposure import (CertificationReceipt, ContinuousCertificationError,
+                                       ExposureStatus, validate_certification, certification_runtime, check_deadline)
 import time
 from datetime import datetime, timezone
 
@@ -26,11 +29,16 @@ from .worker_reference import CANCEL_GRACE_S, PROTOCOL_VERSION, worker_main
 from .worker_process import WorkerGroup, reap_worker
 
 
+VERIFICATION_TIMEOUT_S = 30.0
+
+
 class Controller:
     def __init__(self, settings: Settings, database: Database):
         self.settings = settings
         self.database = database
         self._stop = threading.Event()
+        self._verification_slot = threading.BoundedSemaphore(1)
+        self._verification_thread = None
         self._dispatch_lock = threading.Lock()
         # 终态写入及目录导出期间，API 删除须等待，避免刚成功就被删导致导出写入悬空。
         self.finalization_lock = threading.RLock()
@@ -77,6 +85,10 @@ class Controller:
             self._thread.join(timeout=self._shutdown_timeout_s)
             if self._thread.is_alive():
                 raise RuntimeError("Controller 执行线程尚未退出；实例锁仍保留")
+        if self._verification_thread is not None:
+            self._verification_thread.join(timeout=self._shutdown_timeout_s)
+        if self._verification_thread is not None and self._verification_thread.is_alive():
+            raise RuntimeError("认证线程尚未退出；实例锁仍保留")
         if self._lock_file:
             fcntl.flock(self._lock_file, fcntl.LOCK_UN)
             self._lock_file.close()
@@ -104,6 +116,47 @@ class Controller:
     def _reap_worker(self, process: mp.Process, group: WorkerGroup,
                      initial_grace_s: float) -> dict:
         return reap_worker(process, group, initial_grace_s, self.settings.stop_grace_s)
+
+    def _verify_with_deadline(self, config, candidate, runtime):
+        # Background Controller only; never executed in an HTTP request thread.
+        # A late verifier cannot persist anything: only this owner finalizes.
+        deadline = time.monotonic() + VERIFICATION_TIMEOUT_S
+        context = self.database.expected_certification_context()
+        check_deadline(deadline)
+        if not self._verification_slot.acquire(blocking=False):
+            raise ContinuousCertificationError(ExposureStatus.ERROR, "PREVIOUS_VERIFIER_STILL_RUNNING")
+        result = queue.Queue(maxsize=1)
+        def verify():
+            try:
+                with certification_runtime(deadline, context):
+                    result.put((True, verify_candidate(config, candidate, runtime)))
+            except BaseException as exc:
+                result.put((False, exc))
+            finally:
+                self._verification_slot.release()
+        thread = threading.Thread(target=verify, name="eos-continuous-verifier", daemon=True)
+        self._verification_thread = thread
+        thread.start()
+        while not self._stop.is_set():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ContinuousCertificationError(ExposureStatus.ERROR, "CERTIFICATION_TIMEOUT")
+            try:
+                ok, value = result.get(timeout=min(.05, remaining))
+            except queue.Empty:
+                continue
+            check_deadline(deadline)
+            if not ok:
+                raise value
+            plan, metrics, receipt = value
+            if not isinstance(receipt, CertificationReceipt):
+                raise ContinuousCertificationError(ExposureStatus.ERROR, "MISSING_CONTROLLER_RECEIPT")
+            validate_certification(receipt.evidence(), run_id=config.run_id,
+                                   scenario_sha=config.scenario_sha256, plan=plan, context=context)
+            check_deadline(deadline)
+            return plan, metrics, receipt, deadline
+        thread.join(timeout=max(0.0, deadline-time.monotonic()))
+        raise ContinuousCertificationError(ExposureStatus.ERROR, "CONTROLLER_STOP_DURING_CERTIFICATION")
 
     def _execute(self, config: RunConfig, attempt: int) -> None:
         context = mp.get_context("spawn")
@@ -359,12 +412,24 @@ class Controller:
                 self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED_DURING_VERIFY", "核验前已取消")
                 return
             verify_started = time.perf_counter()
-            plan, metrics = verify_candidate(config, candidate, reported_runtime)
+            try:
+                plan, metrics, receipt, certification_deadline = self._verify_with_deadline(config, candidate, reported_runtime)
+            except ContinuousCertificationError as exc:
+                code = "CONTROLLER_STOP" if self._stop.is_set() else "CONTINUOUS_" + exc.status.value
+                self.database.finish_failure(config.run_id, attempt, "FAILED", code, str(exc))
+                return
             with self.finalization_lock:
                 if self._stop.is_set():
                     self.database.finish_failure(config.run_id, attempt, "FAILED", "CONTROLLER_STOP", "Controller 停机中断核验")
                     return
-                if not self.database.finish_success(config.run_id, attempt, plan, metrics, time.perf_counter() - verify_started):
+                try:
+                    check_deadline(certification_deadline)
+                    succeeded = self.database.finish_success(config.run_id, attempt, plan, metrics,
+                        time.perf_counter() - verify_started, certification=receipt, deadline=certification_deadline)
+                except ContinuousCertificationError as exc:
+                    self.database.finish_failure(config.run_id, attempt, "FAILED", "CONTINUOUS_" + exc.status.value, str(exc))
+                    return
+                if not succeeded:
                     # 核验期间可能收到取消请求；成功事务会拒绝提交，此处补上明确终态。
                     self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED_DURING_VERIFY", "核验期间已取消")
                 else:

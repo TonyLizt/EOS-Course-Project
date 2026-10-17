@@ -5,6 +5,10 @@
 
 from __future__ import annotations
 
+from utils.continuous_exposure import (CertificationReceipt, CertifiedRecord, _ISSUER, ContinuousCertificationError,
+    ExposureStatus, validate_certification, certification_context, check_deadline)
+from utils.certification_identity import trusted_context
+
 import hashlib
 import json
 import sqlite3
@@ -212,6 +216,12 @@ CREATE INDEX IF NOT EXISTS idx_replay_status_updated ON replay_artifacts(status,
 class Database:
     def __init__(self, path: Path):
         self.path = path
+        try:
+            self._certification_context = trusted_context()
+            self._certification_context_error = None
+        except (OSError, ValueError) as exc:
+            self._certification_context = None
+            self._certification_context_error = str(exc)
         path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as connection:
             version = connection.execute("PRAGMA user_version").fetchone()[0]
@@ -232,6 +242,12 @@ class Database:
                 # 回放是正式结果的派生缓存；迁移只增加表和索引。
                 connection.executescript("BEGIN IMMEDIATE;\n" + REPLAY_SCHEMA + "\nPRAGMA user_version=3;\nCOMMIT;")
 
+    def expected_certification_context(self):
+        if self._certification_context_error:
+            raise ContinuousCertificationError(ExposureStatus.ERROR,
+                "CERTIFICATION_STARTUP_IDENTITY_INVALID: " + self._certification_context_error)
+        return certification_context(self._certification_context)
+
     @contextmanager
     def connect(self):
         connection = sqlite3.connect(self.path, timeout=5, isolation_level=None)
@@ -245,11 +261,13 @@ class Database:
             connection.close()
 
     @contextmanager
-    def write(self):
+    def write(self, *, before_commit=None):
         with self.connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
                 yield connection
+                if before_commit is not None:
+                    before_commit()
                 connection.execute("COMMIT")
             except BaseException:
                 connection.execute("ROLLBACK")
@@ -348,6 +366,8 @@ class Database:
         )
 
     def record_system_event(self, run_id: str, attempt: int | None, kind: str, payload: dict | None = None) -> None:
+        if kind == "CONTINUOUS_CERTIFIED":
+            raise ValueError("certification events are reserved for finish_success")
         """记录正式状态之外的诊断事件，例如可选文件导出失败。"""
         with self.write() as db:
             self._event(db, run_id, attempt, "controller", None, kind, payload)
@@ -383,7 +403,7 @@ class Database:
     def record_worker_event(self, message: dict) -> bool:
         run_id, attempt, seq = message["run_id"], message["attempt"], message["seq"]
         with self.write() as db:
-            row = db.execute("SELECT status,current_attempt FROM runs WHERE run_id=?", (run_id,)).fetchone()
+            row = db.execute("SELECT status,current_attempt,cancel_requested_at FROM runs WHERE run_id=?", (run_id,)).fetchone()
             last = db.execute("SELECT last_seq FROM run_attempts WHERE run_id=? AND attempt_no=?", (run_id, attempt)).fetchone()
             if not row or row["current_attempt"] != attempt or row["status"] in TERMINAL or not last or seq <= last["last_seq"]:
                 return False
@@ -401,12 +421,29 @@ class Database:
                 self._event(db, run_id, attempt, "controller", None, "VERIFYING", None)
             return bool(result.rowcount)
 
-    def finish_success(self, run_id: str, attempt: int, plan: dict, metrics: dict, verify_s: float) -> bool:
+    def finish_success(self, run_id: str, attempt: int, plan: dict, metrics: dict, verify_s: float,
+                       *, certification: CertificationReceipt | None = None, deadline: float | None = None) -> bool:
         plan_json = compact_json(plan)
-        with self.write() as db:
-            row = db.execute("SELECT status,cancel_requested_at,scenario_id FROM runs WHERE run_id=? AND current_attempt=?", (run_id, attempt)).fetchone()
+        guard = None
+        def before_commit():
+            if guard is not None:
+                guard()
+        with self.write(before_commit=before_commit) as db:
+            row = db.execute("SELECT status,cancel_requested_at,scenario_id,config_json FROM runs WHERE run_id=? AND current_attempt=?", (run_id, attempt)).fetchone()
             if not row or row["status"] != "VERIFYING" or row["cancel_requested_at"] is not None:
                 return False
+            if not isinstance(certification, CertificationReceipt):
+                raise ContinuousCertificationError(ExposureStatus.INCONCLUSIVE, "CERTIFICATION_REQUIRED")
+            config = json.loads(row["config_json"])
+            evidence = validate_certification(certification.evidence(), run_id=run_id,
+                                scenario_sha=config["scenario_sha256"], plan=plan, context=self.expected_certification_context())
+            effective_deadline = evidence["deadline_monotonic"] if deadline is None else min(deadline, evidence["deadline_monotonic"])
+            def guard():
+                check_deadline(effective_deadline)
+                self.expected_certification_context()
+                check_deadline(effective_deadline)
+            guard()
+            self._event(db, run_id, attempt, "controller", None, "CONTINUOUS_CERTIFIED", evidence)
             db.execute("INSERT INTO plans(run_id,attempt_no,scenario_id,plan_json,plan_sha256,verified_at) VALUES (?,?,?,?,?,?)",
                        (run_id, attempt, plan["scenario_id"], plan_json, hashlib.sha256(plan_json.encode()).hexdigest(), now()))
             for index, item in enumerate(plan["assignments"]):
@@ -416,6 +453,7 @@ class Database:
             db.execute("INSERT INTO metrics(run_id,completed_tasks,total_tasks,TP,TCR,BD,TM,RT,RV,mip_gap,computed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                        (run_id, metrics["completed_tasks"], metrics["total_tasks"], metrics["task_profit"], metrics["task_completion_rate"],
                         metrics["balance_degree"], metrics["timeliness_metric"], metrics["runtime_efficiency"], metrics["robustness_variance"], metrics["mip_gap"], now()))
+            guard()
             db.execute("UPDATE run_attempts SET outcome='SUCCEEDED',ended_at=?,algorithm_runtime_s=?,verification_runtime_s=? WHERE run_id=? AND attempt_no=?",
                        (now(), metrics["runtime_efficiency"], verify_s, run_id, attempt))
             db.execute("UPDATE runs SET status='SUCCEEDED',updated_at=?,finished_at=? WHERE run_id=?", (now(), now(), run_id))
@@ -426,9 +464,16 @@ class Database:
         if status not in {"FAILED", "CANCELLED", "TIMED_OUT"}:
             raise ValueError("非法终态")
         with self.write() as db:
-            row = db.execute("SELECT status,current_attempt FROM runs WHERE run_id=?", (run_id,)).fetchone()
+            row = db.execute("SELECT status,current_attempt,cancel_requested_at FROM runs WHERE run_id=?", (run_id,)).fetchone()
             if not row or row["status"] in TERMINAL or (attempt is not None and row["current_attempt"] != attempt):
                 return
+            # BEGIN IMMEDIATE serializes this arbitration with request_cancel.
+            # Preserve previously decided algorithm timeout and controller stop.
+            if (row["status"] == "VERIFYING" and row["cancel_requested_at"] is not None
+                    and status == "FAILED" and code not in {"CONTROLLER_STOP", "CONTROLLER_RESTART"}):
+                self._event(db, run_id, attempt, "controller", None, "CERTIFICATION_FAILURE_AFTER_CANCEL",
+                            {"code": code, "message": message[:300], "requested_status": status})
+                status, code, message = "CANCELLED", "CANCELLED_DURING_VERIFY", "Accepted cancellation precedes certification failure"
             db.execute("UPDATE runs SET status=?,error_code=?,error_message=?,updated_at=?,finished_at=? WHERE run_id=?",
                        (status, code, message[:300], now(), now(), run_id))
             if attempt is not None:
@@ -470,12 +515,12 @@ class Database:
             row = db.execute("SELECT * FROM runs WHERE run_id=?", (run_id,)).fetchone()
             if not row:
                 return None
-            plan = db.execute("SELECT plan_json FROM plans WHERE run_id=?", (run_id,)).fetchone()
+            plan = db.execute("SELECT plan_json,plan_sha256 FROM plans WHERE run_id=?", (run_id,)).fetchone()
             metrics = db.execute("SELECT * FROM metrics WHERE run_id=?", (run_id,)).fetchone()
             attempts = db.execute("SELECT attempt_no,worker_pid,started_at,ended_at,outcome,algorithm_runtime_s,verification_runtime_s,exit_code FROM run_attempts WHERE run_id=? ORDER BY attempt_no", (run_id,)).fetchall()
             events = db.execute("SELECT event_id,attempt_no,source,event_type,payload_json,recorded_at FROM run_events WHERE run_id=? ORDER BY event_id", (run_id,)).fetchall()
             exports = db.execute("SELECT export_id,format,status,artifact_sha256,artifact_path,error_message,created_at FROM exports WHERE run_id=? ORDER BY export_id", (run_id,)).fetchall()
-            return {
+            result = {
                 "run_id": run_id, "status": row["status"], "config": json.loads(row["config_json"]),
                 "attempt": row["current_attempt"], "cancel_requested": row["cancel_requested_at"] is not None,
                 "created_at": row["created_at"], "finished_at": row["finished_at"],
@@ -491,12 +536,37 @@ class Database:
                 } for item in events],
                 "exports": [dict(item) for item in exports],
             }
+            evidence = next((event["payload"] for event in reversed(result["events"])
+                             if event["event_type"] == "CONTINUOUS_CERTIFIED"
+                             and event["source"] == "controller"), None)
+            try:
+                if result["status"] != "SUCCEEDED" or result["plan"] is None:
+                    raise ValueError("no certified successful plan")
+                if hashlib.sha256(plan["plan_json"].encode()).hexdigest() != plan["plan_sha256"]:
+                    raise ValueError("stored plan bytes do not match stored SHA")
+                validate_certification(evidence, run_id=run_id,
+                    scenario_sha=result["config"]["scenario_sha256"], plan=result["plan"],
+                    context=self.expected_certification_context())
+                result["continuous_certification"] = evidence
+                result = CertifiedRecord(result)
+                result.certification_context = self.expected_certification_context()
+                result.certification_receipt = CertificationReceipt(json.dumps(evidence,sort_keys=True), _ISSUER)
+            except (ValueError, TypeError, KeyError, OSError):
+                # Keep historical status/events, but never expose its plan as certified.
+                result["plan"] = None
+                result["continuous_certification"] = {"status":"INCONCLUSIVE",
+                    "reason":"MISSING_STALE_OR_MISMATCHED_CERTIFICATION"}
+            return result
 
     def list_runs(self, limit: int = 20, offset: int = 0) -> dict:
         with self.connect() as db:
             total = db.execute("SELECT COUNT(*) FROM runs").fetchone()[0]
             rows = db.execute("SELECT r.run_id,r.source_id,r.scenario_id,r.algorithm_id,r.output_profile_id,r.status,r.created_at,r.finished_at,m.TCR,m.completed_tasks FROM runs r LEFT JOIN metrics m ON r.run_id=m.run_id ORDER BY r.created_at DESC LIMIT ? OFFSET ?", (limit, offset)).fetchall()
-            return {"items": [dict(row) for row in rows], "total": total, "limit": limit, "offset": offset}
+            items = [dict(row) for row in rows]
+        for item in items:
+            detail = self.get_run(item["run_id"])
+            item["continuous_certification_status"] = detail["continuous_certification"]["status"] if detail else "INCONCLUSIVE"
+        return {"items": items, "total": total, "limit": limit, "offset": offset}
 
     def get_replay_source(self, run_id: str) -> dict | None:
         """读取正式提交的计划身份；构建进程只接收这个快照，不接触 SQLite。"""
@@ -506,7 +576,13 @@ class Database:
                 "r.config_json,p.plan_json,p.plan_sha256 FROM runs r "
                 "LEFT JOIN plans p ON p.run_id=r.run_id WHERE r.run_id=?", (run_id,)
             ).fetchone()
-            return dict(row) if row else None
+            result = dict(row) if row else None
+        if result is not None:
+            verified = self.get_run(run_id)
+            if verified is None or verified["plan"] is None:
+                result["plan_json"] = None
+                result["plan_sha256"] = None
+        return result
 
     def get_replay(self, run_id: str, replay_id: str) -> dict | None:
         with self.connect() as db:
@@ -640,6 +716,9 @@ class Database:
 
     def record_export(self, run_id: str, format_name: str, data: bytes | None,
                       artifact_path: str | None = None, error_message: str | None = None) -> None:
+        if error_message is None:
+            from .exporting import require_certified_record
+            require_certified_record(self.get_run(run_id))
         with self.write() as db:
             status = "FAILED" if error_message else "SUCCEEDED"
             digest = hashlib.sha256(data).hexdigest() if data is not None else None

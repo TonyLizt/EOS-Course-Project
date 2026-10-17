@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from certification_fixtures import storage_receipt
+
 import asyncio
 import hashlib
 import json
@@ -161,7 +163,7 @@ class ReplayBackendTests(unittest.TestCase):
                        "task_completion_rate": 1.0, "balance_degree": 0.0,
                        "timeliness_metric": 0.0, "runtime_efficiency": 0.01,
                        "robustness_variance": None, "mip_gap": None}
-            self.assertTrue(database.finish_success(run_id, attempt, plan, metrics, 0.001))
+            self.assertTrue(database.finish_success(run_id, attempt, plan, metrics, 0.001, certification=storage_receipt(database,run_id,plan)))
             original_plan_sha = database.get_replay_source(run_id)["plan_sha256"]
             with _DirectClient(create_app(settings)) as client:
                 schedule = client.get(f"/api/runs/{run_id}/visualization/schedule")

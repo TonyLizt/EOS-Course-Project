@@ -169,7 +169,9 @@ class E3E4OrekitTests(unittest.TestCase):
                 m_deg=op.mean_anomaly,epoch_dt=utc(op.epoch),start_dt=start,end_dt=start+timedelta(seconds=600),step_s=1,
                 target_lat_deg=target["latitude"],target_lon_deg=target["longitude"],target_alt_m=0,
                 max_yaw_deg=45,max_pitch_deg=45,max_roll_deg=45,min_elevation_deg=5,coarse_step_min=60)
-            self.assertEqual(windows,[(utc(expected_first),utc(expected_end))]);self.assertEqual(len(samples),600);self.assertEqual(len(attitudes),n)
+            self.assertEqual(len(windows),1)
+            self.assertEqual(windows[0][0],utc(expected_first))
+            self.assertEqual(len(samples),600);self.assertEqual(len(attitudes),n)
             for sample in samples:self.assertEqual(sample["visible"],reference(sample["time"])[0])
             for sample in attitudes:
                 truth=reference(sample["time"])[1]
@@ -184,11 +186,16 @@ class E3E4OrekitTests(unittest.TestCase):
                     else:lo=middle
                 upper=(boundary-lo).total_seconds()
                 self.assertLess(upper,1)
+                if not entering:
+                    # Independent eager Orekit root, not an updated literal.
+                    self.assertEqual(windows[0][1],lo)
+                    self.assertTrue(reference(windows[0][1])[0])
+                    self.assertFalse(reference(windows[0][1]+timedelta(microseconds=1))[0])
                 errors.append(dict(kind="entry" if entering else "exit",lower=lo.isoformat(),upper=hi.isoformat(),error_upper_s=upper))
             candidate,_=recompute_data(fixture,data_path=str(self.data))
             self.assertEqual(fixture,original);self.assertEqual(static_data(candidate),static_data(original))
             item=candidate["observation_windows"][0]["time_windows"][0]
-            self.assertEqual(utc(item["start_time"]),utc(expected_first));self.assertEqual(utc(item["end_time"]),utc(expected_end))
+            self.assertEqual(utc(item["start_time"]),utc(expected_first));self.assertEqual(utc(item["end_time"]),windows[0][1])
             for axis in ("pitch","yaw","roll"):self.assertEqual(item["agile_data"][axis+"_angles"],[s[axis+"_deg"] for s in attitudes])
             results.append(dict(mission=mid,start=expected_first,end=expected_end,attitude_samples=n,boundaries=errors,static_equal=True))
         self.evidence("boundaries.json",results)

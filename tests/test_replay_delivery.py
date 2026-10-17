@@ -1,3 +1,4 @@
+from certification_fixtures import storage_receipt
 import hashlib
 import json
 import tempfile
@@ -71,7 +72,7 @@ class ReplayDeliveryTests(unittest.TestCase):
                 "timeliness_metric": 1.0, "runtime_efficiency": 0.01,
                 "robustness_variance": None, "mip_gap": None,
             }
-            self.assertTrue(database.finish_success(run_id, attempt, plan, metrics, 0.001))
+            self.assertTrue(database.finish_success(run_id, attempt, plan, metrics, 0.001, certification=storage_receipt(database,run_id,plan)))
             formal_before = compact_json(database.get_run(run_id))
 
             replay_endpoint = next(

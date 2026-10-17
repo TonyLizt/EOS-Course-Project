@@ -168,7 +168,10 @@ class VisibilityGridTests(unittest.TestCase):
 
     def test_short_pass_between_invisible_coarse_points_is_found(self):
         windows,samples,attitudes=self.scan(lambda s:26<=s<29)
-        self.assertEqual(windows,[(START+timedelta(seconds=26),START+timedelta(seconds=29))])
+        self.assertEqual(windows[0][0],START+timedelta(seconds=26))
+        # A false grid endpoint is no longer a permissible exposure endpoint.
+        self.assertEqual(windows[0][1],START+timedelta(seconds=29,microseconds=-1))
+        self.assertTrue(26 <= (windows[0][1]-START).total_seconds() < 29)
         self.assertEqual(len(samples),120);self.assertEqual(len(attitudes),3)
 
     def test_inner_fragments_and_attitudes_match_half_open_windows(self):
