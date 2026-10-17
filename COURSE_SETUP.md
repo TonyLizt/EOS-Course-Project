@@ -1,3 +1,16 @@
+## CAABS v0.1 R1.1：M1 修复与审查收口（2026-10-17）
+
+- 分支 feat/algorithm-c-caabs，沿用独立 worktree；起点 158b41402627d896fb810fbeebe2146d390e6db1。
+- 修复提交 ce833caee606e3d366026ec0c44b2b4a2719505a：仅为 canonical key 的 list/tuple 分设标签，嵌套类型与顺序保留，未改公共模型或算法参数。
+- 专项42→48项；旧实现下4个方法失败（6个failure含子测试），真实公共可行性不同而键相同及实际去重丢路径均复现；修复后 Windows/WSL 均48通过、0失败、0跳过、退出0。
+- 两环境各执行70项：69通过、0失败、1个可选Orekit跳过，全部命令退出0。含过渡模型4/4、公共曝光门禁14/15加1跳过、adaptive_repair 3/3；命令与时长见算法文档R1.1节。
+- C-4 新增三层饱和前沿：宽度1/4/8/16分别为[1,1,1]/[4,4,4]/[4,8,8]/[4,16,16]，双轮排序、去重、游标及公共回放均通过。
+- M1 RESOLVED；建议核心升级 CORE REVIEW PASS，保留 REGRESSION INCOMPLETE / INTEGRATION NOT VERIFIED。I1、I2与全量超时未处理，未运行正式认证。
+- 纳入原R1报告并仅追加有日期/修复SHA的复验附录，历史结论保留。无Registry/Worker/Controller/HTTP/IPC/SQLite/公共约束改动，无push、PR或合并。
+- 详见 [CAABS 文档](docs/phase2/algorithms/conflict_beam.md) 与 [R1/R1.1 审查报告](docs/phase2/algorithms/caabs_r1_independent_review.md)。
+
+---
+
 ## CAABS v0.1 算法正确性验收（2026-10-17）
 
 - 刘懋兴；feat/algorithm-c-caabs；独立 worktree EOS-Course-Project-caabs；固定基线 d0d9325759f078ef13f41cc9eee74c5e7733758a。

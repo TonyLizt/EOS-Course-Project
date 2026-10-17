@@ -115,6 +115,7 @@ data_volume_GB、power_cost_W、完整 sat_angles、ground_station_id、gs_windo
 
 时间统一为 UTC 微秒表示，loader 的 naive 时间按 UTC 解释，不调用本地 timestamp。
 浮点使用精确 hex 表示，不用舍入合并。姿态字典键排序、数组保持顺序。
+R1.1 起，list 与 tuple 分别使用独立类型标签；每个嵌套层级也保留容器类型。
 Schedule 键对 assignment 编码排序，忽略 assignment 列表顺序和非语义 metadata。
 BeamState.search_key 再包含 task_index，防止相同计划的不同 skip 游标被合并。
 
@@ -269,3 +270,88 @@ build=lambda context: ConflictBeamScheduler()；不要求 factory 或生命周�
 登记时还需审查参数基类与算法模块的导入顺序，避免顶层循环导入。
 之后再做固定真实场景、同预算多 seed 成对实验，以及 Linux Worker／Controller
 独立核验与认证闭环。现有公共认证问题应单独复现和处理，不能通过 CAABS 绕过。
+
+## R1.1：M1 最小修复与复验（2026-10-17）
+
+修复提交：`ce833caee606e3d366026ec0c44b2b4a2719505a`。
+算法版本常量仍为 `0.1.0`；本轮是状态键修复，没有新增候选策略、启发式或默认参数。
+R1 的原审查结论保留在 [独立审查报告](caabs_r1_independent_review.md)，后续状态见其 R1.1 附录。
+
+`_freeze()` 原来将 list 和 tuple 都编码为 sequence，现在分别编码为 list、tuple。
+元素递归顺序、dict 键排序、UTC 微秒、float.hex()、非有限值拒绝及其他标量规则未变。
+真实公共姿态解析器对外层 list 与 tuple 有不同语义，不能按内容相同就合并状态。
+修复不改变 Assignment、公共 slew、ConstraintModel 或认证规则。
+
+专项由42项增至48项，新增6个测试方法：
+
+- 空/非空 list 与 tuple 的类型区分、各自的元素顺序和同类型内容稳定性。
+- dict、list、tuple 内嵌不同容器的区分，以及字典重排不改变键。
+- None/bool/int/str、精确浮点及正负零的区分，NaN/正负无穷拒绝。
+- 真实公共约束反例：同星前任务0–10秒、后任务30–40秒；0→90度姿态数值相同，后任务外层 list 被拒、tuple 走现有回退而接受，修复后两者键不同。
+- 实际搜索去重：只注入候选列表，公共可行性保持真实；同内容 list/tuple 两条路径均保留，另一个完全相同的 list 副本只去重一次。
+- C-4 三层饱和测试：每层3候选加skip；重复两轮，检查真实前沿、游标、唯一键、确定排序、剪枝统计及公共模型回放。
+
+原有全部 Assignment 字段区分及 naive/aware UTC、微秒测试继续通过。
+合成姿态与规划证据仍仅限单测，不表示正式物理认证通过。
+
+### 修复前后证据
+
+先仅增加测试，在旧 `_freeze()` 上运行 Windows 完整专项：48项中44个方法通过、4个方法失败，
+unittest 报 failures=6（其中嵌套测试含3个失败子测试），错误0、跳过0、退出1；
+unittest 1.447秒、子进程总计2.501秒。真实公共模型的不同可行性断言先通过，随后才在键相同的断言处失败；
+实际去重错误地只保留2个状态而非3个。未切换、重写或修改旧提交历史。
+最小修复后下列命令全部退出0，M1标记 **RESOLVED**。
+
+Windows：`D:\Anaconda\python.exe`，Python 3.13.5；WSL Ubuntu-22.04：
+`/home/meteor/eos-course-runtime/.venv/bin/python`，Python 3.10.12。
+两边均设置 PYTHONHASHSEED=0、MPLBACKEND=Agg，工作目录是各自路径表示的 CAABS worktree。
+每条测试子进程上限90秒，均未触发；总计时含 Python 启动，0.000秒仅为 unittest 显示精度。
+
+| 环境 | discover 的 -p 参数 | 项数 | 通过 | 失败 | 跳过 | 退出码 | unittest秒 | 子进程总秒 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| Windows | test_algorithm_conflict_beam.py | 48 | 48 | 0 | 0 | 0 | 1.212 | 2.151 |
+| Windows | test_transition_model.py | 4 | 4 | 0 | 0 | 0 | 0.000 | 0.417 |
+| Windows | test_continuous_exposure.py | 15 | 14 | 0 | 1 | 0 | 0.474 | 0.888 |
+| Windows | test_adaptive_repair.py | 3 | 3 | 0 | 0 | 0 | 0.001 | 0.421 |
+| WSL | test_algorithm_conflict_beam.py | 48 | 48 | 0 | 0 | 0 | 0.809 | 2.457 |
+| WSL | test_transition_model.py | 4 | 4 | 0 | 0 | 0 | 0.000 | 0.997 |
+| WSL | test_continuous_exposure.py | 15 | 14 | 0 | 1 | 0 | 0.457 | 1.398 |
+| WSL | test_adaptive_repair.py | 3 | 3 | 0 | 0 | 0 | 0.001 | 1.391 |
+
+唯一跳过项均为 opt-in real Orekit exposure cases。公共约束回归由专项真实资源/slew/下传测试、
+continuous_exposure 的公共规划门禁测试及原有过渡/调度测试共同覆盖；没有改公共规则来使测试通过。
+
+实际命令（每次单独执行）：
+
+```powershell
+Set-Location D:\VC\EOS-Course-Project-caabs
+$env:PYTHONHASHSEED = '0'
+$env:MPLBACKEND = 'Agg'
+D:\Anaconda\python.exe -B -m unittest discover -s tests -p "test_algorithm_conflict_beam.py" -v
+D:\Anaconda\python.exe -B -m unittest discover -s tests -p "test_transition_model.py" -v
+D:\Anaconda\python.exe -B -m unittest discover -s tests -p "test_continuous_exposure.py" -v
+D:\Anaconda\python.exe -B -m unittest discover -s tests -p "test_adaptive_repair.py" -v
+```
+
+```bash
+cd /mnt/d/VC/EOS-Course-Project-caabs
+PYTHONHASHSEED=0 MPLBACKEND=Agg /home/meteor/eos-course-runtime/.venv/bin/python -B -m unittest discover -s tests -p 'test_algorithm_conflict_beam.py' -v
+PYTHONHASHSEED=0 MPLBACKEND=Agg /home/meteor/eos-course-runtime/.venv/bin/python -B -m unittest discover -s tests -p 'test_transition_model.py' -v
+PYTHONHASHSEED=0 MPLBACKEND=Agg /home/meteor/eos-course-runtime/.venv/bin/python -B -m unittest discover -s tests -p 'test_continuous_exposure.py' -v
+PYTHONHASHSEED=0 MPLBACKEND=Agg /home/meteor/eos-course-runtime/.venv/bin/python -B -m unittest discover -s tests -p 'test_adaptive_repair.py' -v
+```
+
+| beam_width | 三层实际前沿宽度（两轮一致） |
+|---|---|
+| 1 | 1, 1, 1 |
+| 4 | 4, 4, 4 |
+| 8 | 4, 8, 8 |
+| 16 | 4, 16, 16 |
+
+原始日志保留于 Windows `%TEMP%\caabs-r11-4eg4_ato` 与 WSL `/tmp/caabs-r11-44gb4hqj`；
+临时文件不提交，关键统计及命令已收入本文。代码提交前的 `git diff --check` 和
+`git diff --cached --check` 均退出0；文档提交前再次检查暂存范围与空白。
+
+基于R1核心复核与本次M1反例、分支去重和饱和测试，建议将独立核心结论升级为 **CORE REVIEW PASS**。
+这不改变 **REGRESSION INCOMPLETE / INTEGRATION NOT VERIFIED**：本轮未重跑全量、未登记 Registry、
+未完成正式连续认证。I1未来循环导入、I2公共来源窗口歧义及全量时序/超时仍由独立任务处理。
