@@ -1,5 +1,7 @@
 # CAABS v0.1 — Conflict-Aware Anytime Beam Search
 
+> 2026-10-18 R2-B/I1 后续：本工作树已补充 `caabs` Registry 登记及无环共用契约，待人工审核；搜索版本仍为0.1.0。以下核心交付/R1历史记录保留。I2来源窗口、连续认证和正式发布未在I1处理，详见 [I1修复报告](caabs_i1_registry_fix_20261018.md)。
+
 中文：冲突感知限时束搜索。负责人：刘懋兴。
 基线：`d0d9325759f078ef13f41cc9eee74c5e7733758a`。
 分支：`feat/algorithm-c-caabs`；独立 worktree：`D:\VC\EOS-Course-Project-caabs`。

@@ -1,3 +1,10 @@
+## R2-B / I1：CAABS Algorithm Registry 接入（2026-10-18）
+
+- fix/caabs-registry-i1 基于0a1a941（Core PR #17）；实际基线双导入均成功，caabs查询未登记失败。迁移中立Solver契约、保留旧Registry导出并显式登记caabs/0.1.0，CAABS仅改import。
+- WSL限定验收91项：90通过、0失败/错误、1个Orekit opt-in跳过；其中Registry17/17、Core48/48，真实非空候选公共约束重放及Runner/ASGI元数据可用。
+- Windows Core48通过，Registry16通过/1缺FastAPI跳过；旧公共POSIX/依赖失败保留。I2、连续认证、Controller门禁、数据库和冻结场景不修改，不宣称全系统发布可用。
+- 详见 [I1修复报告](docs/phase2/algorithms/caabs_i1_registry_fix_20261018.md) 和 [独立PR草稿](docs/phase2/algorithms/caabs_i1_registry_pr_draft_20261018.md)。未提交、推送、rebase或创建PR，等待人工审核。
+
 ## CAABS v0.1 R1.1：M1 修复与审查收口（2026-10-17）
 
 - 分支 feat/algorithm-c-caabs，沿用独立 worktree；起点 158b41402627d896fb810fbeebe2146d390e6db1。
