@@ -159,3 +159,6 @@ node tests/satellite_follow.test.cjs
 历史 `SUCCEEDED` 保留原状态用于追溯，但缺少当前版本认证、来源不匹配或计划 SHA 不符时，Storage 不返回正式计划，API/JSON/CSV/目录导出也会拒绝。列表和详情附带连续认证状态。当前 Orekit 采样模型尚无连续区间证明，四份冻结计划的 80 条任务仍为 `INCONCLUSIVE`，不能正式发布。
 
 正式独立审查需要服务端配置 `EOS_OREKIT_DATA`；没有数据、可信窗口来源或连续性证据都会关闭门禁。普通 `verify_schedules.py` 的离散模式仅供诊断，`PASS_DISCRETE_ONLY` 不代表连续认证。完整契约、测试和风险见 [连续曝光审计报告](docs/phase2/continuous_exposure_boundary_fix_2026-10-17.md) 第 11 节起。
+
+
+场景来源与只读身份核验见 [R1-02 Artifact / Provenance 索引](docs/phase2/scenario_artifact_index_r1_02.md)；Raw 独立清点，六 Legacy 与四 Candidate 保持原位，索引不批准发布。
