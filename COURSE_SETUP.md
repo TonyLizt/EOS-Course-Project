@@ -1,3 +1,8 @@
+## 重复启动提示与控制台回归补齐（2026-10-18）
+
+- CLI 在加载 API 前探测现有 Controller 锁，重复启动直接提示使用网址与 Ctrl+C 重启，不删除锁或接管任务；最终互斥仍由 Controller 保证。修正浏览器回归显式使用正式模式，补充预览比较隔离测试。
+- 5 项 Python、6 项 Node 通过；一次隔离 Chromium 验证提交、正式拒绝、历史比较及 Gantt Hover/键盘/触控/缩放，无页面异常。详见[预览交接](docs/phase2/planning_preview_handoff.md)。
+
 ## 控制台启动及规划预览修复（2026-10-17）
 
 - 增加明确未认证的规划预览，保留正式门禁与导出隔离；修复旧目录启动及缓存识别。10 项 Python、5 项 Node 测试与两个真实算法浏览器提交通过，均完成 20/20，回放 READY。无数据库迁移；未做大型回放。详见[预览交接](docs/phase2/planning_preview_handoff.md)。

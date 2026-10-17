@@ -11,6 +11,12 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     const page = await context.newPage(); page.on('pageerror', e => errors.push(String(e)));
     await page.goto(info.url);
     await page.waitForFunction(() => document.querySelectorAll('[name="batch-algorithm"]').length === 2);
+    // This fixture verifies the strict formal gate; UI defaults to preview now.
+    await page.selectOption('#execution-mode', 'formal');
+    await page.waitForFunction(() => {
+      const select = document.querySelector('#scenario');
+      return !select.disabled && [...select.options].some(option => option.value === 'empty');
+    });
     await page.click('#algorithm-info');
     assert.match(await page.locator('#algorithm-description').innerText(), /随机|固定/);
     await page.keyboard.press('Escape');

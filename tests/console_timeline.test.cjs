@@ -19,6 +19,17 @@ test('algorithm parameters differ transparently within a common condition group'
   const groups = C.groupRuns([run('a', {algorithm_id: 'a', algorithm_params: {beam: 1}}), run('b', {algorithm_id: 'b', algorithm_params: {beam: 4}})]);
   assert.equal(groups.length, 1); assert.equal(groups[0].runs.length, 2);
 });
+test('preview and formal results, and different preview versions, never share winners', () => {
+  const formal = run('formal');
+  const preview = id => ({...run(id, {execution_mode: 'planning_preview'}),
+    continuous_certification: {status: 'NOT_CERTIFIED'},
+    preview_validation: {preview_version: 'sampled-planning-preview-v1'}});
+  assert.equal(C.groupRuns([formal, preview('preview')]).length, 2);
+  const differentVersion = preview('v2');
+  differentVersion.preview_validation.preview_version = 'sampled-planning-preview-v2';
+  assert.equal(C.groupRuns([preview('v1'), differentVersion]).length, 2);
+  assert.equal(C.groupRuns([preview('a'), preview('b')]).length, 1);
+});
 test('TM and RT favor smaller values; missing RV and unidentified origins have no winners', () => {
   const g = C.groupRuns([run('a'), run('b', {}, {TM: .1, RT: .2})])[0];
   assert.equal(C.best(g, 'TM', -1), .1); assert.equal(C.best(g, 'RT', -1), .1);
