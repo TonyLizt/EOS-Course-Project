@@ -4,6 +4,20 @@
 - WSL限定验收91项：90通过、0失败/错误、1个Orekit opt-in跳过；其中Registry17/17、Core48/48，真实非空候选公共约束重放及Runner/ASGI元数据可用。
 - Windows Core48通过，Registry16通过/1缺FastAPI跳过；旧公共POSIX/依赖失败保留。I2、连续认证、Controller门禁、数据库和冻结场景不修改，不宣称全系统发布可用。
 - 详见 [I1修复报告](docs/phase2/algorithms/caabs_i1_registry_fix_20261018.md) 和 [独立PR草稿](docs/phase2/algorithms/caabs_i1_registry_pr_draft_20261018.md)。未提交、推送、rebase或创建PR，等待人工审核。
+## R2-C / I2：独立审核P2修复（2026-10-18，待人工复审）
+
+- P2-1：公共模型用既有解析器将aware Assignment先转UTC，再以naive UTC局部副本比较；保留偏移、微秒、原对象及冲突规则。
+- P2-2：来源网格不再把显式0回退为1秒；Loader保留全局缺失/None的既有缺省，拒绝布尔，来源层统一拒绝非法数值和非整数微秒步长。
+- 新15项、原I2 31项、Core48项、Adaptive3项、流水线17项、认证身份40项通过；曝光边界14通过/1个真实Orekit opt-in跳过。当前等字节WSL本地完整480项：472通过、8跳过、0失败/错误；原挂载路径28条失败历史保留，未宣称该路径全量通过。
+- 与远端main/I1（5e37ba7）的独立文件组合114/114通过，未Merge/Rebase。详见 [I2报告第6节](docs/phase2/algorithms/caabs_i2_source_window_fix_20261018.md#6-独立审核两项p2修复2026-10-18)；未暂存、提交、推送或创建PR，不代表物理认证或发布批准。
+
+## R2-C / I2：公共 Assignment 来源窗口消歧（2026-10-18，首轮记录）
+
+- fix/source-window-i2基于0a1a941；原公共输出丢失已有观测/通信来源ID，两个Verifier存在首窗口错绑和忽略伪造ID的真实反例。
+- JSON/CSV保留来源，统一可信Scenario重建，历史仅唯一来源兼容；不扩展Assignment dataclass、Registry、Worker/Controller协议或SQLite模式，不改CAABS搜索和正式认证门禁。
+- 专项31/31、Core48/48、连续流水线17/17、认证身份40/40通过；完整默认回归及中间失败处置见 [I2报告](docs/phase2/algorithms/caabs_i2_source_window_fix_20261018.md)。所有正向认证注入均为单测证据。
+- 最终同字节WSL本地源码副本完整465项：457通过、8个Orekit opt-in跳过、无失败；原挂载路径首轮28项失败保留及分类处置。与新main/I1（5e37ba7）的临时组合检查99/99通过，未Merge/Rebase。
+- [来源契约审查稿](docs/phase2/assignment_source_window_contract_v1.md) 与 [独立PR草稿](docs/phase2/algorithms/caabs_i2_source_window_pr_draft_20261018.md)。未提交、推送、合并、rebase或创建PR；发布与真实物理验收另行处理。
 
 ## CAABS v0.1 R1.1：M1 修复与审查收口（2026-10-17）
 

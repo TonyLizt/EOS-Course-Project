@@ -75,6 +75,8 @@ def schedule_to_dict(
                 {
                     "task_id": a.task_id,
                     "satellite_id": a.satellite_id,
+                    "sat_window_id": a.sat_window_id,
+                    "gs_window_id": a.gs_window_id,
                     "ground_station_id": a.ground_station_id,
                     "sat_start_time": a.sat_start_time.isoformat(),
                     "sat_end_time": a.sat_end_time.isoformat(),
@@ -94,6 +96,7 @@ def schedule_to_dict(
                 {
                     "task_id": a.task_id,
                     "satellite_id": a.satellite_id,
+                    "sat_window_id": a.sat_window_id,
                     "sat_start_time": a.sat_start_time.isoformat(),
                     "sat_end_time": a.sat_end_time.isoformat(),
                     "sensor_id": getattr(a, "sensor_id", ""),

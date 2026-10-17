@@ -54,6 +54,7 @@ def render_csv(record: dict) -> bytes:
     require_certified_record(record)
     output = io.StringIO(newline="")
     fields = ["run_id", "source_id", "scenario_id", "algorithm_id", "task_id", "satellite_id", "sensor_id",
+              "sat_window_id", "orbit_number", "gs_window_id",
               "sat_start_time", "sat_end_time", "ground_station_id", "gs_start_time", "gs_end_time",
               "completed_tasks", "total_tasks", "TP", "TCR", "BD", "TM", "RT",
               "scenario_sha256", "scenario_physics_version", "parent_scenario_sha256", "algorithm_code_sha",

@@ -6,6 +6,8 @@
 
 ## 1. 当前闭环
 
+2026-10-18 I2工作树待审核补充：公共计划输出保留观测/通信来源编号，两个Verifier按可信Scenario独立验证；历史歧义拒绝，不默认取首项。Worker/Controller信封、SQLite模式及认证门禁不改，详见 [来源契约](assignment_source_window_contract_v1.md)。本条不代表已合并或连续认证通过。
+
 浏览器或 HTTP 客户端选择数据源、场景、算法和输出配置，提交实验。FastAPI 将配置写入 SQLite，Controller 启动独立参考 Worker，读取算法返回的计划，经共享约束模型复核后，把状态、计划、指标和事件持久化。结果可从数据库下载 JSON/CSV；若选文件输出，还会在指定目录下以运行 ID 为子目录保存相同内容。甘特图和 Cesium 页面按运行 ID 读取正式结果；轨道 CZML 按场景哈希缓存，卫星本体/固定载荷数据则每次从已提交结果只读派生。
 
 入口：`python -m eos_system`。本地接口文档：`http://127.0.0.1:8765/docs`。默认只监听本机；同一数据库只运行一个 Controller 实例。

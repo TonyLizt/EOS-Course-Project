@@ -19,6 +19,7 @@ SOURCE_NAMES = (
     "utils/certification_identity.py", "utils/continuous_exposure.py",
     "utils/visibility.py", "utils/time_parsing.py", "core/models.py",
     "schedulers/scenario_loader.py", "schedulers/constraint_model.py",
+    "schedulers/source_windows.py",
     "schedulers/transition_utils.py", "schedulers/evaluation_metrics.py",
     "eos_system/verification.py", "eos_system/controller.py", "eos_system/storage.py",
     "eos_system/exporting.py", "eos_system/contracts.py", "eos_system/config.py",

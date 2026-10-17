@@ -4,6 +4,8 @@
 
 # 第二阶段接口设计文档（审核稿）
 
+> 2026-10-18 I2工作树待审核变更：计划JSON保留sat_window_id及适用的gs_window_id，CSV增加两类来源ID及orbit_number；无新增HTTP请求字段或路由。旧格式唯一来源才兼容，显式错误/歧义拒绝。编号作用域、跨模块影响及发布边界见 [Assignment来源契约](assignment_source_window_contract_v1.md)。本说明不代表已合并的公共承诺。
+
 > **文档状态：第二阶段目标设计，尚非全部已实现接口。** v0.3 框架当前可调用的路径、字段和限制以 [`framework_handoff.md`](framework_handoff.md)、[`replay_backend_handoff.md`](replay_backend_handoff.md)、`eos_system/contracts.py`、`eos_system/api.py` 及启动后的 `/docs` 为准。本文保留完整目标契约，供四人讨论后逐项落地；其中 A/B/C/D 算法、Daemon 与部分 Worker 可靠性接口仍待实现。已落地的卫星本体/固定载荷回放见 [`satellite_replay_commits_1_3.md`](satellite_replay_commits_1_3.md)及后续 commit 4–6 交接记录。
 
 - 版本：v0.2，2026-10-14（整星姿态与固定镜头回放同步版）
