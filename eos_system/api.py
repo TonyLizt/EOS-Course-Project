@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 
 from . import VERSION
-from .algorithm_registry import get_algorithm, list_algorithms
+from .algorithm_registry import get_algorithm, list_algorithms, list_schedule_models, COMPARISON_ALGORITHMS, availability
 from .config import Settings, algorithm_source_sha256, list_scenarios_in, normalise_user_path, require_writable_directory, resolve_scenario_in
 from .contracts import DirectoryRegistration, ReplayRequest, RunConfig, RunRequest
 from .controller import Controller
@@ -75,7 +75,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.middleware("http")
     async def current_ui(request: Request, call_next):
         response = await call_next(request)
-        if request.url.path == "/" or request.url.path.startswith("/static/") or request.url.path == "/visualization/gantt-page":
+        if request.url.path == "/" or request.url.path.startswith("/static/") or request.url.path in {"/visualization/gantt-page", "/visualization/gantt"}:
             response.headers["Cache-Control"] = "no-store, max-age=0"
             response.headers["Pragma"] = "no-cache"
             response.headers["X-EOS-UI-Build"] = ui_build_id
@@ -163,12 +163,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/algorithms")
     def algorithms():
-        return {"items": list_algorithms()}
+        return {"items": list_algorithms(), "models": list_schedule_models()}
 
     @app.post("/api/runs", status_code=202)
     def submit_run(request: RunRequest, idempotency_key: str | None = Header(default=None)):
         try:
             spec = get_algorithm(request.algorithm_id)
+            if request.algorithm_id not in COMPARISON_ALGORITHMS:
+                raise ValueError('请选择九种比较算法之一；完成率优先和自适应修复请在初始排程模型中选择。')
+            state, message = availability(request.algorithm_id)
+            if state != 'ready':
+                raise ValueError(message)
             spec.parse_params(request.algorithm_params)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -404,6 +409,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         successful_run(run_id)
         schedule = f"/api/runs/{run_id}/visualization/schedule"
         return RedirectResponse("/visualization/gantt-page?" + urlencode({"schedule": schedule}))
+
+    @app.get("/visualization/gantt")
+    def gantt_entry(run_id: str | None = None):
+        if run_id:
+            return open_gantt(run_id)
+        return FileResponse(Path(__file__).resolve().parent / "web" / "gantt-runs.html")
 
     @app.get("/visualization/cesium/{run_id}")
     def open_cesium(run_id: str):

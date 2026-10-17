@@ -1,3 +1,8 @@
+## 九算法比较与 Gantt 实验入口（2026-10-18）
+
+- 将两种初始模型与九种比较算法分离，保留旧历史；新增 schedule_model、算法可用性与模型分组，补上 `/visualization/gantt` 实验选择页。MIP 缺依赖、PPO 尚缺可信推理接入，明确禁用，不冒充可用。
+- Python 14 项、Node 7 项、一次 UI/Gantt Chromium 回归及一次真实两算法小场景提交通过；真实两项均 20/20，无大型仿真。无数据库迁移，正式门禁不变。详见[九算法交接](docs/phase2/nine_algorithm_console_handoff.md)。
+
 ## 重复启动提示与控制台回归补齐（2026-10-18）
 
 - CLI 在加载 API 前探测现有 Controller 锁，重复启动直接提示使用网址与 Ctrl+C 重启，不删除锁或接管任务；最终互斥仍由 Controller 保证。修正浏览器回归显式使用正式模式，补充预览比较隔离测试。

@@ -14,6 +14,7 @@
     const c = run.config || {};
     return canonical({scenario_sha256: c.scenario_sha256, scenario_physics_version: c.scenario_provenance?.scenario_physics_version,
       execution_mode: c.execution_mode || 'formal', preview_version: run.preview_validation?.preview_version || null,
+      schedule_model: c.schedule_model || 'legacy_unspecified',
       algorithm_code_sha: c.algorithm_code_sha, constraints: c.constraints, placement_mode: c.placement_mode,
       seed: c.seed, time_budget_s: c.time_budget_s, objective_weights: c.objective_weights,
       metric_schema_version: run.metrics?.metric_schema_version ?? null,

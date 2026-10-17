@@ -19,6 +19,10 @@ test('algorithm parameters differ transparently within a common condition group'
   const groups = C.groupRuns([run('a', {algorithm_id: 'a', algorithm_params: {beam: 1}}), run('b', {algorithm_id: 'b', algorithm_params: {beam: 4}})]);
   assert.equal(groups.length, 1); assert.equal(groups[0].runs.length, 2);
 });
+test('different initial scheduling models are separate comparison groups', () => {
+  assert.equal(C.groupRuns([run('a', {schedule_model:'completion_first'}),
+    run('b', {schedule_model:'adaptive_repair'})]).length, 2);
+});
 test('preview and formal results, and different preview versions, never share winners', () => {
   const formal = run('formal');
   const preview = id => ({...run(id, {execution_mode: 'planning_preview'}),

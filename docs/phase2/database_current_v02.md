@@ -1,5 +1,7 @@
 # 当前数据库设计与 ER 图（v0.2.0）
 
+> 2026-10-18：Run 配置 JSON 增加 schedule_model，列表投影增加模型与 has_plan；没有 SQL 模式迁移，旧历史不改写。详见[九算法存储说明](nine_algorithm_console_handoff.md)。
+
 > 2026-10-17：新增规划预览，无 SQL 模式迁移。现有计划与指标通过配置 execution_mode 和 PREVIEW_VALIDATED 事件区别于正式认证，历史结果不改写。见[预览存储契约](planning_preview_handoff.md)。
 
 本文件描述已落地的 SQLite 物理模式。完整字段和约束以 `eos_system/storage.py` 为准；`database_design_target.md` 是后续目标审核稿。

@@ -343,6 +343,7 @@ class Database:
                     current = json.loads(previous["config_json"])
                     incoming = config.model_dump()
                     current.setdefault('execution_mode', 'formal')
+                    current.setdefault('schedule_model', 'completion_first')
                     for key in ("run_id", "created_at"):
                         current.pop(key, None)
                         incoming.pop(key, None)
@@ -612,6 +613,8 @@ class Database:
         for item in items:
             detail = self.get_run(item["run_id"])
             item['result_kind'] = detail.get('result_kind', 'formal') if detail else 'formal'
+            item['schedule_model'] = detail['config'].get('schedule_model', 'legacy_unspecified') if detail else 'legacy_unspecified'
+            item['has_plan'] = bool(detail and detail.get('plan') is not None)
             item["continuous_certification_status"] = detail["continuous_certification"]["status"] if detail else "INCONCLUSIVE"
         return {"items": items, "total": total, "limit": limit, "offset": offset}
 

@@ -35,7 +35,7 @@ class ConsoleMetadataTests(unittest.TestCase):
             self.assertTrue(algorithm['strategy'])
             self.assertTrue(algorithm['objectives'])
             self.assertTrue(algorithm['limitations'])
-            self.assertEqual(algorithm['availability'], 'ready')
+            self.assertIn(algorithm['availability'], ('ready', 'unavailable'))
             self.assertEqual(algorithm['parameters']['type'], 'object')
 
 

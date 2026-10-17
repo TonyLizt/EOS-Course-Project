@@ -1,5 +1,7 @@
 > 2026-10-17 控制台升级：`GET /api/algorithms` 增加策略/目标/限制/可用性字段，`GET /api/scenarios` 补充静态规模和来源状态；多算法提交仍逐项调用原 `POST /api/runs`，无新批次事务或状态。详见[当前控制台与 Gantt 契约](console_gantt_handoff.md)。
 
+> 九算法增量（2026-10-18）：新增 RunRequest.schedule_model、算法列表 models 与可用性说明，旧模型 ID 不再用于新 HTTP 算法提交；增加无 Run ID 的 Gantt 选择入口。见[九算法公共契约](nine_algorithm_console_handoff.md)。
+
 > 规划预览接口：RunRequest.execution_mode 默认 formal，UI 显式提交 planning_preview。预览结果、比较隔离及正式导出 409 见[预览契约](planning_preview_handoff.md)。
 
 > v0.3.2 已实现补充：场景元数据/可用性、自动登记与自适应预算见[六场景交接](six_scenario_scale_handoff.md)。配置 ID 保持，实际步长读 manifest，不写死 5 秒。

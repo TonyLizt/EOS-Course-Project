@@ -34,6 +34,7 @@ class ObjectiveOptions(StrictModel):
 
 
 class RunRequest(StrictModel):
+    schedule_model: Literal["completion_first", "adaptive_repair"] = "completion_first"
     execution_mode: Literal["formal", "planning_preview"] = "formal"
     source_id: str = Field(default="runtime", min_length=1, max_length=80)
     scenario_id: str = Field(min_length=1, max_length=200)

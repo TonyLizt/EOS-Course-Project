@@ -36,6 +36,8 @@ async function bootstrap() {
     replayConfigId = replayConfigs.default_id;
     currentAlgorithms = algorithms.items;
     $("algorithm").innerHTML = currentAlgorithms.map((a) => `<option value="${escapeHtml(a.algorithm_id)}">${escapeHtml(a.name)}</option>`).join("");
+    $("algorithm").value = currentAlgorithms.find(a => a.availability === 'ready')?.algorithm_id || '';
+    $("schedule-model").innerHTML = algorithms.models.map(m => `<option value="${escapeHtml(m.model_id)}">${escapeHtml(m.name)}</option>`).join('');
     window.ConsoleUI?.catalog(currentAlgorithms);
     await loadScenarios();
     if(sources.catalog_warnings?.length) $("register-message").textContent=sources.catalog_warnings.join("；");
@@ -85,7 +87,7 @@ function updateHints() {
   }
   const algorithm = currentAlgorithms.find((a) => a.algorithm_id === $("algorithm").value);
   const properties = Object.keys(algorithm?.parameters?.properties || {});
-  $("algorithm-hint").textContent = algorithm ? `${algorithm.description || ""} 参数：${properties.length ? properties.join("、") : "无"}` : "";
+  $("algorithm-hint").textContent = algorithm ? `${algorithm.description || ""} ${algorithm.availability_message || ''} 参数：${properties.length ? properties.join("、") : "无"}` : "";
   const profile = outputProfiles.find((p) => p.profile_id === $("output-profile").value);
   $("output-hint").textContent = profile?.kind === "directory"
     ? `正式 JSON/CSV 将保存到 ${profile.root_path}/<run_id>/；浏览器仍可下载。`
@@ -141,6 +143,7 @@ function buildRequest() {
     source_id: $("source").value,
     scenario_id: $("scenario").value,
     algorithm_id: $("algorithm").value,
+    schedule_model: $("schedule-model").value,
     output_profile_id: $("output-profile").value,
     algorithm_params: params,
     seed: Number($("seed").value),
@@ -184,7 +187,7 @@ async function refresh() {
     $("previous-page").disabled = pageOffset === 0;
     $("next-page").disabled = pageOffset + pageSize >= list.total;
     const listHtml = list.items.map((r) => `<tr data-id="${escapeHtml(r.run_id)}" class="${r.run_id === selectedId ? "selected" : ""}">
-      <td><input class="compare-run" type="checkbox" data-run="${escapeHtml(r.run_id)}" aria-label="比较实验 ${escapeHtml(r.run_id)}" ${window.ConsoleUI?.has(r.run_id) ? 'checked' : ''}></td>
+      <td><input class="compare-run" type="checkbox" data-run="${escapeHtml(r.run_id)}" aria-label="比较实验 ${escapeHtml(r.run_id)}" ${window.ConsoleUI?.has(r.run_id) ? 'checked' : ''} ${currentAlgorithms.some(a => a.algorithm_id === r.algorithm_id) ? '' : 'disabled title="旧模型单独运行，不属于九算法比较"'}></td>
       <td><button type="button" class="run-select" data-id="${escapeHtml(r.run_id)}"${r.run_id === selectedId ? ' aria-current="true"' : ''}>${escapeHtml(new Date(r.created_at).toLocaleString())}</button></td><td>${escapeHtml(r.scenario_id)}</td>
       <td>${escapeHtml(r.algorithm_id)}</td><td>${escapeHtml(r.status)}</td>
       <td>${r.TCR == null ? "—" : (Number(r.TCR) * 100).toFixed(1) + "%"}</td></tr>`).join("");

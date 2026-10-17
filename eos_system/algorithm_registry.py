@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from math import isfinite
+from importlib.util import find_spec
 from typing import Callable, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -34,6 +35,49 @@ class AdaptiveRepairParams(AlgorithmParams):
     alns_iterations: int | None = Field(default=None, ge=0, le=500)
 
 
+class CandidateParams(AlgorithmParams):
+    max_candidates_per_task: int | None = Field(default=None, ge=1, le=512)
+
+
+class SAParams(AlgorithmParams):
+    max_iterations: int | None = Field(default=None, ge=1, le=100000)
+    initial_temperature: float | None = Field(default=None, gt=0, le=1000000)
+    cooling_rate: float | None = Field(default=None, gt=0, le=1)
+    neighbor_attempts: int | None = Field(default=None, ge=1, le=1000)
+    restarts: int | None = Field(default=None, ge=1, le=20)
+
+
+class GAParams(CandidateParams):
+    population_size: int | None = Field(default=None, ge=4, le=500)
+    generations: int | None = Field(default=None, ge=1, le=10000)
+    crossover_rate: float | None = Field(default=None, ge=0, le=1)
+    mutation_rate: float | None = Field(default=None, ge=0, le=1)
+
+
+class ACOParams(CandidateParams):
+    ants: int | None = Field(default=None, ge=1, le=500)
+    iterations: int | None = Field(default=None, ge=1, le=10000)
+    alpha: float | None = Field(default=None, gt=0, le=20)
+    beta: float | None = Field(default=None, gt=0, le=20)
+    evaporation: float | None = Field(default=None, gt=0, lt=1)
+
+
+class MIPParams(CandidateParams):
+    verbose: bool = False
+
+
+def availability(algorithm_id: str) -> tuple[str, str]:
+    if algorithm_id == 'mip':
+        if find_spec('pulp') is None:
+            return 'unavailable', '缺少 PuLP / CBC 求解器依赖。'
+        import pulp
+        if not pulp.PULP_CBC_CMD(msg=False).available():
+            return 'unavailable', '未找到可用的 CBC 求解器。'
+    if algorithm_id == 'ppo':
+        return 'unavailable', ('缺少 PyTorch；' if find_spec('torch') is None else '') + '尚未接入受信任训练模型及共享约束，禁止随机策略冒充训练结果。'
+    return 'ready', ''
+
+
 @dataclass(frozen=True)
 class SolveContext:
     """每次求解的受控服务；算法可选择是否构造初始计划。"""
@@ -42,6 +86,7 @@ class SolveContext:
     time_budget_s: float
     objective_weights: ObjectiveWeights
     params: AlgorithmParams
+    schedule_model: str = 'completion_first'
     # 正式 Worker 接入协作取消后可替换此回调；硬超时仍由 Controller 负责。
     is_cancelled: Callable[[], bool] = field(default=lambda: False, repr=False)
 
@@ -85,7 +130,9 @@ class AlgorithmSpec:
             "strategy": self.strategy,
             "objectives": self.objectives,
             "limitations": self.limitations,
-            "availability": "ready",
+            "availability": availability(self.algorithm_id)[0],
+            "availability_message": availability(self.algorithm_id)[1],
+            "uses_initial_schedule": self.algorithm_id in {'sa', 'ga', 'aco'},
             "parameters": self.params_model.model_json_schema(),
         }
 
@@ -95,8 +142,16 @@ class LegacySearchAdapter:
 
     def __init__(self, algorithm):
         self.algorithm = algorithm
+        self.algorithm_id = ''
 
     def solve(self, problem: SchedulingProblem, constraints: ConstraintModel, context: SolveContext) -> Schedule:
+        if self.algorithm_id in COMPARISON_ALGORITHMS:
+            model = create_algorithm(context.schedule_model, cfg_overrides={
+                'seed': context.seed, 'time_budget_s': context.time_budget_s / 3})
+            initial = model.search(problem, constraints, constraints.build_initial_schedule())
+            # Some implementations rebuild solutions, rather than consuming the
+            # seed. Keep that behavior explicit; never substitute their output.
+            return self.algorithm.search(problem, constraints, initial)
         return SchedulingEngine(problem, constraints, self.algorithm).run()
 
 
@@ -105,8 +160,12 @@ def _build_legacy(algorithm_id: str, context: SolveContext) -> Solver:
     overrides["seed"] = context.seed
     if algorithm_id == "adaptive_repair":
         overrides["time_budget_s"] = context.time_budget_s
+    if algorithm_id == 'mip':
+        overrides['time_limit_sec'] = max(1, int(context.time_budget_s))
     algorithm = create_algorithm(algorithm_id, objective_weights=context.objective_weights, cfg_overrides=overrides)
-    return LegacySearchAdapter(algorithm)
+    adapter = LegacySearchAdapter(algorithm)
+    adapter.algorithm_id = algorithm_id
+    return adapter
 
 
 # 显式注册可审查的本仓库算法；组员新增算法时只在这里增加一项元数据。
@@ -132,6 +191,26 @@ _SPECS: dict[str, AlgorithmSpec] = {
 }
 
 
+COMPARISON_ALGORITHMS = ('mip', 'profit_first', 'timeliness_first', 'balance_first',
+                         'pressure_repair', 'sa', 'ga', 'aco', 'ppo')
+
+_DEFINITIONS = [
+    ('mip', '混合整数规划 MIP', 'exact', MIPParams, '离散候选与冲突约束构建 MILP，由 CBC 求解。', '候选集上的加权目标优化，含实现中的主目标增强。', '候选集有限；独立建模，不使用初始模型解。'),
+    ('profit_first', '收益优先启发式', 'heuristic', CandidateParams, '按收益及可行候选排序构建计划。', '优先总收益，以结束时间等打破平局。', '固定贪心策略，自行重建解，不使用初始模型解。'),
+    ('timeliness_first', '时效优先启发式', 'heuristic', CandidateParams, '按任务最早候选时间排序安排可行观测。', '优先较早观测机会。', '不保证全局最早完成；自行重建解，不使用初始模型解。'),
+    ('balance_first', '负载均衡启发式', 'heuristic', CandidateParams, '根据卫星负载选择可行安排。', '改善卫星负载均衡。', '固定贪心策略，自行重建解，不使用初始模型解。'),
+    ('pressure_repair', '冲突压力修复', 'heuristic', CandidateParams, '冲突压力构造与受限单任务重插入。', '增加可行任务安排。', '有限修复预算，自行重建解，不使用初始模型解。'),
+    ('sa', '模拟退火 SA', 'metaheuristic', SAParams, '从所选初始模型解出发，温度与邻域搜索优化。', '共享 ObjectiveModel 的加权目标。', '随机启发式，受迭代次数和 Worker 硬预算限制。'),
+    ('ga', '遗传算法 GA', 'metaheuristic', GAParams, '候选编码、交叉、变异与可行解码，保留初始模型解为 incumbent。', '共享 ObjectiveModel 的加权目标。', '初始模型不替代独立种群生成；不保证最优。'),
+    ('aco', '蚁群优化 ACO', 'metaheuristic', ACOParams, '信息素与启发因子构造，保留初始模型解为 incumbent。', '共享 ObjectiveModel 的加权目标。', '初始模型不替代蚁群构造；受候选和迭代限制。'),
+    ('ppo', 'PPO 强化学习', 'learning', AlgorithmParams, '训练策略通过动作掩码逐任务选择候选。', '训练和推理配置的奖励目标。', '独立解码，不使用初始模型；可信模型与统一约束尚未接入，当前不可运行。'),
+]
+for _id, _name, _category, _params, _strategy, _objectives, _limits in _DEFINITIONS:
+    _SPECS[_id] = AlgorithmSpec(_id, _name, _category, 'EOS-Bench / 项目现有实现',
+        'console-1', _params, lambda context, aid=_id: _build_legacy(aid, context),
+        description=_strategy, strategy=_strategy, objectives=_objectives, limitations=_limits)
+
+
 def get_algorithm(algorithm_id: str) -> AlgorithmSpec:
     try:
         return _SPECS[algorithm_id]
@@ -140,14 +219,20 @@ def get_algorithm(algorithm_id: str) -> AlgorithmSpec:
 
 
 def list_algorithms() -> list[dict]:
-    return [spec.public_info() for spec in _SPECS.values()]
+    return [_SPECS[aid].public_info() for aid in COMPARISON_ALGORITHMS]
 
 
-def make_context(seed: int, time_budget_s: float, weights: dict, spec: AlgorithmSpec, params: dict) -> SolveContext:
+def list_schedule_models() -> list[dict]:
+    return [{'model_id': aid, 'name': {'completion_first':'完成率优先', 'adaptive_repair':'自适应修复'}[aid], 'description': _SPECS[aid].strategy}
+            for aid in ('completion_first', 'adaptive_repair')]
+
+
+def make_context(seed: int, time_budget_s: float, weights: dict, spec: AlgorithmSpec, params: dict,
+                 schedule_model: str = 'completion_first') -> SolveContext:
     """同一注册表负责 HTTP 和 Worker 的参数校验，避免两处规则漂移。"""
     if not isfinite(time_budget_s) or time_budget_s <= 0:
         raise ValueError("算法预算必须是有限正数")
     return SolveContext(
         seed=seed, time_budget_s=time_budget_s,
-        objective_weights=ObjectiveWeights(**weights), params=spec.parse_params(params),
+        objective_weights=ObjectiveWeights(**weights), params=spec.parse_params(params), schedule_model=schedule_model,
     )

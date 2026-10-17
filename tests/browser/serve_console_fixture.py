@@ -29,7 +29,7 @@ def main():
     args = parser.parse_args()
     with fixture(duration_s=86400) as f:
         ids = []
-        for i, algorithm in enumerate(('completion_first', 'adaptive_repair')):
+        for i, algorithm in enumerate(('profit_first', 'timeliness_first')):
             rid = f'00000000-0000-4000-8000-{90+i:012d}'
             cfg = f.config.model_copy(update=dict(run_id=rid, algorithm_id=algorithm,
                           algorithm_code_sha=algorithm_source_sha256(),

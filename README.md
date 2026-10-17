@@ -1,6 +1,8 @@
 # EOS-Course-Project：地球观测卫星任务调度课程系统
 
-首页统一控制台默认使用「规划预览」：选择场景及一个或多个算法，提交后在本批运行与结果比较查看结果，并进入 Gantt / Cesium。预览经过采样核验但不代表正式连续认证；正式模式门禁不变。见[启动与预览交接](docs/phase2/planning_preview_handoff.md)。
+首页统一控制台默认使用「规划预览」：选择场景、初始排程模型（完成率优先／自适应修复），再从九种算法中选择一项或多项提交，在「算法比较」查看结果。MIP/PPO 缺依赖或可信模型接入时明确禁用；部分算法不使用初始解，详见[九算法交接](docs/phase2/nine_algorithm_console_handoff.md)。预览不代表正式连续认证，正式门禁不变。
+
+Gantt 实验入口：<http://127.0.0.1:8765/visualization/gantt>，选择已完成且有可用计划的 Run；或直接打开 `/visualization/gantt/{run_id}`。Cesium 入口仍在各 Run 详情。
 
 若启动命令提示「已有 Controller」，请直接访问 http://127.0.0.1:8765/；重启时先在原服务终端按 Ctrl+C 并等待退出，不要删除 `controller.lock`。
 

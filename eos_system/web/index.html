@@ -13,7 +13,7 @@
 <body>
   <a class="skip-link" href="#main-content">跳到主要內容</a>
   <header class="topbar">
-    <div><p class="eyebrow">EOS · MISSION OPERATIONS</p><h1>统一调度控制台</h1><nav aria-label="控制台导航"><a href="#create-heading">运行调度</a><a href="#comparison">结果比较</a><a href="#runs-heading">历史记录</a></nav></div>
+    <div><p class="eyebrow">EOS · MISSION OPERATIONS</p><h1>统一调度控制台</h1><nav aria-label="控制台导航"><a href="#create-heading">运行调度</a><a href="#comparison">算法比较</a><a href="#runs-heading">历史记录</a><a href="/visualization/gantt">Gantt 运行页</a></nav></div>
     <span id="health" class="badge" role="status" aria-live="polite">正在連接服務…</span>
   </header>
   <main class="layout" id="main-content" tabindex="-1">
@@ -25,7 +25,9 @@
         <label>数据源<select id="source" required></select></label>
         <label>场景<select id="scenario" required></select></label>
         <p id="scenario-hint" class="hint" role="status"></p>
-        <label>当前配置算法<select id="algorithm" required></select></label>
+        <label>初始排程模型<select id="schedule-model" required></select></label>
+        <p class="hint">模型与比较算法分别选择。SA 使用模型初始解，GA／ACO 保留其为候选最佳解；其余算法依原实现自行建解，模型不改变其核心策略。</p>
+        <label>算法参数编辑对象<select id="algorithm" required></select></label>
         <p id="algorithm-hint" class="hint"></p>
         <fieldset><legend>本批运行算法（可多选）</legend><div id="algorithm-choices"></div></fieldset>
         <button class="secondary" type="button" id="algorithm-info">查看当前算法详情</button>
@@ -67,7 +69,7 @@
     </section>
 
     <section class="card comparison-card" id="comparison" aria-labelledby="comparison-heading">
-      <div class="section-title inline"><div><p class="eyebrow">COMPARE · SAME CONDITIONS</p><h2 id="comparison-heading">结果比较</h2><p>本批运行自动加入；也可勾选历史记录。不同条件分组展示，不做综合排名。</p></div><button id="clear-comparison" type="button" class="secondary">清空比较</button></div>
+      <div class="section-title inline"><div><p class="eyebrow">COMPARE · NINE ALGORITHMS</p><h2 id="comparison-heading">算法比较</h2><p>比较九种算法，不将初始模型当作比较算法。不同模型、场景与参数条件分组展示，不做综合排名。</p></div><button id="clear-comparison" type="button" class="secondary">清空比较</button></div>
       <p class="hint">TP ↑ 收益 · TCR ↑ 完成率 · BD ↑ 均衡度 · TM ↓ 归一化等待时间（未完成记 1）· RT ↓ 秒 · RV ↓ 多次收益方差（单次通常无值）。★ 表示同组该指标最佳值，允许并列。</p>
       <p id="comparison-status" class="message" role="status"></p><div id="comparison-groups"></div>
     </section>

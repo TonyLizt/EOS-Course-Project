@@ -10,7 +10,9 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     const context = await browser.newContext({viewport: {width: 1536, height: 1080}, timezoneId: 'Asia/Hong_Kong'});
     const page = await context.newPage(); page.on('pageerror', e => errors.push(String(e)));
     await page.goto(info.url);
-    await page.waitForFunction(() => document.querySelectorAll('[name="batch-algorithm"]').length === 2);
+    await page.waitForFunction(() => document.querySelectorAll('[name="batch-algorithm"]').length === 9);
+    assert.equal(await page.locator('#schedule-model option').count(), 2);
+    assert.equal(await page.locator('#comparison-heading').innerText(), '算法比较');
     // This fixture verifies the strict formal gate; UI defaults to preview now.
     await page.selectOption('#execution-mode', 'formal');
     await page.waitForFunction(() => {
@@ -18,18 +20,18 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
       return !select.disabled && [...select.options].some(option => option.value === 'empty');
     });
     await page.click('#algorithm-info');
-    assert.match(await page.locator('#algorithm-description').innerText(), /随机|固定/);
+    assert.match(await page.locator('#algorithm-description').innerText(), /收益/);
     await page.keyboard.press('Escape');
     await page.locator('#run-form > details > summary').click();
     // Per-algorithm input remains separate when changing editors.
-    await page.selectOption('#algorithm', 'adaptive_repair'); await page.fill('#params', '{"alns_iterations":0}');
-    await page.selectOption('#algorithm', 'completion_first'); assert.equal(await page.inputValue('#params'), '{}');
-    await page.selectOption('#algorithm', 'adaptive_repair'); assert.equal(await page.inputValue('#params'), '{"alns_iterations":0}');
+    await page.selectOption('#algorithm', 'sa'); await page.fill('#params', '{"max_iterations":2}');
+    await page.selectOption('#algorithm', 'profit_first'); assert.equal(await page.inputValue('#params'), '{}');
+    await page.selectOption('#algorithm', 'sa'); assert.equal(await page.inputValue('#params'), '{"max_iterations":2}');
     await page.selectOption('#scenario', 'empty'); await page.fill('#budget', '1');
     await page.click('#submit');
     await page.waitForFunction(() => document.querySelector('#form-message').textContent.includes('1/1'));
     const singleId = (await page.locator('#submission-results li').innerText()).match(/[0-9a-f]{8}-[0-9a-f-]{27,}/)[0];
-    await page.locator('[name="batch-algorithm"][value="adaptive_repair"]').check();
+    await page.locator('[name="batch-algorithm"][value="sa"]').check();
     await page.click('#submit');
     await page.waitForFunction(() => document.querySelector('#form-message').textContent.includes('2/2'));
     assert.equal(await page.locator('#submission-results li').count(), 2);
@@ -42,6 +44,11 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     }
     // The existing production gate refuses an untrusted empty scenario. Never bypass it.
     assert.equal(single.status, 'FAILED'); assert.ok(single.error);
+    const chooser = await context.newPage();
+    await chooser.goto(info.url+'/visualization/gantt');
+    await chooser.waitForSelector('#gantt-runs a');
+    await chooser.locator(`#gantt-runs a[href="/visualization/gantt/${info.runs[0]}"]`).click();
+    await chooser.waitForSelector('.gantt-bar', {state:'attached'});
     await page.click('#clear-comparison');
     for (const id of info.runs) await page.locator(`.compare-run[data-run="${id}"]`).check();
     await page.waitForFunction(() => document.querySelectorAll('#comparison-groups .metric-best').length > 0);

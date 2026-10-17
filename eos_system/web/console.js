@@ -16,7 +16,8 @@
     try { sessionStorage.setItem('eos-comparison', JSON.stringify([...selected])); } catch (_) { /* Private browsing may deny storage. */ }
   }
   function catalog(algorithms) {
-    $('algorithm-choices').innerHTML = algorithms.map((a, i) => `<label class="check-label"><input type="checkbox" name="batch-algorithm" value="${E(a.algorithm_id)}" ${i === 0 ? 'checked' : ''} ${a.availability && a.availability !== 'ready' ? 'disabled' : ''}><span>${E(a.name)} <small>${E(a.version)} · ${E(a.availability || 'ready')}</small></span></label>`).join('');
+    const firstReady = algorithms.find(a => a.availability === 'ready')?.algorithm_id;
+    $('algorithm-choices').innerHTML = algorithms.map(a => `<label class="check-label"><input type="checkbox" name="batch-algorithm" value="${E(a.algorithm_id)}" ${a.algorithm_id === firstReady ? 'checked' : ''} ${a.availability && a.availability !== 'ready' ? 'disabled' : ''}><span>${E(a.name)} <small>${E(a.version)} · ${E(a.availability || 'ready')} ${E(a.availability_message || '')}</small></span></label>`).join('');
     activeAlgorithm = $('algorithm').value;
   }
   $('algorithm').addEventListener('change', () => {
@@ -27,7 +28,7 @@
   function showAlgorithm(id, run = null) {
     const a = currentAlgorithms.find(item => item.algorithm_id === id);
     $('algorithm-dialog-title').textContent = a?.name || id;
-    const rows = a ? [['ID / 类型 / 版本', `${a.algorithm_id} · ${a.category} · ${a.version}`], ['简介', a.description], ['调度策略', a.strategy || '注册表未提供'], ['优化目标', a.objectives || '注册表未提供'], ['适用与限制', a.limitations || '注册表未提供'], ['参数定义（来自注册表）', JSON.stringify(a.parameters, null, 2)]] : [['算法', '历史算法当前未注册；下方保留该次运行的固化参数。']];
+    const rows = a ? [['ID / 类型 / 版本', `${a.algorithm_id} · ${a.category} · ${a.version}`], ['简介', a.description], ['调度策略', a.strategy || '注册表未提供'], ['优化目标', a.objectives || '注册表未提供'], ['适用与限制', a.limitations || '注册表未提供'], ['可用性', a.availability_message || '可运行'], ['初始模型关系', a.uses_initial_schedule ? '使用所选模型的初始解／候选最佳解。' : '按原实现独立建解，模型选择不改变该算法核心策略。'], ['参数定义（来自注册表）', JSON.stringify(a.parameters, null, 2)]] : [['算法', '历史算法当前未注册；下方保留该次运行的固化参数。']];
     if (run) rows.push(['本次 Run / 算法版本', `${run.run_id} · ${run.config.algorithm_version}`], ['本次参数', JSON.stringify(run.config, null, 2)]);
     $('algorithm-description').innerHTML = `<dl>${rows.map(([k, v]) => `<dt>${E(k)}</dt><dd><pre>${E(v)}</pre></dd>`).join('')}</dl>`;
     $('algorithm-dialog').showModal();
@@ -40,7 +41,7 @@
     $('run-algorithm-info').hidden = !run;
     $('run-config').textContent = run ? JSON.stringify({config: run.config, continuous_certification: run.continuous_certification || null, preview_validation: run.preview_validation || null}, null, 2) : '';
     const last = run?.attempts?.at(-1);
-    $('run-summary').textContent = run ? `${run.config.algorithm_id} ${run.config.algorithm_version} · ${run.config.scenario_id} · 提交 ${run.created_at} · 开始 ${last?.started_at || '尚未开始'} · 结束 ${run.finished_at || '尚未结束'} · ${verification(run)}` : '';
+    $('run-summary').textContent = run ? `${run.config.algorithm_id} ${run.config.algorithm_version} · 初始模型 ${run.config.schedule_model || '历史未记录'} · ${run.config.scenario_id} · 提交 ${run.created_at} · 开始 ${last?.started_at || '尚未开始'} · 结束 ${run.finished_at || '尚未结束'} · ${verification(run)}` : '';
     if (run) cache.set(run.run_id, run);
   }
   async function submit() {
@@ -95,6 +96,9 @@
           const old = cache.get(id);
           const run = old && terminal.has(old.status) ? old : await api(`/api/runs/${encodeURIComponent(id)}`);
           cache.set(id, run);
+          if (!currentAlgorithms.some(a => a.algorithm_id === run.config.algorithm_id)) {
+            selected.delete(id); return null;
+          }
           return run;
         } catch (error) { errors.push(`${id}: ${error.message}`); return null; }
       }));

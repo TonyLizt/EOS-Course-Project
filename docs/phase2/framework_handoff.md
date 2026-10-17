@@ -1,5 +1,7 @@
 > 2026-10-17 页面整合：单/多算法提交、历史条件分组比较、算法详情和精确可缩放 Gantt 已实现；沿用现有 Controller/Worker/Run 接口，无数据库迁移。操作、接口增量和验收限制见[控制台与 Gantt 交接](console_gantt_handoff.md)。
 
+> 九算法整合（2026-10-18）：比较算法与两个初始模型分离，Worker 适配器生成模型初始解后调用原 search；PPO 可信接入未完成，保持禁用。Gantt 增加实验选择页。见[当前九算法边界与验证](nine_algorithm_console_handoff.md)。
+
 > 规划预览增量：Run 可显式选择 planning_preview；正式认证和导出仍严格隔离，无数据库迁移。启动桥接、Controller/存储边界和实测记录见[预览交接](planning_preview_handoff.md)。
 
 > 历史专题记录：当前 v0.3.1 的实现、接口过渡与剩余分工见[修复集成交接](restore_integration_handoff.md)。下文保留当时的版本与验收语境。
