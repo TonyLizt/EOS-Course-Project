@@ -26,6 +26,8 @@
 
 ## 3. 接入形状
 
+2026-10-18 I2工作树待审核补充：Assignment保留实际 `sat_window_id`，有下传时保留实际 `gs_window_id`。公共输出传递并独立核对来源；历史缺失字段仅在完整语义下唯一确定时兼容。字段已有于dataclass，solve签名和算法策略不改。详见 [来源契约审查稿](assignment_source_window_contract_v1.md)。
+
 ```python
 from pydantic import Field
 from algorithms.solver_contracts import AlgorithmParams
