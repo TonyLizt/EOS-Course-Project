@@ -1682,13 +1682,21 @@
       "role": "repository_design",
       "location": {
         "kind": "repo_relative",
-        "path": "docs/phase2/database_current_v03.md",
+        "path": "docs/phase2/evidence/r1_02/d0d9325/database_current_v03.crlf.snapshot.md",
         "original_path": "docs/phase2/database_current_v03.md",
-        "normalized_path": "docs/phase2/database_current_v03.md"
+        "normalized_path": "docs/phase2/evidence/r1_02/d0d9325/database_current_v03.crlf.snapshot.md"
       },
       "sha256": "4b30f69358c610308e23817b35821a79879a18fbfb2388d21202427621408285",
       "size_bytes": 6091,
-      "evidence_level": "MEASURED_BYTES"
+      "evidence_level": "MEASURED_BYTES",
+      "evidence_scope": "historical_baseline_document_not_current_database_schema",
+      "historical_source": {
+        "git_commit": "d0d9325759f078ef13f41cc9eee74c5e7733758a",
+        "path": "docs/phase2/database_current_v03.md",
+        "git_blob_sha256": "754ac5227b9d74e394cc2bacc0dae4f5559624863003a7aa43c722fab7cf79bb",
+        "git_blob_size_bytes": 6009,
+        "checkout_eol": "CRLF"
+      }
     },
     {
       "id": "main-e3-fix",

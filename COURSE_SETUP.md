@@ -1,3 +1,9 @@
+## R1-02：Rebase 后证据身份兼容修复（2026-10-17）
+
+- 基于 origin/main f230c3b 的 feat/registry-provenance；固定核验器核心 LF，归档 d0d9325 数据库文档的原 CRLF 身份并保留旧 SHA/路径/版本；原 LFS 属性不变。
+- WSL 专项 31/31、Manifest 47/47；真实索引 275 PASS / 28 WARN / 0 FAIL，WARN 含义及来源边不变。原生 Windows 字节策略另测，stat/fstat 兼容限制详见审计。
+- 不改冻结数据、27 字段 Manifest、数据库或发布流程；候选与曝光认证状态不变。详见 [Rebase 身份审计](docs/phase2/r1-02_rebase_identity_audit_20261017.md)。未提交、推送或创建 PR。
+
 ## v0.3.5：Fixed Payload View 原子帧提交（2026-10-17）
 
 - 根因为单一隐藏 Cesium Scene 在多个固定镜头之间逐帧切换后，未等 imagery/terrain LOD 完成便复制默认 framebuffer；不是主 ENU 跟随相机或卫星 quaternion 跳变。
