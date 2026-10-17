@@ -1,6 +1,6 @@
 # Assignment 来源窗口契约 v1（I2 审查稿，2026-10-18）
 
-适用基线：0a1a941。本文描述 fix/source-window-i2 工作树实现，待李泽同确认公共集成影响；不代表已合并、发布或连续认证通过。
+当前适用实现：`fix/source-window-i2`，正式 Rebase 后 I2核心HEAD `0b8dbd4bef5b01bac6538c69a166ee87a62701f6`，main基线 `5e37ba720a9222a70d834d84e96c740601a3d236`（含I1 PR #18）。原审查稿基线为0a1a941。本文保留既有身份、UTC和步长语义，仍待李泽同确认公共集成影响；不代表已合并main、发布或连续认证通过。
 
 ## 1. 身份与时间
 
@@ -47,3 +47,11 @@ Assignment dataclass 已有 sat_window_id 和 gs_window_id，本次不增加字�
 | 历史结果 | 原文件、证据和数据库不改；唯一解析与正式认证分别判断。 |
 
 待李泽同确认：快照内 Loader ordinal 的名称/版本管理、显式null拒绝、历史歧义拒绝、CSV增列对外部消费端的影响，以及来源错误的用户呈现。连续物理认证仍是独立闸门。
+
+## 5. 正式集成验证边界（R2-C7 补充）
+
+[C6正式集成验收](algorithms/caabs_i1_i2_integration_validation_20261018.md)基于实际0b8dbd4源码，原生WSL等字节副本默认回归489 PASS、8 SKIP、0 FAIL/ERROR，退出0，结论 **INTEGRATION REVIEW PASS WITH CONDITIONS**。真实非空CAABS、Completion、Adaptive的来源ID通过Worker/Controller传递并由可信Scenario核对，随后因 `NO_CONTINUITY_CERTIFICATE` 被现有连续门禁阻断；完整真实非空正式成功入库及JSON/CSV导出路径尚未验证。已有SQLite/导出单元往返不等同于实际认证成功闭环。
+
+8项Orekit opt-in未运行；原挂载路径28条失败历史未全部归因或解决；外部CSV消费者兼容仍待确认，尤其新增列使旧列位置变化，需按字段名消费并确认版本说明。以上限制不改变前述快照身份、显式ID拒绝、历史唯一匹配、UTC微秒、半开区间、步长缺省或部署身份规则，也不允许旧部署凭证重标为新源码证据。
+
+公共负责人确认前维持审查稿状态。来源身份正确、离散规划可行、严格连续证明和正式发布资格须分别签收，不因C6默认回归通过而自动批准后两项。

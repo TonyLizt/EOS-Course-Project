@@ -2,6 +2,8 @@
 
 日期：2026-10-18（Asia/Shanghai）。工作树 `D:/VC/EOS-Course-Project-i2`，分支 `fix/source-window-i2`，基线 `0a1a9418659be9d7b9e4dad90484ac2cd087c593`（CAABS Core PR #17）。开始前 status --short、diff --stat、staged diff 均空，branch/HEAD/log/worktree list已记录。未切分支，不修改其他工作树，不执行git add、commit、push、merge、rebase或创建PR。
 
+现状说明（R2-C7）：上段及第1–6节为各轮历史时点记录，其中“未提交/未Rebase”、旧基线和临时组合不再描述当前状态。I2核心已正式Rebase并提交为 `0b8dbd4bef5b01bac6538c69a166ee87a62701f6`，包含 main `5e37ba720a9222a70d834d84e96c740601a3d236` / I1 PR #18；正式集成验收与剩余限制见第7节。保留全部原测试、失败和修正记录。
+
 本修复服务公共调度链路；I2专项及WSL本地等字节源码副本的默认完整回归通过，待人工审核。原Windows挂载路径的全量时序限制单独保留，不能声称该路径全量通过。来源一致性不等于连续曝光认证或发布批准。
 
 独立审核P2的后续修复见第6节；第1–5节保留首轮实现及原始测试历史。第6节说明Loader必要的步长解析修正，首轮“Loader仅说明/逻辑不改”不再描述当前最终差异。
@@ -188,3 +190,15 @@ delivery-check.json和p2-only.diff记录相对开始时已有未提交代码的�
 临时组合目录 `/home/meteor/eos-course-runtime/audits/i2-p2-main-overlay-7aqf_68q` 取新main的CAABS、solver_contracts、Registry和I1测试四份原始blob，main-overlay.json保存完整SHA。114/114通过，包含独立进程registry-first/algorithm-first、参数校验、真实公共Solver构造及来源回放；这不是正式Git集成版本的完整回归。正式整理分支后，仍需在实际提交上重跑完整HTTP→Worker→Verifier→SQLite→Export与认证/取消/超时回归。
 
 **P2-1 RESOLVED；P2-2 RESOLVED，等待人工复审。** 未修改连续物理规则、证据等级或发布门禁；来源一致、离散通过、严格连续认证、正式发布资格仍分别判断。原28条失败、物理opt-in未运行、公共契约/CSV消费端确认和实际集成验收仍保留为限制，不能用两个P2修复冒充其完成。所有候选及实际曝光认证状态保持原状。
+
+## 7. 正式 Rebase 后集成验收与文档收口（R2-C6 / R2-C7）
+
+正式源码为 `0b8dbd4bef5b01bac6538c69a166ee87a62701f6`，main基线 `5e37ba720a9222a70d834d84e96c740601a3d236`。C6在实际集成HEAD建立原生WSL等字节副本，逐文件核对SHA-256与大小；完整默认回归497项：**489 PASS、8 SKIP、0 FAIL、0 ERROR，退出码0，150.717秒**。包含I1 Registry17、I2来源31、P2 15、Core48共111项联合专项。该结果替代“尚待正式组合回归”的现状描述，不覆盖第4/6节的历史运行事实。
+
+真实Orekit非空诊断场景中，CAABS、Completion、Adaptive均产生Assignment，来源ID经过真实Worker和Controller保留，并由可信Scenario恢复及核对；随后真实连续认证均返回 `INCONCLUSIVE / NO_CONTINUITY_CERTIFICATE`。最深实际阶段为正式Verifier的真实物理认证。SQLite只保存运行诊断，正式计划/Assignment未入库，JSON/CSV导出HTTP409；**完整真实非空正式成功入库及导出路径尚未验证**。单元测试的正向证书注入、离散约束通过及来源一致均不能补足该缺口。
+
+真实反向输入在两个入口均被拒绝，取消、超时和六次Worker回收符合原契约。结论为 **INTEGRATION REVIEW PASS WITH CONDITIONS**。8项Orekit opt-in未运行；原挂载路径28条失败历史未全部归因或解决，原生副本通过不代表原路径问题关闭；外部CSV消费者兼容仍待李泽同确认。正式连续证明缺失仍阻断发布，所有历史候选及认证结论不变。
+
+完整源码/数据身份、命令、退出码、日志、真实运行和责任边界见 [C6正式集成验收报告](caabs_i1_i2_integration_validation_20261018.md)。可提交Draft PR供非作者和公共负责人审核，尚不满足无条件合并main条件；如要求真实正式成功闭环，须取得真实连续证明后补验。
+
+R2-C7仅同步PR草稿、本文、[来源契约](../assignment_source_window_contract_v1.md)及COURSE_SETUP入口，保留C6报告和历史证据；不修改生产代码、已有测试、数据库、场景或认证规则，不新增Python测试运行结论，不执行任何Git提交或整合操作。

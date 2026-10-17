@@ -1,3 +1,15 @@
+## R2-C7：I2 文档收口（2026-10-18）
+
+- 保留C6报告及I1/I2原有记录，更新[PR草稿](docs/phase2/algorithms/caabs_i2_source_window_pr_draft_20261018.md)、[I2报告第7节](docs/phase2/algorithms/caabs_i2_source_window_fix_20261018.md#7-正式-rebase-后集成验收与文档收口r2-c6--r2-c7)和[来源契约](docs/phase2/assignment_source_window_contract_v1.md)：正式核心HEAD为0b8dbd4，main基线5e37ba7；C6结论 INTEGRATION REVIEW PASS WITH CONDITIONS，489 PASS、8 SKIP、0 FAIL/ERROR，退出0。
+- 8项Orekit opt-in未运行；原挂载路径28条失败历史未全部归因；外部CSV消费者兼容待确认；NO_CONTINUITY_CERTIFICATE仍阻断正式计划入库及导出，完整真实正式成功路径尚未验证。可提交Draft PR供人工审核，尚不满足无条件合并main条件。
+- 本轮仅文档检查，未重跑Python测试，不改生产代码、已有测试、数据或认证规则，不暂存、提交或执行Git整合操作。[正式集成验收入口](docs/phase2/algorithms/caabs_i1_i2_integration_validation_20261018.md)。
+
+## R2-C6：I1 + I2 实际集成版本验收（2026-10-18）
+
+- 实际 HEAD 0b8dbd4 已包含 main 5e37ba7/I1；原生 WSL 等字节副本完整497项：489通过、8个Orekit opt-in跳过、0失败/错误，退出0。原挂载路径28条失败历史仍保留。
+- 真实Orekit非空小场景经过Registry、CAABS/Completion/Adaptive、独立Worker、Controller和可信来源核验；均到达真实连续认证并因 NO_CONTINUITY_CERTIFICATE 被阻断。SQLite仅保存失败/取消/超时诊断，正式JSON/CSV导出409，不宣称非空正式发布闭环通过。
+- 集成结论 PASS WITH CONDITIONS，可提交Draft PR供人工审核；物理证明、外部CSV消费者确认及历史环境时序限制仍需处置。本轮仅记录证据，不创建PR或执行Git整合操作。详见 [C6集成验收报告](docs/phase2/algorithms/caabs_i1_i2_integration_validation_20261018.md)。
+
 ## R2-B / I1：CAABS Algorithm Registry 接入（2026-10-18）
 
 - fix/caabs-registry-i1 基于0a1a941（Core PR #17）；实际基线双导入均成功，caabs查询未登记失败。迁移中立Solver契约、保留旧Registry导出并显式登记caabs/0.1.0，CAABS仅改import。
