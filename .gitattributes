@@ -1,1 +1,2 @@
 experiments/scenarios/**/*.json filter=lfs diff=lfs merge=lfs -text
+experiments/scenarios/**/provenance/*.json -filter diff merge text

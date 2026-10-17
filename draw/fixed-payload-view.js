@@ -14,10 +14,16 @@
       position_ecef_m: state.position_ecef_m.slice(),
       direction_ecef: state.direction_ecef.slice(),
       up_ecef: state.up_ecef.slice(),
+      body_to_ecef_quaternion_xyzw: Array.isArray(state.body_to_ecef_quaternion_xyzw)
+        ? state.body_to_ecef_quaternion_xyzw.slice() : null,
+      camera_to_ecef_quaternion_xyzw: Array.isArray(state.camera_to_ecef_quaternion_xyzw)
+        ? state.camera_to_ecef_quaternion_xyzw.slice() : null,
       phase: state.phase || 'IDLE',
       task_id: state.task_id || null,
       sensor_id: state.sensor_id || null,
-      quality: state.quality || 'missing'
+      quality: state.quality || 'missing',
+      target_visibility: state.target_visibility || 'UNKNOWN',
+      geometry_valid: state.geometry_valid !== false
     };
   }
 
@@ -58,8 +64,11 @@
   function statusText(satelliteId, pose) {
     if (!satelliteId) return 'No satellite selected';
     if (!pose) return satelliteId + ' | geometry unavailable';
+    const visibility = pose.target_visibility === 'EARTH_OCCLUDED'
+      ? ' | EARTH OCCLUDED' : pose.target_visibility === 'UNKNOWN' && pose.task_id
+        ? ' | visibility unknown' : '';
     return satelliteId + ' | ' + pose.phase + ' | task ' + (pose.task_id || '-')
-      + ' | ' + pose.quality;
+      + visibility + ' | ' + pose.quality;
   }
 
   function missionDisplay(mission) {

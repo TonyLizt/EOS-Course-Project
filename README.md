@@ -4,7 +4,7 @@
 
 本项目不是 EOS-Bench 官方仓库。上游研究平台、论文和数据的出处见[来源与致谢](#来源与致谢)；课程系统的新增实现主要位于 `eos_system/`。
 
-当前六场景接入、规模预算和验收见[六场景交接](docs/phase2/six_scenario_scale_handoff.md)；基础框架恢复记录见[修复与集成交接](docs/phase2/restore_integration_handoff.md)。接口/数据库审核稿中的未来功能与当前实现已分别说明。
+当前六场景接入、规模预算和验收见[六场景交接](docs/phase2/six_scenario_scale_handoff.md)，历元修正候选与 TCR 诊断见[修正场景候选交接](docs/phase2/epoch_fixed_release_handoff.md)；基础框架恢复记录见[修复与集成交接](docs/phase2/restore_integration_handoff.md)。接口/数据库审核稿中的未来功能与当前实现已分别说明。
 
 ## 背景与目标
 
@@ -12,10 +12,10 @@
 
 本组计划完成三种机制不同的传统算法和一种机器学习算法。新算法会通过同一注册、运行和核验边界进入系统；本仓库当前可选的 `completion_first`、`adaptive_repair` 属于已有基线，**不计作这四种新算法的交付**。
 
-## 当前能力（v0.3.2 六场景接入与规模适配）
+## 当前能力（v0.3.5 几何一致性与稳定回放）
 
 - 浏览器选择**已登记的数据源、场景、算法和输出方案**，提交、取消并查看实验状态与正式结果。
-- 启动时自动登记六份 LFS 场景（小型 4、中型 2），相对仓库定位；展示规模、来源和采样预算，缺文件/LFS 指针/SHA 不符时提供诊断，已有同目录登记复用。
+- 启动时递归登记场景并使用相对仓库定位；`epoch_fixed_v1` 候选只有同时通过来源检查和当前连续曝光窗口证据门禁时才会替代 legacy。旧的 sampled-release sidecar 不足以放行，候选不会隐藏可用 legacy 场景，`provenance/` 也不会被误列成场景。
 - FastAPI 和 Controller 在 WSL2 中运行；Worker 由 `spawn` 创建，通过两条单向 Pipe 交换控制消息和 JSON 事件。Worker 执行 `setsid()` 并报告 `started`，Controller 核验本次进程的 Linux 身份后才发送 `start`；候选由 Controller 独立核验，并在成功事务中写入 SQLite。
 - 算法注册表统一元数据、专属参数模型和 Worker 创建入口。现有算法经适配器接入；新算法可从空计划开始，不必沿用旧启发式流程。
 - 浏览器下载 JSON/CSV；选择目录输出方案后，成功实验还会在该目录的 `run_id/` 子目录保存正式文件。SQLite、锁和缓存默认位于 WSL Linux 文件系统。
@@ -84,21 +84,25 @@ cd /mnt/d/Code/EOS-Course-Project
 ~/eos-course-runtime/.venv/bin/python -m pip install -r requirements-visualization.txt
 ```
 
-成功实验需要先点击“构建回放”；页面显式 POST 后查询 BUILDING/READY/FAILED 状态，失败可重试。Cesium 页面从同一个 manifest 读取五种 READY 资源；选星、播放、拖动和跳转只消费已有样本，不会重新运行算法。配置 ID 从 `GET /api/replay-configs` 获取，当前默认 `fixed-payload-illustration-v1`。
+成功实验首次打开 Cesium 页面时，页面先 GET 状态；若为 NOT_REQUESTED，会自动 POST 一次构建并轮询 BUILDING/READY。构建读取已冻结的正式场景和计划，不会重新运行调度算法。自动申请或构建失败后停止自动重试，显示“重试构建回放”供用户确认。Cesium 页面从同一个 manifest 读取五种 READY 资源；选星、播放、拖动和跳转只消费已有样本，不会重复构建。配置 ID 从 `GET /api/replay-configs` 获取，当前默认 `fixed-payload-illustration-v1`。
 
-轨道位置现在使用真实 60 秒 Orekit 节点和局部五阶插值，CZML 与 READY 消费端采用一致的曲线插值规则；旧缓存保留，新构建由既有步长及源码身份隔离。姿态自适应采样和 SLERP 不变。三轨道局部精度及稀疏历史数据限制见[轨道插值验收](docs/phase2/orbit_interpolation_fix_2026-10-17.md)；此修复不会重算正式调度计划。
+轨道位置现在使用真实 30 秒 Orekit 节点和局部五阶插值，CZML 与 READY 消费端采用一致的曲线插值规则；旧缓存保留，新构建由既有步长及源码身份隔离。姿态自适应采样和 SLERP 不变。三轨道局部精度及稀疏历史数据限制见[轨道插值验收](docs/phase2/orbit_interpolation_fix_2026-10-17.md)；此修复不会重算正式调度计划。
 
 连续曝光验收可独立运行 `python -B verify_schedules.py SCENE PLAN --continuous --orekit-data ZIP --min-elevation-deg 5 --report NEW_REPORT`，只读取已有计划，不运行求解器。退出码 0/1/2 分别为 PASS/FAIL/INCONCLUSIVE；采样无违规不等于连续性已证明，2 不应放行。依据及四计划结果见[连续曝光修复报告](docs/phase2/continuous_exposure_boundary_fix_2026-10-17.md)。
 
 回放由独立进程只读正式计划及场景生成，服务校验输入/计划/配置/模型与资源哈希后发布，不修改正式 assignment 或 metrics.RT。轨道缓存身份包括历元解析与传播环境，旧 v1 缓存不会冒充修复后的 v2。姿态首选 5 秒，按时域/星数/任务端点余量确定有效步长，目标 100000 样本；本批 10/20/50 星约 10/20/135 秒，保留任务和转向端点。硬上限仍为 200000 样本、每资源 64 MiB。
 
-页面保留甘特图、卫星本体、独立视锥、WGS84 椭球覆盖、选星/追踪、任务点俯视、精确任务跳转和同钟固定载荷视图。NASA Landsat 8 仅作为通用外观，原卫星 ID 不改名；安装旋转与方形完整 FOV 是明示的展示假设，几何指向与 SLERP 不等于真实动力学或拍摄成功。非敏捷星只给对地示意。模型来源见[资产说明](docs/replay/landsat8-validation.md)。
+页面保留甘特图、卫星本体、独立视锥、WGS84 椭球覆盖、选星/追踪、任务点俯视、精确任务跳转和同钟固定载荷视图。卫星 CZML 点不再绘制，标签与轨道线保留。主跟随相机明确使用由卫星位置生成的 ENU 框架，不读取卫星本体姿态；因此本体与固定镜头仍按回放 quaternion 机动，而使用者相机不会随姿态或自动参考框架判定翻转。任务列和 Fixed Payload View 选星会同步主 Viewer 的选中实体；若使用者已开启跟随，跟随对象同步切换，否则不会擅自开启跟随。主地球支持鼠标滚轮、右键拖曳、触屏 pinch，以及 Chromium/Safari 类触控板双指捏合缩放。NASA Landsat 8 仅作为通用外观，原卫星 ID 不改名；安装旋转与方形完整 FOV 是明示的展示假设，几何指向与 SLERP 不等于真实动力学或拍摄成功。非敏捷星只给对地示意。模型来源见[资产说明](docs/replay/landsat8-validation.md)。
+
+Fixed Payload View 以单一序列 renderer 隔离各卫星相机工作；imagery/terrain 完成且连续稳定两帧后才把 framebuffer 原子提交到对应 tile，避免多相机轮巡造成 LOD/旧瓦片频闪。可用 `debug_payload=1` 查看固定载荷专用诊断；细节与 GPU 限制见[频闪修补交接](docs/phase2/fixed_payload_flicker_handoff.md)。
+
+实验保存原场景绝对路径和 SHA-256。若目录之后搬移，回放可在其他已登记数据源中找到同一 `scenario_id`，但只有字节 SHA-256 与正式实验完全一致时才采用；不会用同名的新场景替换历史输入。
 
 **旧 `GET /api/runs/{run_id}/visualization/orbit.czml` 继续保留到组员完成前端迁移复核。**当前课程页面已改读 READY 资源；旧 `visualization/replay` GET 只读取同一 READY 文档，未构建时返回 409。旧配置 `geometry-illustration-v2` 与离线 CLI 暂保留为兼容入口。
 
 ### 数据版本与当前限制
 
-保留数据 Manifest 审计、E1 确定性历元解析与 E2 独立重算工具；新实验保存场景来源快照。来源不明的历史数据标为 `legacy_unknown`；E2 待验收候选不得因登记目录自动转成正式实验数据。六场景已完成 12 次双基线调度与 6 次真实 Orekit 回放系统验收，尚未重算或转正为物理修复场景；完整 E3/E4、四种新算法、W3、Daemon 和最终比较页面仍待开发。
+保留数据 Manifest 审计、E1 确定性历元解析与 E2 独立重算工具；新实验保存场景来源快照。来源不明的历史数据标为 `legacy_unknown`；E2 待验收候选不得因登记目录自动转成正式实验数据。六个 `epoch_fixed_v1` 候选已完成静态谱系和 1 秒遮挡抽样诊断；旧离散口径下四个小场景三 seed 均为 100% TCR，中型 S1 为 94%～95%、S2 为 98%，但有限采样不能证明连续可见性，因此这些数字不是正式发布结果，当前选择器仍保留 legacy。四种新算法、W3、Daemon 和最终比较页面仍待开发。
 
 SQLite 模式为 v3；回放文件位于运行目录的 `replays/`。删除终态实验同步清理本实验派生缓存，BUILDING 时拒绝删除；共享轨道缓存不随单个实验删除。两视图使用随 Cesium 发布的底图，避免依赖个人 Ion token；脚本/底图仍从固定版本 CDN 加载，离线资源包尚未交付。
 
@@ -123,7 +127,10 @@ node tests/fixed_payload_state.test.cjs
 node tests/fixed_payload_geometry.test.cjs
 node tests/fixed_payload_view.test.cjs
 node tests/replay_acceptance.test.cjs
+node tests/satellite_follow.test.cjs
 ```
+
+可选真实浏览器相机连续性测试位于 `tests/browser/camera-continuity-smoke.*`；它以 60x 连续运行约 31 秒，并覆盖暂停、继续、切星、本体姿态持续变化与主相机方向/距离突变检查。
 
 组员开发前先读 [协作规范](docs/phase2/team_collaboration.md) 和 [算法接入说明](docs/phase2/algorithm_integration.md)；[当前数据库设计与 ER 图](docs/phase2/database_current_v03.md)记录落地模式。接口和数据库目标审核稿分别在 [接口设计](docs/phase2/interface_design_target.md)、[数据库目标设计](docs/phase2/database_design_target.md)。这些审核稿包含尚未完成的目标，当前字段以源码、`/docs` 和 [交接说明](docs/phase2/replay_backend_handoff.md) 为准。每次版本变化及实测证据记在 [COURSE_SETUP.md](COURSE_SETUP.md)。
 
