@@ -2,6 +2,15 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const UI=require('../eos_system/web/experiment-ui.js'),T=require('../eos_system/web/timeline.js');
 const run=(id,algorithm)=>({run_id:id,config:{algorithm_id:algorithm},status:'FAILED',metrics:{TP:99}});
 const experiments=[{experiment_id:'one',runs:[run('a','sa'),run('b','ga')]},{experiment_id:'two',runs:[run('c','sa'),run('d','ga')]}];
+test('compact Cesium choices reuse single-level checkbox labels with names only',()=>{
+ UI.setCatalog([{algorithm_id:'sa',name:'模拟退火 SA'},{algorithm_id:'ga',name:'遗传算法 GA'}]);
+ const html=UI.compactChoices(UI.orderedRows([experiments[0]],'experiment'),['a']);
+ assert.equal((html.match(/type="checkbox"/g)||[]).length,2);
+ assert.equal((html.match(/模拟退火 SA/g)||[]).length,1);
+ assert.equal((html.match(/遗传算法 GA/g)||[]).length,1);
+ assert.match(html,/add-algorithm-option is-chosen/);assert.match(html,/data-result-id="a"[^>]*checked/);
+ assert.doesNotMatch(html,/<fieldset|<legend|result-group|result-choice|result-position|data-move|正式实验|初始模型/);
+});
 test('two grouped views filter results but never manually reorder records',()=>{
  const before=JSON.stringify(experiments),ids=(mode,order)=>UI.orderedRows(experiments,mode,order).map(r=>r.run.run_id);
  assert.deepEqual(ids('algorithm'),['a','c','b','d']);assert.deepEqual(ids('experiment'),['a','b','c','d']);

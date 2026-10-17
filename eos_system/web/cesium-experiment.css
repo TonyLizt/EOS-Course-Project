@@ -19,13 +19,12 @@
 .experiment-ui td,.experiment-ui th { padding:7px; border-bottom:1px solid #41516f; white-space:nowrap; text-align:left; }
 #cesium-current-algorithms,#cesium-add-algorithms { max-height:none; overflow:visible; min-width:0; }
 .experiment-ui .hint { color:#bac7dc; font-size:12px; }
-.experiment-ui .result-group { min-width:0; margin:6px 0; padding:5px; border:1px solid #41516f; border-radius:5px; }
-.experiment-ui .result-group legend { font-size:11px; color:#bac7dc; }
-.experiment-ui .result-choice { display:flex; align-items:center; gap:4px; padding:3px 5px; margin:4px 0; border:1px solid #41516f; border-radius:4px; }
-.experiment-ui .result-choice.is-chosen,.experiment-ui .add-algorithm-option.is-chosen { background:#1c3455; border-color:#7cc4ff; }
-.experiment-ui .result-choice label,.experiment-ui .add-algorithm-option { display:flex; align-items:center; gap:6px; flex:1; min-width:0; margin:0; min-height:32px; cursor:pointer; }
+.experiment-ui .add-algorithm-option.is-chosen { background:#1c3455; border-color:#7cc4ff; }
+.experiment-ui .add-algorithm-option { display:flex; align-items:center; gap:6px; flex:1; min-width:0; margin:0; min-height:32px; cursor:pointer; }
 .experiment-ui input[type="checkbox"] { width:16px; height:16px; flex:0 0 16px; margin:0; accent-color:#7cc4ff; }
-.experiment-ui .result-choice strong { font-size:12px; font-weight:500; }
-.experiment-ui .result-choice small,.experiment-ui .add-algorithm-option small { display:block; color:#bac7dc; font-size:11px; overflow-wrap:anywhere; }
+.experiment-ui .add-algorithm-option small { display:block; color:#bac7dc; font-size:11px; overflow-wrap:anywhere; }
 .experiment-ui .add-algorithm-option { padding:4px 6px; border:1px solid #41516f; border-radius:4px; margin-bottom:5px; }
 .experiment-ui .confirm-algorithms { padding:6px 8px; margin-top:6px; }
+#cesium-comparison-choices .comparison-options { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr)); gap:6px; margin-bottom:12px; }
+#cesium-comparison-choices .add-algorithm-option { margin:0; font-weight:400; }
+#cesium-comparison-choices .add-algorithm-option span { overflow-wrap:anywhere; }

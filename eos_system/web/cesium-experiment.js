@@ -15,7 +15,7 @@
    if(!UI.usable(run)){$('cesium-experiment-status').textContent='该算法尚无可用计划，不能回放。';return;}
    if(id!==rid)navigate(eid,id);
   }catch(error){$('cesium-experiment-status').textContent=error.message;}
- });
+ },{compactSelection:true});
  function currentAlgorithms(){
   const box=$('cesium-current-algorithms'),key=exp.experiment_id+JSON.stringify(exp.runs.map(r=>[r.run_id,r.status]));
   if(box.dataset.key===key)return;box.dataset.key=key;
@@ -42,7 +42,7 @@
     if(!algorithm_id){await refresh();return;}
     await api('/api/experiments/'+encodeURIComponent(exp.experiment_id)+'/algorithms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({algorithm_id,algorithm_params})});
    },{hideIncluded:true});
-   if(token===generation)comparison.set([exp],rid);
+   if(token===generation)comparison.set([{...exp,runs:exp.runs.filter(r=>!r.temporary&&UI.usable(r))}],rid);
   }catch(error){$('cesium-experiment-status').textContent=error.message;}
  }
  $('cesium-current-algorithms').addEventListener('click',async event=>{

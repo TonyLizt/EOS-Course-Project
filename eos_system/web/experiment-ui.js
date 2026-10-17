@@ -34,13 +34,21 @@
    return `<tr class="${run.run_id===selected?'selected':''}" ${run.run_id===selected?'aria-current="true"':''} data-run="${E(run.run_id)}"><th scope="row">${experiment.temporary?E(name(run.config.algorithm_id)):`<button type="button" class="select-algorithm" data-experiment="${E(experiment.experiment_id)}" data-run="${E(run.run_id)}">${E(name(run.config.algorithm_id))}</button>`}</th><td>${source} · ${E(model(run.config.schedule_model))}</td><td>${E(status)}${m?'<br>'+E(validation):''}${run.error?'<br>'+E(run.error.message):''}</td><td>${m?`${m.completed_tasks} / ${m.total_tasks}`:'—'}</td>${metrics.map(([k])=>`<td>${format(k,m?.[k])}</td>`).join('')}<td>${experiment.temporary?'仅临时比较':usable(run)?`<a href="/visualization/gantt/${E(run.run_id)}" target="_blank" rel="noopener">Gantt</a>`:'尚无计划'}</td></tr>`;
   }).join('')}</tbody></table></div>`;
  }
- function comparison(container,select,orderBox,onSelect){
+ function compactChoices(rows,active){
+  const checked=new Set(active);
+  return '<p class="hint">选择要比较的算法</p><div class="comparison-options" role="group" aria-label="选择要比较的算法">'+rows.map(({run})=>{
+   const id=run.run_id,isChecked=checked.has(id);
+   return `<label class="add-algorithm-option ${isChecked?'is-chosen':''}"><input type="checkbox" data-result-id="${E(id)}" data-focus-key="check-${E(id)}" ${isChecked?'checked':''}><span>${E(name(run.config.algorithm_id))}</span></label>`;
+  }).join('')+'</div>';
+ }
+ function comparison(container,select,orderBox,onSelect,{compactSelection=false}={}){
   let records=[],selected=null,scope='',chosen=null;
   const groupKey=r=>select.value==='experiment'?r.experiment.experiment_id:r.run.config.algorithm_id;
   function render(){
    const arranged=orderedRows(records,select.value),active=arranged.filter(r=>chosen===null||chosen.has(r.run.run_id)).map(r=>r.run.run_id);
    update(container,results(records,selected,select.value,active));
    orderBox.hidden=false;
+   if(compactSelection){update(orderBox,compactChoices(orderedRows(records,'experiment'),active));return;}
    const groups=new Map();for(const row of arranged){const k=groupKey(row);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(row);}
    update(orderBox,'<p class="hint">勾选需要比较的结果；按所选分组稳定显示。</p><div class="result-groups">'+[...groups.values()].map(rows=>{
     const first=rows[0],title=select.value==='experiment'?`${first.experiment.temporary?'临时对照':'正式实验'} · ${model(first.run.config.schedule_model)}`:name(first.run.config.algorithm_id);
@@ -87,6 +95,6 @@
    finally{busy=false;box.dataset.adding='false';box.dataset.key='';try{await add(null,null);}catch(error){failure=error.message;}if(failure)box.querySelector('.hint').textContent='部分算法未添加：'+failure;}
   };
  }
- const api={E,name,model,format,usable,results,available,update,orderedRows,comparison,card,bindCards,description,setCatalog:v=>{catalog=v;},getCatalog:()=>catalog};
+ const api={E,name,model,format,usable,results,available,update,orderedRows,compactChoices,comparison,card,bindCards,description,setCatalog:v=>{catalog=v;},getCatalog:()=>catalog};
  if(typeof module==='object'&&module.exports)module.exports=api;else root.ExperimentUI=api;
 })(typeof window==='undefined'?globalThis:window);
