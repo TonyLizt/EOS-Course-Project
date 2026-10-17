@@ -106,9 +106,9 @@ def _build_legacy(algorithm_id: str, context: SolveContext) -> Solver:
 _SPECS: dict[str, AlgorithmSpec] = {
     "completion_first": AlgorithmSpec(
         algorithm_id="completion_first", name="完成率优先（现有基线）", category="baseline",
-        owner="EOS-Bench", version="baseline-1", params_model=CompletionParams,
+        owner="EOS-Bench", version="baseline-2", params_model=CompletionParams,
         build=lambda context: _build_legacy("completion_first", context),
-        description="EOS-Bench 已有启发式算法，供成对实验对照。",
+        description="EOS-Bench 启发式基线；任务位置采用满足整星转向约束的最早可行曝光。",
     ),
     "adaptive_repair": AlgorithmSpec(
         algorithm_id="adaptive_repair", name="自适应修复（现有算法）", category="baseline",

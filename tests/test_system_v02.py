@@ -38,7 +38,7 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(parsed.beam_width, 16)
         with self.assertRaises(ValueError):
             spec.parse_params({"unknown": 1})
-        self.assertEqual(get_algorithm("completion_first").version, "baseline-1")
+        self.assertEqual(get_algorithm("completion_first").version, "baseline-2")
 
 
 class CatalogTests(unittest.TestCase):

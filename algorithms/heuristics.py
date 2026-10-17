@@ -117,6 +117,28 @@ def _pick_best_feasible_for_task(
     return best_a
 
 
+def _pick_earliest_feasible_for_task(
+    candidates: List[Assignment], schedule: Schedule, cm: ConstraintModel,
+    max_checks: int,
+) -> Optional[Assignment]:
+    """Choose the earliest finishing feasible placement deterministically.
+
+    Feasibility is evaluated before selection, so the existing whole-body
+    transition-time constraint still decides whether an early exposure leaves
+    enough time to slew from adjacent assignments.
+    """
+    ordered = sorted(
+        candidates,
+        key=lambda a: (_finish_ts(a), a.sat_start_time, _busy(a), a.satellite_id),
+    )
+    for checks, candidate in enumerate(ordered, start=1):
+        if checks > max_checks:
+            break
+        if cm.is_feasible_assignment(candidate, schedule):
+            return candidate
+    return None
+
+
 # =========================
 # Heuristics
 # =========================
@@ -184,10 +206,14 @@ class HeuristicCompletionFirstScheduler(BaseSchedulerAlgorithm):
                 pick: Optional[Assignment] = None
                 checks = 0
 
-                local = cands
-                if self.cfg.randomized:
-                    local = list(cands)
-                    self.rng.shuffle(local)
+                # Completion-first must not turn a valid early pass into a
+                # later/near-overhead exposure merely because candidates were
+                # shuffled. Task-order exploration may remain seeded, but the
+                # chosen placement for each task is earliest-feasible.
+                local = sorted(
+                    cands,
+                    key=lambda a: (_finish_ts(a), a.sat_start_time, _busy(a), a.satellite_id),
+                )
 
                 for a in local:
                     checks += 1
@@ -204,7 +230,14 @@ class HeuristicCompletionFirstScheduler(BaseSchedulerAlgorithm):
                 if cnt <= 0 or pick is None:
                     continue
 
-                if best_tid is None or cnt < best_feasible_cnt:
+                current_key = (
+                    cnt, _finish_ts(pick), _busy(pick), -float(task.priority), tid,
+                )
+                best_key = None if best_pick is None else (
+                    best_feasible_cnt, _finish_ts(best_pick), _busy(best_pick),
+                    -float(problem.tasks[best_tid].priority), best_tid,
+                )
+                if best_tid is None or current_key < best_key:
                     best_tid = tid
                     best_feasible_cnt = cnt
                     best_pick = pick
@@ -217,17 +250,9 @@ class HeuristicCompletionFirstScheduler(BaseSchedulerAlgorithm):
                 best_pick = None
                 for tid in list(remaining):
                     task = problem.tasks[tid]
-                    a = _pick_best_feasible_for_task(
-                        tid=tid,
-                        task_priority=float(task.priority),
-                        candidates=cand_map.get(tid, []),
-                        schedule=schedule,
-                        cm=constraint_model,
-                        rng=self.rng,
-                        cfg=self.cfg,
-                        # Completion-first fallback:
-                        # try to finish early and use less busy time
-                        key_fn=lambda aa, pr: (_finish_ts(aa), _busy(aa), -pr),
+                    a = _pick_earliest_feasible_for_task(
+                        cand_map.get(tid, []), schedule, constraint_model,
+                        self.cfg.max_checks_per_task,
                     )
                     if a is None:
                         continue

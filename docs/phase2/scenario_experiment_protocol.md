@@ -176,7 +176,7 @@ python main_generate.py --sat_files 100_satellites --missions 200 --days 3 --wor
 | Profit First | algorithms/heuristics.py；`profit_first` | 未注册 | 本次不运行，旧 CLI 工厂支持 |
 | GA | algorithms/meta_ga.py；`ga` | 未注册 | 本次不运行 |
 | ACO | algorithms/meta_aco.py；`aco` | 未注册 | 本次不运行 |
-| 当前系统基线 | `completion_first`、`adaptive_repair` | 已注册，均为 baseline-1 | COURSE_SETUP 中有历史框架验证记录；不代表当前矩阵全部复现成功 |
+| 当前系统基线 | `completion_first`、`adaptive_repair` | 已注册；`completion_first` 为 baseline-2，`adaptive_repair` 为 baseline-1 | completion-first 在共享约束核验后选择最早完成的可行曝光；COURSE_SETUP 中有历史框架验证记录，不代表当前矩阵全部复现成功 |
 
 依据：`algorithms/factory.py:38 create_algorithm` 与 `eos_system/algorithm_registry.py:106 _SPECS`。旧 CLI 工厂可创建与 HTTP 算法注册是两个概念，新增 HTTP 登记须由负责人集成。本次不调用旧 CLI，因为它会扫描 output。
 

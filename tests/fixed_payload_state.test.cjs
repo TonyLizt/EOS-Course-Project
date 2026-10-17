@@ -45,6 +45,21 @@ assert.equal(occluded.target_visibility,'EARTH_OCCLUDED');
 assert.equal(occluded.geometry_valid,false);
 assert.equal(occluded.cone_visible,false);
 assert.ok(occluded.warnings.includes('TARGET_EARTH_OCCLUDED'));
+
+// Slewing is a whole-body camera transition, not an exposure.  The upcoming
+// target may still be below its horizon; that must not suppress the amber cone.
+const slewReplay={...replay,segments:[{
+  satellite_id:'S1',task_id:'M2',sensor_id:'camera',phase:'SLEWING',
+  start_time:'2026-01-01T00:00:02Z',end_time:'2026-01-01T00:00:04Z',
+  assignment_ordinal:1,from_assignment_ordinal:0
+}]};
+const slew=state.evaluateSatelliteState(slewReplay,'S1','2026-01-01T00:00:03Z',
+  forbiddenPosition,() => {throw new Error('slew must not test upcoming target visibility');});
+assert.equal(slew.phase,'SLEWING');
+assert.equal(slew.target_visibility,'NOT_APPLICABLE');
+assert.equal(slew.geometry_valid,true);
+assert.equal(slew.cone_visible,true);
+assert.ok(!slew.warnings.includes('TARGET_EARTH_OCCLUDED'));
 console.log('authoritative READY sample interpolation and half-open boundary tests passed');
 
 // 多星索引不得串星，二分阶段须维持左闭右开；未知星不能借用上一颗星。

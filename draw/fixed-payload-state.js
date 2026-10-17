@@ -172,10 +172,14 @@
     const active=candidate && t<candidate.end ? candidate : null;
     const sensor=satellite.sensors.find(item => active && item.sensor_id===active.sensor_id) || satellite.sensors[0];
     const camera=multiply(body,sensor ? sensor.sensor_mount_quaternion_xyzw : [0,0,0,1]);
-    const target = active && active.task_id && typeof targetPosition === 'function'
+    // Target visibility is an exposure condition, not a slew-display condition.
+    // During SLEWING the fixed camera must remain visible while the whole body
+    // rotates, even if the upcoming target has not risen above its horizon yet.
+    const observing = active && active.phase === 'OBSERVING';
+    const target = observing && active.task_id && typeof targetPosition === 'function'
       ? targetPosition(active.task_id) : null;
-    const visibility = active ? targetVisibility(position, target) : 'NOT_APPLICABLE';
-    const geometryValid = !active || visibility === 'VISIBLE';
+    const visibility = observing ? targetVisibility(position, target) : 'NOT_APPLICABLE';
+    const geometryValid = !observing || visibility === 'VISIBLE';
     const warnings = (replay.warnings || []).slice();
     if (visibility === 'EARTH_OCCLUDED') warnings.push('TARGET_EARTH_OCCLUDED');
     return {
@@ -220,9 +224,10 @@
     const sensor = satellite.sensors.find((item) => item.sensor_id === sensorId) || satellite.sensors[0];
     const mount = sensor ? sensor.sensor_mount_quaternion_xyzw : [0, 0, 0, 1];
     const bodyQuaternion = multiply(cameraQuaternion, conjugate(mount));
-    const target = taskId && typeof targetPosition === 'function' ? targetPosition(taskId) : null;
-    const visibility = active ? targetVisibility(position, target) : 'NOT_APPLICABLE';
-    const geometryValid = !active || visibility === 'VISIBLE';
+    const observing = active && active.phase === 'OBSERVING';
+    const target = observing && taskId && typeof targetPosition === 'function' ? targetPosition(taskId) : null;
+    const visibility = observing ? targetVisibility(position, target) : 'NOT_APPLICABLE';
+    const geometryValid = !observing || visibility === 'VISIBLE';
     const warnings = (replay.warnings || []).slice();
     if (visibility === 'EARTH_OCCLUDED') warnings.push('TARGET_EARTH_OCCLUDED');
     return {
