@@ -29,7 +29,17 @@ class Settings:
     @classmethod
     def from_env(cls) -> "Settings":
         runtime = Path(os.environ.get("EOS_RUNTIME_DIR", "~/eos-course-runtime")).expanduser().resolve()
-        scenarios = Path(os.environ.get("EOS_SCENARIO_DIR", str(runtime / "scenarios"))).expanduser().resolve()
+        configured_scenarios = os.environ.get("EOS_SCENARIO_DIR")
+        if configured_scenarios:
+            scenarios = Path(configured_scenarios).expanduser().resolve()
+        else:
+            runtime_scenarios = runtime / "scenarios"
+            project_scenarios = Path(__file__).resolve().parent.parent / "experiments" / "scenarios"
+            has_runtime_scenarios = (runtime_scenarios.is_dir()
+                                     and any(runtime_scenarios.rglob("*.json")))
+            scenarios = (runtime_scenarios
+                         if has_runtime_scenarios or not project_scenarios.is_dir()
+                         else project_scenarios)
         return cls(runtime_dir=runtime, scenario_dir=scenarios)
 
     @property
@@ -96,23 +106,41 @@ def _listing_sha(path: Path) -> str:
 
 
 def list_scenarios_in(root: Path, source_id: str) -> list[dict]:
-    """只列出已登记目录中的直接子文件，防止页面指定任意磁盘路径。"""
+    """递归列出已登记目录中的 JSON；ID 是不含扩展名的安全相对路径。"""
     if not root.is_dir():
         return []
     result = []
-    for path in sorted(root.glob("*.json")):
-        if not path.is_file() or path.is_symlink():
+    resolved_root = root.resolve()
+    for path in sorted(root.rglob("*.json")):
+        if (not path.is_file() or path.is_symlink()
+                or not path.resolve().is_relative_to(resolved_root)):
             continue
-        result.append({"source_id": source_id, "scenario_id": path.stem, "name": path.stem, "sha256": _listing_sha(path)})
+        # Once an epoch-corrected sibling is published, new experiments must
+        # use it.  Keep the legacy file resolvable for immutable historical
+        # runs, but do not offer the physically stale windows in the picker.
+        if (not path.stem.endswith("_epoch_fixed_v1")
+                and path.with_name(path.stem + "_epoch_fixed_v1.json").is_file()):
+            continue
+        relative = path.relative_to(root).with_suffix("")
+        scenario_id = relative.as_posix()
+        result.append({"source_id": source_id, "scenario_id": scenario_id,
+                       "name": scenario_id, "sha256": _listing_sha(path)})
     return result
 
 
 def resolve_scenario_in(root: Path, scenario_id: str) -> tuple[Path, str]:
-    """ID 只允许简单文件名，解析后仍检查目录边界和符号链接。"""
-    if not scenario_id or not scenario_id[0].isalnum() or not all(ch.isalnum() or ch in "_.-" for ch in scenario_id):
-        raise ValueError("场景 ID 只能包含字母、数字、下划线、短横线和小数点")
+    """ID 允许安全相对路径，解析后仍检查登记根目录边界和符号链接。"""
+    relative = Path(scenario_id)
+    valid_parts = (not relative.is_absolute() and bool(relative.parts)
+                   and all(part and part not in {".", ".."}
+                           and part[0].isalnum()
+                           and all(ch.isalnum() or ch in "_.-" for ch in part)
+                           for part in relative.parts))
+    if not valid_parts:
+        raise ValueError("場景 ID 只能是由字母、數字、底線、短橫線和小數點組成的安全相對路徑")
     path = root / f"{scenario_id}.json"
-    if path.is_symlink() or not path.is_file() or path.resolve().parent != root.resolve():
+    if (path.is_symlink() or not path.is_file()
+            or not path.resolve().is_relative_to(root.resolve())):
         raise FileNotFoundError(f"未登记场景：{scenario_id}")
     return path, sha256_file(path)
 

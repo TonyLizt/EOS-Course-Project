@@ -46,16 +46,24 @@ class CatalogTests(unittest.TestCase):
             root = Path(temp)
             (root / "demo.json").write_text("{}", encoding="utf-8")
             (root / "half-0.25d.json").write_text("{}", encoding="utf-8")
+            (root / "half-0.25d_epoch_fixed_v1.json").write_text("{}", encoding="utf-8")
             (root / "nested").mkdir()
             (root / "nested" / "hidden.json").write_text("{}", encoding="utf-8")
             self.assertEqual(normalise_user_path(str(root)), root.resolve())
             listed = list_scenarios_in(root, "sample")
             self.assertEqual([(row["source_id"], row["scenario_id"]) for row in listed],
-                             [("sample", "demo"), ("sample", "half-0.25d")])
+                             [("sample", "demo"), ("sample", "half-0.25d_epoch_fixed_v1"),
+                              ("sample", "nested/hidden")])
+            # Historical IDs remain resolvable even though new experiments see
+            # only the corrected sibling.
             self.assertEqual(resolve_scenario_in(root, "demo")[0], root / "demo.json")
             self.assertEqual(resolve_scenario_in(root, "half-0.25d")[0], root / "half-0.25d.json")
+            self.assertEqual(resolve_scenario_in(root, "nested/hidden")[0],
+                             root / "nested" / "hidden.json")
             with self.assertRaises(ValueError):
                 resolve_scenario_in(root, "../hidden")
+            with self.assertRaises(ValueError):
+                resolve_scenario_in(root, "nested/../hidden")
 
 
 class MigrationAndExportTests(unittest.TestCase):
