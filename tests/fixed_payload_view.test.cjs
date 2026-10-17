@@ -5,6 +5,8 @@ const pose = view.cameraPose({
   position_ecef_m: [1, 2, 3],
   direction_ecef: [0, 0, -1],
   up_ecef: [0, 1, 0],
+  body_to_ecef_quaternion_xyzw: [0, 0, 0, 1],
+  camera_to_ecef_quaternion_xyzw: [0, 0.5, 0, 0.5],
   phase: 'SLEWING',
   task_id: 'M1',
   sensor_id: 'C1',
@@ -13,6 +15,8 @@ const pose = view.cameraPose({
   quality: 'geometry_pointing_illustration'
 });
 assert.deepEqual(pose.position_ecef_m, [1, 2, 3]);
+assert.deepEqual(pose.body_to_ecef_quaternion_xyzw, [0, 0, 0, 1]);
+assert.deepEqual(pose.camera_to_ecef_quaternion_xyzw, [0, 0.5, 0, 0.5]);
 assert.equal(view.statusText('S1', pose), 'S1 | SLEWING | task M1 | EARTH OCCLUDED | geometry_pointing_illustration');
 assert.equal(pose.geometry_valid, false);
 assert.equal(view.cameraPose(null), null);

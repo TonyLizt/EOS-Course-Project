@@ -60,7 +60,10 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     assert.equal(await payloadTiles.count(),2);
     assert.equal(await view.locator('.payload-tile.is-selected').count(),0);
     await view.locator('.assignment-select').first().click();
-    await view.waitForTimeout(1200);
+    await view.waitForFunction(
+      () => document.querySelector('#payloadViewStatus').textContent.includes('OBSERVING'),
+      null, {timeout:30000}
+    );
     const result = await view.evaluate(() => {
       const ds=viewer.dataSources.get(0), now=viewer.clock.currentTime;
       const body=ds.entities.getById('sat-a');
@@ -106,7 +109,10 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
       viewer.clock.currentTime=Cesium.JulianDate.fromIso8601('2026-01-01T00:00:15Z');
       viewer.clock.tick();viewer.scene.requestRender();
     });
-    await view.waitForTimeout(300);
+    await view.waitForFunction(
+      () => document.querySelector('#payloadViewStatus').textContent.includes('IDLE'),
+      null, {timeout:30000}
+    );
     const endpoint = await view.evaluate(() => document.querySelector('#payloadViewStatus').textContent);
     assert.ok(endpoint.includes('IDLE'),endpoint);
     await view.keyboard.press('Escape');

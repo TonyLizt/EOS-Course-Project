@@ -340,6 +340,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "fixed-payload-view.js",
                             media_type="text/javascript")
 
+    @app.get("/visualization/fixed-payload-renderer.js")
+    def fixed_payload_renderer_script():
+        return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "fixed-payload-renderer.js",
+                            media_type="text/javascript")
+
     @app.get("/visualization/trackpad-zoom.js")
     def trackpad_zoom_script():
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "trackpad-zoom.js",

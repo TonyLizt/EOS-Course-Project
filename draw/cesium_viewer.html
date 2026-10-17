@@ -10,6 +10,7 @@
   <script src="fixed-payload-state.js?v=20261016-scale-1"></script>
   <script src="fixed-payload-geometry.js?v=20261016-scale-1"></script>
   <script src="fixed-payload-view.js?v=20261016-scale-1"></script>
+  <script src="fixed-payload-renderer.js?v=20261017-flicker-1"></script>
   <script src="replay-build-policy.js?v=20261016-auto-build-1"></script>
   <script src="trackpad-zoom.js?v=20261016-trackpad-1"></script>
   <script src="satellite-follow.js?v=20261017-auto-follow-1"></script>
@@ -915,7 +916,8 @@
     }
 
     function setupFixedPayloadView(replay, stateAt) {
-      if (!window.FixedPayloadView || !(replay.satellites || []).length) return;
+      if (!window.FixedPayloadView || !window.FixedPayloadRenderer
+          || !(replay.satellites || []).length) return;
       const grid = document.getElementById('payloadSatelliteGrid');
       const status = document.getElementById('payloadViewStatus');
       const toggle = document.getElementById('togglePayloadView');
@@ -939,6 +941,59 @@
       let queueCursor = 0;
       let rendererKey = null;
       let activeGridTransition = null;
+      let payloadRenderer = null;
+      let payloadTileLoadCount = 0;
+      let payloadContextLost = false;
+      let payloadResizeGeneration = 0;
+      const payloadDebugEnabled = new URLSearchParams(window.location.search)
+        .get('debug_payload') === '1';
+      const payloadDiagnostics = [];
+      viewer._payloadRenderDiagnostics = payloadDiagnostics;
+
+      const vector = (value) => value ? Array.from(value) : null;
+      const recordPayloadDiagnostic = (event) => {
+        if (!payloadDebugEnabled) return;
+        const secondary = payloadViewer;
+        const job = event && event.job;
+        const payload = job && job.payload;
+        const scene = secondary && secondary.scene;
+        const context = scene && scene.context;
+        const record = {
+          source: 'fixed-payload-renderer',
+          event: event && event.type,
+          renderFrame: scene && scene.frameState ? scene.frameState.frameNumber : null,
+          sequence: job && job.sequence,
+          satelliteId: job && job.id,
+          simulationTime: payload && payload.simulationTimeIso,
+          satellitePositionEcefM: payload && payload.pose && payload.pose.position_ecef_m,
+          bodyQuaternionXyzw: payload && payload.pose
+            && payload.pose.body_to_ecef_quaternion_xyzw,
+          fixedCameraQuaternionXyzw: payload && payload.pose
+            && payload.pose.camera_to_ecef_quaternion_xyzw,
+          fixedCameraPositionEcefM: payload && payload.pose && payload.pose.position_ecef_m,
+          fixedCameraDirectionEcef: payload && payload.pose && payload.pose.direction_ecef,
+          fixedCameraUpEcef: payload && payload.pose && payload.pose.up_ecef,
+          cameraPositionWc: secondary ? vector(secondary.camera.positionWC) : null,
+          cameraDirectionWc: secondary ? vector(secondary.camera.directionWC) : null,
+          cameraUpWc: secondary ? vector(secondary.camera.upWC) : null,
+          viewMatrix: secondary ? vector(secondary.camera.viewMatrix) : null,
+          projectionMatrix: secondary ? vector(secondary.camera.frustum.projectionMatrix) : null,
+          canvasId: secondary && secondary.canvas.id,
+          framebuffer: 'Cesium default framebuffer (serial renderer)',
+          drawingBuffer: context ? [context.drawingBufferWidth, context.drawingBufferHeight] : null,
+          renderStartedMs: payload && payload.renderStartedMs,
+          renderCompletedMs: payload && payload.renderCompletedMs,
+          tilesLoaded: Boolean(scene && scene.globe.tilesLoaded),
+          pendingTerrainOrImageryTiles: payloadTileLoadCount,
+          imageryLayerCount: secondary ? secondary.imageryLayers.length : null,
+          contextLost: payloadContextLost,
+          resizeGeneration: payloadResizeGeneration,
+          scheduler: event && event.details
+        };
+        payloadDiagnostics.push(record);
+        if (payloadDiagnostics.length > 2000) payloadDiagnostics.shift();
+        console.debug('[fixed-payload-render]', record);
+      };
 
       const selectedSensor = (satelliteId, state) => {
         const satellite = satelliteById.get(satelliteId);
@@ -968,6 +1023,28 @@
         payloadViewer.clock.shouldAnimate = false;
         payloadViewer.scene.screenSpaceCameraController.enableInputs = false;
         payloadViewer.scene.globe.depthTestAgainstTerrain = false;
+        // The serial renderer revisits many distant cameras. Keep a bounded
+        // working set so those completed NaturalEarth tiles are not evicted
+        // and reloaded on every 50-satellite round trip.
+        payloadViewer.scene.globe.tileCacheSize = Math.max(
+          Number(payloadViewer.scene.globe.tileCacheSize) || 0, 512
+        );
+        payloadViewer.scene.globe.tileLoadProgressEvent.addEventListener((count) => {
+          payloadTileLoadCount = count;
+        });
+        payloadViewer.canvas.addEventListener('webglcontextlost', (event) => {
+          payloadContextLost = true;
+          event.preventDefault();
+          recordPayloadDiagnostic({ type: 'context-lost', job: null });
+        });
+        payloadViewer.canvas.addEventListener('webglcontextrestored', () => {
+          payloadContextLost = false;
+          rendererKey = null;
+          recordPayloadDiagnostic({ type: 'context-restored', job: null });
+          replay.satellites.forEach((satellite) => {
+            renderTile(satellite.id, viewer.clock.currentTime);
+          });
+        });
         payloadTargetEntity = payloadViewer.entities.add({
           id: 'fixed-payload-current-target',
           name: 'Current replay mission target',
@@ -1002,7 +1079,9 @@
         const secondary = ensureViewer();
         if (key === rendererKey) return secondary;
         rendererKey = key;
-        secondary.resize();
+        // The hidden render target is fixed at 320×320. FOV changes do not
+        // require resizing its WebGL drawing buffer; avoiding resize here also
+        // prevents needless framebuffer/resource reconstruction between jobs.
         secondary.camera.frustum.aspectRatio = 1;
         secondary.camera.frustum.fov = Cesium.Math.toRadians(
           Math.max(frustum.horizontal_full_fov_deg, frustum.vertical_full_fov_deg)
@@ -1011,13 +1090,7 @@
         secondary.camera.frustum.far = 50000000;
         return secondary;
       };
-      const renderTile = (satelliteId, time) => {
-        const tile = tileById.get(satelliteId);
-        if (!tile) return;
-        const state = stateAt(satelliteId, time);
-        const pose = FixedPayloadView.cameraPose(state);
-        const sensor = selectedSensor(satelliteId, state);
-        const mission = pose && pose.task_id ? missionById.get(pose.task_id) : null;
+      const applyTileMetadata = (tile, satelliteId, pose) => {
         tile.state.textContent = pose
           ? pose.phase + (pose.task_id ? ' · ' + pose.task_id : '')
             + (pose.geometry_valid === false ? ' · Earth occluded' : '')
@@ -1025,35 +1098,108 @@
         tile.button.classList.toggle('is-occluded', Boolean(pose && pose.geometry_valid === false));
         tile.button.setAttribute('aria-label', FixedPayloadView.statusText(satelliteId, pose)
           + (selectedId === satelliteId ? '. Selected 2 by 2 focus tile.' : '. 1 by 1 tile.'));
-        if (!pose || !sensor) return;
-        const frustum = FixedPayloadView.opticalFrustum(sensor);
-        const secondary = applyRenderer(frustum);
-        payloadTargetEntity.show = Boolean(mission && pose.geometry_valid !== false);
-        if (mission && pose.geometry_valid !== false) {
-          payloadTargetEntity.position = mission.position;
-          payloadTargetEntity.label.text = mission.label;
-        }
-        secondary.clock.currentTime = Cesium.JulianDate.clone(time, secondary.clock.currentTime);
-        secondary.camera.setView({
-          destination: Cesium.Cartesian3.fromArray(pose.position_ecef_m),
-          orientation: {
-            direction: Cesium.Cartesian3.fromArray(pose.direction_ecef),
-            up: Cesium.Cartesian3.fromArray(pose.up_ecef)
+        tile.lastPose = pose;
+      };
+      const ensurePayloadRenderer = () => {
+        const secondary = ensureViewer();
+        if (payloadRenderer) return payloadRenderer;
+        payloadRenderer = FixedPayloadRenderer.createScheduler({
+          requestFrame: (callback) => window.requestAnimationFrame(callback),
+          cancelFrame: (handle) => window.cancelAnimationFrame(handle),
+          stableFrames: 2,
+          maxFrames: 120,
+          prepare(job) {
+            const payload = job.payload;
+            const frustum = FixedPayloadView.opticalFrustum(payload.sensor);
+            applyRenderer(frustum);
+            payloadTargetEntity.show = Boolean(payload.mission && payload.pose.geometry_valid !== false);
+            if (payload.mission && payload.pose.geometry_valid !== false) {
+              payloadTargetEntity.position = payload.mission.position;
+              payloadTargetEntity.label.text = payload.mission.label;
+            }
+            secondary.clock.currentTime = Cesium.JulianDate.clone(
+              payload.simulationTime, secondary.clock.currentTime
+            );
+            secondary.camera.setView({
+              destination: Cesium.Cartesian3.fromArray(payload.pose.position_ecef_m),
+              orientation: {
+                direction: Cesium.Cartesian3.fromArray(payload.pose.direction_ecef),
+                up: Cesium.Cartesian3.fromArray(payload.pose.up_ecef)
+              }
+            });
+            payload.renderStartedMs = performance.now();
+          },
+          render(job) {
+            secondary.render();
+            job.payload.renderCompletedMs = performance.now();
+          },
+          isReady() {
+            let imageryReady = true;
+            for (let index = 0; index < secondary.imageryLayers.length; index += 1) {
+              if (secondary.imageryLayers.get(index).ready === false) imageryReady = false;
+            }
+            return {
+              ready: !payloadContextLost && imageryReady
+                && secondary.scene.globe.tilesLoaded && payloadTileLoadCount === 0,
+              imageryReady: imageryReady,
+              tilesLoaded: secondary.scene.globe.tilesLoaded,
+              pendingTiles: payloadTileLoadCount,
+              contextLost: payloadContextLost
+            };
+          },
+          commit(job) {
+            const tile = tileById.get(job.id);
+            if (!tile) return;
+            const context = tile.canvas.getContext('2d', { alpha: false });
+            context.drawImage(secondary.canvas, 0, 0, tile.canvas.width, tile.canvas.height);
+            tile.canvas.dataset.satelliteId = job.id;
+            tile.canvas.dataset.simulationTime = job.payload.simulationTimeIso;
+            tile.canvas.dataset.renderSequence = String(job.sequence);
+            applyTileMetadata(tile, job.id, job.payload.pose);
+            if (selectedId === job.id) updateSelectionDom();
+          },
+          onEvent: recordPayloadDiagnostic,
+          onError(error, job) {
+            console.error('Fixed payload render failed for ' + (job && job.id), error);
           }
         });
-        secondary.scene.requestRender();
-        secondary.render();
-        const context = tile.canvas.getContext('2d', { alpha: false });
-        context.drawImage(secondary.canvas, 0, 0, tile.canvas.width, tile.canvas.height);
+        viewer._payloadRenderScheduler = payloadRenderer;
+        payloadRenderer.setPriority(selectedId);
+        return payloadRenderer;
+      };
+      const renderTile = (satelliteId, time) => {
+        const tile = tileById.get(satelliteId);
+        if (!tile) return;
+        const state = stateAt(satelliteId, time);
+        const pose = FixedPayloadView.cameraPose(state);
+        const sensor = selectedSensor(satelliteId, state);
+        const mission = pose && pose.task_id ? missionById.get(pose.task_id) : null;
+        if (!pose || !sensor) { applyTileMetadata(tile, satelliteId, pose); return; }
+        const simulationTime = Cesium.JulianDate.clone(time);
+        ensurePayloadRenderer().request(satelliteId, {
+          satelliteId: satelliteId,
+          simulationTime: simulationTime,
+          simulationTimeIso: Cesium.JulianDate.toIso8601(simulationTime),
+          pose: pose,
+          sensor: sensor,
+          mission: mission
+        });
       };
       const updateSelectionDom = () => {
         tileById.forEach((tile, satelliteId) => {
           const selected = satelliteId === selectedId;
           tile.button.classList.toggle('is-selected', selected);
           tile.button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+          const pose = tile.lastPose || FixedPayloadView.cameraPose(
+            stateAt(satelliteId, viewer.clock.currentTime)
+          );
+          tile.button.setAttribute('aria-label', FixedPayloadView.statusText(satelliteId, pose)
+            + (selected ? '. Selected 2 by 2 focus tile.' : '. 1 by 1 tile.'));
         });
+        const selectedTile = selectedId && tileById.get(selectedId);
         status.textContent = selectedId
-          ? FixedPayloadView.statusText(selectedId, stateAt(selectedId, viewer.clock.currentTime))
+          ? FixedPayloadView.statusText(selectedId, selectedTile && selectedTile.lastPose
+            ? selectedTile.lastPose : stateAt(selectedId, viewer.clock.currentTime))
             + ' · 2 × 2 focus tile · auto-follow active'
           : 'All ' + replay.satellites.length + ' fixed-camera feeds · 1 × 1 tiles';
       };
@@ -1062,6 +1208,7 @@
         // selectedEntityChanged can fire in the same task; keeping the old ID
         // until the callback allowed a second transition to race the first.
         selectedId = satelliteId;
+        if (payloadRenderer) payloadRenderer.setPriority(selectedId);
         const mutate = () => updateSelectionDom();
         if (document.startViewTransition
             && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -1185,10 +1332,11 @@
         }
       });
       window.addEventListener('beforeunload', () => {
+        if (payloadRenderer) payloadRenderer.destroy();
         if (payloadViewer && !payloadViewer.isDestroyed()) payloadViewer.destroy();
       }, { once: true });
       updateSelectionDom();
-      replay.satellites.slice(0, 4).forEach((satellite) => {
+      replay.satellites.forEach((satellite) => {
         renderTile(satellite.id, viewer.clock.currentTime);
       });
     }

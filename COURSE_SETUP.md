@@ -1,3 +1,12 @@
+## v0.3.5：Fixed Payload View 原子帧提交（2026-10-17）
+
+- 根因为单一隐藏 Cesium Scene 在多个固定镜头之间逐帧切换后，未等 imagery/terrain LOD 完成便复制默认 framebuffer；不是主 ENU 跟随相机或卫星 quaternion 跳变。
+- 新增串行 queue、queued frame 合并、选中/普通 tile 公平轮巡、连续两个完整 render frame 门槛、原子 Canvas commit、512-tile 有界 working set，以及 context lost/restore 处理。状态文字与图像在同一 commit 更新。
+- 新增 `debug_payload=1` 诊断，记录每个固定镜头的时间、姿态、矩阵、Canvas/framebuffer、tile loading、resize/context 状态；默认关闭并限制 2000 条。
+- 真实 Chromium 2 星与 10 星各连续 30 秒，覆盖正常倍速、60x、2×2、切星、暂停/恢复及 Escape；无跨窗 ownership、WebGL、console 或 HTTP error。依用户指示不再增加长测；50 星仅完成快速 queue/ownership 单元测试，真实 GPU 吞吐列为未实测限制。详见 [Fixed Payload 频闪交接](docs/phase2/fixed_payload_flicker_handoff.md)。
+
+---
+
 ## 连续曝光边界保护与独立审查（2026-10-17）
 
 - fix/continuous-exposure-boundary 基于 0af4f61，保留 12f8849 时间修复和轨道插值实现。已检测退出二分至 1 µs 可见侧，时域终点实际检查，原网格/姿态索引不变；新派生版本 visibility_exit_refined_v3。

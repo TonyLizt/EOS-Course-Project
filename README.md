@@ -94,6 +94,8 @@ cd /mnt/d/Code/EOS-Course-Project
 
 页面保留甘特图、卫星本体、独立视锥、WGS84 椭球覆盖、选星/追踪、任务点俯视、精确任务跳转和同钟固定载荷视图。卫星 CZML 点不再绘制，标签与轨道线保留。主跟随相机明确使用由卫星位置生成的 ENU 框架，不读取卫星本体姿态；因此本体与固定镜头仍按回放 quaternion 机动，而使用者相机不会随姿态或自动参考框架判定翻转。任务列和 Fixed Payload View 选星会同步主 Viewer 的选中实体；若使用者已开启跟随，跟随对象同步切换，否则不会擅自开启跟随。主地球支持鼠标滚轮、右键拖曳、触屏 pinch，以及 Chromium/Safari 类触控板双指捏合缩放。NASA Landsat 8 仅作为通用外观，原卫星 ID 不改名；安装旋转与方形完整 FOV 是明示的展示假设，几何指向与 SLERP 不等于真实动力学或拍摄成功。非敏捷星只给对地示意。模型来源见[资产说明](docs/replay/landsat8-validation.md)。
 
+Fixed Payload View 以单一序列 renderer 隔离各卫星相机工作；imagery/terrain 完成且连续稳定两帧后才把 framebuffer 原子提交到对应 tile，避免多相机轮巡造成 LOD/旧瓦片频闪。可用 `debug_payload=1` 查看固定载荷专用诊断；细节与 GPU 限制见[频闪修补交接](docs/phase2/fixed_payload_flicker_handoff.md)。
+
 实验保存原场景绝对路径和 SHA-256。若目录之后搬移，回放可在其他已登记数据源中找到同一 `scenario_id`，但只有字节 SHA-256 与正式实验完全一致时才采用；不会用同名的新场景替换历史输入。
 
 **旧 `GET /api/runs/{run_id}/visualization/orbit.czml` 继续保留到组员完成前端迁移复核。**当前课程页面已改读 READY 资源；旧 `visualization/replay` GET 只读取同一 READY 文档，未构建时返回 409。旧配置 `geometry-illustration-v2` 与离线 CLI 暂保留为兼容入口。

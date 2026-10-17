@@ -102,6 +102,7 @@ class ReplayDeliveryTests(unittest.TestCase):
                 "/visualization/fixed-payload-state.js",
                 "/visualization/fixed-payload-geometry.js",
                 "/visualization/fixed-payload-view.js",
+                "/visualization/fixed-payload-renderer.js",
                 "/visualization/trackpad-zoom.js",
                 "/visualization/satellite-follow.js",
                 "/visualization/camera-diagnostics.js",
