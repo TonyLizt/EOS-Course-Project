@@ -1,19 +1,22 @@
-"""CAABS v0.1 foundations; planning feasibility is not certification.
+"""Conflict-Aware Anytime Beam Search; planning feasibility is not certification.
 
 Candidate construction delegates all physical rules to ConstraintModel. Nothing
 in this module registers an algorithm or writes system lifecycle state.
 """
 from __future__ import annotations
 
+from bisect import bisect_left
 from copy import deepcopy
 from dataclasses import dataclass, fields, replace
 from datetime import datetime, timezone
 import math
+import time
 from typing import Callable
 
 from pydantic import ConfigDict, Field
 
-from eos_system.algorithm_registry import AlgorithmParams
+from algorithms.objectives import ObjectiveModel
+from eos_system.algorithm_registry import AlgorithmParams, SolveContext
 from schedulers.constraint_model import Assignment, ConstraintModel, Schedule
 from schedulers.scenario_loader import SchedulingProblem, SchedulingTask, TaskWindow
 from utils.continuous_exposure import ExposureStatus, planning_window
@@ -220,3 +223,208 @@ class BoundedCandidateAdapter:
         # The list order is deterministic and intentionally preserves coverage
         # before extra positions; solve applies a separate deterministic ranking.
         return candidates
+
+
+@dataclass(frozen=True)
+class SafeConflictIndex:
+    """Per-state sparse observations, NOT an all-candidate pair graph.
+
+    Only task identity and strict half-open observation overlap are indexed.
+    Prefix maximum ends also make overlap lookup correct on arbitrary fixtures.
+    Slew, downlinks, ground stations and cumulative resources are delegated.
+    """
+
+    task_ids: frozenset[str]
+    observations: dict[str, tuple[tuple, tuple]]
+
+    @classmethod
+    def from_schedule(cls, schedule: Schedule, checkpoint: Checkpoint = _noop) -> SafeConflictIndex:
+        tasks = set()
+        by_satellite: dict[str, list] = {}
+        for assignment in schedule.assignments:
+            checkpoint()
+            tasks.add(assignment.task_id)
+            by_satellite.setdefault(assignment.satellite_id, []).append(
+                (assignment.sat_start_time, assignment.sat_end_time))
+        observations = {}
+        for sid, intervals in by_satellite.items():
+            checkpoint()
+            intervals.sort()
+            starts, prefix_ends = [], []
+            for start, end in intervals:
+                checkpoint()
+                starts.append(start)
+                prefix_ends.append(max(prefix_ends[-1], end) if prefix_ends else end)
+            observations[sid] = (tuple(starts), tuple(prefix_ends))
+        checkpoint()
+        return cls(frozenset(tasks), observations)
+
+    def rejects(self, candidate: Assignment) -> bool:
+        if candidate.task_id in self.task_ids:
+            return True
+        intervals = self.observations.get(candidate.satellite_id)
+        if intervals is None:
+            return False
+        starts, prefix_ends = intervals
+        before_end = bisect_left(starts, candidate.sat_end_time)
+        return before_end > 0 and prefix_ends[before_end - 1] > candidate.sat_start_time
+
+
+class _SearchStopped(Exception):
+    def __init__(self, reason: str):
+        self.reason = reason
+
+
+class _SolveControl:
+    def __init__(self, context: SolveContext, clock: Callable[[], float]):
+        self.clock = clock
+        self.context = context
+        self.started = clock()
+        budget = context.time_budget_s
+        if not math.isfinite(budget) or budget <= 0:
+            raise ValueError("time_budget_s must be finite and positive")
+        # A best effort reserve, not a hard real-time guarantee for native calls.
+        self.reserve_s = min(0.05, budget * 0.05)
+        self.deadline = self.started + budget - self.reserve_s
+        self.reason = "completed"
+
+    def checkpoint(self) -> None:
+        if self.context.is_cancelled():
+            self.reason = "cancelled"
+            raise _SearchStopped(self.reason)
+        if self.clock() >= self.deadline:
+            self.reason = "budget"
+            raise _SearchStopped(self.reason)
+
+
+class ConflictBeamScheduler:
+    """Direct Solver implementation; all per-run state lives inside solve().
+
+    clock is a synchronous test injection. The scheduler never captures a
+    pre-Worker SolveContext, writes files, or manufactures lifecycle statuses.
+    """
+
+    def __init__(self, *, clock: Callable[[], float] = time.monotonic):
+        self.clock = clock
+
+    def _observe_beam(self, states: tuple[BeamState, ...]) -> None:
+        """Read-only diagnostic hook for small deterministic tests; no storage."""
+
+    def solve(self, problem: SchedulingProblem, constraints: ConstraintModel,
+              context: SolveContext) -> Schedule:
+        control = _SolveControl(context, self.clock)
+        checkpoint = control.checkpoint
+        stats = {
+            "candidate_builder_calls": 0, "candidate_constraint_calls": 0,
+            "generated_candidates": 0, "prefilter_rejections": 0,
+            "public_constraint_calls": 0, "accepted_insertions": 0,
+            "scored_states": 0, "duplicate_states": 0, "pruned_states": 0,
+            "max_beam_size": 0, "max_children": 0, "levels_completed": 0,
+        }
+        best_feasible = Schedule()
+        best_rank = None
+        phase = "initialization"
+        try:
+            checkpoint()
+            params = CAABSParams.model_validate(context.params.model_dump())
+            objective = ObjectiveModel(problem, context.objective_weights)
+            checkpoint()
+            # ID order is deliberately fixed: no order changes after a skip.
+            task_ids = sorted(problem.tasks, key=lambda tid: (checkpoint(), tid)[1])
+            checkpoint()
+            adapter = BoundedCandidateAdapter(constraints, params, checkpoint, stats)
+
+            def state(schedule: Schedule, task_index: int) -> BeamState:
+                nonlocal phase
+                phase = "scoring"
+                checkpoint()
+                score = objective.score(schedule)
+                stats["scored_states"] += 1
+                checkpoint()
+                phase = "canonicalization"
+                key = canonical_state_key(schedule, checkpoint)
+                return BeamState(schedule, task_index, len(schedule.assignments), score, key)
+
+            def remember(candidate_state: BeamState) -> None:
+                nonlocal best_feasible, best_rank
+                checkpoint()
+                if best_rank is None or candidate_state.rank_key < best_rank:
+                    # Only replace the incumbent after the isolated copy finishes.
+                    snapshot = clone_schedule(candidate_state.schedule, checkpoint)
+                    best_feasible = snapshot
+                    best_rank = candidate_state.rank_key
+
+            initial = state(Schedule(), 0)
+            remember(initial)
+            beam = [initial]
+            stats["max_beam_size"] = 1
+            for task_index, tid in enumerate(task_ids, 1):
+                phase = "candidate_preparation"
+                checkpoint()
+                # Prepare one task at a time, preserving an incumbent if later
+                # preparation is interrupted. Candidate order preserves coverage.
+                candidates = adapter.build(problem.tasks[tid])
+                stats["generated_candidates"] += len(candidates)
+                children: list[BeamState] = []
+                for parent in beam:
+                    phase = "expansion"
+                    checkpoint()
+                    # A skip is a real, independent branch at the next cursor.
+                    skipped = BeamState(clone_schedule(parent.schedule, checkpoint), task_index,
+                                        parent.completed, parent.objective_score, parent.canonical_key)
+                    children.append(skipped)
+                    index = None
+                    if params.conflict_prefilter:
+                        phase = "conflict_index"
+                        index = SafeConflictIndex.from_schedule(parent.schedule, checkpoint)
+                    for candidate in candidates[:params.branch_limit]:
+                        phase = "expansion"
+                        checkpoint()
+                        if index is not None and index.rejects(candidate):
+                            stats["prefilter_rejections"] += 1
+                            continue
+                        stats["public_constraint_calls"] += 1
+                        # Always check against the untouched PARENT, before append.
+                        accepted = constraints.is_feasible_assignment(candidate, parent.schedule)
+                        checkpoint()
+                        if not accepted:
+                            continue
+                        stats["accepted_insertions"] += 1
+                        child = state(branch_schedule(parent.schedule, candidate, checkpoint), task_index)
+                        remember(child)  # Save before deduplication or Top-B pruning.
+                        children.append(child)
+                stats["max_children"] = max(stats["max_children"], len(children))
+                phase = "deduplication"
+                unique = {}
+                for child in children:
+                    checkpoint()
+                    if child.search_key in unique:
+                        stats["duplicate_states"] += 1
+                    else:
+                        unique[child.search_key] = child
+                phase = "pruning"
+                checkpoint()
+
+                def rank(child: BeamState) -> tuple:
+                    checkpoint()
+                    return child.rank_key
+
+                ranked = sorted(unique.values(), key=rank)
+                checkpoint()
+                beam = ranked[:params.beam_width]
+                stats["pruned_states"] += max(0, len(ranked) - len(beam))
+                stats["max_beam_size"] = max(stats["max_beam_size"], len(beam))
+                stats["levels_completed"] += 1
+                self._observe_beam(tuple(beam))
+                checkpoint()
+        except _SearchStopped:
+            pass
+        # No further search, score or full-plan copying after a stop. The
+        # incumbent already owns its mutable data; attach only small diagnostics.
+        best_feasible.metadata["caabs"] = {
+            "version": VERSION, "stop_reason": control.reason,
+            "stop_phase": phase, "return_reserve_s": control.reserve_s,
+            "feasibility": "public_model_checked" if best_feasible.assignments else "structural_fallback",
+            "stats": stats,
+        }
+        return best_feasible
