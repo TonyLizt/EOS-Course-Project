@@ -117,9 +117,15 @@ def _released_epoch_scenario(path: Path) -> bool:
         return False
     try:
         from .provenance import capture_provenance
-        capture_provenance(path, _listing_sha(path))
-        return True
-    except (OSError, ValueError):
+        from utils.continuous_exposure import planning_evidence
+        scenario_sha = _listing_sha(path)
+        capture_provenance(path, scenario_sha)
+        # The earlier release sidecar proves lineage and sampled checks only.
+        # It must not make a scenario selectable unless its window-generation
+        # evidence also satisfies the current conservative planning contract.
+        # Sidecar-backed candidates need no second full parse of the large JSON.
+        return planning_evidence({"metadata": {}}, path, scenario_sha) is not None
+    except (OSError, ValueError, TypeError):
         return False
 
 

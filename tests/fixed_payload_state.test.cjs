@@ -79,9 +79,9 @@ const microReplay={...replay,segments:microSegments,samples:[
  {...replay.samples[0],time:'2025-11-18T12:00:00.123456Z',position_ecef_m:[7000000,0,0]},
  {...replay.samples[1],time:'2025-11-18T12:00:00.123458Z',position_ecef_m:[7000002,0,0]}
 ]};
-const microMiddle=state.evaluateSatelliteState(microReplay,'S1','2025-11-18T12:00:00.123457Z',forbidden,forbidden);
+const microMiddle=state.evaluateSatelliteState(microReplay,'S1','2025-11-18T12:00:00.123457Z',forbiddenPosition,visibleTarget);
 close(microMiddle.position_ecef_m,[7000001,0,0]);
 assert.equal(microMiddle.phase,'OBSERVING');
-assert.equal(state.evaluateSatelliteState(microReplay,'S1','2025-11-18T12:00:00.123458Z',forbidden,forbidden).phase,'IDLE');
+assert.equal(state.evaluateSatelliteState(microReplay,'S1','2025-11-18T12:00:00.123458Z',forbiddenPosition,visibleTarget).phase,'IDLE');
 assert.throws(()=>state.phaseAt(microSegments,'S1','not-a-time'),/time/i);
 console.log('microsecond phase and READY interpolation passed');

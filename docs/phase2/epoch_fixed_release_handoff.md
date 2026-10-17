@@ -1,4 +1,4 @@
-# 历元修正场景发布与 TCR 恢复交接
+# 历元修正场景候选与 TCR 诊断交接
 
 日期：2026-10-17（Asia/Hong_Kong）
 分支：`fix/cesium-300s-consistency`
@@ -9,7 +9,7 @@
 
 本次只替换 `observation_windows` 与 `communication_windows`，卫星、任务、坐标、资源、ID、轨道根数、时间范围和所有未知静态字段保持不变。legacy 文件不删除、不覆盖，历史 run 仍可按原 ID 与 SHA 解析。
 
-## 2. 发布门禁
+## 2. 候选检查与正式门禁
 
 `scripts/recompute_scenario_windows_parallel.py` 按 mission 分片，每个 spawned worker 使用自己的 Orekit JVM。worker 输入排除旧的大型动态窗口，避免将 82–157 MB legacy 数组复制十份。发布前复查：
 
@@ -18,9 +18,11 @@
 - 输出结构完整，并以同文件系统 hard-link 原子发布且不覆盖；
 - 候选阶段允许如实保留零窗口任务，不因非 100% 覆盖丢弃已完成的昂贵计算。
 
-`scripts/release_epoch_fixed_scenario.py` 再验证静态谱系、结构、每个任务的完整曝光 1 秒地球遮挡、三 seed completion-first 计划及共享约束重放。只有达到 92% TCR 才原子写入 release sidecar。场景目录只列出能通过既有 `capture_provenance` 门禁的修正版；candidate-only 文件既不出现，也不隐藏 legacy sibling。
+旧版 `scripts/release_epoch_fixed_scenario.py` 曾以静态谱系、结构、每秒地球遮挡抽样和多 seed TCR 产生 sampled-release sidecar。合并最新版 `main` 后，正式门禁还要求受信任的窗口生成证据；有限点采样不能排除采样点之间的短暂遮挡，旧 sidecar 因此不足以发布。工具现在会在缺少该证据时 fail closed，场景目录也不会列出候选或让它隐藏 legacy sibling。
 
-## 3. 六场景结果
+## 3. 六场景离散诊断结果
+
+下表是重算时的离散/采样诊断，不是当前连续曝光门禁下的正式发布结果。
 
 | 场景 | 修正版 SHA-256 | 物理候选覆盖 | 片段 | seed 1 / 42 / 99 TCR |
 |---|---|---:|---:|---:|
@@ -45,13 +47,13 @@ python scripts/release_epoch_fixed_scenario.py \
   --legacy <legacy.json> --scenario <candidate.json> --minimum-tcr 0.92
 ```
 
-S1 双批竞争环境耗时 24:08.56、最大父进程 RSS 428,948 KiB；S2 耗时 28:41.86、最大父进程 RSS 783,340 KiB。这里的 RSS 不包含所有 Java 子进程总和；运行期间系统未使用 swap。输出大小分别为 45,779,564 与 87,585,325 bytes。先前单批 S1 计算为 11:48.49，但因过严的 100% 覆盖闸门未发布；该失败促成 candidate 与 release 门禁分离。
+S1 双批竞争环境耗时 24:08.56、最大父进程 RSS 428,948 KiB；S2 耗时 28:41.86、最大父进程 RSS 783,340 KiB。这里的 RSS 不包含所有 Java 子进程总和；运行期间系统未使用 swap。输出大小分别为 45,779,564 与 87,585,325 bytes。先前单批 S1 计算为 11:48.49。六份输出均保留为可审计候选。
 
 ## 5. 验证与限制
 
 - 定向自动化为 Python 56 PASS、1 个 opt-in Orekit SKIP；Node 7 组 PASS。Python 组合执行在既有服务线程类测试停滞 90 秒后人工中止，因此没有宣称完整 suite 通过。
-- 修正版不会自动篡改既有 run、计划或指标；须新建实验才会使用新 SHA。
-- release sidecar 是项目内验收证据，不是密码学签署；`metadata.extra` 中历史 generator seed/source dataset 仍未记录，因此结构报告保留 WARN。
-- completion-first 的具体完成数可能受进程 hash iteration 顺序影响，但所有实际发布与回归结果均不低于 92%；正式比较应继续冻结运行环境与保存每次 run 配置。
+- 修正版不会自动篡改既有 run、计划或指标；当前也不会出现在新实验选择器中。
+- 仓库内旧 sampled-release sidecar 只作为历史审计证据，不满足当前连续曝光窗口来源契约；`metadata.extra` 中历史 generator seed/source dataset 仍未记录，因此结构报告保留 WARN。
+- completion-first 的诊断完成数可能受进程 hash iteration 顺序影响；正式比较必须等待连续曝光证据门禁通过，并冻结运行环境与保存每次 run 配置。
 - 回放 30 秒采样、LAGRANGE degree 5 与相机稳定性属于前序提交，不由场景发布工具回写物理窗口。
-- 没有创建 PR；由至少一名未编写改动的组员审核后再合并。
+- 本交接随功能分支进入 PR；正式数据发布仍是后续独立工作。

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Validate and release one epoch-corrected scenario without changing it.
+"""Audit an epoch-corrected candidate without weakening the release gate.
 
 The recomputation step deliberately publishes candidate-only data.  This tool
-performs the project-side E3/E4 gates needed by the experiment API: exact
-static-data lineage, structural validation, full-exposure geometry guardrails,
-and repeated feasible completion-first schedules.  Only the small provenance
-sidecar is written, and an existing sidecar is never replaced.
+performs the historical sampled checks, but a formal release additionally
+requires window-generation evidence accepted by the current continuous-
+exposure contract.  Candidates lacking that evidence fail closed before a
+sidecar is written.
 """
 
 from __future__ import annotations
@@ -42,6 +42,7 @@ from scripts.recompute_scenario_windows import (
 )
 from utils.time_parsing import EPOCH_PARSER_VERSION
 from utils.visibility import _find_orekit_data_zip
+from utils.continuous_exposure import planning_evidence
 
 
 def _verify_schedule(problem, schedule) -> None:
@@ -70,6 +71,12 @@ def validate_release(legacy: Path, candidate: Path, *, seeds: tuple[int, ...],
     source = json.loads(legacy.read_bytes())
     corrected = json.loads(candidate.read_bytes())
     assert_same(static_data(source), static_data(corrected), "static lineage changed")
+    scenario_sha = file_sha256(candidate)
+    if planning_evidence(corrected, candidate, scenario_sha) is None:
+        raise ValueError(
+            "candidate lacks trusted window-generation evidence required by "
+            "the continuous-exposure planning gate"
+        )
     structure = validate_structure(corrected)
     window_coverage = structure["missions_with_windows"] / structure["mission_count"]
     if window_coverage + 1e-12 < minimum_tcr:
@@ -110,7 +117,6 @@ def validate_release(legacy: Path, candidate: Path, *, seeds: tuple[int, ...],
         orekit_version = importlib.metadata.version("orekit_jpype")
     except importlib.metadata.PackageNotFoundError:
         orekit_version = "unknown"
-    scenario_sha = file_sha256(candidate)
     source_sha = file_sha256(legacy)
     evidence = {
         **build_info(),

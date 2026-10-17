@@ -313,19 +313,6 @@ class ConstraintModel:
         if actual_duration + 1e-6 < task.required_duration:
             return False
 
-        # Legacy windows can be stale after an orbit-epoch correction.  Every
-        # algorithm and the Controller verifier pass through this independent
-        # full-exposure horizon check; a precomputed window is not sufficient.
-        from schedulers.observation_geometry import validate_observation_interval
-        if not validate_observation_interval(
-            self.problem,
-            assignment.satellite_id,
-            assignment.task_id,
-            assignment.sat_start_time,
-            assignment.sat_end_time,
-        ).feasible:
-            return False
-
         # 3) If ground stations exist, check the basic validity of the downlink segment
         if self.has_ground_stations:
             if assignment.ground_station_id is None:

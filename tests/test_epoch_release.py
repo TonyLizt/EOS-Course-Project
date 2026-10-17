@@ -6,8 +6,6 @@ import shutil
 import tempfile
 import unittest
 
-from eos_system.config import sha256_file
-from eos_system.provenance import capture_provenance
 from scripts.release_epoch_fixed_scenario import validate_release
 from scripts.recompute_scenario_windows import sidecar_path
 
@@ -27,18 +25,10 @@ class EpochReleaseTests(unittest.TestCase):
         shutil.copyfile(LEGACY, self.legacy)
         shutil.copyfile(CANDIDATE, self.candidate)
 
-    def test_release_sidecar_passes_the_submission_provenance_gate(self):
-        evidence = validate_release(
-            self.legacy, self.candidate, seeds=(42,), minimum_tcr=0.92
-        )
-        self.assertEqual(evidence["physical_validation"]["status"], "PASS")
-        self.assertEqual(evidence["scheduling_validation"]["runs"][0]["tcr"], 1.0)
-        snapshot = capture_provenance(self.candidate, sha256_file(self.candidate))
-        self.assertEqual(snapshot["scenario_sha256"], sha256_file(self.candidate))
-        before = sidecar_path(self.candidate).read_bytes()
-        with self.assertRaisesRegex(ValueError, "already exists"):
+    def test_sampled_candidate_cannot_be_formally_released(self):
+        with self.assertRaisesRegex(ValueError, "trusted window-generation evidence"):
             validate_release(self.legacy, self.candidate, seeds=(42,), minimum_tcr=0.92)
-        self.assertEqual(sidecar_path(self.candidate).read_bytes(), before)
+        self.assertFalse(sidecar_path(self.candidate).exists())
 
     def test_static_lineage_change_is_rejected_without_sidecar(self):
         payload = json.loads(self.candidate.read_bytes())

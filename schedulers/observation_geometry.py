@@ -1,10 +1,11 @@
-"""Deterministic observation line-of-sight checks shared by every scheduler.
+"""Deterministic observation line-of-sight diagnostics for stale scenarios.
 
 The scenario files contain precomputed observation windows.  Older files were
 generated before orbit-epoch handling was corrected, so a window is not by
 itself proof that the target is above the local horizon at execution time.
 This module provides a small, dependency-free Kepler/WGS84 cross-check.  It is
-intentionally a guardrail, not a replacement for Orekit window generation.
+diagnostic only: finite samples are not a continuity certificate and formal
+planning/storage remains governed by ``utils.continuous_exposure``.
 """
 
 from __future__ import annotations
