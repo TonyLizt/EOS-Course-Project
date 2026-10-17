@@ -16,7 +16,7 @@ from typing import Callable
 from pydantic import ConfigDict, Field
 
 from algorithms.objectives import ObjectiveModel
-from eos_system.algorithm_registry import AlgorithmParams, SolveContext
+from algorithms.solver_contracts import AlgorithmParams, SolveContext
 from schedulers.constraint_model import Assignment, ConstraintModel, Schedule
 from schedulers.scenario_loader import SchedulingProblem, SchedulingTask, TaskWindow
 from utils.continuous_exposure import ExposureStatus, planning_window
