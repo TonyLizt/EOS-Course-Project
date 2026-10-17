@@ -4,6 +4,14 @@
 - 新增串行 queue、queued frame 合并、选中/普通 tile 公平轮巡、连续两个完整 render frame 门槛、原子 Canvas commit、512-tile 有界 working set，以及 context lost/restore 处理。状态文字与图像在同一 commit 更新。
 - 新增 `debug_payload=1` 诊断，记录每个固定镜头的时间、姿态、矩阵、Canvas/framebuffer、tile loading、resize/context 状态；默认关闭并限制 2000 条。
 - 真实 Chromium 2 星与 10 星各连续 30 秒，覆盖正常倍速、60x、2×2、切星、暂停/恢复及 Escape；无跨窗 ownership、WebGL、console 或 HTTP error。依用户指示不再增加长测；50 星仅完成快速 queue/ownership 单元测试，真实 GPU 吞吐列为未实测限制。详见 [Fixed Payload 频闪交接](docs/phase2/fixed_payload_flicker_handoff.md)。
+## R1-02：只读 Scenario Artifact / Provenance 索引（2026-10-17）
+
+- feat/registry-provenance 基于 d0d9325；Raw 30（20 卫星配置 + 10 城市）独立于六 Legacy、四冻结 Candidate，原文件/侧车/证据只读。
+- 新增独立小型索引、来源矩阵、stdout-only 核验 CLI 与合成测试；不改 27 字段 Manifest、数据库、Controller/Worker 或发布流程。
+- 五项历史源码找到与侧车完全相符的 Git blob；base_git_sha 不冒充工具提交，后继主线实现与审核工具分开记录。
+- WSL 新增单测 25/25；Manifest 47/47；完整默认套件 363 passed / 0 failed / 0 errors / 8 skipped。未开启额外 Orekit 开关，真实场景不求解、不重算。
+- 四候选仍 candidate_only / formal_release_eligible=false；80 条原曝光仍 INCONCLUSIVE / NO_CONTINUITY_CERTIFICATE；外部规范为提案、Raw 历史来源/seed/ML lineage 缺证据。未提交、推送、合并或创建 PR。
+- 详见 [R1-02 索引交接](docs/phase2/scenario_artifact_index_r1_02.md)。历史记录以下保留。
 
 ---
 
