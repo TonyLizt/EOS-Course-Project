@@ -245,6 +245,7 @@
       gap: 8px;
       align-items: start;
     }
+    #payloadSatelliteGrid[hidden], #payloadGridHint[hidden] { display: none; }
     .payload-tile {
       min-width: 0;
       padding: 0;
@@ -377,8 +378,8 @@
       <div id="cesium-add-algorithms"></div>
       <h3>算法结果比较</h3>
       <label>对照实验<select id="cesium-peer"><option value="">仅当前实验</option></select></label>
-      <label>查看方式<select id="cesium-comparison-mode"><option value="algorithm">按算法比较</option><option value="experiment">按实验比较</option><option value="mixed">混合比较</option></select></label>
-      <div id="cesium-mixed-order" hidden></div><div id="cesium-comparison"></div>
+      <label>查看方式<select id="cesium-comparison-mode"><option value="algorithm">按算法比较</option><option value="experiment">按实验比较</option></select></label>
+      <div id="cesium-comparison-choices"></div><div id="cesium-comparison"></div>
     </section>
     <div class="panel-section">
       <h2>Display Controls</h2>
@@ -1191,6 +1192,7 @@
             if (!tile) return;
             const context = tile.canvas.getContext('2d', { alpha: false });
             context.drawImage(secondary.canvas, 0, 0, tile.canvas.width, tile.canvas.height);
+            tile.canvas.style.visibility = '';
             tile.canvas.dataset.satelliteId = job.id;
             tile.canvas.dataset.simulationTime = job.payload.simulationTimeIso;
             tile.canvas.dataset.renderSequence = String(job.sequence);
@@ -1207,6 +1209,7 @@
         return payloadRenderer;
       };
       const renderTile = (satelliteId, time) => {
+        if (!visible) return;
         const tile = tileById.get(satelliteId);
         if (!tile) return;
         const state = stateAt(satelliteId, time);
@@ -1332,9 +1335,19 @@
       toggle.addEventListener('click', () => {
         visible = !visible;
         grid.hidden = !visible;
+        document.getElementById('payloadGridHint').hidden = !visible;
         toggle.textContent = visible ? 'Hide grid' : 'Show grid';
         toggle.setAttribute('aria-expanded', visible ? 'true' : 'false');
-        if (visible) renderTile(selectedId || replay.satellites[0].id, viewer.clock.currentTime);
+        if (!visible && payloadRenderer) {
+          payloadRenderer.destroy();
+          payloadRenderer = null;
+        }
+        if (visible) {
+          // Do not present a pre-hide snapshot while the fresh frames load.
+          tileById.forEach(tile => { tile.canvas.style.visibility = 'hidden'; });
+          replay.satellites.forEach(satellite => renderTile(satellite.id, viewer.clock.currentTime));
+          updateSelectionDom();
+        }
       });
       viewer.selectedEntityChanged.addEventListener((entity) => {
         const id = entity && (entity.id || entity._id);

@@ -5,7 +5,7 @@
   let experimentId=new URLSearchParams(location.search).get('experiment_id'), experiment=null, peerId='', pending=false, generation=0;
   let submitKey=null, submitPayload=null;
   let controlPending=false,controlKey=null,controlSignature=null;
-  const comparison=UI.comparison($('comparison-groups'),$('comparison-mode'),$('mixed-order'),(eid,rid)=>{
+  const comparison=UI.comparison($('comparison-groups'),$('comparison-mode'),$('comparison-choices'),(eid,rid)=>{
     if(eid!==experimentId)showExperiment(eid,rid);else{selectedId=rid;refreshExperiments();}
   });
   function catalog(algorithms) {
@@ -77,8 +77,8 @@
       if(run){showDetail(run);$('selected-run').textContent=`实验 ${exp.experiment_id} · 当前算法：${UI.name(run.config.algorithm_id)}`;$('open-cesium').href=`/visualization/experiments/${encodeURIComponent(exp.experiment_id)}/cesium?run_id=${encodeURIComponent(run.run_id)}`;$('delete-run').disabled=false;$('delete-option').hidden=true;}
       else{clearDetail();$('selected-run').textContent=exp.experiment_id+' · 暂无算法';}
       UI.available($('experiment-algorithm-add'),exp,async(id,params)=>{
+        if(!id){await refreshExperiments();return;}
         await api(`/api/experiments/${encodeURIComponent(exp.experiment_id)}/algorithms`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({algorithm_id:id,algorithm_params:params})});
-        await refreshExperiments();
       });
       const peers=await api(`/api/experiments/${encodeURIComponent(exp.experiment_id)}/peers`);
       if(token!==generation)return;

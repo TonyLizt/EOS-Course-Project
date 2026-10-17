@@ -7,8 +7,8 @@
 #experiment-controls :focus-visible { outline:3px solid #ffd166; outline-offset:2px; }
 #experiment-controls .algorithm-card { border:1px solid #41516f; border-radius:6px; margin:6px 0; }
 #experiment-controls .algorithm-heading { display:flex; align-items:stretch; }
-#experiment-controls .algorithm-choice { flex:1; min-width:0; padding:10px 12px; margin:0; font:inherit; text-align:left; align-self:center; }
-#experiment-controls .algorithm-toggle { flex-shrink:0; min-width:44px; min-height:44px; padding:10px 12px; border:0; background:transparent; }
+#experiment-controls .algorithm-choice { flex:1; min-width:0; padding:6px 8px; margin:0; font:inherit; text-align:left; align-self:center; min-height:34px; }
+#experiment-controls .algorithm-toggle { flex-shrink:0; width:32px; min-height:34px; padding:6px 8px; border:0; background:transparent; font-size:11px; }
 #experiment-controls .algorithm-toggle span { display:inline-block; }
 #experiment-controls .algorithm-toggle[aria-expanded="true"] span { transform:rotate(90deg); }
 #experiment-controls .algorithm-content { padding:12px; border-top:1px solid #41516f; }
@@ -17,6 +17,18 @@
 #experiment-controls .table-wrap { overflow:auto; max-height:300px; }
 #experiment-controls table { border-collapse:collapse; font-size:12px; }
 #experiment-controls td,#experiment-controls th { padding:7px; border-bottom:1px solid #41516f; white-space:nowrap; text-align:left; }
-#cesium-current-algorithms,#cesium-add-algorithms { max-height:330px; overflow:auto; }
+#cesium-current-algorithms,#cesium-add-algorithms { max-height:none; overflow:visible; min-width:0; }
 #experiment-controls .hint { color:#bac7dc; font-size:12px; }
-#experiment-controls .mixed-choice { display:flex; gap:4px; flex-wrap:wrap; align-items:center; }
+#experiment-controls .result-group { min-width:0; margin:6px 0; padding:5px; border:1px solid #41516f; border-radius:5px; }
+#experiment-controls .result-group legend { font-size:11px; color:#bac7dc; }
+#experiment-controls .result-choice { display:flex; align-items:center; gap:4px; padding:3px 5px; margin:4px 0; border:1px solid #41516f; border-radius:4px; }
+#experiment-controls .result-choice.is-chosen,#experiment-controls .add-algorithm-option.is-chosen { background:#1c3455; border-color:#7cc4ff; }
+#experiment-controls .result-choice label,#experiment-controls .add-algorithm-option { display:flex; align-items:center; gap:6px; flex:1; min-width:0; margin:0; min-height:32px; cursor:pointer; }
+#experiment-controls input[type="checkbox"] { width:16px; height:16px; flex:0 0 16px; margin:0; accent-color:#7cc4ff; }
+#experiment-controls .result-choice strong { font-size:12px; font-weight:500; }
+#experiment-controls .result-choice small,#experiment-controls .add-algorithm-option small { display:block; color:#bac7dc; font-size:11px; overflow-wrap:anywhere; }
+#experiment-controls .result-position { color:#bac7dc; font-size:11px; }
+#experiment-controls .result-moves { display:flex; gap:2px; flex-shrink:0; }
+#experiment-controls .result-moves button { width:26px; min-height:28px; padding:2px; }
+#experiment-controls .add-algorithm-option { padding:4px 6px; border:1px solid #41516f; border-radius:4px; margin-bottom:5px; }
+#experiment-controls .confirm-algorithms { padding:6px 8px; margin-top:6px; }

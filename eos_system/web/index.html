@@ -64,11 +64,10 @@
     </section>
 
     <section class="card comparison-card" id="comparison" aria-labelledby="comparison-heading">
-      <div class="section-title"><p class="eyebrow">COMPARE · CURRENT EXPERIMENT</p><h2 id="comparison-heading">算法比较</h2><p>只展示当前实验内的算法，不再按条件组拼接任意历史 Run。</p></div>
+      <div class="comparison-header"><div class="section-title"><p class="eyebrow">COMPARE · CURRENT EXPERIMENT</p><h2 id="comparison-heading">算法比较</h2><p>当前实验与有效模型对照</p></div><div class="control-action"><label for="control-model" class="sr-only">对照实验初始模型</label><select id="control-model"><option value="completion_first">完成率优先</option><option value="adaptive_repair">自适应修复</option></select><button type="button" class="secondary" id="create-control" disabled>一键创建对照实验</button></div></div>
       <p class="hint">TP ↑ 收益 · TCR ↑ 完成率 · BD ↑ 均衡度 · TM ↓ 等待时间 · RT ↓ 秒 · RV ↓ 多次收益方差（单次通常无值）。</p>
       <label>可选：同场景、仅初始模型不同的另一实验<select id="model-comparison"><option value="">仅当前实验</option></select></label>
-      <div class="two-cols"><label>对照实验初始模型<select id="control-model"><option value="completion_first">完成率优先</option><option value="adaptive_repair">自适应修复</option></select></label><button type="button" class="secondary" id="create-control" disabled>一键创建对照实验</button></div>
-      <label>结果组织方式<select id="comparison-mode"><option value="algorithm">按算法比较</option><option value="experiment">按实验比较</option><option value="mixed">混合比较 · 自选并排序</option></select></label><div id="mixed-order" hidden></div>
+      <label>结果组织方式<select id="comparison-mode"><option value="algorithm">按算法比较</option><option value="experiment">按实验比较</option></select></label><div id="comparison-choices"></div>
       <p id="comparison-status" class="message" role="status"></p><div id="comparison-groups"></div>
     </section>
     <section class="card list-card" aria-labelledby="runs-heading">

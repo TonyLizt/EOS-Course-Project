@@ -2,10 +2,11 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const UI=require('../eos_system/web/experiment-ui.js'),T=require('../eos_system/web/timeline.js');
 const run=(id,algorithm)=>({run_id:id,config:{algorithm_id:algorithm},status:'FAILED',metrics:{TP:99}});
 const experiments=[{experiment_id:'one',runs:[run('a','sa'),run('b','ga')]},{experiment_id:'two',runs:[run('c','sa'),run('d','ga')]}];
-test('three views reorder a bounded result set without changing underlying records',()=>{
+test('two grouped views select and reorder a bounded result set without changing records',()=>{
  const before=JSON.stringify(experiments),ids=(mode,order)=>UI.orderedRows(experiments,mode,order).map(r=>r.run.run_id);
  assert.deepEqual(ids('algorithm'),['a','c','b','d']);assert.deepEqual(ids('experiment'),['a','b','c','d']);
- assert.deepEqual(ids('mixed',['d','a','outside','d']),['d','a']);assert.deepEqual(ids('mixed',[]),[]);
+ assert.deepEqual(ids('algorithm',['c','a','outside','d','b','c']),['c','a','d','b']);
+ assert.deepEqual(ids('experiment',['b','a','outside','d','c']),['b','a','d','c']);assert.deepEqual(ids('algorithm',[]),[]);
  assert.equal(JSON.stringify(experiments),before);
 });
 test('failed or unavailable plans cannot display successful metrics',()=>{
