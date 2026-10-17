@@ -1,8 +1,9 @@
 """Synthetic algorithm checks; evidence below is UNIT_TEST_ONLY, not certification."""
 from copy import deepcopy
 from dataclasses import replace
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import unittest
+from unittest.mock import patch
 
 from pydantic import ValidationError
 
@@ -358,6 +359,255 @@ class SearchTests(Fixture):
         self.assertEqual(data["unassigned_tasks"], [])
         self.assertIsInstance(data["assignments"][0]["sat_start_time"], str)
         self.assertNotIn("metadata", data)
+
+
+class BoundaryTests(Fixture):
+    context = SearchTests.context
+    solve = SearchTests.solve
+    multipath = SearchTests.multipath
+
+    def downlinks(self, *, start=10, end=30):
+        self.problem.ground_stations["G1"] = SchedulingGroundStation("G1")
+        self.problem.comm_windows = [CommWindow(
+            i, sid, "G1", self.start + timedelta(seconds=start), self.start + timedelta(seconds=end))
+            for i, sid in enumerate(("S1", "S2"), 1)]
+        self.cm = ConstraintModel(self.problem, non_agile_transition_s=0)
+
+    def test_downlink_equality_rejected_and_strictly_later_accepted(self):
+        task = self.task("T1", [("S1", 0)])
+        self.downlinks()
+        candidates = BoundedCandidateAdapter(self.cm, CAABSParams()).build(task)
+        self.assertEqual(len(candidates), 1)  # earliest equality rejected; center accepted
+        candidate = candidates[0]
+        self.assertGreater(candidate.gs_start_time, candidate.sat_end_time)
+        equal = replace(candidate, gs_start_time=candidate.sat_end_time,
+                        gs_end_time=candidate.sat_end_time + timedelta(seconds=10))
+        self.assertFalse(self.cm.is_feasible_assignment(equal, Schedule()))
+        later = replace(equal, gs_start_time=equal.gs_start_time + timedelta(microseconds=1),
+                        gs_end_time=equal.gs_end_time + timedelta(microseconds=1))
+        self.assertTrue(self.cm.is_feasible_assignment(later, Schedule()))
+        result = self.solve()
+        self.assertEqual(len(result.assignments), 1)
+        self.assert_shared_feasible(result)
+        from schedulers.schedule_output import schedule_to_dict
+        row = schedule_to_dict(result, self.problem)["assignments"][0]
+        self.assertEqual(row["ground_station_id"], "G1")
+        self.assertIsInstance(row["gs_start_time"], str)
+
+    def test_exact_fit_downlink_has_no_strictly_later_solution(self):
+        self.task("T1", [("S1", 0)])
+        self.downlinks(end=20)
+        self.assertEqual(self.solve().assignments, [])
+
+    def test_ground_station_conflict_is_left_to_public_model(self):
+        self.task("T1", [("S1", 0)])
+        self.task("T2", [("S2", 0)])
+        self.downlinks(start=20, end=30)
+        result = self.solve()
+        self.assertEqual(len(result.assignments), 1)
+        self.assertEqual(result.metadata["caabs"]["stats"]["prefilter_rejections"], 0)
+        self.assert_shared_feasible(result)
+
+    def test_non_agile_slew_not_pruned_statically(self):
+        self.task("T1", [("S1", 0)])
+        self.task("T2", [("S1", 15)])
+        self.cm = ConstraintModel(self.problem, non_agile_transition_s=10)
+        result = self.solve()
+        self.assertEqual(len(result.assignments), 1)
+        self.assertEqual(result.metadata["caabs"]["stats"]["prefilter_rejections"], 0)
+        self.assert_shared_feasible(result)
+
+    def test_agile_slew_uses_real_shared_angle_model(self):
+        self.problem.satellites["S1"].maneuverability_type = "agile"
+        self.task("T1", [("S1", 0)])
+        self.task("T2", [("S1", 20)])  # gap10 < shared zero-angle minimum11.66
+        result = self.solve()
+        self.assertEqual(len(result.assignments), 1)
+        self.assert_shared_feasible(result)
+
+    def test_branch_limit_bounds_real_alternatives(self):
+        self.multipath()
+        self.assertEqual(len(self.solve(beam_width=8, branch_limit=1).assignments), 1)
+        self.assertEqual(len(self.solve(beam_width=8, branch_limit=2).assignments), 2)
+
+    def test_normalized_utc_and_microsecond_keys(self):
+        a = self.candidate(self.task("T1", [("S1", 0)]))
+        local = timezone(timedelta(hours=8))
+        aware = replace(a, sat_start_time=a.sat_start_time.replace(tzinfo=timezone.utc).astimezone(local),
+                        sat_end_time=a.sat_end_time.replace(tzinfo=timezone.utc).astimezone(local))
+        self.assertEqual(canonical_assignment_key(a), canonical_assignment_key(aware))
+        self.assertNotEqual(canonical_assignment_key(a), canonical_assignment_key(
+            replace(a, sat_start_time=a.sat_start_time + timedelta(microseconds=1))))
+
+    def test_deduplication_removes_actual_duplicate_children(self):
+        task = self.task("T1", [("S1", 0)])
+        candidate = self.candidate(task)
+        with patch.object(BoundedCandidateAdapter, "build", return_value=[candidate, deepcopy(candidate)]):
+            scheduler = RecordingScheduler()
+            result = self.solve(scheduler=scheduler)
+        self.assertGreater(result.metadata["caabs"]["stats"]["duplicate_states"], 0)
+        keys = [state.search_key for state in scheduler.levels[0]]
+        self.assertEqual(len(keys), len(set(keys)))
+        self.assert_shared_feasible(result)
+
+    def test_index_handles_nested_intervals_without_pair_graph(self):
+        a = self.candidate(self.task("T1", [("S1", 0)]))
+        # Invalid schedules are never searched; this fixture checks index lookup
+        # correctness independently when a later short interval hides a long one.
+        long = replace(a, sat_end_time=self.start + timedelta(seconds=100))
+        short = replace(a, task_id="T2", sat_start_time=self.start + timedelta(seconds=10),
+                        sat_end_time=self.start + timedelta(seconds=20))
+        query = replace(a, task_id="T3", sat_start_time=self.start + timedelta(seconds=50),
+                        sat_end_time=self.start + timedelta(seconds=60))
+        index = SafeConflictIndex.from_schedule(Schedule([long, short]))
+        self.assertTrue(index.rejects(query))
+        self.assertEqual(len(index.observations["S1"][0]), 2)
+
+    def test_inputs_and_original_placement_configuration_unchanged(self):
+        self.multipath()
+        before = deepcopy(self.problem)
+        self.cm.placement_mode = "center"
+        result = self.solve()
+        self.assertEqual(self.problem, before)
+        self.assertEqual(self.cm.placement_mode, "center")
+        self.assert_shared_feasible(result)
+
+    def test_completion_count_precedes_public_profit(self):
+        self.task("T1", [("S1", 0)], duration=40, width=40, priority=100)
+        self.task("T2", [("S1", 0)], priority=1)
+        self.task("T3", [("S1", 20)], priority=1)
+        result = self.solve(beam_width=8)
+        self.assertEqual(set(result.assigned_task_ids), {"T2", "T3"})
+        self.assert_shared_feasible(result)
+
+    def test_frozen_objective_weights_decide_equal_completion(self):
+        self.task("T1", [("S1", 100), ("S2", 0)])
+        profit = self.solve()
+        weights = ObjectiveWeights(w_profit=0, w_timeliness=1)
+        context = replace(self.context(), objective_weights=weights)
+        early = self.solve(context=context)
+        self.assertEqual(profit.assignments[0].satellite_id, "S1")
+        self.assertEqual(early.assignments[0].satellite_id, "S2")
+        self.assertEqual(context.objective_weights, weights)
+        self.assert_shared_feasible(early)
+
+
+class StopTests(Fixture):
+    context = SearchTests.context
+    solve = SearchTests.solve
+    multipath = SearchTests.multipath
+
+    def test_budget_reserve_stops_before_requested_budget(self):
+        self.multipath()
+        clock = ManualClock()
+        scheduler = RecordingScheduler(clock=clock, on_level=lambda _: setattr(clock, "now", .951))
+        result = self.solve(scheduler=scheduler, context=replace(self.context(), time_budget_s=1))
+        self.assertEqual(result.metadata["caabs"]["stop_reason"], "budget")
+        self.assertAlmostEqual(result.metadata["caabs"]["return_reserve_s"], .05)
+        self.assertEqual(len(result.assignments), 1)
+        self.assertLess(clock.now, 1)
+
+    def test_stop_in_later_preparation_preserves_incumbent(self):
+        self.multipath()
+        clock = ManualClock()
+        original = BoundedCandidateAdapter.build
+        def prepare(adapter, task):
+            if task.id == "T2":
+                clock.now = 60
+            return original(adapter, task)
+        with patch.object(BoundedCandidateAdapter, "build", prepare):
+            result = self.solve(scheduler=ConflictBeamScheduler(clock=clock))
+        self.assertEqual(len(result.assignments), 1)
+        self.assertEqual(result.metadata["caabs"]["stop_phase"], "candidate_preparation")
+        self.assertEqual(result.metadata["caabs"]["stop_reason"], "budget")
+        self.assert_shared_feasible(result)
+
+    def test_stop_during_scoring_preserves_unpruned_incumbent(self):
+        from algorithms.objectives import ObjectiveModel
+        self.multipath()
+        clock = ManualClock()
+        original = ObjectiveModel.score
+        scores = [0]
+        def score(model, schedule):
+            result = original(model, schedule)
+            scores[0] += 1
+            if scores[0] == 3:  # root, first child remembered, second child stops
+                clock.now = 60
+            return result
+        with patch.object(ObjectiveModel, "score", score):
+            result = self.solve(scheduler=ConflictBeamScheduler(clock=clock))
+        self.assertEqual(len(result.assignments), 1)
+        self.assertEqual(result.metadata["caabs"]["stats"]["levels_completed"], 0)
+        self.assertEqual(result.metadata["caabs"]["stop_phase"], "scoring")
+        self.assert_shared_feasible(result)
+
+    def test_stop_during_canonicalization_keeps_prior_snapshot(self):
+        import algorithms.conflict_beam as module
+        self.multipath()
+        clock = ManualClock()
+        original = module.canonical_state_key
+        calls = [0]
+        def key(schedule, checkpoint=lambda: None):
+            result = original(schedule, checkpoint)
+            calls[0] += 1
+            if calls[0] == 3:
+                clock.now = 60
+            return result
+        with patch.object(module, "canonical_state_key", key):
+            result = self.solve(scheduler=ConflictBeamScheduler(clock=clock))
+        self.assertEqual(len(result.assignments), 1)
+        self.assertEqual(result.metadata["caabs"]["stop_phase"], "canonicalization")
+        self.assert_shared_feasible(result)
+
+    def test_stop_during_deduplication_keeps_incumbent(self):
+        self.multipath()
+        clock = ManualClock()
+        original = BeamState.search_key.fget
+        def key(state):
+            clock.now = 60
+            return original(state)
+        with patch.object(BeamState, "search_key", property(key)):
+            result = self.solve(scheduler=ConflictBeamScheduler(clock=clock))
+        self.assertEqual(len(result.assignments), 1)
+        self.assertEqual(result.metadata["caabs"]["stop_phase"], "deduplication")
+        self.assert_shared_feasible(result)
+
+    def test_stop_after_pruning_sort_keeps_incumbent(self):
+        import builtins
+        import algorithms.conflict_beam as module
+        self.multipath()
+        clock = ManualClock()
+        def ordered(items, **kwargs):
+            items = list(items)
+            result = builtins.sorted(items, **kwargs)
+            if items and isinstance(items[0], BeamState):
+                clock.now = 60
+            return result
+        with patch.object(module, "sorted", ordered, create=True):
+            result = self.solve(scheduler=ConflictBeamScheduler(clock=clock))
+        self.assertEqual(len(result.assignments), 1)
+        self.assertEqual(result.metadata["caabs"]["stop_phase"], "pruning")
+        self.assert_shared_feasible(result)
+
+    def test_cancellation_inside_preparation_is_polled(self):
+        self.task("T1", [("S1", i * 30) for i in range(20)])
+        import algorithms.conflict_beam as module
+        cancelled = [False]
+        original = module.planning_window
+        def checked(window):
+            result = original(window)
+            cancelled[0] = True
+            return result
+        with patch.object(module, "planning_window", checked):
+            result = self.solve(context=replace(self.context(), is_cancelled=lambda: cancelled[0]))
+        self.assertEqual(result.metadata["caabs"]["stop_reason"], "cancelled")
+        self.assertEqual(result.metadata["caabs"]["stop_phase"], "candidate_preparation")
+        self.assertEqual(result.assignments, [])
+
+    def test_invalid_budget_rejected_without_lifecycle_state(self):
+        for budget in (0, -1, float("nan"), float("inf")):
+            with self.subTest(budget=budget), self.assertRaises(ValueError):
+                self.solve(context=replace(self.context(), time_budget_s=budget))
 
 
 if __name__ == "__main__":
