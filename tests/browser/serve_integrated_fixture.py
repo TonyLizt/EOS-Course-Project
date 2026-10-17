@@ -23,13 +23,15 @@ def main():
     parser.add_argument("--coord", type=Path, required=True)
     parser.add_argument("--port", type=int, default=18765)
     parser.add_argument("--max-duration-s", type=float, default=300)
+    parser.add_argument("--satellites", type=int, default=2, choices=(2, 10, 50))
+    parser.add_argument("--duration-s", type=int, default=60)
     args = parser.parse_args()
     if args.coord.exists():
         raise ValueError("协调文件已存在，请选新的路径，不能覆盖已有文件")
     base = f"http://127.0.0.1:{args.port}"
     owns_coord = False
     try:
-        with fixture() as f:
+        with fixture(args.satellites, args.duration_s) as f:
             # 合成轨道专门验收浏览器；真实 Orekit 导出由独立测试覆盖。
             empty = f.scene.parent / "empty.json"
             empty.write_text(json.dumps({
@@ -73,7 +75,8 @@ def main():
                             time.sleep(.1)
                     else:
                         raise TimeoutError("隔离服务未按时就绪")
-                    info = {"url": base, "run_id": f.run_id, "output": str(output), "stop": False}
+                    info = {"url": base, "run_id": f.run_id, "output": str(output),
+                            "satellite_count": args.satellites, "stop": False}
                     with args.coord.open("x", encoding="utf-8") as stream:
                         json.dump(info, stream)
                     owns_coord = True

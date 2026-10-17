@@ -78,6 +78,9 @@ class SchedulingTask:
     priority: float
     required_duration: float
     windows: List[TaskWindow] = field(default_factory=list)
+    target_latitude_deg: Optional[float] = None
+    target_longitude_deg: Optional[float] = None
+    target_altitude_km: float = 0.0
 
 
 @dataclass
@@ -103,6 +106,7 @@ class SchedulingSatellite:
     stabilization_time_s: float = 0.0
 
     sensors: Dict[str, SensorSpec] = field(default_factory=dict)
+    orbital_params: Optional[dict] = None
 
 
 @dataclass
@@ -263,6 +267,7 @@ def load_scheduling_problem_from_json(json_path: str | Path) -> SchedulingProble
             slew_rate_deg_per_s=slew_rate,
             stabilization_time_s=stab_time,
             sensors=sensors,
+            orbital_params=dict(sat.get("orbital_params") or {}) or None,
         )
 
     # Ground station list, which may be empty
@@ -287,6 +292,9 @@ def load_scheduling_problem_from_json(json_path: str | Path) -> SchedulingProble
             priority=priority,
             required_duration=required_duration,
             windows=[],
+            target_latitude_deg=(float(mission["target_location"]["latitude"]) if isinstance(mission.get("target_location"), dict) and mission["target_location"].get("latitude") is not None else None),
+            target_longitude_deg=(float(mission["target_location"]["longitude"]) if isinstance(mission.get("target_location"), dict) and mission["target_location"].get("longitude") is not None else None),
+            target_altitude_km=(float(mission["target_location"].get("altitude_km", 0.0) or 0.0) if isinstance(mission.get("target_location"), dict) else 0.0),
         )
 
     # Observation windows -> task-satellite windows

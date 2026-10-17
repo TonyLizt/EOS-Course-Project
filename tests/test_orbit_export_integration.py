@@ -41,3 +41,5 @@ class OrbitExportIntegrationTests(unittest.TestCase):
             self.assertTrue(outputs[0][0]["clock"]["interval"].startswith("2025-11-18T12:00:00"))
             orbit=next(row for row in outputs[0] if row["id"]=="s1")
             self.assertEqual(len(orbit["position"]["cartographicDegrees"]),12)
+            self.assertEqual(orbit["position"]["interpolationAlgorithm"], "LAGRANGE")
+            self.assertEqual(orbit["position"]["interpolationDegree"], 5)

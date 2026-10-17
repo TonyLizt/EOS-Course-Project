@@ -9,6 +9,7 @@ let replayPendingId = null;
 const pageSize = 30;
 let pageOffset = 0;
 let deletingRunId = null;
+let autoRefresh = true;
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
@@ -161,7 +162,7 @@ async function refresh() {
     $("previous-page").disabled = pageOffset === 0;
     $("next-page").disabled = pageOffset + pageSize >= list.total;
     $("runs").innerHTML = list.items.map((r) => `<tr data-id="${escapeHtml(r.run_id)}" class="${r.run_id === selectedId ? "selected" : ""}">
-      <td>${escapeHtml(new Date(r.created_at).toLocaleString())}</td><td>${escapeHtml(r.scenario_id)}</td>
+      <td><button type="button" class="run-select" data-id="${escapeHtml(r.run_id)}"${r.run_id === selectedId ? ' aria-current="true"' : ''}>${escapeHtml(new Date(r.created_at).toLocaleString())}</button></td><td>${escapeHtml(r.scenario_id)}</td>
       <td>${escapeHtml(r.algorithm_id)}</td><td>${escapeHtml(r.status)}</td>
       <td>${r.TCR == null ? "—" : (Number(r.TCR) * 100).toFixed(1) + "%"}</td></tr>`).join("");
     document.querySelectorAll("#runs tr[data-id]").forEach((row) => row.addEventListener("click", () => {
@@ -289,7 +290,13 @@ $("delete-run").addEventListener("click", async () => {
   finally { deletingRunId = null; if (selectedId) $("delete-run").disabled = false; }
 });
 $("refresh").addEventListener("click", refresh);
+$("toggle-refresh").addEventListener("click", () => {
+  autoRefresh = !autoRefresh;
+  $("toggle-refresh").setAttribute("aria-pressed", autoRefresh ? "false" : "true");
+  $("toggle-refresh").textContent = autoRefresh ? "暫停自動更新" : "繼續自動更新";
+  $("run-count").textContent = autoRefresh ? "狀態每兩秒刷新一次。" : "自動更新已暫停。";
+});
 $("previous-page").addEventListener("click", () => { pageOffset = Math.max(0, pageOffset - pageSize); refresh(); });
 $("next-page").addEventListener("click", () => { pageOffset += pageSize; refresh(); });
 bootstrap();
-setInterval(refresh, 2000);
+setInterval(() => { if (autoRefresh) refresh(); }, 2000);

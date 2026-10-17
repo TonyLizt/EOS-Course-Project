@@ -20,6 +20,26 @@
 - 细节、命令及已知限制见 [CAABS 文档](docs/phase2/algorithms/conflict_beam.md)。
 - 未登记 registry、未改公共约束/可信证据/认证/生命周期/HTTP/IPC/SQLite；无 push、PR 或合并。搜索可行与正式认证明确区分。
 - 本地提交按基础、搜索核心、专项验收三个阶段组织；前两阶段分别10/10和22/22通过。候选覆盖有限，单次公共调用不可中断；不宣称性能或最优性优势。
+## R1-02：Rebase 后证据身份兼容修复（2026-10-17）
+
+- 基于 origin/main f230c3b 的 feat/registry-provenance；固定核验器核心 LF，归档 d0d9325 数据库文档的原 CRLF 身份并保留旧 SHA/路径/版本；原 LFS 属性不变。
+- WSL 专项 31/31、Manifest 47/47；真实索引 275 PASS / 28 WARN / 0 FAIL，WARN 含义及来源边不变。原生 Windows 字节策略另测，stat/fstat 兼容限制详见审计。
+- 不改冻结数据、27 字段 Manifest、数据库或发布流程；候选与曝光认证状态不变。详见 [Rebase 身份审计](docs/phase2/r1-02_rebase_identity_audit_20261017.md)。未提交、推送或创建 PR。
+
+## v0.3.5：Fixed Payload View 原子帧提交（2026-10-17）
+
+- 根因为单一隐藏 Cesium Scene 在多个固定镜头之间逐帧切换后，未等 imagery/terrain LOD 完成便复制默认 framebuffer；不是主 ENU 跟随相机或卫星 quaternion 跳变。
+- 新增串行 queue、queued frame 合并、选中/普通 tile 公平轮巡、连续两个完整 render frame 门槛、原子 Canvas commit、512-tile 有界 working set，以及 context lost/restore 处理。状态文字与图像在同一 commit 更新。
+- 新增 `debug_payload=1` 诊断，记录每个固定镜头的时间、姿态、矩阵、Canvas/framebuffer、tile loading、resize/context 状态；默认关闭并限制 2000 条。
+- 真实 Chromium 2 星与 10 星各连续 30 秒，覆盖正常倍速、60x、2×2、切星、暂停/恢复及 Escape；无跨窗 ownership、WebGL、console 或 HTTP error。依用户指示不再增加长测；50 星仅完成快速 queue/ownership 单元测试，真实 GPU 吞吐列为未实测限制。详见 [Fixed Payload 频闪交接](docs/phase2/fixed_payload_flicker_handoff.md)。
+## R1-02：只读 Scenario Artifact / Provenance 索引（2026-10-17）
+
+- feat/registry-provenance 基于 d0d9325；Raw 30（20 卫星配置 + 10 城市）独立于六 Legacy、四冻结 Candidate，原文件/侧车/证据只读。
+- 新增独立小型索引、来源矩阵、stdout-only 核验 CLI 与合成测试；不改 27 字段 Manifest、数据库、Controller/Worker 或发布流程。
+- 五项历史源码找到与侧车完全相符的 Git blob；base_git_sha 不冒充工具提交，后继主线实现与审核工具分开记录。
+- WSL 新增单测 25/25；Manifest 47/47；完整默认套件 363 passed / 0 failed / 0 errors / 8 skipped。未开启额外 Orekit 开关，真实场景不求解、不重算。
+- 四候选仍 candidate_only / formal_release_eligible=false；80 条原曝光仍 INCONCLUSIVE / NO_CONTINUITY_CERTIFICATE；外部规范为提案、Raw 历史来源/seed/ML lineage 缺证据。未提交、推送、合并或创建 PR。
+- 详见 [R1-02 索引交接](docs/phase2/scenario_artifact_index_r1_02.md)。历史记录以下保留。
 
 ---
 
@@ -34,7 +54,7 @@
 
 ## 轨道插值专项修复（2026-10-17）
 
-- 系统采用真实 60 秒 Orekit 轨道节点、局部五阶位置插值和标准 CZML Lagrange 元数据，修复 300 秒线性弦误差；保留 P0 UTC/微秒/非整终点与姿态 SLERP。
+- 系统采用真实 30 秒 Orekit 轨道节点、局部五阶位置插值和标准 CZML Lagrange 元数据，修复 300 秒线性弦误差；保留 P0 UTC/微秒/非整终点与姿态 SLERP。
 - 独立三轨道局部验收最大误差由 93.187 km 降至 0.0133 m；真实 Cesium/READY 对照通过，135 秒 READY 最大约 1.645 m。Python 274/274、Node 5/5，四份候选 SHA 不变，无正式计划生成。
 - 分支 fix/orbit-interpolation 依赖未合入 main 的 P0 12f8849；提交前已 fetch/rebase main。缓存键结构/v2 不变，步长及源码身份隔离新缓存；无历史数据删除。规模性能及最终发布仍待审核。
 - 详细证据、成本、限制与英文 PR 草稿见 [轨道插值验收](docs/phase2/orbit_interpolation_fix_2026-10-17.md)。以下保留原历史记录。
@@ -49,6 +69,27 @@
 - 最终 Python 267/267（含小范围 Orekit）、Node 四组通过；真实 Cesium 时间/650 秒末端/微秒状态检查通过。四候选 SHA/静态不变，Manifest 4 WARN、0 FAIL；无整场重算、正式注册或 benchmark。
 - 300 秒显示插值仍有约 58–94 km 中间点误差，连续曝光保护、正式来源和显示最终审核待负责人确认；未宣称正式发布完成。
 - 详情、环境对照、SHA 和实际命令见 [e3_e4_fix_report_2026-10-16.md](docs/phase2/e3_e4_fix_report_2026-10-16.md)。主目录五份既有未跟踪文件保持原样。
+
+---
+
+ ## v0.3.4：历元修正场景候选与 TCR 诊断（2026-10-17）
+
+ - 分支 `fix/cesium-300s-consistency`；保留 legacy 场景供历史 run 解析。修正版必须同时通过来源检查和最新版连续曝光规划证据门禁，才可替换新实验选择器中的 legacy；`provenance/` JSON 不进入场景列表。
+ - 新增并验证 4 个 small、2 个 medium `epoch_fixed_v1` 候选场景。静态字段与父场景一致，Orekit data SHA 为 `1c104cba89468a817d4d32ca8a12df7cab56f8d06a978ee736c841af123b7985`，1 秒 Earth-occlusion guard 未发现遮挡违规；该有限采样不构成连续可见性证明，因此合并后仍保持候选状态。
+ - 在旧的离散诊断口径下，small 四场景 seed 1/42/99 均为 100% TCR，medium S1 为 94%～95%，S2 为 98%。这些数字用于定位历元窗口退化，不代表已通过当前正式连续曝光认证。
+ - 新增大型场景 mission-shard 平行重算及独立候选验收工具；冻结源、静态数据、代码、Orekit ZIP 与输出 SHA，现有输出/sidecar 禁止覆盖。详情、命令、耗时和限制见 [候选交接](docs/phase2/epoch_fixed_release_handoff.md)。
+- 定向验证：Python 56 PASS、1 个 opt-in Orekit SKIP，覆盖场景目录/release gate、静态谱系拒绝、六场景 TCR、M003/M018、30 秒 cache、E2 工具和 replay delivery；Node 7 组通过。组合测试进入既有服务线程类 `IntegratedReplayTests.test_committed_plan_to_published_samples_and_compatibility` 后 90 秒无进展并人工中止；另一次含 API 删除的组合也在既有 `DeleteApiTests` 停滞，故不声称全量 Python 通过。语法、`git diff --check` 通过。未建立 PR。
+
+---
+
+## v0.3.3：回放路径恢复与触控板缩放（2026-10-16）
+
+- 分支 `fix/cesium-replay-usability`，基于最新 main `daf4254`；不重复或回退 v0.3.2 的六场景清单与规模适配。
+- 正式场景原绝对路径失效时，回放只在已登记数据源中按 `scenario_id` 查找，并以正式 SHA-256 完全匹配后重定位；符号链接、未登记路径与同名不同内容仍拒绝。
+- 主 Cesium Viewer 新增触控板捏合缩放：Chromium `Ctrl+wheel` 与 Safari 类 gesture 映射到相机缩放；保留 Cesium 原滚轮、右键拖曳与触屏 pinch。
+- 成功实验首次打开 Cesium 页面时先 GET 状态；NOT_REQUESTED 自动 POST 一次并轮询至 READY。自动申请或构建失败后不循环重试，只保留显式“重试构建回放”；READY 页面不额外 POST。
+- 主 Viewer 的卫星跟随从 Cesium 每帧 `AUTODETECT` 改为显式 ENU 位置框架；物理本体 quaternion 只驱动模型与固定载荷，不再参与使用者相机参考框架。任务列及 Fixed Payload View 选星同步主 Viewer；已在跟随时切换跟随对象，未跟随时只选中。卫星 CZML point 移除，标签、轨迹、姿态、视锥、目标与任务连线保留。
+- 定向验证：Python 2/2、Node 7/7 通过（含自动构建、相机控制、触控板、50 星索引）；真实 Chromium 整合页验证 point/path、ENU 框架、任务选星、自动构建一次且无 console/page/资源错误。另以持续改变本体 quaternion 的双星轨道进行 60x 连续 31 秒（暂停 1 秒、切星一次）验收：推进 1802.760 模拟秒，141 个有效量测帧最大相机方向步进 0.925°，跟随距离固定 500899.191 m，暂停漂移 0 秒；相邻 1 秒本体四元数点积绝对值 0.921，确认姿态未冻结。无错误。`git diff --check` 通过。完整 Python 前 10 项通过后停在既有 `test_http_cancel_uses_existing_route_and_temporary_database`，240 秒 timeout 中止且无残留进程，不声称全量通过。
 
 ---
 

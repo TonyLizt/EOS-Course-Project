@@ -1,1 +1,6 @@
 experiments/scenarios/**/*.json filter=lfs diff=lfs merge=lfs -text
+experiments/scenarios/**/provenance/*.json -filter diff merge text
+
+# R1-02 identities hash complete bytes; keep these two paths stable on checkout.
+eos_system/scenario_artifacts.py text eol=lf
+docs/phase2/evidence/r1_02/d0d9325/database_current_v03.crlf.snapshot.md -text whitespace=cr-at-eol

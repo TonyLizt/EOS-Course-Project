@@ -10,7 +10,7 @@ const q = state.pointingQuaternion([7000000, 0, 0], [6378137, 0, 0]);
 close(state.rotate(q, [0, 0, -1]), [-1, 0, 0]);
 close(state.slerp([0, 0, 0, 1], [0, 0, 0, -1], 0.5), [0, 0, 0, 1]);
 
-const segments = [{satellite_id: 'S1', phase: 'OBSERVING', start_time: '2026-01-01T00:00:00Z', end_time: '2026-01-01T00:00:10Z'}];
+const segments = [{satellite_id: 'S1', task_id: 'M1', sensor_id: 'camera', phase: 'OBSERVING', start_time: '2026-01-01T00:00:00Z', end_time: '2026-01-01T00:00:10Z'}];
 assert.equal(state.phaseAt(segments, 'S1', '2026-01-01T00:00:00Z').phase, 'OBSERVING');
 assert.equal(state.phaseAt(segments, 'S1', '2026-01-01T00:00:10Z'), null);
 assert.equal(state.phaseAt(segments, 'S1', '2025-12-31T23:59:59Z'), null);
@@ -25,16 +25,26 @@ const replay = {
   satellites:[{id:'S1',sensors:[{sensor_id:'camera',sensor_mount_quaternion_xyzw:[0,0,0,1]}]}],
   segments, warnings:[]
 };
-const forbidden=() => {throw new Error('READY 不应重新求轨道/目标');};
-const middle=state.evaluateSatelliteState(replay,'S1','2026-01-01T00:00:05Z',forbidden,forbidden);
+const forbiddenPosition=() => {throw new Error('READY 不应重新求轨道');};
+const visibleTarget=() => [6378137,0,0];
+const middle=state.evaluateSatelliteState(replay,'S1','2026-01-01T00:00:05Z',forbiddenPosition,visibleTarget);
 close(middle.position_ecef_m,[7000050,0,0]);
 close(middle.body_to_ecef_quaternion_xyzw,[0,0,0,1]);
 assert.equal(middle.phase,'OBSERVING');
 assert.equal(middle.cone_visible,true);
-const end=state.evaluateSatelliteState(replay,'S1','2026-01-01T00:00:10Z',forbidden,forbidden);
+assert.equal(middle.target_visibility,'VISIBLE');
+const end=state.evaluateSatelliteState(replay,'S1','2026-01-01T00:00:10Z',forbiddenPosition,visibleTarget);
 assert.equal(end.phase,'IDLE');
 assert.equal(end.cone_visible,false);
-assert.equal(state.evaluateSatelliteState(replay,'S1','2026-01-01T00:00:11Z',forbidden,forbidden).quality,'missing');
+assert.equal(state.evaluateSatelliteState(replay,'S1','2026-01-01T00:00:11Z',forbiddenPosition,visibleTarget).quality,'missing');
+assert.equal(state.targetVisibility([7000000,0,0],[6378137,0,0]),'VISIBLE');
+assert.equal(state.targetVisibility([-3650549,-1177802,-5524624],[-1916648,-4895487,3599165]),'EARTH_OCCLUDED');
+const occluded=state.evaluateSatelliteState(replay,'S1','2026-01-01T00:00:05Z',
+  forbiddenPosition,() => [-6378137,0,0]);
+assert.equal(occluded.target_visibility,'EARTH_OCCLUDED');
+assert.equal(occluded.geometry_valid,false);
+assert.equal(occluded.cone_visible,false);
+assert.ok(occluded.warnings.includes('TARGET_EARTH_OCCLUDED'));
 console.log('authoritative READY sample interpolation and half-open boundary tests passed');
 
 // 多星索引不得串星，二分阶段须维持左闭右开；未知星不能借用上一颗星。
@@ -49,12 +59,12 @@ for(let i=0;i<50;i++) {
     start_time:'2026-01-01T00:00:02Z',end_time:'2026-01-01T00:00:04Z'});
 }
 for(let i=0;i<50;i++) {
-  const value=state.evaluateSatelliteState(many,'sat-'+i,'2026-01-01T00:00:03Z',forbidden,forbidden);
+  const value=state.evaluateSatelliteState(many,'sat-'+i,'2026-01-01T00:00:03Z',forbiddenPosition,visibleTarget);
   assert.equal(value.task_id,'task-'+i);
   close([value.position_ecef_m[1]],[i]);
-  assert.equal(state.evaluateSatelliteState(many,'sat-'+i,'2026-01-01T00:00:04Z',forbidden,forbidden).phase,'IDLE');
+  assert.equal(state.evaluateSatelliteState(many,'sat-'+i,'2026-01-01T00:00:04Z',forbiddenPosition,visibleTarget).phase,'IDLE');
 }
-assert.equal(state.evaluateSatelliteState(many,'absent','2026-01-01T00:00:03Z',forbidden,forbidden).quality,'missing');
+assert.equal(state.evaluateSatelliteState(many,'absent','2026-01-01T00:00:03Z',forbiddenPosition,visibleTarget).quality,'missing');
 console.log('50-satellite indexed state isolation passed');
 
 // Microsecond phase boundaries and READY interpolation must not pass through
@@ -69,9 +79,9 @@ const microReplay={...replay,segments:microSegments,samples:[
  {...replay.samples[0],time:'2025-11-18T12:00:00.123456Z',position_ecef_m:[7000000,0,0]},
  {...replay.samples[1],time:'2025-11-18T12:00:00.123458Z',position_ecef_m:[7000002,0,0]}
 ]};
-const microMiddle=state.evaluateSatelliteState(microReplay,'S1','2025-11-18T12:00:00.123457Z',forbidden,forbidden);
+const microMiddle=state.evaluateSatelliteState(microReplay,'S1','2025-11-18T12:00:00.123457Z',forbiddenPosition,visibleTarget);
 close(microMiddle.position_ecef_m,[7000001,0,0]);
 assert.equal(microMiddle.phase,'OBSERVING');
-assert.equal(state.evaluateSatelliteState(microReplay,'S1','2025-11-18T12:00:00.123458Z',forbidden,forbidden).phase,'IDLE');
+assert.equal(state.evaluateSatelliteState(microReplay,'S1','2025-11-18T12:00:00.123458Z',forbiddenPosition,visibleTarget).phase,'IDLE');
 assert.throws(()=>state.phaseAt(microSegments,'S1','not-a-time'),/time/i);
 console.log('microsecond phase and READY interpolation passed');

@@ -9,6 +9,7 @@ import json
 import tempfile
 import time
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -25,18 +26,28 @@ except ImportError:
     from test_replay_backend import _DirectClient
 
 @contextmanager
-def fixture():
+def fixture(satellite_count: int = 2, duration_s: int = 60):
     """种入隔离的正式记录；独立 builder 是真实子进程，轨道用确定样本避免 JVM 成本。"""
     with tempfile.TemporaryDirectory(prefix="eos-integrated-test-") as directory:
         root=Path(directory)
         scenes=root/"scenes"
         scenes.mkdir()
+        if satellite_count == 2:
+            satellite_rows = [("sat-a", "agile"), ("sat-b", "non-agile")]
+        else:
+            satellite_rows = [
+                (f"sat-{index:03d}", "agile" if index % 2 == 0 else "non-agile")
+                for index in range(satellite_count)
+            ]
+        primary_satellite = satellite_rows[0][0]
+        stop = datetime(2026, 1, 1) + timedelta(seconds=duration_s)
+        stop_z = stop.isoformat(timespec="seconds") + "Z"
         scene={"scenario_id":"Scenario_internal",
-               "metadata":{"creation_time":"2026-01-01T08:00:00+08:00","duration":60},
+               "metadata":{"creation_time":"2026-01-01T08:00:00+08:00","duration":duration_s},
                "satellites":[{"id":sid,
                     "maneuverability_capability":{"maneuverability_type":kind},
                     "observation_capability":{"sensors":[{"sensor_id":sid+"_custom","field_of_view_deg":45}]}}
-                    for sid,kind in (("sat-a","agile"),("sat-b","non-agile"))],
+                    for sid,kind in satellite_rows],
                "missions":[{"id":task,"target_location":{"longitude":lon,"latitude":1,"altitude_km":0}}
                            for task,lon in (("M1",1),("M2",2))]}
         path=scenes/"fixture.json"
@@ -46,10 +57,11 @@ def fixture():
         cache=orbit_cache_file(settings,sha)
         cache.parent.mkdir(parents=True)
         cache.write_text(json.dumps([{"id":"document","version":"1.0","clock":{
-            "interval":"2026-01-01T00:00:00Z/2026-01-01T00:01:00Z"}},
+            "interval":"2026-01-01T00:00:00Z/"+stop_z}},
             *[{"id":sid,"position":{"epoch":"2026-01-01T00:00:00Z",
-              "cartographicDegrees":[0,0,0,600000,30,1,0,600000,60,2,0,600000]}}
-              for sid in ("sat-a","sat-b")]]))
+              "cartographicDegrees":[0,0,0,600000,duration_s/2,60,10,600000,
+                                      duration_s,120,0,600000]}}
+              for sid,_kind in satellite_rows]]))
         db=Database(settings.database_path)
         rid="00000000-0000-4000-8000-000000000016"
         cfg=RunConfig(run_id=rid,scenario_id="fixture",scenario_sha256=sha,scenario_path=str(path),
@@ -58,8 +70,9 @@ def fixture():
         attempt,_=db.start_attempt(rid)
         db.set_verifying(rid,attempt)
         plan={"scenario_id":"Scenario_internal","start_time":"2026-01-01T00:00:00",
-              "end_time":"2026-01-01T00:01:00",
-              "assignments":[{"task_id":task,"satellite_id":"sat-a","sensor_id":"sat-a_custom",
+              "end_time":stop.isoformat(timespec="seconds"),
+              "assignments":[{"task_id":task,"satellite_id":primary_satellite,
+                    "sensor_id":primary_satellite+"_custom",
                     "sat_start_time":"2026-01-01T00:00:"+start,
                     "sat_end_time":"2026-01-01T00:00:"+end,
                     "sat_angles":{"roll_angles":[0],"pitch_angles":[0],"yaw_angles":[0]}}
@@ -91,6 +104,20 @@ def terminal(f,state):
     raise AssertionError("回放未在测试上限内结束")
 
 class IntegratedReplayTests(unittest.TestCase):
+    def test_replay_relocates_identical_scenario_from_registered_source(self):
+        with fixture() as f:
+            relocated = f.root / "relocated"
+            relocated.mkdir()
+            replacement = relocated / f.scene.name
+            f.scene.rename(replacement)
+            f.db.add_data_source("relocated", "relocated", relocated)
+
+            config, resolved = f.app.state.replay._snapshot(
+                f.db.get_replay_source(f.run_id), CONFIG_ID
+            )
+            self.assertEqual(resolved, replacement)
+            self.assertEqual(config["replay_config_id"], CONFIG_ID)
+
     def test_committed_plan_to_published_samples_and_compatibility(self):
         with fixture() as f:
             before=compact_json(f.db.get_run(f.run_id))

@@ -1,6 +1,6 @@
 # 当前数据库设计与 ER 图（v0.3 回放后端）
 
-- 更新：2026-10-16；程序 v0.3.2；实现分支：fix/restore-integrated-phase2；物理模式以 eos_system/storage.py 为准。
+- 更新：2026-10-16；程序 v0.3.3；实现分支：fix/cesium-replay-usability；物理模式以 eos_system/storage.py 为准。v0.3.3 不改变数据库模式。
 - 运行位置：Ubuntu 22.04/WSL2 的 EOS_RUNTIME_DIR/results.sqlite3。Windows 浏览器只通过 HTTP 使用。
 - 当前 PRAGMA user_version=3。新库直接创建 v3；v1/v2 库先做 SQLite 在线备份，再在一个事务内增加回放表和索引。版本高于 3 拒绝启动。
 
