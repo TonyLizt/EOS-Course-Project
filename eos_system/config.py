@@ -105,6 +105,24 @@ def _listing_sha(path: Path) -> str:
     return digest
 
 
+def _released_epoch_scenario(path: Path) -> bool:
+    """Return whether an epoch-fixed file can actually be submitted.
+
+    A candidate file without its matching release evidence must not hide the
+    usable legacy sibling or appear in the experiment picker.  Submission
+    repeats the same provenance check, so this is only a catalog filter rather
+    than a weakened trust boundary.
+    """
+    if not path.is_file() or path.is_symlink() or not path.stem.endswith("_epoch_fixed_v1"):
+        return False
+    try:
+        from .provenance import capture_provenance
+        capture_provenance(path, _listing_sha(path))
+        return True
+    except (OSError, ValueError):
+        return False
+
+
 def list_scenarios_in(root: Path, source_id: str) -> list[dict]:
     """递归列出已登记目录中的 JSON；ID 是不含扩展名的安全相对路径。"""
     if not root.is_dir():
@@ -112,16 +130,22 @@ def list_scenarios_in(root: Path, source_id: str) -> list[dict]:
     result = []
     resolved_root = root.resolve()
     for path in sorted(root.rglob("*.json")):
+        relative_path = path.relative_to(root)
         if (not path.is_file() or path.is_symlink()
-                or not path.resolve().is_relative_to(resolved_root)):
+                or not path.resolve().is_relative_to(resolved_root)
+                or "provenance" in relative_path.parts):
             continue
-        # Once an epoch-corrected sibling is published, new experiments must
-        # use it.  Keep the legacy file resolvable for immutable historical
-        # runs, but do not offer the physically stale windows in the picker.
-        if (not path.stem.endswith("_epoch_fixed_v1")
-                and path.with_name(path.stem + "_epoch_fixed_v1.json").is_file()):
+        is_epoch_fixed = path.stem.endswith("_epoch_fixed_v1")
+        if is_epoch_fixed and not _released_epoch_scenario(path):
             continue
-        relative = path.relative_to(root).with_suffix("")
+        # Only a formally released corrected sibling may replace the legacy
+        # picker entry.  Candidate-only or incomplete output stays invisible.
+        if (not is_epoch_fixed
+                and _released_epoch_scenario(
+                    path.with_name(path.stem + "_epoch_fixed_v1.json")
+                )):
+            continue
+        relative = relative_path.with_suffix("")
         scenario_id = relative.as_posix()
         result.append({"source_id": source_id, "scenario_id": scenario_id,
                        "name": scenario_id, "sha256": _listing_sha(path)})

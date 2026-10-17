@@ -27,6 +27,16 @@
 
 ---
 
+ ## v0.3.4：历元修正场景候选与 TCR 诊断（2026-10-17）
+
+ - 分支 `fix/cesium-300s-consistency`；保留 legacy 场景供历史 run 解析。修正版必须同时通过来源检查和最新版连续曝光规划证据门禁，才可替换新实验选择器中的 legacy；`provenance/` JSON 不进入场景列表。
+ - 新增并验证 4 个 small、2 个 medium `epoch_fixed_v1` 候选场景。静态字段与父场景一致，Orekit data SHA 为 `1c104cba89468a817d4d32ca8a12df7cab56f8d06a978ee736c841af123b7985`，1 秒 Earth-occlusion guard 未发现遮挡违规；该有限采样不构成连续可见性证明，因此合并后仍保持候选状态。
+ - 在旧的离散诊断口径下，small 四场景 seed 1/42/99 均为 100% TCR，medium S1 为 94%～95%，S2 为 98%。这些数字用于定位历元窗口退化，不代表已通过当前正式连续曝光认证。
+ - 新增大型场景 mission-shard 平行重算及独立候选验收工具；冻结源、静态数据、代码、Orekit ZIP 与输出 SHA，现有输出/sidecar 禁止覆盖。详情、命令、耗时和限制见 [候选交接](docs/phase2/epoch_fixed_release_handoff.md)。
+- 定向验证：Python 56 PASS、1 个 opt-in Orekit SKIP，覆盖场景目录/release gate、静态谱系拒绝、六场景 TCR、M003/M018、30 秒 cache、E2 工具和 replay delivery；Node 7 组通过。组合测试进入既有服务线程类 `IntegratedReplayTests.test_committed_plan_to_published_samples_and_compatibility` 后 90 秒无进展并人工中止；另一次含 API 删除的组合也在既有 `DeleteApiTests` 停滞，故不声称全量 Python 通过。语法、`git diff --check` 通过。未建立 PR。
+
+---
+
 ## v0.3.3：回放路径恢复与触控板缩放（2026-10-16）
 
 - 分支 `fix/cesium-replay-usability`，基于最新 main `daf4254`；不重复或回退 v0.3.2 的六场景清单与规模适配。

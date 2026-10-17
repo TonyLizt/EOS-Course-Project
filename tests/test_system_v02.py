@@ -12,7 +12,8 @@ from pydantic import Field
 
 from eos_system.algorithm_registry import AlgorithmParams, AlgorithmSpec, get_algorithm
 from eos_system.api import create_app
-from eos_system.config import Settings, list_scenarios_in, normalise_user_path, resolve_scenario_in
+from eos_system.config import (Settings, list_scenarios_in, normalise_user_path,
+                               resolve_scenario_in, sha256_file)
 from eos_system.contracts import RunConfig
 from eos_system.deletion import remove_exported_files
 from eos_system.exporting import persist_directory_exports
@@ -50,6 +51,26 @@ class CatalogTests(unittest.TestCase):
             (root / "nested").mkdir()
             (root / "nested" / "hidden.json").write_text("{}", encoding="utf-8")
             self.assertEqual(normalise_user_path(str(root)), root.resolve())
+            # An incomplete epoch-fixed candidate neither appears nor hides
+            # the still-usable legacy scenario.
+            listed = list_scenarios_in(root, "sample")
+            self.assertEqual([(row["source_id"], row["scenario_id"]) for row in listed],
+                             [("sample", "demo"), ("sample", "half-0.25d"),
+                              ("sample", "nested/hidden")])
+            provenance = root / "provenance"
+            provenance.mkdir()
+            corrected = root / "half-0.25d_epoch_fixed_v1.json"
+            (provenance / (corrected.name + ".provenance.json")).write_text(json.dumps({
+                "scenario_sha256": sha256_file(corrected),
+                "completion_status": "complete",
+                "publication_status": "released",
+                "formal_release_eligible": True,
+                "physical_validation": {"status": "PASS"},
+                "scenario_physics_version": "epoch_fixed_v1",
+                "epoch_parser_version": "epoch_parser_v1",
+                "propagation_version": "orekit-test",
+                "parent_scenario_sha256": "a" * 64,
+            }), encoding="utf-8")
             listed = list_scenarios_in(root, "sample")
             self.assertEqual([(row["source_id"], row["scenario_id"]) for row in listed],
                              [("sample", "demo"), ("sample", "half-0.25d_epoch_fixed_v1"),

@@ -4,7 +4,7 @@
 
 本项目不是 EOS-Bench 官方仓库。上游研究平台、论文和数据的出处见[来源与致谢](#来源与致谢)；课程系统的新增实现主要位于 `eos_system/`。
 
-当前六场景接入、规模预算和验收见[六场景交接](docs/phase2/six_scenario_scale_handoff.md)；基础框架恢复记录见[修复与集成交接](docs/phase2/restore_integration_handoff.md)。接口/数据库审核稿中的未来功能与当前实现已分别说明。
+当前六场景接入、规模预算和验收见[六场景交接](docs/phase2/six_scenario_scale_handoff.md)，历元修正场景的发布与 TCR 证据见[修正场景发布交接](docs/phase2/epoch_fixed_release_handoff.md)；基础框架恢复记录见[修复与集成交接](docs/phase2/restore_integration_handoff.md)。接口/数据库审核稿中的未来功能与当前实现已分别说明。
 
 ## 背景与目标
 
@@ -12,10 +12,10 @@
 
 本组计划完成三种机制不同的传统算法和一种机器学习算法。新算法会通过同一注册、运行和核验边界进入系统；本仓库当前可选的 `completion_first`、`adaptive_repair` 属于已有基线，**不计作这四种新算法的交付**。
 
-## 当前能力（v0.3.3 回放易用性修复）
+## 当前能力（v0.3.4 几何一致性与修正场景发布）
 
 - 浏览器选择**已登记的数据源、场景、算法和输出方案**，提交、取消并查看实验状态与正式结果。
-- 启动时自动登记六份 LFS 场景（小型 4、中型 2），相对仓库定位；展示规模、来源和采样预算，缺文件/LFS 指针/SHA 不符时提供诊断，已有同目录登记复用。
+- 启动时递归登记六份已发布的 `epoch_fixed_v1` LFS 场景（小型 4、中型 2），相对仓库定位；只有匹配 SHA、物理 PASS 和 release sidecar 的修正版会替代选择器中的 legacy 版本。未完成候选不会隐藏可用 legacy 场景，`provenance/` 也不会被误列成场景。
 - FastAPI 和 Controller 在 WSL2 中运行；Worker 由 `spawn` 创建，通过两条单向 Pipe 交换控制消息和 JSON 事件。Worker 执行 `setsid()` 并报告 `started`，Controller 核验本次进程的 Linux 身份后才发送 `start`；候选由 Controller 独立核验，并在成功事务中写入 SQLite。
 - 算法注册表统一元数据、专属参数模型和 Worker 创建入口。现有算法经适配器接入；新算法可从空计划开始，不必沿用旧启发式流程。
 - 浏览器下载 JSON/CSV；选择目录输出方案后，成功实验还会在该目录的 `run_id/` 子目录保存正式文件。SQLite、锁和缓存默认位于 WSL Linux 文件系统。
@@ -100,7 +100,7 @@ cd /mnt/d/Code/EOS-Course-Project
 
 ### 数据版本与当前限制
 
-保留数据 Manifest 审计、E1 确定性历元解析与 E2 独立重算工具；新实验保存场景来源快照。来源不明的历史数据标为 `legacy_unknown`；E2 待验收候选不得因登记目录自动转成正式实验数据。六场景已完成 12 次双基线调度与 6 次真实 Orekit 回放系统验收，尚未重算或转正为物理修复场景；完整 E3/E4、四种新算法、W3、Daemon 和最终比较页面仍待开发。
+保留数据 Manifest 审计、E1 确定性历元解析与 E2 独立重算工具；新实验保存场景来源快照。来源不明的历史数据标为 `legacy_unknown`；E2 待验收候选不得因登记目录自动转成正式实验数据。六个 bundled 场景已按正确轨道历元重算并通过静态谱系、完整曝光地球遮挡和 completion-first 发布门槛：四个小场景三 seed 均为 100% TCR；中型 S1 为 94%～95%，S2 为 98%。中型场景各有两个任务没有足够长的物理窗口，因此不伪造 100% 覆盖。历史 legacy 文件继续供既有 run 按原 ID/SHA 解析。四种新算法、W3、Daemon 和最终比较页面仍待开发。
 
 SQLite 模式为 v3；回放文件位于运行目录的 `replays/`。删除终态实验同步清理本实验派生缓存，BUILDING 时拒绝删除；共享轨道缓存不随单个实验删除。两视图使用随 Cesium 发布的底图，避免依赖个人 Ion token；脚本/底图仍从固定版本 CDN 加载，离线资源包尚未交付。
 
