@@ -61,8 +61,10 @@ def _freeze(value, checkpoint: Checkpoint) -> tuple:
     if isinstance(value, dict):
         pairs = [(_freeze(k, checkpoint), _freeze(v, checkpoint)) for k, v in value.items()]
         return ("dict", tuple(sorted(pairs)))
-    if isinstance(value, (list, tuple)):
-        return ("sequence", tuple(_freeze(item, checkpoint) for item in value))
+    if isinstance(value, list):
+        return ("list", tuple(_freeze(item, checkpoint) for item in value))
+    if isinstance(value, tuple):
+        return ("tuple", tuple(_freeze(item, checkpoint) for item in value))
     raise TypeError(f"unsupported assignment payload: {type(value).__name__}")
 
 

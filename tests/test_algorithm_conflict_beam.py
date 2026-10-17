@@ -167,6 +167,45 @@ class FoundationTests(Fixture):
         task.windows[0].planning_evidence["version"] = "visibility_grid_v2"
         self.assertEqual(BoundedCandidateAdapter(self.cm, CAABSParams()).build(task), [])
 
+    def test_key_preserves_sequence_types_order_and_stability(self):
+        candidate = self.candidate(self.task("T1", [("S1", 0)]))
+        def key(payload):
+            return canonical_assignment_key(replace(candidate, sat_angles=payload))
+        for payload in ([], (), [1.0, 2.0], (1.0, 2.0)):
+            with self.subTest(payload=payload):
+                self.assertEqual(key(payload), key(deepcopy(payload)))
+        self.assertNotEqual(key([]), key(()))
+        self.assertNotEqual(key([1.0, 2.0]), key((1.0, 2.0)))
+        self.assertNotEqual(key([1.0, 2.0]), key([2.0, 1.0]))
+        self.assertNotEqual(key((1.0, 2.0)), key((2.0, 1.0)))
+
+    def test_key_preserves_nested_container_types(self):
+        candidate = self.candidate(self.task("T1", [("S1", 0)]))
+        for left, right in (
+            ({"attitude": [1.0, 2.0]}, {"attitude": (1.0, 2.0)}),
+            ([{"samples": [1.0]}], [{"samples": (1.0,)}]),
+            (([1.0],), ((1.0,),)),
+        ):
+            with self.subTest(left=left, right=right):
+                a = replace(candidate, sat_angles=left)
+                b = replace(candidate, sat_angles=right)
+                self.assertNotEqual(canonical_assignment_key(a), canonical_assignment_key(b))
+                self.assertEqual(canonical_assignment_key(a), canonical_assignment_key(deepcopy(a)))
+        first = replace(candidate, sat_angles={"a": [1.0], "b": (2.0,)})
+        reordered = replace(candidate, sat_angles={"b": (2.0,), "a": [1.0]})
+        self.assertEqual(canonical_assignment_key(first), canonical_assignment_key(reordered))
+
+    def test_key_preserves_scalar_and_float_encoding(self):
+        candidate = self.candidate(self.task("T1", [("S1", 0)]))
+        values = (None, False, True, 0, 1, "0", "1", 0.0, -0.0, 1.0, 1.0000000000000002)
+        keys = [canonical_assignment_key(replace(candidate, sat_angles=value)) for value in values]
+        self.assertEqual(len(keys), len(set(keys)))
+        encoded = dict(canonical_assignment_key(replace(candidate, sat_angles=0.1)))
+        self.assertEqual(encoded["sat_angles"], ("float", float(0.1).hex()))
+        for value in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                canonical_assignment_key(replace(candidate, sat_angles={"samples": (value,)}))
+
 
 class ManualClock:
     def __init__(self):
@@ -256,6 +295,32 @@ class SearchTests(Fixture):
                         self.assertEqual([s.rank_key for s in level], sorted(s.rank_key for s in level))
                     runs.append([[s.search_key for s in level] for level in recorder.levels])
                     self.assertLessEqual(result.metadata["caabs"]["stats"]["max_beam_size"], width)
+                self.assertEqual(runs[0], runs[1])
+
+    def test_C4_saturated_frontiers_are_unique_sorted_and_deterministic(self):
+        for i in range(3):
+            self.task(f"T{i}", [("S1", i * 100), ("S2", i * 100 + 20),
+                               ("S1", i * 100 + 40)])
+        for width in (1, 4, 8, 16):
+            with self.subTest(width=width):
+                runs = []
+                for _ in range(2):
+                    recorder = RecordingScheduler(clock=lambda: 0.0)
+                    result = self.solve(scheduler=recorder, beam_width=width)
+                    expected = [min(width, 4 ** depth) for depth in (1, 2, 3)]
+                    self.assertEqual([len(level) for level in recorder.levels], expected)
+                    for depth, level in enumerate(recorder.levels, 1):
+                        self.assertEqual({state.task_index for state in level}, {depth})
+                        keys = [state.search_key for state in level]
+                        self.assertEqual(len(keys), len(set(keys)))
+                        ranks = [state.rank_key for state in level]
+                        self.assertEqual(ranks, sorted(ranks))
+                    stats = result.metadata["caabs"]["stats"]
+                    self.assertEqual(stats["max_beam_size"], width)
+                    self.assertGreater(stats["pruned_states"], 0)
+                    self.assertEqual(len(result.assignments), 3)
+                    self.assert_shared_feasible(result)
+                    runs.append([[state.search_key for state in level] for level in recorder.levels])
                 self.assertEqual(runs[0], runs[1])
 
     def test_C5_budget_returns_incumbent_with_manual_clock(self):
@@ -424,6 +489,49 @@ class BoundaryTests(Fixture):
         result = self.solve()
         self.assertEqual(len(result.assignments), 1)
         self.assert_shared_feasible(result)
+
+    def test_M1_container_types_with_real_slew_constraints(self):
+        self.problem.satellites["S1"].maneuverability_type = "agile"
+        previous = self.candidate(self.task("T0", [("S1", 0)]))
+        candidate = self.candidate(self.task("T1", [("S1", 30)]))
+        previous.sat_angles = [{"roll": 0.0, "pitch": 0.0, "yaw": 0.0}]
+        listed = replace(candidate, sat_angles=[{"roll": 90.0, "pitch": 0.0, "yaw": 0.0}])
+        tupled = replace(listed, sat_angles=tuple(deepcopy(listed.sat_angles)))
+        parent = Schedule([previous])
+        before = deepcopy(parent)
+        self.assertTrue(self.cm.is_feasible_assignment(previous, Schedule()))
+        self.assertTrue(self.cm.is_feasible_assignment(listed, Schedule()))
+        self.assertTrue(self.cm.is_feasible_assignment(tupled, Schedule()))
+        # The real parser handles outer lists but falls back for outer tuples.
+        # Do not change that public rule here: the key must retain the distinction.
+        self.assertFalse(self.cm.is_feasible_assignment(listed, parent))
+        self.assertTrue(self.cm.is_feasible_assignment(tupled, parent))
+        self.assertEqual(parent, before)
+        self.assertNotEqual(canonical_assignment_key(listed), canonical_assignment_key(tupled))
+        self.assertNotEqual(canonical_state_key(Schedule([previous, listed])),
+                            canonical_state_key(Schedule([previous, tupled])))
+
+    def test_M1_dedup_keeps_container_semantics(self):
+        self.problem.satellites["S1"].maneuverability_type = "agile"
+        candidate = self.candidate(self.task("T1", [("S1", 0)]))
+        listed = replace(candidate, sat_angles=[{"roll": 90.0, "pitch": 0.0, "yaw": 0.0}])
+        tupled = replace(listed, sat_angles=tuple(deepcopy(listed.sat_angles)))
+        for value in (listed, tupled):
+            self.assertTrue(self.cm.is_feasible_assignment(value, Schedule()))
+        # Only candidate preparation is injected; insertion uses the real model.
+        with patch.object(BoundedCandidateAdapter, "build",
+                          return_value=[listed, tupled, deepcopy(listed)]):
+            recorder = RecordingScheduler(clock=lambda: 0.0)
+            result = self.solve(scheduler=recorder, beam_width=4)
+        level, = recorder.levels
+        self.assertEqual(len(level), 3)  # skip plus both distinct assignments
+        assigned = [state for state in level if state.completed == 1]
+        self.assertEqual({type(state.schedule.assignments[0].sat_angles) for state in assigned},
+                         {list, tuple})
+        self.assertEqual(len({state.search_key for state in level}), 3)
+        self.assertEqual(result.metadata["caabs"]["stats"]["duplicate_states"], 1)
+        for state in level:
+            self.assert_shared_feasible(state.schedule)
 
     def test_branch_limit_bounds_real_alternatives(self):
         self.multipath()
