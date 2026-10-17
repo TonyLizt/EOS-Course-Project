@@ -172,6 +172,6 @@ node tests/satellite_follow.test.cjs
 
 首页可勾选一个或多个**实际已注册**算法，一次原子创建一个 Experiment 和多个独立 Run；共用场景、种子、预算和约束，算法参数分别保存。算法名称来自注册元数据，列表每个实验仅一行，日期为次要信息。算法卡片的三角展开策略、限制及参数；支持取消及原 Run 的 Cesium/Gantt/导出入口。
 
-比较限当前实验内部，或严格校验仅初始模型不同的两个实验；支持按算法、按实验两种分组，均可通过紧凑卡片选择结果并组内排序，不再提供独立混合模式或任意条件组比较。TP/TCR/BD 越大越好，TM/RT/RV 越小越好，未提供 RV 保持空值，不生成综合排名。历史状态与当前连续认证分别展示。新增算法采用勾选确认；Cesium 待添加区不重复展示已有算法，Hide/Show Grid 正确控制载荷宫格。见 [UI 修正与验证](docs/phase2/ui_polish_handoff.md)。
+比较限当前实验及条件核验通过的临时模型对照；按算法、按实验稳定分组，仅勾选结果，不提供手动排序、序号或混合模式。首页对照仅驻留内存，可创建/移除，不新增正式 Experiment/Run，不进入历史列表或 Cesium。Cesium 的算法比较完整移至右侧 Observation Intervals 下方，仅显示当前持久实验。TP/TCR/BD 越大越好，TM/RT/RV 越小越好，未提供 RV 保持空值，不生成综合排名。新增算法采用勾选确认，载荷 Hide/Show Grid 保持正常。见[当前临时对照与验证](docs/phase2/temporary_comparison_handoff.md)。
 
 Gantt 支持任务/卫星搜索、任务定位后秒级放大、缩放、平移、UTC 时间范围与导航滑块。任务条附近 12px 内提供吸附反馈；Hover 或键盘焦点显示精确任务提示，点击/触摸固定详情，Escape 关闭提示；真实观测时间及条宽不因吸附改变。详见[当前交接和验证记录](docs/phase2/unified_interactions_handoff.md)。

@@ -97,9 +97,6 @@ input, select, button, .link-button { min-height: 44px; }
 .result-choice input[type="checkbox"],.add-algorithm-option input[type="checkbox"] { flex:0 0 16px; width:16px; height:16px; min-height:16px; padding:0; margin:0; accent-color:#7cc4ff; }
 .result-choice strong { font-weight:600; font-size:12px; }
 .result-choice small,.add-algorithm-option small { display:block; color:#bac7dc; font-size:11px; font-weight:400; }
-.result-position { font-size:12px; color:#bac7dc; font-variant-numeric:tabular-nums; }
-.result-moves { display:flex; gap:2px; flex-shrink:0; }
-.result-moves button { width:28px; min-height:30px; padding:2px; margin:0; font-size:14px; }
 .add-algorithm-options { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr)); gap:6px; }
 .add-algorithm-option { display:flex; align-items:center; gap:8px; min-height:36px; padding:6px 8px; margin:0; border:1px solid #415579; border-radius:6px; cursor:pointer; }
 .add-algorithm-option.included { opacity:.6; cursor:default; }

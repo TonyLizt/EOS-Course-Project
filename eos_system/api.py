@@ -22,6 +22,7 @@ from .config import Settings, algorithm_source_sha256, list_scenarios_in, normal
 from .contracts import DirectoryRegistration, ReplayRequest, RunConfig, RunRequest, ExperimentRequest, ExperimentAlgorithm, ControlExperimentRequest
 from .experiments import Experiments
 from .controller import Controller
+from .temporary_controls import TemporaryControls
 from .deletion import remove_exported_files
 from .exporting import render_csv, render_json, require_certified_record
 from .storage import Database, now
@@ -47,6 +48,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     catalog = ScenarioCatalog(Path(__file__).resolve().parent.parent)
     catalog_warnings = catalog.register_sources(database)
     controller = Controller(settings, database)
+    temporary = TemporaryControls(database.expected_certification_context, settings.max_queued)
+    controller.transient = temporary
     replay = ReplayService(settings, database)
 
     @asynccontextmanager
@@ -56,6 +59,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             replay.recover()
             yield
         finally:
+            temporary.close()
             try:
                 replay.close()
             finally:
@@ -66,6 +70,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.controller = controller
     app.state.database = database
     app.state.experiments = experiments
+    app.state.temporary_controls = temporary
     web_dir = Path(__file__).parent / "web"
     web_digest = hashlib.sha256()
     for asset in sorted(web_dir.iterdir()):
@@ -251,9 +256,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         records = experiment_call(experiments.compare, experiment_id, other_id)
         return {'items': [public_experiment(r) for r in records]}
 
-    @app.post('/api/experiments/{experiment_id}/control',status_code=202)
-    def create_control_experiment(experiment_id: str, request: ControlExperimentRequest,
-                                  idempotency_key: str | None = Header(default=None)):
+    def control_configs(experiment_id, request):
         original=experiment_call(experiments.detail,experiment_id)
         if original['legacy'] or not original['runs']:
             raise HTTPException(status_code=409,detail='旧记录无完整实验身份或实验没有算法，请新建实验')
@@ -270,6 +273,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if common_config(config.model_dump())!=expected:
                 raise HTTPException(status_code=409,detail='场景、代码或来源配置已变化，不能创建单变量对照实验')
             configs.append(config)
+        current = experiment_call(experiments.detail, experiment_id)
+        if [(r['run_id'],r['config']) for r in original['runs']] != [(r['run_id'],r['config']) for r in current['runs']]:
+            raise HTTPException(status_code=409,detail='原实验算法已变化，请刷新后重试')
+        return configs
+
+    @app.post('/api/experiments/{experiment_id}/temporary-control',status_code=202)
+    def create_temporary_control(experiment_id: str, request: ControlExperimentRequest,
+                                 idempotency_key: str | None = Header(default=None)):
+        configs = control_configs(experiment_id, request)
+        return experiment_call(temporary.create, experiment_id, configs, idempotency_key)
+
+    @app.get('/api/temporary-controls/{control_id}')
+    def temporary_control_detail(control_id: str):
+        return experiment_call(temporary.detail, control_id)
+
+    @app.delete('/api/temporary-controls/{control_id}',status_code=202)
+    def delete_temporary_control(control_id: str):
+        temporary.delete(control_id)
+        return {'removed':True, 'temporary':True}
+
+    # Compatibility API for explicit persistent model-only experiments; no UI uses it.
+    @app.post('/api/experiments/{experiment_id}/control',status_code=202)
+    def create_control_experiment(experiment_id: str, request: ControlExperimentRequest,
+                                  idempotency_key: str | None = Header(default=None)):
+        configs = control_configs(experiment_id, request)
         eid=experiment_call(experiments.create,configs,settings.max_queued,idempotency_key,experiment_id)
         return public_experiment(experiments.detail(eid))
 

@@ -4,7 +4,7 @@
  const $=id=>document.getElementById(id),UI=ExperimentUI,query=new URLSearchParams(location.search);
  const rid=query.get('run_id')||(query.get('schedule')||'').match(/^\/api\/runs\/([^/]+)\//)?.[1];
  if(!rid)return;
- let exp=null,peer='',generation=0;
+ let exp=null,generation=0;
  async function api(url,options){const r=await fetch(url,options);const data=await r.json();if(!r.ok)throw Error(data.error?.message||'请求失败');return data;}
  function navigate(eid,id){
   try{const state=window.EOSReplayState?.capture();if(state)sessionStorage.setItem('eos-replay-navigation-state',JSON.stringify({...state,experiment_id:eid,saved_at:Date.now()}));}catch(_){/* Optional. */}
@@ -29,7 +29,7 @@
   const token=++generation;
   try{
    const next=exp?await api('/api/experiments/'+encodeURIComponent(exp.experiment_id)):await api('/api/runs/'+encodeURIComponent(rid)+'/experiment');
-   if(token!==generation)return;exp=next;$('experiment-controls').hidden=false;
+   if(token!==generation)return;exp=next;$('experiment-controls').hidden=false;$('cesium-comparison-section').hidden=false;
    if(!exp.runs.some(r=>r.run_id===rid)){
     const replacement=exp.runs.find(UI.usable);
     if(replacement)navigate(exp.experiment_id,replacement.run_id);
@@ -42,12 +42,7 @@
     if(!algorithm_id){await refresh();return;}
     await api('/api/experiments/'+encodeURIComponent(exp.experiment_id)+'/algorithms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({algorithm_id,algorithm_params})});
    },{hideIncluded:true});
-   const peers=await api('/api/experiments/'+encodeURIComponent(exp.experiment_id)+'/peers');if(token!==generation)return;
-   const options='<option value="">仅当前实验</option>'+peers.items.map(p=>`<option value="${UI.E(p.experiment_id)}">${UI.E(UI.model(p.schedule_model))} · ${UI.E(new Date(p.created_at).toLocaleString('zh-CN'))}</option>`).join('');
-   if($('cesium-peer').innerHTML!==options)$('cesium-peer').innerHTML=options;
-   if(!peers.items.some(p=>p.experiment_id===peer))peer='';$('cesium-peer').value=peer;
-   const records=peer?(await api(`/api/experiments/${encodeURIComponent(exp.experiment_id)}/compare/${encodeURIComponent(peer)}`)).items:[exp];
-   if(token===generation)comparison.set(records,rid);
+   if(token===generation)comparison.set([exp],rid);
   }catch(error){$('cesium-experiment-status').textContent=error.message;}
  }
  $('cesium-current-algorithms').addEventListener('click',async event=>{
@@ -57,7 +52,6 @@
   try{await api(`/api/experiments/${encodeURIComponent(exp.experiment_id)}/algorithms/${encodeURIComponent(remove.dataset.remove)}`,{method:'DELETE'});await refresh();}
   catch(error){$('cesium-experiment-status').textContent=error.message;}
  });
- $('cesium-peer').addEventListener('change',()=>{peer=$('cesium-peer').value;refresh();});
  (async()=>{try{UI.setCatalog((await api('/api/algorithms')).items);await refresh();}catch(error){$('cesium-experiment-status').textContent=error.message;}})();
  setInterval(refresh,2500);
 })();

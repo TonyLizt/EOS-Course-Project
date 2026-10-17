@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const UI=ExperimentUI, E=UI.E;
-  let experimentId=new URLSearchParams(location.search).get('experiment_id'), experiment=null, peerId='', pending=false, generation=0;
+  let experimentId=new URLSearchParams(location.search).get('experiment_id'), experiment=null, temporary=null, pending=false, generation=0;
   let submitKey=null, submitPayload=null;
   let controlPending=false,controlKey=null,controlSignature=null;
   const comparison=UI.comparison($('comparison-groups'),$('comparison-mode'),$('comparison-choices'),(eid,rid)=>{
@@ -30,7 +30,7 @@
       if(payload!==submitPayload){submitKey=crypto.randomUUID();submitPayload=payload;}
       pending=true;$('submit').disabled=true;
       const result=await api('/api/experiments',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':submitKey},body:payload});
-      experimentId=result.experiment_id;selectedId=result.runs[0]?.run_id||null;peerId='';pageOffset=0;
+      await discardControl();experimentId=result.experiment_id;selectedId=result.runs[0]?.run_id||null;pageOffset=0;
       $('form-message').textContent=`已创建一个实验，包含 ${result.runs.length} 种算法。`;
       $('submission-results').innerHTML=result.runs.map(r=>`<li>${E(UI.name(r.config.algorithm_id))}：已接受</li>`).join('');
       submitKey=submitPayload=null;
@@ -45,10 +45,20 @@
   }
   function renderResults(records) {
     comparison.set(records,selectedId);
-    $('comparison-status').textContent=experiment?`实验 ${experiment.experiment_id} · ${experiment.runs.length} 种算法${peerId?' · 与另一初始模型实验对照':''}`:'请选择一个实验';
+    $('comparison-status').textContent=experiment?`实验 ${experiment.experiment_id} · ${experiment.runs.length} 种算法${temporary?' · 临时对照 '+temporary.status:''}`:'请选择一个实验';
+  }
+  function controlButton(){
+    $('create-control').textContent=controlPending?(temporary?'删除中…':'创建中…'):temporary?'移除临时对照':'一键创建对照实验';
+    $('create-control').disabled=controlPending||!experiment||(!temporary&&(experiment.legacy||!experiment.runs.length));
+    $('control-model').disabled=controlPending||!!temporary;
+  }
+  async function discardControl(){
+    if(temporary){const id=temporary.experiment_id;await api('/api/temporary-controls/'+encodeURIComponent(id),{method:'DELETE'});temporary=null;}
+    controlKey=controlSignature=null;
   }
   async function showExperiment(id, rid=null) {
-    experimentId=id;peerId='';if(rid)selectedId=rid;
+    try{await discardControl();}catch(error){$('control-status').textContent=error.message;return;}
+    experimentId=id;if(rid)selectedId=rid;
     await refreshExperiments();
   }
   async function refreshExperiments() {
@@ -66,7 +76,7 @@
       const exp=await api(`/api/experiments/${encodeURIComponent(experimentId)}`);
       if(token!==generation)return;
       experiment=exp;
-      $('create-control').disabled=controlPending||exp.legacy||!exp.runs.length;
+      controlButton();
       for(const option of $('control-model').options)option.disabled=option.value===exp.config.schedule_model;
       $('control-model').value=exp.config.schedule_model==='completion_first'?'adaptive_repair':'completion_first';
       if(!exp.runs.some(r=>r.run_id===selectedId))selectedId=exp.runs.find(UI.usable)?.run_id||exp.runs[0]?.run_id||null;
@@ -80,14 +90,17 @@
         if(!id){await refreshExperiments();return;}
         await api(`/api/experiments/${encodeURIComponent(exp.experiment_id)}/algorithms`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({algorithm_id:id,algorithm_params:params})});
       });
-      const peers=await api(`/api/experiments/${encodeURIComponent(exp.experiment_id)}/peers`);
-      if(token!==generation)return;
-      const peerOptions='<option value="">仅当前实验</option>'+peers.items.map(p=>`<option value="${E(p.experiment_id)}">${E(UI.model(p.schedule_model))} · ${E(new Date(p.created_at).toLocaleString())}</option>`).join('');
-      if($('model-comparison').innerHTML!==peerOptions)$('model-comparison').innerHTML=peerOptions;
-      if(!peers.items.some(p=>p.experiment_id===peerId))peerId='';
-      $('model-comparison').value=peerId;
       let records=[exp];
-      if(peerId)records=(await api(`/api/experiments/${encodeURIComponent(exp.experiment_id)}/compare/${encodeURIComponent(peerId)}`)).items;
+      if(temporary){
+        const sid=temporary.experiment_id;
+        try{const next=await api('/api/temporary-controls/'+encodeURIComponent(sid));if(token!==generation||temporary?.experiment_id!==sid)return;
+          const members=e=>JSON.stringify(e.runs.map(r=>[r.config.algorithm_id,r.config.algorithm_params]).sort((a,b)=>a[0].localeCompare(b[0])));
+          if(members(next)!==members(exp)){await discardControl();$('control-status').textContent='正式实验算法集合已变化，临时对照已移除，请重新创建。';}
+          else{temporary=next;records.push(next);}
+        }
+        catch(error){if(token!==generation)return;if(temporary?.experiment_id===sid){temporary=null;$('control-status').textContent='临时对照已失效，请重新创建。';}}
+      }
+      controlButton();
       if(token===generation)renderResults(records);
     }catch(error){$('list-message').textContent=error.message;}
   }
@@ -99,20 +112,23 @@
   }
   $('runs').addEventListener('click',event=>{const b=event.target.closest('[data-experiment]');if(b)showExperiment(b.dataset.experiment);});
   $('detail-algorithm').addEventListener('change',()=>{selectedId=$('detail-algorithm').value;refreshExperiments();});
-  $('model-comparison').addEventListener('change',()=>{peerId=$('model-comparison').value;refreshExperiments();});
   $('create-control').addEventListener('click',async()=>{
-    if(!experiment||controlPending)return;controlPending=true;$('create-control').disabled=true;
+    if(!experiment||controlPending)return;controlPending=true;controlButton();
+    const source=experimentId;
     try{
+      if(temporary){await discardControl();$('control-status').textContent='临时对照已移除；正式实验和历史记录未修改。';await refreshExperiments();return;}
       const signature=experimentId+'|'+$('control-model').value;
       if(signature!==controlSignature){controlSignature=signature;controlKey=crypto.randomUUID();}
-      const result=await api(`/api/experiments/${encodeURIComponent(experimentId)}/control`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':controlKey},body:JSON.stringify({schedule_model:$('control-model').value})});
+      const result=await api(`/api/experiments/${encodeURIComponent(source)}/temporary-control`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':controlKey},body:JSON.stringify({schedule_model:$('control-model').value})});
+      if(source!==experimentId){await api('/api/temporary-controls/'+encodeURIComponent(result.experiment_id),{method:'DELETE'});return;}
       controlKey=controlSignature=null;
-      peerId=result.experiment_id;
-      $('list-message').textContent=`已创建对照实验 ${result.experiment_id}；仅改变初始排程模型，原实验未覆盖。`;
+      temporary=result;
+      $('control-status').textContent='临时对照已创建，等待计算；仅驻留内存，不保存或用于 Cesium。刷新或离开页面后清理。';
       await refreshExperiments();
-    }catch(error){$('list-message').textContent=error.message;}
-    finally{controlPending=false;$('create-control').disabled=!experiment||experiment.legacy||!experiment.runs.length;}
+    }catch(error){$('control-status').textContent=error.message;}
+    finally{controlPending=false;controlButton();}
   });
+  window.addEventListener('pagehide',()=>{if(temporary)fetch('/api/temporary-controls/'+encodeURIComponent(temporary.experiment_id),{method:'DELETE',keepalive:true}).catch(()=>{});});
   $('run-algorithm-info').addEventListener('click',()=>{
     const run=experiment?.runs.find(r=>r.run_id===selectedId);if(!run)return;
     const spec=currentAlgorithms.find(a=>a.algorithm_id===run.config.algorithm_id);

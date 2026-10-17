@@ -1,4 +1,4 @@
-/* Shared algorithm names, independent disclosure controls and comparison ordering. */
+/* Shared algorithm names, disclosure controls and stable comparison groups. */
 (function(root){
  'use strict';
  let catalog=[];
@@ -7,7 +7,7 @@
  const name=id=>catalog.find(a=>a.algorithm_id===id)?.name||({completion_first:'完成率优先',adaptive_repair:'自适应修复'}[id])||id;
  const model=id=>({completion_first:'完成率优先',adaptive_repair:'自适应修复'}[id]||'历史未记录');
  const format=(k,v)=>v==null?'—':k==='TCR'?(v*100).toFixed(1)+'%':Number(v).toFixed(3);
- const usable=r=>r.status==='SUCCEEDED'&&!!r.plan&&!!r.metrics;
+ const usable=r=>r.status==='SUCCEEDED'&&!!(r.plan||(r.temporary&&r.has_plan))&&!!r.metrics;
  function update(box,html){
   if(box.dataset.html===html)return;
   const active=box.contains(document.activeElement)?document.activeElement:null;
@@ -16,40 +16,37 @@
   const selector=key?`[data-focus-key="${CSS.escape(key)}"]`:rid?`button[data-run="${CSS.escape(rid)}"]`:eid?`button[data-experiment="${CSS.escape(eid)}"]`:null;
   if(selector)box.querySelector(selector)?.focus({preventScroll:true});
  }
- function orderedRows(experiments,mode='algorithm',order=null){
+ function orderedRows(experiments,mode='algorithm',selectedIds=null){
   let rows=experiments.flatMap((experiment,ei)=>experiment.runs.map(run=>({experiment,run,ei})));
-  if(order!==null){const rank=new Map([...new Set(order)].map((id,i)=>[id,i]));rows=rows.filter(r=>rank.has(r.run.run_id)).sort((a,b)=>rank.get(a.run.run_id)-rank.get(b.run.run_id));}
+  if(selectedIds!==null){const chosen=new Set(selectedIds);rows=rows.filter(r=>chosen.has(r.run.run_id));}
   if(mode==='experiment')return rows.sort((a,b)=>a.ei-b.ei);
   const ids=[...new Set(rows.map(r=>r.run.config.algorithm_id))];
   return rows.sort((a,b)=>ids.indexOf(a.run.config.algorithm_id)-ids.indexOf(b.run.config.algorithm_id));
  }
- function results(experiments,selected,mode='algorithm',order=null){
-  const rows=orderedRows(experiments,mode,order);
+ function results(experiments,selected,mode='algorithm',selectedIds=null){
+  const rows=orderedRows(experiments,mode,selectedIds);
   if(!rows.length)return '<p>暂无已选择结果；请在上方选择需要比较的算法结果。</p>';
   return `<div class="table-wrap" tabindex="0" aria-label="算法比较"><table><thead><tr><th scope="col">算法</th><th scope="col">实验 / 初始模型</th><th scope="col">状态 / 核验</th><th scope="col">完成任务</th>${metrics.map(([m,d])=>`<th scope="col">${m} ${d>0?'↑':'↓'}</th>`).join('')}<th scope="col">查看</th></tr></thead><tbody>${rows.map(({experiment,run,ei})=>{
    const m=usable(run)?run.metrics:null;
    const validation=run.result_kind==='planning_preview'?'曝光采样通过 · 未认证预览':run.continuous_certification?.status||'未提供';
    const status=run.status==='SUCCEEDED'&&!m?'SUCCEEDED · 计划不可用 / '+(run.continuous_certification?.status||'核验未提供'):run.status;
-   return `<tr class="${run.run_id===selected?'selected':''}" ${run.run_id===selected?'aria-current="true"':''} data-run="${E(run.run_id)}"><th scope="row"><button type="button" class="select-algorithm" data-experiment="${E(experiment.experiment_id)}" data-run="${E(run.run_id)}">${E(name(run.config.algorithm_id))}</button></th><td>实验 ${ei+1} · ${E(model(run.config.schedule_model))}</td><td>${E(status)}${m?'<br>'+E(validation):''}${run.error?'<br>'+E(run.error.message):''}</td><td>${m?`${m.completed_tasks} / ${m.total_tasks}`:'—'}</td>${metrics.map(([k])=>`<td>${format(k,m?.[k])}</td>`).join('')}<td>${usable(run)?`<a href="/visualization/gantt/${E(run.run_id)}" target="_blank" rel="noopener">Gantt</a>`:'尚无计划'}</td></tr>`;
+   const source=experiment.temporary?'临时对照':'正式实验';
+   return `<tr class="${run.run_id===selected?'selected':''}" ${run.run_id===selected?'aria-current="true"':''} data-run="${E(run.run_id)}"><th scope="row">${experiment.temporary?E(name(run.config.algorithm_id)):`<button type="button" class="select-algorithm" data-experiment="${E(experiment.experiment_id)}" data-run="${E(run.run_id)}">${E(name(run.config.algorithm_id))}</button>`}</th><td>${source} · ${E(model(run.config.schedule_model))}</td><td>${E(status)}${m?'<br>'+E(validation):''}${run.error?'<br>'+E(run.error.message):''}</td><td>${m?`${m.completed_tasks} / ${m.total_tasks}`:'—'}</td>${metrics.map(([k])=>`<td>${format(k,m?.[k])}</td>`).join('')}<td>${experiment.temporary?'仅临时比较':usable(run)?`<a href="/visualization/gantt/${E(run.run_id)}" target="_blank" rel="noopener">Gantt</a>`:'尚无计划'}</td></tr>`;
   }).join('')}</tbody></table></div>`;
  }
  function comparison(container,select,orderBox,onSelect){
-  let records=[],selected=null,order=null,scope='',chosen=null;
+  let records=[],selected=null,scope='',chosen=null;
   const groupKey=r=>select.value==='experiment'?r.experiment.experiment_id:r.run.config.algorithm_id;
   function render(){
-   const all=orderedRows(records,'experiment'),ids=all.map(r=>r.run.run_id);
-   if(order!==null)order=order.filter(id=>ids.includes(id));
-   const complete=[...(order??ids),...ids.filter(id=>!(order??ids).includes(id))];
-   const arranged=orderedRows(records,select.value,complete),active=arranged.filter(r=>chosen===null||chosen.has(r.run.run_id)).map(r=>r.run.run_id);
+   const arranged=orderedRows(records,select.value),active=arranged.filter(r=>chosen===null||chosen.has(r.run.run_id)).map(r=>r.run.run_id);
    update(container,results(records,selected,select.value,active));
    orderBox.hidden=false;
    const groups=new Map();for(const row of arranged){const k=groupKey(row);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(row);}
-   update(orderBox,'<p class="hint">选择比较结果，使用箭头调整组内顺序。</p><div class="result-groups">'+[...groups.values()].map(rows=>{
-    const first=rows[0],title=select.value==='experiment'?`实验 ${first.ei+1} · ${model(first.run.config.schedule_model)}`:name(first.run.config.algorithm_id);
-    const enabled=rows.filter(r=>active.includes(r.run.run_id)).map(r=>r.run.run_id);
-    return `<fieldset class="result-group"><legend>${E(title)}</legend>${rows.map(({run,ei})=>{
-     const id=run.run_id,isChecked=active.includes(id),i=enabled.indexOf(id),label=`${name(run.config.algorithm_id)} · 实验 ${ei+1} · ${model(run.config.schedule_model)}`;
-     return `<div class="result-choice ${isChecked?'is-chosen':''}"><label><input type="checkbox" data-result-id="${E(id)}" data-focus-key="check-${E(id)}" ${isChecked?'checked':''}><span><strong>${E(name(run.config.algorithm_id))}</strong><small>实验 ${ei+1} · ${E(model(run.config.schedule_model))}</small></span></label><span class="result-position" aria-label="比较顺序">${isChecked?active.indexOf(id)+1:'—'}</span><div class="result-moves"><button type="button" data-move="${E(id)}" data-delta="-1" data-focus-key="up-${E(id)}" aria-label="上移 ${E(label)}" ${i<=0?'disabled':''}>↑</button><button type="button" data-move="${E(id)}" data-delta="1" data-focus-key="down-${E(id)}" aria-label="下移 ${E(label)}" ${!isChecked||i===enabled.length-1?'disabled':''}>↓</button></div></div>`;
+   update(orderBox,'<p class="hint">勾选需要比较的结果；按所选分组稳定显示。</p><div class="result-groups">'+[...groups.values()].map(rows=>{
+    const first=rows[0],title=select.value==='experiment'?`${first.experiment.temporary?'临时对照':'正式实验'} · ${model(first.run.config.schedule_model)}`:name(first.run.config.algorithm_id);
+    return `<fieldset class="result-group"><legend>${E(title)}</legend>${rows.map(({run,experiment})=>{
+     const id=run.run_id,isChecked=active.includes(id);
+     return `<div class="result-choice ${isChecked?'is-chosen':''}"><label><input type="checkbox" data-result-id="${E(id)}" data-focus-key="check-${E(id)}" ${isChecked?'checked':''}><span><strong>${E(name(run.config.algorithm_id))}</strong><small>${experiment.temporary?'临时对照':'正式实验'} · ${E(model(run.config.schedule_model))}</small></span></label></div>`;
     }).join('')}</fieldset>`;
    }).join('')+'</div>');
   }
@@ -59,16 +56,8 @@
    chosen=chosen??new Set(orderedRows(records,'experiment').map(r=>r.run.run_id));
    if(input.checked)chosen.add(input.dataset.resultId);else chosen.delete(input.dataset.resultId);render();
   });
-  orderBox.addEventListener('click',event=>{
-   const button=event.target.closest('[data-move]');if(!button)return;
-   const ids=orderedRows(records,'experiment').map(r=>r.run.run_id),complete=[...(order??ids),...ids.filter(id=>!(order??ids).includes(id))];
-   const all=orderedRows(records,select.value,complete),row=all.find(r=>r.run.run_id===button.dataset.move);if(!row)return;
-   const same=all.filter(r=>groupKey(r)===groupKey(row)&&(chosen===null||chosen.has(r.run.run_id))).map(r=>r.run.run_id);
-   const i=same.indexOf(button.dataset.move),j=i+Number(button.dataset.delta);
-   if(i>=0&&j>=0&&j<same.length){order=all.map(r=>r.run.run_id);const a=order.indexOf(same[i]),b=order.indexOf(same[j]);[order[a],order[b]]=[order[b],order[a]];}render();
-  });
   container.addEventListener('click',event=>{const b=event.target.closest('.select-algorithm');if(b)onSelect(b.dataset.experiment,b.dataset.run);});
-  return {set(next,id){const key=next.map(e=>e.experiment_id).join('|');if(key!==scope){scope=key;order=null;chosen=null;}records=next;selected=id;render();}};
+  return {set(next,id){const key=next.map(e=>e.experiment_id).join('|');if(key!==scope){scope=key;chosen=null;}records=next;selected=id;render();}};
  }
  function card(prefix,id,heading,content,extra=''){
   const control=`algo-${prefix}-${id}`;

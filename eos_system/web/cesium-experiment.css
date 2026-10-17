@@ -1,34 +1,31 @@
-#experiment-controls { font-size:13px; }
-#experiment-controls h3 { font-size:14px; margin:12px 0 6px; }
-#experiment-controls label { display:block; margin:8px 0; }
-#experiment-controls select,#experiment-controls textarea { width:100%; box-sizing:border-box; background:#080f21; color:#edf4ff; border:1px solid #7185ac; padding:8px; }
-#experiment-controls button { cursor:pointer; color:#e8f4ff; background:#203456; border:1px solid #7185ac; border-radius:4px; padding:8px; }
-#experiment-controls button:disabled { cursor:default; opacity:.6; }
-#experiment-controls :focus-visible { outline:3px solid #ffd166; outline-offset:2px; }
-#experiment-controls .algorithm-card { border:1px solid #41516f; border-radius:6px; margin:6px 0; }
-#experiment-controls .algorithm-heading { display:flex; align-items:stretch; }
-#experiment-controls .algorithm-choice { flex:1; min-width:0; padding:6px 8px; margin:0; font:inherit; text-align:left; align-self:center; min-height:34px; }
-#experiment-controls .algorithm-toggle { flex-shrink:0; width:32px; min-height:34px; padding:6px 8px; border:0; background:transparent; font-size:11px; }
-#experiment-controls .algorithm-toggle span { display:inline-block; }
-#experiment-controls .algorithm-toggle[aria-expanded="true"] span { transform:rotate(90deg); }
-#experiment-controls .algorithm-content { padding:12px; border-top:1px solid #41516f; }
-#experiment-controls .included { opacity:.65; background:#1d2940; }
-#experiment-controls .active,#experiment-controls tr.selected { background:#23446e; outline:2px solid #79caff; outline-offset:-2px; }
-#experiment-controls .table-wrap { overflow:auto; max-height:300px; }
-#experiment-controls table { border-collapse:collapse; font-size:12px; }
-#experiment-controls td,#experiment-controls th { padding:7px; border-bottom:1px solid #41516f; white-space:nowrap; text-align:left; }
+.experiment-ui { font-size:13px; }
+.experiment-ui h3 { font-size:14px; margin:12px 0 6px; }
+.experiment-ui label { display:block; margin:8px 0; }
+.experiment-ui select,.experiment-ui textarea { width:100%; box-sizing:border-box; background:#080f21; color:#edf4ff; border:1px solid #7185ac; padding:8px; }
+.experiment-ui button { cursor:pointer; color:#e8f4ff; background:#203456; border:1px solid #7185ac; border-radius:4px; padding:8px; }
+.experiment-ui button:disabled { cursor:default; opacity:.6; }
+.experiment-ui :focus-visible { outline:3px solid #ffd166; outline-offset:2px; }
+.experiment-ui .algorithm-card { border:1px solid #41516f; border-radius:6px; margin:6px 0; }
+.experiment-ui .algorithm-heading { display:flex; align-items:stretch; }
+.experiment-ui .algorithm-choice { flex:1; min-width:0; padding:6px 8px; margin:0; font:inherit; text-align:left; align-self:center; min-height:34px; }
+.experiment-ui .algorithm-toggle { flex-shrink:0; width:32px; min-height:34px; padding:6px 8px; border:0; background:transparent; font-size:11px; }
+.experiment-ui .algorithm-toggle span { display:inline-block; }
+.experiment-ui .algorithm-toggle[aria-expanded="true"] span { transform:rotate(90deg); }
+.experiment-ui .algorithm-content { padding:12px; border-top:1px solid #41516f; }
+.experiment-ui .included { opacity:.65; background:#1d2940; }
+.experiment-ui .active,.experiment-ui tr.selected { background:#23446e; outline:2px solid #79caff; outline-offset:-2px; }
+.experiment-ui .table-wrap { overflow-x:auto; max-height:none; }
+.experiment-ui table { border-collapse:collapse; font-size:12px; }
+.experiment-ui td,.experiment-ui th { padding:7px; border-bottom:1px solid #41516f; white-space:nowrap; text-align:left; }
 #cesium-current-algorithms,#cesium-add-algorithms { max-height:none; overflow:visible; min-width:0; }
-#experiment-controls .hint { color:#bac7dc; font-size:12px; }
-#experiment-controls .result-group { min-width:0; margin:6px 0; padding:5px; border:1px solid #41516f; border-radius:5px; }
-#experiment-controls .result-group legend { font-size:11px; color:#bac7dc; }
-#experiment-controls .result-choice { display:flex; align-items:center; gap:4px; padding:3px 5px; margin:4px 0; border:1px solid #41516f; border-radius:4px; }
-#experiment-controls .result-choice.is-chosen,#experiment-controls .add-algorithm-option.is-chosen { background:#1c3455; border-color:#7cc4ff; }
-#experiment-controls .result-choice label,#experiment-controls .add-algorithm-option { display:flex; align-items:center; gap:6px; flex:1; min-width:0; margin:0; min-height:32px; cursor:pointer; }
-#experiment-controls input[type="checkbox"] { width:16px; height:16px; flex:0 0 16px; margin:0; accent-color:#7cc4ff; }
-#experiment-controls .result-choice strong { font-size:12px; font-weight:500; }
-#experiment-controls .result-choice small,#experiment-controls .add-algorithm-option small { display:block; color:#bac7dc; font-size:11px; overflow-wrap:anywhere; }
-#experiment-controls .result-position { color:#bac7dc; font-size:11px; }
-#experiment-controls .result-moves { display:flex; gap:2px; flex-shrink:0; }
-#experiment-controls .result-moves button { width:26px; min-height:28px; padding:2px; }
-#experiment-controls .add-algorithm-option { padding:4px 6px; border:1px solid #41516f; border-radius:4px; margin-bottom:5px; }
-#experiment-controls .confirm-algorithms { padding:6px 8px; margin-top:6px; }
+.experiment-ui .hint { color:#bac7dc; font-size:12px; }
+.experiment-ui .result-group { min-width:0; margin:6px 0; padding:5px; border:1px solid #41516f; border-radius:5px; }
+.experiment-ui .result-group legend { font-size:11px; color:#bac7dc; }
+.experiment-ui .result-choice { display:flex; align-items:center; gap:4px; padding:3px 5px; margin:4px 0; border:1px solid #41516f; border-radius:4px; }
+.experiment-ui .result-choice.is-chosen,.experiment-ui .add-algorithm-option.is-chosen { background:#1c3455; border-color:#7cc4ff; }
+.experiment-ui .result-choice label,.experiment-ui .add-algorithm-option { display:flex; align-items:center; gap:6px; flex:1; min-width:0; margin:0; min-height:32px; cursor:pointer; }
+.experiment-ui input[type="checkbox"] { width:16px; height:16px; flex:0 0 16px; margin:0; accent-color:#7cc4ff; }
+.experiment-ui .result-choice strong { font-size:12px; font-weight:500; }
+.experiment-ui .result-choice small,.experiment-ui .add-algorithm-option small { display:block; color:#bac7dc; font-size:11px; overflow-wrap:anywhere; }
+.experiment-ui .add-algorithm-option { padding:4px 6px; border:1px solid #41516f; border-radius:4px; margin-bottom:5px; }
+.experiment-ui .confirm-algorithms { padding:6px 8px; margin-top:6px; }

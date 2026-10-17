@@ -2,12 +2,17 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const UI=require('../eos_system/web/experiment-ui.js'),T=require('../eos_system/web/timeline.js');
 const run=(id,algorithm)=>({run_id:id,config:{algorithm_id:algorithm},status:'FAILED',metrics:{TP:99}});
 const experiments=[{experiment_id:'one',runs:[run('a','sa'),run('b','ga')]},{experiment_id:'two',runs:[run('c','sa'),run('d','ga')]}];
-test('two grouped views select and reorder a bounded result set without changing records',()=>{
+test('two grouped views filter results but never manually reorder records',()=>{
  const before=JSON.stringify(experiments),ids=(mode,order)=>UI.orderedRows(experiments,mode,order).map(r=>r.run.run_id);
  assert.deepEqual(ids('algorithm'),['a','c','b','d']);assert.deepEqual(ids('experiment'),['a','b','c','d']);
- assert.deepEqual(ids('algorithm',['c','a','outside','d','b','c']),['c','a','d','b']);
- assert.deepEqual(ids('experiment',['b','a','outside','d','c']),['b','a','d','c']);assert.deepEqual(ids('algorithm',[]),[]);
+ assert.deepEqual(ids('algorithm',['c','a','outside','d','b','c']),['a','c','b','d']);
+ assert.deepEqual(ids('experiment',['b','a','outside','d','c']),['a','b','c','d']);assert.deepEqual(ids('algorithm',[]),[]);
  assert.equal(JSON.stringify(experiments),before);
+});
+test('temporary successful metrics cannot link to persistent Run or Gantt',()=>{
+ const row={...run('temporary-run','sa'),status:'SUCCEEDED',temporary:true,has_plan:true,metrics:{TP:4}};
+ const html=UI.results([{experiment_id:'temporary-session',temporary:true,runs:[row]}],null);
+ assert.match(html,/4\.000/);assert.match(html,/临时对照/);assert.doesNotMatch(html,/href=|data-experiment=/);
 });
 test('failed or unavailable plans cannot display successful metrics',()=>{
  UI.setCatalog([{algorithm_id:'sa',name:'模拟退火 SA'},{algorithm_id:'ga',name:'遗传算法 GA'}]);
