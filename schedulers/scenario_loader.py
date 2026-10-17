@@ -40,6 +40,8 @@ class TaskWindow:
     time_step: float = 1.0
     agile_data: Optional[object] = None
     non_agile_data: Optional[object] = None
+    # Loader-reviewed provenance; never copied from individual window JSON.
+    planning_evidence: Optional[dict] = None
 
     @property
     def duration(self) -> float:
@@ -210,6 +212,10 @@ def load_scheduling_problem_from_json(json_path: str | Path) -> SchedulingProble
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    import hashlib
+    from utils.continuous_exposure import planning_evidence
+    lineage = planning_evidence(data, json_path, hashlib.sha256(json_path.read_bytes()).hexdigest())
+
     scenario_id = data.get("scenario_id", json_path.stem)
 
     # Scenario time information
@@ -310,6 +316,7 @@ def load_scheduling_problem_from_json(json_path: str | Path) -> SchedulingProble
                 time_step=float(tw.get("time_step", ow.get("time_step", global_time_step))),
                 agile_data=tw.get("agile_data", ow.get("agile_data")),
                 non_agile_data=tw.get("non_agile_data", ow.get("non_agile_data")),
+                planning_evidence=lineage,
             )
             tasks[mid].windows.append(task_window)
 

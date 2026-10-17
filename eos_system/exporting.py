@@ -11,11 +11,26 @@ import tempfile
 from pathlib import Path
 
 from .contracts import RunConfig
+from utils.continuous_exposure import validate_certification, CertifiedRecord, CertificationReceipt
 from .storage import Database
+
+
+def require_certified_record(record):
+    if not record or record.get("status") != "SUCCEEDED" or record.get("plan") is None:
+        raise ValueError("no continuously certified successful plan")
+    receipt = getattr(record, "certification_receipt", None)
+    if not isinstance(record, CertifiedRecord) or not isinstance(receipt, CertificationReceipt):
+        raise ValueError("formal exports require a Storage-issued certified record")
+    if receipt.evidence() != record.get("continuous_certification"):
+        raise ValueError("record certification was modified")
+    validate_certification(receipt.evidence(),run_id=record["run_id"],
+        scenario_sha=record["config"]["scenario_sha256"],plan=record["plan"],
+        context=getattr(record,"certification_context",None))
 
 
 def render_json(record: dict) -> bytes:
     """仅使用 Controller 已提交的计划与指标，不读取 Worker 临时结果。"""
+    require_certified_record(record)
     plan = dict(record["plan"])
     metric = record["metrics"]
     plan["metrics"] = {
@@ -24,6 +39,7 @@ def render_json(record: dict) -> bytes:
     }
     plan["provenance"] = {
         "run_id": record["run_id"],
+        "continuous_certification": record["continuous_certification"],
         "source_id": record["config"].get("source_id", "runtime"),
         "scenario_sha256": record["config"]["scenario_sha256"],
         "algorithm_id": record["config"]["algorithm_id"],
@@ -35,15 +51,21 @@ def render_json(record: dict) -> bytes:
 
 
 def render_csv(record: dict) -> bytes:
+    require_certified_record(record)
     output = io.StringIO(newline="")
     fields = ["run_id", "source_id", "scenario_id", "algorithm_id", "task_id", "satellite_id", "sensor_id",
               "sat_start_time", "sat_end_time", "ground_station_id", "gs_start_time", "gs_end_time",
               "completed_tasks", "total_tasks", "TP", "TCR", "BD", "TM", "RT",
-              "scenario_sha256", "scenario_physics_version", "parent_scenario_sha256", "algorithm_code_sha"]
+              "scenario_sha256", "scenario_physics_version", "parent_scenario_sha256", "algorithm_code_sha",
+              "continuous_certification_status", "continuous_audit_version", "certified_plan_sha256"]
     writer = csv.DictWriter(output, fieldnames=fields)
     writer.writeheader()
     metrics = record["metrics"]
+    certificate = record["continuous_certification"]
     base = {
+        "continuous_certification_status":certificate["status"],
+        "continuous_audit_version":certificate["audit_version"],
+        "certified_plan_sha256":certificate["plan_sha256"],
         "run_id": record["run_id"], "source_id": record["config"].get("source_id", "runtime"),
         "scenario_id": record["config"]["scenario_id"],
         "algorithm_id": record["config"]["algorithm_id"],
@@ -87,6 +109,7 @@ def persist_directory_exports(database: Database, config: RunConfig) -> None:
     record = database.get_run(config.run_id)
     if record is None or record["status"] != "SUCCEEDED":
         raise ValueError("只有成功实验可保存正式导出")
+    require_certified_record(record)
     root = Path(config.output_root).resolve(strict=True)
     if not root.is_dir():
         raise ValueError("实验选定的输出目录已不可用")

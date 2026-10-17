@@ -18,6 +18,7 @@ from schedulers.scenario_loader import SchedulingProblem, SchedulingTask, CommWi
 from schedulers.constraint_model import Assignment, TimePlacementStrategy
 
 from algorithms.random_utils import make_rng
+from utils.continuous_exposure import planning_exposure, ExposureStatus
 
 
 def _estimate_data_volume_GB(problem: SchedulingProblem, w, sat_start, sat_end) -> float:
@@ -245,6 +246,9 @@ def enumerate_task_candidates(
             uniq.append((s, e, ang))
 
         for sat_start, sat_end, sat_angles in uniq:
+            decision = planning_exposure(w, sat_start, sat_end, task.required_duration)
+            if decision.status is not ExposureStatus.PLANNING_FEASIBLE:
+                continue
             if len(cands) >= max_candidates:
                 break
 

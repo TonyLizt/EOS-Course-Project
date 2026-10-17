@@ -124,6 +124,10 @@ def _fault_worker(mode, observed, run_id, attempt, event_pipe, control_pipe):
 
 class ControllerTimeoutTests(unittest.TestCase):
     def setUp(self):
+        from certification_fixtures import unit_certify
+        certification_patch = patch("eos_system.verification.certify_schedule", side_effect=unit_certify)
+        certification_patch.start()
+        self.addCleanup(certification_patch.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         root = Path(self.temp.name)

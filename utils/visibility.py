@@ -13,6 +13,7 @@ data structures used by the scenario model.
 from __future__ import annotations
 
 import os
+import hashlib
 import math
 import random
 from dataclasses import dataclass
@@ -39,8 +40,10 @@ from core.models import (
 
 _VM_STARTED = False
 _DATA_LOADED = False
+_LOADED_DATA_SHA256: str | None = None
 _CONTEXT: "_OrekitContext | None" = None
-VISIBILITY_ALGORITHM_VERSION = "visibility_grid_v2"
+VISIBILITY_ALGORITHM_VERSION = "visibility_exit_refined_v3"
+EXIT_BOUNDARY_PRECISION_US = 1
 
 
 def _to_utc(dt: datetime) -> datetime:
@@ -97,7 +100,14 @@ def _find_orekit_data_zip(data_path: Optional[str] = None) -> str:
 
 def ensure_orekit(data_path: Optional[str] = None) -> None:
     """Ensure the JVM is started and Orekit data is loaded, only once per process."""
-    global _VM_STARTED, _DATA_LOADED, _CONTEXT
+    global _VM_STARTED, _DATA_LOADED, _CONTEXT, _LOADED_DATA_SHA256
+
+    # A JVM data context cannot silently change beneath an audit/cache.
+    zip_path = _find_orekit_data_zip(data_path)
+    with open(zip_path, "rb") as stream:
+        data_sha = hashlib.sha256(stream.read()).hexdigest()
+    if _DATA_LOADED and _LOADED_DATA_SHA256 != data_sha:
+        raise ValueError("Orekit data context differs or is not attested; use a fresh process")
 
     # 1) Start JVM (can only be called once)
     if not _VM_STARTED:
@@ -118,9 +128,9 @@ def ensure_orekit(data_path: Optional[str] = None) -> None:
     if not _DATA_LOADED:
         from orekit_jpype.pyhelpers import setup_orekit_curdir
 
-        zip_path = _find_orekit_data_zip(data_path)
         setup_orekit_curdir(zip_path)
         _DATA_LOADED = True
+        _LOADED_DATA_SHA256 = data_sha
 
     # 3) Initialize context
     if _CONTEXT is None:
@@ -178,10 +188,9 @@ def _orbit_cache_key(
     m_deg: float,
     epoch_iso: str,
 ) -> str:
-    return (
-        f"a={a_m:.3f}|e={e:.8f}|i={i_deg:.6f}|raan={raan_deg:.6f}|"
-        f"argp={argp_deg:.6f}|m={m_deg:.6f}|epoch={epoch_iso}"
-    )
+    # Full binary float identity: nearby inputs must not alias after rounding.
+    return "|".join(float(x).hex() for x in (a_m, e, i_deg, raan_deg, argp_deg, m_deg)) + "|" + epoch_iso
+
 
 
 def _build_keplerian_orbit(
@@ -226,18 +235,41 @@ def _build_keplerian_orbit(
 # -----------------------------------------------------------------------------
 
 
+def _refine_visibility_exit(visible_dt, invisible_dt, evaluate, *, precision_us=EXIT_BOUNDARY_PRECISION_US):
+    """Bracket a DETECTED exit; never a proof of no hidden intermediate events.
+
+    Invariant: lower is evaluated visible, upper evaluated invisible. Return
+    the conservative visible side with at most precision_us of uncertainty.
+    All arithmetic uses datetime's integer-microsecond resolution.
+    """
+    if isinstance(precision_us, bool) or not isinstance(precision_us, int) or precision_us < 1:
+        raise ValueError("precision_us must be a positive integer")
+    lower, upper = _to_utc(visible_dt), _to_utc(invisible_dt)
+    if lower >= upper or not evaluate(lower)["visible"] or evaluate(upper)["visible"]:
+        raise ValueError("exit refinement requires visible lower < invisible upper")
+    while upper - lower > timedelta(microseconds=precision_us):
+        middle = lower + (upper - lower) // 2
+        if middle == lower or middle == upper:
+            break
+        if evaluate(middle)["visible"]:
+            lower = middle
+        else:
+            upper = middle
+    return lower, upper
+
+
 def _scan_visibility_grid(
     start_dt: datetime,
     end_dt: datetime,
     step_s: float,
     evaluate: Callable[[datetime], dict],
 ) -> Tuple[List[Tuple[datetime, datetime]], List[dict], List[dict]]:
-    """Scan every fine-grid point in [start, end), without coarse pruning.
+    """Complete [start,end) grid, with detected exits refined to <=1 microsecond.
 
-    Entry is the first visible grid point; exit is the first nonvisible point
-    or the clipped horizon. A single transition is bracketed within one step,
-    but events wholly between adjacent samples are not guaranteed detectable.
-    Keep samples and attitude arrays on the same scenario-anchored grid.
+    Only original grid points enter samples/visible_attitudes. Extra endpoint
+    and bisection evaluations never shift those indices. End is visible-side,
+    not the first invisible grid point. Hidden sub-step gaps remain possible:
+    binary search does NOT establish continuous visibility of the whole span.
     """
     start_dt, end_dt = _to_utc(start_dt), _to_utc(end_dt)
     if not math.isfinite(step_s) or step_s <= 0:
@@ -247,10 +279,15 @@ def _scan_visibility_grid(
         raise ValueError("step_s must be at least datetime's microsecond resolution")
     if end_dt <= start_dt:
         raise ValueError("end_dt must be after start_dt")
-    samples: List[dict] = []
-    visible_attitudes: List[dict] = []
-    windows: List[Tuple[datetime, datetime]] = []
-    window_start: Optional[datetime] = None
+    samples, visible_attitudes, windows = [], [], []
+    window_start = last_visible = None
+
+    def close_window(upper):
+        # lower and upper are genuinely evaluated; do not invent a bracket.
+        lower, _ = _refine_visibility_exit(last_visible, upper, evaluate)
+        if lower > window_start:
+            windows.append((window_start, lower))
+
     t = start_dt
     while t < end_dt:
         sample = evaluate(t)
@@ -258,14 +295,19 @@ def _scan_visibility_grid(
         if sample["visible"]:
             visible_attitudes.append({key: sample[key] for key in (
                 "time", "elevation_deg", "off_nadir_deg", "yaw_deg", "pitch_deg", "roll_deg")})
+            last_visible = t
             if window_start is None:
                 window_start = t
         elif window_start is not None:
-            windows.append((window_start, t))
+            close_window(t)
             window_start = None
         t += fine_td
     if window_start is not None:
-        windows.append((window_start, end_dt))
+        # The horizon is not part of the grid arrays, but MUST be evaluated.
+        if evaluate(end_dt)["visible"]:
+            windows.append((window_start, end_dt))
+        else:
+            close_window(end_dt)
     return windows, samples, visible_attitudes
 
 
@@ -296,6 +338,28 @@ def compute_visibility_and_attitude(
     a compatibility argument only. Coarse elevation hits cannot safely prune
     unseen short passes; all fine-grid points are now evaluated.
     """
+    if not math.isfinite(step_s) or step_s <= 0 or not math.isfinite(coarse_step_min) or coarse_step_min <= 0:
+        raise ValueError("step_s and coarse_step_min must be finite and positive")
+    eval_full = create_visibility_evaluator(
+        a_m=a_m, e=e, i_deg=i_deg, raan_deg=raan_deg, argp_deg=argp_deg,
+        m_deg=m_deg, epoch_dt=epoch_dt, target_lat_deg=target_lat_deg,
+        target_lon_deg=target_lon_deg, target_alt_m=target_alt_m,
+        max_yaw_deg=max_yaw_deg, max_pitch_deg=max_pitch_deg,
+        max_roll_deg=max_roll_deg, min_elevation_deg=min_elevation_deg)
+    return _scan_visibility_grid(start_dt, end_dt, float(step_s), eval_full)
+
+
+
+def create_visibility_evaluator(
+    *, a_m, e, i_deg, raan_deg, argp_deg, m_deg, epoch_dt,
+    target_lat_deg, target_lon_deg, target_alt_m,
+    max_yaw_deg, max_pitch_deg, max_roll_deg, min_elevation_deg=5.0,
+):
+    """Build the SAME Orekit predicate used by generation, without scanning.
+
+    Reused by independent plan audits; it does not consult serialized windows.
+    It supplies point evaluations, not a certified continuous-interval bound.
+    """
     # Ensure Orekit context is initialized, once per process in multiprocessing
     if _CONTEXT is None:
         ensure_orekit(None)
@@ -313,14 +377,6 @@ def compute_visibility_and_attitude(
 
     # -------- Standardize time as UTC-aware --------
     epoch_dt = _to_utc(epoch_dt)
-    start_dt = _to_utc(start_dt)
-    end_dt = _to_utc(end_dt)
-
-    if not math.isfinite(step_s) or step_s <= 0:
-        raise ValueError("step_s must be a finite positive number")
-    if not math.isfinite(coarse_step_min) or coarse_step_min <= 0:
-        raise ValueError("coarse_step_min must be a finite positive number")
-
 
     # -------- Target point and attitude model --------
     target_geo = GeodeticPoint(
@@ -355,6 +411,7 @@ def compute_visibility_and_attitude(
         elevation_deg = math.degrees(float(elevation_rad))
 
         visible = False
+        evaluation_error = None
         off_nadir_deg = None
         yaw_deg = pitch_deg = roll_deg = None
 
@@ -383,13 +440,15 @@ def compute_visibility_and_attitude(
                     and abs(roll_deg) <= float(max_roll_deg)
                 ):
                     visible = True
-            except Exception:
+            except Exception as exc:
+                evaluation_error = type(exc).__name__
                 # If attitude angle solving fails, treat it as unavailable
                 visible = False
 
         return {
             "time": dt,
             "visible": visible,
+            "evaluation_error": evaluation_error,
             "elevation_deg": elevation_deg,
             "off_nadir_deg": off_nadir_deg,
             "yaw_deg": yaw_deg,
@@ -397,7 +456,7 @@ def compute_visibility_and_attitude(
             "roll_deg": roll_deg,
         }
 
-    return _scan_visibility_grid(start_dt, end_dt, float(step_s), eval_full)
+    return eval_full
 
 
 # -----------------------------------------------------------------------------

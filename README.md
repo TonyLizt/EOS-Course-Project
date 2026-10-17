@@ -88,6 +88,8 @@ cd /mnt/d/Code/EOS-Course-Project
 
 轨道位置现在使用真实 60 秒 Orekit 节点和局部五阶插值，CZML 与 READY 消费端采用一致的曲线插值规则；旧缓存保留，新构建由既有步长及源码身份隔离。姿态自适应采样和 SLERP 不变。三轨道局部精度及稀疏历史数据限制见[轨道插值验收](docs/phase2/orbit_interpolation_fix_2026-10-17.md)；此修复不会重算正式调度计划。
 
+连续曝光验收可独立运行 `python -B verify_schedules.py SCENE PLAN --continuous --orekit-data ZIP --min-elevation-deg 5 --report NEW_REPORT`，只读取已有计划，不运行求解器。退出码 0/1/2 分别为 PASS/FAIL/INCONCLUSIVE；采样无违规不等于连续性已证明，2 不应放行。依据及四计划结果见[连续曝光修复报告](docs/phase2/continuous_exposure_boundary_fix_2026-10-17.md)。
+
 回放由独立进程只读正式计划及场景生成，服务校验输入/计划/配置/模型与资源哈希后发布，不修改正式 assignment 或 metrics.RT。轨道缓存身份包括历元解析与传播环境，旧 v1 缓存不会冒充修复后的 v2。姿态首选 5 秒，按时域/星数/任务端点余量确定有效步长，目标 100000 样本；本批 10/20/50 星约 10/20/135 秒，保留任务和转向端点。硬上限仍为 200000 样本、每资源 64 MiB。
 
 页面保留甘特图、卫星本体、独立视锥、WGS84 椭球覆盖、选星/追踪、任务点俯视、精确任务跳转和同钟固定载荷视图。NASA Landsat 8 仅作为通用外观，原卫星 ID 不改名；安装旋转与方形完整 FOV 是明示的展示假设，几何指向与 SLERP 不等于真实动力学或拍摄成功。非敏捷星只给对地示意。模型来源见[资产说明](docs/replay/landsat8-validation.md)。
@@ -142,3 +144,11 @@ node tests/replay_acceptance.test.cjs
 - **[Orekit](https://www.orekit.org/)** 与 `orekit-jpype`：可选轨道传播与 CZML 生成依赖；**[CesiumJS](https://cesium.com/platform/cesiumjs/)**：浏览器三维回放；**[FastAPI](https://fastapi.tiangolo.com/)** 与 Uvicorn：HTTP 服务。各依赖的版权和使用条件以其项目发布信息为准。
 
 本仓库的实验结论仅对应所记录的场景、代码版本、配置与数据哈希；派生小实例不等同于 EOS-Bench 论文的完整独立实验集合。
+
+## 连续曝光正式门禁（2026-10-17 P1）
+
+候选规划可行与连续物理认证通过是两个不同状态。规划器与共享约束使用经来源核实的保守窗口规则；Controller 独立认证后，只有 `CONTINUOUS_PASS` 可持久化为正式成功计划。`REJECTED`、`INCONCLUSIVE`、执行异常或超时均不放行，Worker 自报认证字段无效。
+
+历史 `SUCCEEDED` 保留原状态用于追溯，但缺少当前版本认证、来源不匹配或计划 SHA 不符时，Storage 不返回正式计划，API/JSON/CSV/目录导出也会拒绝。列表和详情附带连续认证状态。当前 Orekit 采样模型尚无连续区间证明，四份冻结计划的 80 条任务仍为 `INCONCLUSIVE`，不能正式发布。
+
+正式独立审查需要服务端配置 `EOS_OREKIT_DATA`；没有数据、可信窗口来源或连续性证据都会关闭门禁。普通 `verify_schedules.py` 的离散模式仅供诊断，`PASS_DISCRETE_ONLY` 不代表连续认证。完整契约、测试和风险见 [连续曝光审计报告](docs/phase2/continuous_exposure_boundary_fix_2026-10-17.md) 第 11 节起。

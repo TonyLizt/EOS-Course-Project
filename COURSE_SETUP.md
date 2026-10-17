@@ -1,3 +1,12 @@
+## 连续曝光边界保护与独立审查（2026-10-17）
+
+- fix/continuous-exposure-boundary 基于 0af4f61，保留 12f8849 时间修复和轨道插值实现。已检测退出二分至 1 µs 可见侧，时域终点实际检查，原网格/姿态索引不变；新派生版本 visibility_exit_refined_v3。
+- 实际公共连续门禁拒绝 M001/M007 两原探针；Python 289/289、Node 5/5，原四候选/计划及静态字段不变，无真实场景求解或重算。
+- 四计划各 20 条均未发现采样违规，但严格连续性缺证据，全部 INCONCLUSIVE（退出2），不能发布。默认Controller离散验证未冒充连续认证；本轮不提交推送。
+- 详见 [连续曝光修复报告](docs/phase2/continuous_exposure_boundary_fix_2026-10-17.md)，含实际命令、SHA和剩余阻断；历史记录以下保留。
+
+---
+
 ## 轨道插值专项修复（2026-10-17）
 
 - 系统采用真实 60 秒 Orekit 轨道节点、局部五阶位置插值和标准 CZML Lagrange 元数据，修复 300 秒线性弦误差；保留 P0 UTC/微秒/非整终点与姿态 SLERP。
@@ -422,3 +431,15 @@ cd /Users/tonylizt/Projects/EOS-Course-Project
 脚本生成／覆盖 `draw/orbit.czml`，随后自动打开浏览器；也可手动访问终端打印的 `http://localhost:8080/draw/cesium_viewer.html?schedule=...` 地址。页面左侧显示 TP、TCR 等指标，中间播放轨道与目标，右侧列出观测区间；右上角的 **Gantt Chart** 可打开同一计划的甘特图。本机已验证该示例加载 187 个任务、TCR = 0.935、TP = 1045，且页面与 CZML、计划文件均可访问。生成的 CZML 约 25 MB，固定文件名会被下一次展示覆盖；它不改变输入 JSON。若 8080 已被占用，换用 `--port 8081` 等空闲端口。
 
 **停止网页：** 保持启动它的终端运行，演示结束后在该终端按 `Ctrl+C`；服务停止后网页不能继续加载本地文件。若终端已丢失，先用 `lsof -nP -iTCP:8080 -sTCP:LISTEN` 确认对应进程，再停止那个进程，不要盲目结束其他占用端口的程序。
+
+
+## 2026-10-17：P1 连续曝光正式接入
+
+- 保留 `fix/continuous-exposure-boundary` 上既有九文件修改，未 reset/rebase/合并或创建提交；冻结候选、旧计划和数据库不补写。
+- 共享 `ExposureStatus` 区分拒绝、规划可行、连续通过、证据不足和执行错误。候选池与 ConstraintModel 共用保守边界；经确认的 v2 扣除一个真实扫描步长，v3 不重复扣减。
+- Controller 后台独立认证，只有绑定 run/scenario SHA/plan SHA/审查版本/源码的进程内凭证可以进入原成功事务。沿用现有 FAILED 状态及错误码，未新增数据库枚举或迁移。
+- Storage 事务写入和读取、JSON/CSV/目录/API 导出均有门禁。历史 SUCCEEDED 缺证据时仍可查看诊断，但不得作为认证计划导出。
+- 认证默认 30 秒截止；超时或停机后的迟到结果不能提交。后台认证未退出时保留实例锁，并限制同一 Controller 至多一个认证线程；原生调用永久挂起仍可能需要人工恢复服务。
+- 新建场景记录窗口版本、已检测退出括区精度、扫描配置及连续认证 NOT_RUN；窗口精度与连续证明分别记录。
+- `tests/certification_fixtures.py` 仅用于临时单元测试注入，所有模拟凭证标记 UNIT_TEST_INJECTION_ONLY；没有 HTTP/JSON/环境变量开关可启用模拟认证。
+- 本轮完整命令、最终结果与 31 文件清单见连续曝光审计报告第 11 节起；正式发布仍受连续区间证明缺失阻断。

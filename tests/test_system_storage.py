@@ -1,3 +1,4 @@
+from certification_fixtures import storage_receipt
 """验证正式结果的事务边界与排队取消，而非重复实现业务逻辑。"""
 
 import sqlite3
@@ -37,7 +38,7 @@ class StorageTransactionTests(unittest.TestCase):
             "robustness_variance": None, "mip_gap": None,
         }
         with self.assertRaises(sqlite3.IntegrityError):
-            self.database.finish_success(self.config.run_id, attempt, plan, metrics, 0.01)
+            self.database.finish_success(self.config.run_id, attempt, plan, metrics, 0.01, certification=storage_receipt(self.database,self.config.run_id,plan))
         with self.database.connect() as db:
             for table in ("plans", "assignments", "metrics"):
                 self.assertEqual(db.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0], 0)

@@ -1,3 +1,4 @@
+from certification_fixtures import storage_receipt
 """验证 v0.2 的扩展接口、旧库迁移和按实验隔离的文件输出。"""
 
 import asyncio
@@ -90,7 +91,7 @@ class MigrationAndExportTests(unittest.TestCase):
                        "task_completion_rate": 0.0, "balance_degree": 0.0,
                        "timeliness_metric": 0.0, "runtime_efficiency": 0.01,
                        "robustness_variance": None, "mip_gap": None}
-            self.assertTrue(database.finish_success(config.run_id, attempt, plan, metrics, 0.001))
+            self.assertTrue(database.finish_success(config.run_id, attempt, plan, metrics, 0.001, certification=storage_receipt(database,config.run_id,plan)))
             persist_directory_exports(database, config)
             folder = output / config.run_id
             json_path = folder / f"eos-{config.run_id}.json"

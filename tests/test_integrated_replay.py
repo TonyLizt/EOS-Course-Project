@@ -1,5 +1,7 @@
 """恢复后框架的统一回放与数据来源集成验收，不修改正式运行库。"""
 from __future__ import annotations
+
+from certification_fixtures import storage_receipt
 from contextlib import contextmanager
 from dataclasses import replace
 import hashlib
@@ -66,7 +68,7 @@ def fixture():
         metrics={"completed_tasks":2,"total_tasks":2,"task_profit":2,"task_completion_rate":1,
                  "balance_degree":1,"timeliness_metric":0.3,"runtime_efficiency":0.01,
                  "robustness_variance":None,"mip_gap":None}
-        assert db.finish_success(rid,attempt,plan,metrics,0.001)
+        assert db.finish_success(rid,attempt,plan,metrics,0.001,certification=storage_receipt(db,rid,plan))
         app=create_app(settings)
         obj=SimpleNamespace(root=root,settings=settings,scene=path,sha=sha,db=db,run_id=rid,
                             app=app,client=_DirectClient(app),config=cfg)

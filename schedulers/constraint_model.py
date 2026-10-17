@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from schedulers.transition_utils import compute_transition_time_agile, delta_g_between
+from utils.continuous_exposure import planning_exposure, ExposureStatus
 from typing import List, Dict, Optional, Protocol
 from datetime import datetime, timedelta
 
@@ -286,6 +287,19 @@ class ConstraintModel:
         return True
 
     def is_feasible_assignment(self, assignment: Assignment, schedule: Schedule) -> bool:
+        task = self.problem.tasks.get(assignment.task_id)
+        if task is None:
+            return False
+        windows = [w for w in task.windows if w.window_id == assignment.sat_window_id
+                   and w.satellite_id == assignment.satellite_id
+                   and w.sensor_id == assignment.sensor_id]
+        if not any(planning_exposure(w, assignment.sat_start_time, assignment.sat_end_time,
+                   task.required_duration).status is ExposureStatus.PLANNING_FEASIBLE for w in windows):
+            return False
+        return self.check_discrete_assignment(assignment, schedule)
+
+    def check_discrete_assignment(self, assignment: Assignment, schedule: Schedule) -> bool:
+        """Legacy discrete diagnostics ONLY; cannot certify or publish a plan."""
         """Check whether adding an assignment to the current schedule is feasible."""
 
         task = self.problem.tasks[assignment.task_id]

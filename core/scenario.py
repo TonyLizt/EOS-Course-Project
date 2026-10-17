@@ -257,6 +257,11 @@ class Scenario:
             data_path=data_path,
         )
 
+        from utils.continuous_exposure import window_generation_record
+        self.metadata.extra = dict(self.metadata.extra or {})
+        self.metadata.extra["window_generation"] = window_generation_record(
+            self.time_step, min_elevation_deg, coarse_step_min)
+
         self._observation_windows = obs_w
         self._communication_windows = comm_w
         self.missions = updated_missions
