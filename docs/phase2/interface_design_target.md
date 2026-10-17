@@ -1,4 +1,6 @@
-> 2026-10-17 控制台升级：`GET /api/algorithms` 增加策略/目标/限制/可用性字段，`GET /api/scenarios` 补充静态规模和来源状态；多算法提交仍逐项调用原 `POST /api/runs`，无新批次事务或状态。详见[当前控制台与 Gantt 契约](console_gantt_handoff.md)。
+> 当前实验契约（2026-10-18）：`POST /api/experiments` 原子创建父实验和多个算法 Run；新增 `/control` 单变量对照、分页/详情、受限比较和成员管理。原 Run/Worker/认证接口保留，原 Cesium 页面只增加实验上下文。见[最新实验 API](experiment_management_handoff.md)。
+
+> 历史 2026-10-17：逐项提交与条件组实现见[原控制台契约](console_gantt_handoff.md)，不代表当前实验组织方式。
 
 > 九算法增量（2026-10-18）：新增 RunRequest.schedule_model、算法列表 models 与可用性说明，旧模型 ID 不再用于新 HTTP 算法提交；增加无 Run ID 的 Gantt 选择入口。见[九算法公共契约](nine_algorithm_console_handoff.md)。
 

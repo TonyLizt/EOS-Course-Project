@@ -105,7 +105,7 @@ class ReplayBackendTests(unittest.TestCase):
                 )
             Database(path)
             with sqlite3.connect(path) as db:
-                self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 3)
+                self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 4)
                 self.assertEqual(db.execute("SELECT status FROM runs WHERE run_id='old'").fetchone()[0],
                                  "FAILED")
                 self.assertIsNotNone(db.execute(

@@ -1,4 +1,6 @@
-> 2026-10-17 页面整合：单/多算法提交、历史条件分组比较、算法详情和精确可缩放 Gantt 已实现；沿用现有 Controller/Worker/Run 接口，无数据库迁移。操作、接口增量和验收限制见[控制台与 Gantt 交接](console_gantt_handoff.md)。
+> 当前（2026-10-18）：一个持久实验包含多个算法 Run；新增原子创建、模型对照复制及安全成员管理。schema v4 备份迁移，原 Worker/认证协议不变，Cesium 保持原页面。见[实验管理边界与验证](experiment_management_handoff.md)。
+
+> 历史 2026-10-17 页面整合：当时的独立 Run 与条件组实现见[控制台与 Gantt 交接](console_gantt_handoff.md)，其批次/比较描述已被以上工作区替代。
 
 > 九算法整合（2026-10-18）：比较算法与两个初始模型分离，Worker 适配器生成模型初始解后调用原 search；PPO 可信接入未完成，保持禁用。Gantt 增加实验选择页。见[当前九算法边界与验证](nine_algorithm_console_handoff.md)。
 

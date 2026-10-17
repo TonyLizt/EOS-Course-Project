@@ -169,7 +169,7 @@ def resolve_scenario_in(root: Path, scenario_id: str) -> tuple[Path, str]:
                            and all(ch.isalnum() or ch in "_.-" for ch in part)
                            for part in relative.parts))
     if not valid_parts:
-        raise ValueError("場景 ID 只能是由字母、數字、底線、短橫線和小數點組成的安全相對路徑")
+        raise ValueError("场景 ID 只能是由字母、数字、下划线、短横线和小数点组成的安全相对路径")
     path = root / f"{scenario_id}.json"
     if (path.is_symlink() or not path.is_file()
             or not path.resolve().is_relative_to(root.resolve())):

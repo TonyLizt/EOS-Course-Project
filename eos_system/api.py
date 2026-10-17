@@ -19,7 +19,8 @@ from fastapi.staticfiles import StaticFiles
 from . import VERSION
 from .algorithm_registry import get_algorithm, list_algorithms, list_schedule_models, COMPARISON_ALGORITHMS, availability
 from .config import Settings, algorithm_source_sha256, list_scenarios_in, normalise_user_path, require_writable_directory, resolve_scenario_in
-from .contracts import DirectoryRegistration, ReplayRequest, RunConfig, RunRequest
+from .contracts import DirectoryRegistration, ReplayRequest, RunConfig, RunRequest, ExperimentRequest, ExperimentAlgorithm, ControlExperimentRequest
+from .experiments import Experiments
 from .controller import Controller
 from .deletion import remove_exported_files
 from .exporting import render_csv, render_json, require_certified_record
@@ -42,6 +43,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
     database = Database(settings.database_path)
     database.ensure_defaults(settings.scenario_dir, settings.runtime_dir)
+    experiments = Experiments(database)
     catalog = ScenarioCatalog(Path(__file__).resolve().parent.parent)
     catalog_warnings = catalog.register_sources(database)
     controller = Controller(settings, database)
@@ -63,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.replay = replay
     app.state.controller = controller
     app.state.database = database
+    app.state.experiments = experiments
     web_dir = Path(__file__).parent / "web"
     web_digest = hashlib.sha256()
     for asset in sorted(web_dir.iterdir()):
@@ -75,7 +78,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.middleware("http")
     async def current_ui(request: Request, call_next):
         response = await call_next(request)
-        if request.url.path == "/" or request.url.path.startswith("/static/") or request.url.path in {"/visualization/gantt-page", "/visualization/gantt"}:
+        if request.url.path == "/" or request.url.path.startswith(("/static/", "/visualization/experiments/")) or request.url.path in {"/visualization/gantt-page", "/visualization/gantt", "/visualization/cesium-page"}:
             response.headers["Cache-Control"] = "no-store, max-age=0"
             response.headers["Pragma"] = "no-cache"
             response.headers["X-EOS-UI-Build"] = ui_build_id
@@ -165,8 +168,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def algorithms():
         return {"items": list_algorithms(), "models": list_schedule_models()}
 
-    @app.post("/api/runs", status_code=202)
-    def submit_run(request: RunRequest, idempotency_key: str | None = Header(default=None)):
+    def build_run_config(request: RunRequest):
         try:
             spec = get_algorithm(request.algorithm_id)
             if request.algorithm_id not in COMPARISON_ALGORITHMS:
@@ -197,13 +199,114 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             algorithm_version=spec.version,
             algorithm_code_sha=algorithm_source_sha256(), scenario_provenance=provenance, created_at=now(),
         )
+        return config
+
+    @app.post("/api/runs", status_code=202)
+    def submit_run(request: RunRequest, idempotency_key: str | None = Header(default=None)):
+        config = build_run_config(request)
         try:
             run_id, _ = database.enqueue(config, settings.max_queued, idempotency_key)
         except OverflowError as exc:
             raise HTTPException(status_code=429, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
+        experiments.adopt_legacy()
         return {"run_id": run_id, "status": database.get_status(run_id)["status"], "url": f"/api/runs/{run_id}"}
+
+    def experiment_call(func, *args):
+        try:
+            return func(*args)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except (ValueError, sqlite3.IntegrityError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except OverflowError as exc:
+            raise HTTPException(status_code=429, detail=str(exc)) from exc
+
+    def public_experiment(record):
+        record['config'].pop('scenario_path', None)
+        record['config'].pop('output_root', None)
+        for run in record.get('runs', []):
+            _public_run(run)
+        return record
+
+    @app.post('/api/experiments', status_code=202)
+    def create_experiment(request: ExperimentRequest, idempotency_key: str | None = Header(default=None)):
+        configs = [build_run_config(item) for item in request.runs]
+        eid = experiment_call(experiments.create, configs, settings.max_queued, idempotency_key)
+        return public_experiment(experiments.detail(eid))
+
+    @app.get('/api/experiments')
+    def list_experiments(limit: int = Query(default=30, ge=1, le=100), offset: int = Query(default=0, ge=0)):
+        result = experiments.listing(limit, offset)
+        result['items'] = [public_experiment(item) for item in result['items']]
+        return result
+
+    @app.get('/api/experiments/{experiment_id}')
+    def experiment_detail(experiment_id: str):
+        return public_experiment(experiment_call(experiments.detail, experiment_id))
+
+    @app.get('/api/experiments/{experiment_id}/compare/{other_id}')
+    def compare_experiments(experiment_id: str, other_id: str):
+        records = experiment_call(experiments.compare, experiment_id, other_id)
+        return {'items': [public_experiment(r) for r in records]}
+
+    @app.post('/api/experiments/{experiment_id}/control',status_code=202)
+    def create_control_experiment(experiment_id: str, request: ControlExperimentRequest,
+                                  idempotency_key: str | None = Header(default=None)):
+        original=experiment_call(experiments.detail,experiment_id)
+        if original['legacy'] or not original['runs']:
+            raise HTTPException(status_code=409,detail='旧记录无完整实验身份或实验没有算法，请新建实验')
+        shared=experiment_call(experiments.common,experiment_id)
+        if shared.get('schedule_model')==request.schedule_model:
+            raise HTTPException(status_code=422,detail='请选择不同的初始排程模型')
+        configs=[]
+        for run in original['runs']:
+            raw={k:v for k,v in run['config'].items() if k in RunRequest.model_fields}
+            raw['schedule_model']=request.schedule_model
+            config=build_run_config(RunRequest.model_validate(raw))
+            expected=dict(shared);expected['schedule_model']=request.schedule_model
+            from .experiments import common_config
+            if common_config(config.model_dump())!=expected:
+                raise HTTPException(status_code=409,detail='场景、代码或来源配置已变化，不能创建单变量对照实验')
+            configs.append(config)
+        eid=experiment_call(experiments.create,configs,settings.max_queued,idempotency_key,experiment_id)
+        return public_experiment(experiments.detail(eid))
+
+    @app.get('/api/experiments/{experiment_id}/peers')
+    def experiment_peers(experiment_id: str):
+        base = experiment_call(experiments.common, experiment_id)
+        base_model = base.pop('schedule_model', None)
+        items = []
+        # Only explicit compatible model-only pairs, never arbitrary condition groups.
+        with database.connect() as conn:
+            ids = conn.execute('SELECT experiment_id,created_at,common_json FROM experiments WHERE legacy=0 ORDER BY created_at DESC').fetchall()
+        for row in ids:
+            try:
+                candidate = json.loads(row['common_json'])
+                candidate_model = candidate.pop('schedule_model', None)
+                if candidate_model == base_model or candidate != base:
+                    continue
+                experiments.assert_comparable(experiment_id, row['experiment_id'])
+                common = experiments.common(row['experiment_id'])
+                items.append({'experiment_id': row['experiment_id'], 'schedule_model': common['schedule_model'], 'created_at':row['created_at']})
+            except ValueError:
+                pass
+        return {'items': items}
+
+    @app.post('/api/experiments/{experiment_id}/algorithms', status_code=202)
+    def add_experiment_algorithm(experiment_id: str, request: ExperimentAlgorithm):
+        shared = experiment_call(experiments.common, experiment_id)
+        raw = {k: v for k, v in shared.items() if k in RunRequest.model_fields}
+        raw.update(request.model_dump())
+        config = build_run_config(RunRequest.model_validate(raw))
+        experiment_call(experiments.add, experiment_id, config, settings.max_queued)
+        return public_experiment(experiments.detail(experiment_id))
+
+    @app.delete('/api/experiments/{experiment_id}/algorithms/{algorithm_id}')
+    def remove_experiment_algorithm(experiment_id: str, algorithm_id: str):
+        rid = experiment_call(experiments.remove, experiment_id, algorithm_id)
+        return {'removed': True, 'run_id': rid, 'retained_history': True}
 
     @app.get("/api/runs")
     def runs(limit: int = Query(default=20, ge=1, le=100), offset: int = Query(default=0, ge=0)):
@@ -419,11 +522,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/visualization/cesium/{run_id}")
     def open_cesium(run_id: str):
         successful_run(run_id)
+        eid = experiments.for_run(run_id)
         schedule = f"/api/runs/{run_id}/visualization/schedule"
         # 页面先读取构建状态，只有显式点击构建/重试才 POST；保留独立旧 orbit GET。
         status_url = f"/api/runs/{run_id}/replay"
         gantt = f"/visualization/gantt/{run_id}"
         return RedirectResponse("/visualization/cesium-page?" + urlencode({
-            "run_id":run_id, "schedule":schedule, "replay_status":status_url, "gantt":gantt}))
+            "run_id":run_id, "schedule":schedule, "replay_status":status_url, "gantt":gantt,
+            "experiment_id":eid or ''}))
+
+    @app.get('/visualization/experiments/{experiment_id}/cesium')
+    def experiment_cesium(experiment_id: str, run_id: str | None = None):
+        record=experiment_call(experiments.detail, experiment_id)
+        selected=next((r for r in record['runs'] if r['run_id']==run_id),None)
+        selected=selected or next((r for r in record['runs'] if r['status']=='SUCCEEDED' and r['plan']),None)
+        if selected and selected['status']=='SUCCEEDED' and selected['plan']:
+            return open_cesium(selected['run_id'])
+        return RedirectResponse('/?' + urlencode({'experiment_id':experiment_id}) + '#detail-heading')
+
+    @app.get('/api/runs/{run_id}/experiment')
+    def run_experiment(run_id: str):
+        eid=experiments.for_run(run_id)
+        if not eid:
+            raise HTTPException(status_code=404,detail='此运行不属于活动实验算法')
+        return public_experiment(experiments.detail(eid))
 
     return app

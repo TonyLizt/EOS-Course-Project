@@ -12,6 +12,8 @@ from utils.certification_identity import trusted_context
 import hashlib
 import json
 import sqlite3
+import os
+import tempfile
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -214,6 +216,27 @@ CREATE INDEX IF NOT EXISTS idx_replay_status_updated ON replay_artifacts(status,
 """
 
 
+EXPERIMENT_SCHEMA = """
+CREATE TABLE IF NOT EXISTS experiments (
+  experiment_id TEXT PRIMARY KEY,
+  common_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  legacy INTEGER NOT NULL DEFAULT 0,
+  idempotency_key TEXT UNIQUE,
+  request_sha256 TEXT
+);
+CREATE TABLE IF NOT EXISTS experiment_runs (
+  experiment_id TEXT NOT NULL REFERENCES experiments(experiment_id),
+  run_id TEXT PRIMARY KEY REFERENCES runs(run_id) ON DELETE CASCADE,
+  algorithm_id TEXT NOT NULL,
+  removed_at TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_experiment_active_algorithm
+  ON experiment_runs(experiment_id,algorithm_id) WHERE removed_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_experiment_created ON experiments(created_at);
+"""
+
+
 class Database:
     def __init__(self, path: Path):
         self.path = path
@@ -226,8 +249,17 @@ class Database:
         path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as connection:
             version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1, 2, 3):
+            if version not in (0, 1, 2, 3, 4):
                 raise RuntimeError(f"数据库版本 {version} 比当前程序新")
+            if version in (1, 2, 3):
+                backup = path.with_name(path.name + '.pre-v4.bak')
+                try:
+                    backup.open('xb').close()
+                except FileExistsError:
+                    fd, filename = tempfile.mkstemp(prefix=path.name+'.pre-v4.',suffix='.bak',dir=path.parent)
+                    os.close(fd); backup = Path(filename)
+                with sqlite3.connect(backup) as destination:
+                    connection.backup(destination)
             if version in (1, 2):
                 # 在线备份会同时读取 WAL 中已提交的页；避免直接复制活跃数据库文件。
                 backup = path.with_name(path.name + ".pre-v3.bak")
@@ -242,6 +274,8 @@ class Database:
             elif version == 2:
                 # 回放是正式结果的派生缓存；迁移只增加表和索引。
                 connection.executescript("BEGIN IMMEDIATE;\n" + REPLAY_SCHEMA + "\nPRAGMA user_version=3;\nCOMMIT;")
+            if version < 4:
+                connection.executescript('BEGIN IMMEDIATE;\n' + EXPERIMENT_SCHEMA + '\nPRAGMA user_version=4;\nCOMMIT;')
 
     def expected_certification_context(self):
         if self._certification_context_error:
@@ -516,20 +550,24 @@ class Database:
 
     def request_cancel(self, run_id: str) -> tuple[str, bool] | None:
         with self.write() as db:
-            row = db.execute("SELECT status,current_attempt,cancel_requested_at FROM runs WHERE run_id=?", (run_id,)).fetchone()
-            if row is None:
-                return None
-            if row["status"] in TERMINAL:
-                return row["status"], False
-            if row["status"] == "QUEUED":
-                db.execute("UPDATE runs SET status='CANCELLED',cancel_requested_at=?,finished_at=?,updated_at=? WHERE run_id=?",
-                           (now(), now(), now(), run_id))
-                self._event(db, run_id, None, "api", None, "CANCELLED", None)
-                return "CANCELLED", True
-            if row["cancel_requested_at"] is None:
-                db.execute("UPDATE runs SET cancel_requested_at=?,updated_at=? WHERE run_id=?", (now(), now(), run_id))
-                self._event(db, run_id, row["current_attempt"], "api", None, "CANCEL_REQUESTED", None)
-            return row["status"], True
+            return self.request_cancel_in(db, run_id)
+
+    def request_cancel_in(self, db, run_id: str):
+        """同一事务内移除实验成员并取消，仍沿用原 Controller 协议。"""
+        row = db.execute("SELECT status,current_attempt,cancel_requested_at FROM runs WHERE run_id=?", (run_id,)).fetchone()
+        if row is None:
+            return None
+        if row["status"] in TERMINAL:
+            return row["status"], False
+        if row["status"] == "QUEUED":
+            db.execute("UPDATE runs SET status='CANCELLED',cancel_requested_at=?,finished_at=?,updated_at=? WHERE run_id=?",
+                       (now(), now(), now(), run_id))
+            self._event(db, run_id, None, "api", None, "CANCELLED", None)
+            return "CANCELLED", True
+        if row["cancel_requested_at"] is None:
+            db.execute("UPDATE runs SET cancel_requested_at=?,updated_at=? WHERE run_id=?", (now(), now(), run_id))
+            self._event(db, run_id, row["current_attempt"], "api", None, "CANCEL_REQUESTED", None)
+        return row["status"], True
 
     def get_status(self, run_id: str) -> dict | None:
         with self.connect() as db:

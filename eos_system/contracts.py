@@ -67,6 +67,19 @@ class ReplayRequest(StrictModel):
     replay_config_id: str = Field(min_length=1, max_length=100)
 
 
+class ExperimentRequest(StrictModel):
+    runs: list[RunRequest] = Field(min_length=1, max_length=9)
+
+
+class ExperimentAlgorithm(StrictModel):
+    algorithm_id: str = Field(min_length=1, max_length=100)
+    algorithm_params: dict[str, Any] = Field(default_factory=dict)
+
+
+class ControlExperimentRequest(StrictModel):
+    schedule_model: Literal['completion_first', 'adaptive_repair']
+
+
 class DirectoryRegistration(StrictModel):
     """位置登记由服务端校验；普通实验请求只携带登记 ID。"""
 

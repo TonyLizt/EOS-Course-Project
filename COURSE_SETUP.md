@@ -1,3 +1,8 @@
+## 实验父子关系与一键模型对照（2026-10-18）
+
+- 从回退后的 92f34d2 恢复可审查的 Experiment→算法 Run 数据层，支持原子多算法提交、严格模型对照、一键复制以及保留历史的移除/取消；不恢复外层 Cesium iframe。
+- schema v4 显式增加父子表，升级在线备份且不覆盖旧备份，保留历史，Controller/Worker/正式认证不变。27 项 Python 定向通过；不运行正式 8765、不 Push/PR。见[实验管理交接](docs/phase2/experiment_management_handoff.md)。
+
 ## 九算法比较与 Gantt 实验入口（2026-10-18）
 
 - 将两种初始模型与九种比较算法分离，保留旧历史；新增 schedule_model、算法可用性与模型分组，补上 `/visualization/gantt` 实验选择页。MIP 缺依赖、PPO 尚缺可信推理接入，明确禁用，不冒充可用。
