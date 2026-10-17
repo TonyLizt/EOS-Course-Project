@@ -1,28 +1,33 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EOS 课程调度系统</title>
+  <title>EOS · 统一调度控制台</title>
   <link rel="stylesheet" href="/static/style.css">
+  <script defer src="/static/comparison.js"></script>
   <script defer src="/static/app.js"></script>
+  <script defer src="/static/console.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">跳到主要內容</a>
   <header class="topbar">
-    <div><p class="eyebrow">EOS · COURSE SYSTEM</p><h1>地球观测任务调度</h1></div>
+    <div><p class="eyebrow">EOS · MISSION OPERATIONS</p><h1>统一调度控制台</h1><nav aria-label="控制台导航"><a href="#create-heading">运行调度</a><a href="#comparison">结果比较</a><a href="#runs-heading">历史记录</a></nav></div>
     <span id="health" class="badge" role="status" aria-live="polite">正在連接服務…</span>
   </header>
   <main class="layout" id="main-content" tabindex="-1">
     <section class="card form-card" aria-labelledby="create-heading">
-      <div class="section-title"><h2 id="create-heading">新建實驗</h2><p>選擇登記場景和算法，提交後由獨立 Worker 執行。</p></div>
+      <div class="section-title"><h2 id="create-heading">运行调度</h2><p>共用场景与实验条件，按算法创建独立 Run，由现有 Worker 队列执行。</p></div>
       <form id="run-form">
         <label>数据源<select id="source" required></select></label>
         <label>场景<select id="scenario" required></select></label>
         <p id="scenario-hint" class="hint" role="status"></p>
-        <label>算法<select id="algorithm" required></select></label>
+        <label>当前配置算法<select id="algorithm" required></select></label>
         <p id="algorithm-hint" class="hint"></p>
+        <fieldset><legend>本批运行算法（可多选）</legend><div id="algorithm-choices"></div></fieldset>
+        <button class="secondary" type="button" id="algorithm-info">查看当前算法详情</button>
+        <p class="hint parameter-note">下方参数 JSON 仅属于当前配置算法，切换算法自动保留各自输入。</p>
         <label>结果输出<select id="output-profile" required></select></label>
         <p id="output-hint" class="hint"></p>
         <div class="two-cols">
@@ -31,6 +36,13 @@
         </div>
         <label>任务放置模式<select id="placement"><option value="earliest">最早可行时间</option><option value="center">窗口中心</option></select></label>
         <details><summary>实验参数</summary>
+          <p class="hint">这两个已注册算法使用各自固定的优化策略；权重仅记录实验条件，不改变其策略。详情中可查看实际目标。</p>
+          <div class="two-cols">
+            <label>收益权重<input id="weight-profit" type="number" min="0" step="any" value="0"></label>
+            <label>完成率权重<input id="weight-completion" type="number" min="0" step="any" value="1"></label>
+            <label>时效权重<input id="weight-timeliness" type="number" min="0" step="any" value="0"></label>
+            <label>均衡权重<input id="weight-balance" type="number" min="0" step="any" value="0"></label>
+          </div>
           <div class="two-cols">
             <label>未安排惩罚<input id="penalty" type="number" min="0" step="any" value="1000"></label>
             <label>下传时长比<input id="downlink" type="number" min="0.01" step="any" value="1"></label>
@@ -39,8 +51,9 @@
           <label>非敏捷转向秒数<input id="transition" type="number" min="0" step="any" value="10"></label>
           <label>算法参数 JSON<input id="params" value="{}" spellcheck="false"></label>
         </details>
-        <button type="submit" id="submit">提交实验</button>
+        <button type="submit" id="submit">运行选中算法</button>
         <p id="form-message" class="message" role="status"></p>
+        <ul id="submission-results" class="files" aria-label="逐算法提交结果"></ul>
       </form>
       <details class="location-setup"><summary>登记新的数据源或输出目录</summary>
         <label>位置用途<select id="register-kind"><option value="source">只读数据源</option><option value="output">正式文件输出</option></select></label>
@@ -51,9 +64,14 @@
       </details>
     </section>
 
+    <section class="card comparison-card" id="comparison" aria-labelledby="comparison-heading">
+      <div class="section-title inline"><div><p class="eyebrow">COMPARE · SAME CONDITIONS</p><h2 id="comparison-heading">结果比较</h2><p>本批运行自动加入；也可勾选历史记录。不同条件分组展示，不做综合排名。</p></div><button id="clear-comparison" type="button" class="secondary">清空比较</button></div>
+      <p class="hint">TP ↑ 收益 · TCR ↑ 完成率 · BD ↑ 均衡度 · TM ↓ 归一化等待时间（未完成记 1）· RT ↓ 秒 · RV ↓ 多次收益方差（单次通常无值）。★ 表示同组该指标最佳值，允许并列。</p>
+      <p id="comparison-status" class="message" role="status"></p><div id="comparison-groups"></div>
+    </section>
     <section class="card list-card" aria-labelledby="runs-heading">
       <div class="section-title inline"><div><h2 id="runs-heading">實驗列表</h2><p id="run-count">狀態每兩秒刷新一次。</p></div><div class="toolbar"><button class="secondary" id="toggle-refresh" type="button" aria-pressed="false">暫停自動更新</button><button class="secondary" id="refresh" type="button">立即刷新</button></div></div>
-      <div class="table-wrap" tabindex="0" aria-label="實驗列表，可水平捲動"><table><caption class="sr-only">已提交的調度實驗</caption><thead><tr><th scope="col">提交時間</th><th scope="col">場景</th><th scope="col">算法</th><th scope="col">狀態</th><th scope="col">TCR</th></tr></thead><tbody id="runs"></tbody></table></div>
+      <div class="table-wrap" tabindex="0" aria-label="實驗列表，可水平捲動"><table><caption class="sr-only">已提交的調度實驗</caption><thead><tr><th scope="col">比较</th><th scope="col">提交時間</th><th scope="col">場景</th><th scope="col">算法</th><th scope="col">狀態</th><th scope="col">TCR</th></tr></thead><tbody id="runs"></tbody></table></div>
       <div class="list-footer"><button class="secondary" id="previous-page" type="button">上一页</button><span id="page-label"></span><button class="secondary" id="next-page" type="button">下一页</button></div>
       <p id="list-message" class="message" role="status"></p>
     </section>
@@ -61,6 +79,8 @@
     <section class="card detail-card" aria-labelledby="detail-heading">
       <div class="section-title inline"><div><h2 id="detail-heading">實驗詳情</h2><p id="selected-run">選擇列表中的實驗</p></div><span id="detail-status" class="badge muted" role="status">尚未選擇</span></div>
       <div id="metrics" class="metrics"></div>
+      <p id="run-summary" class="hint"></p><button id="run-algorithm-info" type="button" class="secondary" hidden>算法与本次参数</button>
+      <details><summary>本次运行条件与核验信息</summary><pre id="run-config"></pre></details>
       <div id="actions" class="actions" hidden>
         <button class="secondary" id="cancel" type="button">取消实验</button>
         <a id="export-json" class="link-button" href="#">导出 JSON</a>
@@ -80,6 +100,7 @@
       <div class="table-wrap" tabindex="0" aria-label="計畫明細，可水平捲動"><table><caption class="sr-only">所選實驗的任務計畫</caption><thead><tr><th scope="col">任務</th><th scope="col">衛星</th><th scope="col">開始</th><th scope="col">結束</th></tr></thead><tbody id="assignments"></tbody></table></div>
     </section>
   </main>
+  <dialog id="algorithm-dialog" aria-labelledby="algorithm-dialog-title"><div class="inline"><h2 id="algorithm-dialog-title">算法详情</h2><button type="button" id="close-algorithm-dialog" class="secondary">关闭</button></div><div id="algorithm-description"></div></dialog>
   <footer>框架 v0.3.3 · 正式结果由 Controller 核验并从 SQLite 提供</footer>
 </body>
 </html>

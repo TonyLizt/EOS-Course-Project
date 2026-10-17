@@ -1,3 +1,11 @@
+## 统一调度控制台与 Gantt 交互升级（2026-10-17）
+
+- 首页整合注册算法多选提交、独立 Run 监控、历史分组比较、算法详情和完整指标；新增元数据来自现有实现，运行/核验/取消仍走原 Controller 和 Worker。
+- Gantt 使用显式 Hover/焦点提示及点击/触屏详情，增加 UTC 秒级缩放、平移、范围输入、导航和任务定位；任务宽度保留真实时间。
+- Node 5 项、Python 5 项定向检查通过，并使用隔离数据库完成 Chromium 交互验证；成功历史为明示的测试 receipt，新运行保留真实认证失败状态，不冒充物理认证通过。未做大型仿真或全量 WCAG 审计。详见 [交接说明](docs/phase2/console_gantt_handoff.md)。
+
+---
+
 ## v0.3.5：Fixed Payload View 原子帧提交（2026-10-17）
 
 - 根因为单一隐藏 Cesium Scene 在多个固定镜头之间逐帧切换后，未等 imagery/terrain LOD 完成便复制默认 framebuffer；不是主 ENU 跟随相机或卫星 quaternion 跳变。

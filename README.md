@@ -159,3 +159,11 @@ node tests/satellite_follow.test.cjs
 历史 `SUCCEEDED` 保留原状态用于追溯，但缺少当前版本认证、来源不匹配或计划 SHA 不符时，Storage 不返回正式计划，API/JSON/CSV/目录导出也会拒绝。列表和详情附带连续认证状态。当前 Orekit 采样模型尚无连续区间证明，四份冻结计划的 80 条任务仍为 `INCONCLUSIVE`，不能正式发布。
 
 正式独立审查需要服务端配置 `EOS_OREKIT_DATA`；没有数据、可信窗口来源或连续性证据都会关闭门禁。普通 `verify_schedules.py` 的离散模式仅供诊断，`PASS_DISCRETE_ONLY` 不代表连续认证。完整契约、测试和风险见 [连续曝光审计报告](docs/phase2/continuous_exposure_boundary_fix_2026-10-17.md) 第 11 节起。
+
+## 统一调度控制台与 Gantt
+
+首页可勾选一个或多个**实际已注册**算法，一次提交独立 Run；共用场景、种子、预算和约束，算法参数分别保存。右侧显示分组指标比较、历史运行及详情；算法详情按钮展示实际策略、目标、限制和参数 schema。支持取消、原 Run 的 Cesium/Gantt/导出入口。
+
+历史记录可勾选加入比较（最多 12 项）。不同场景 SHA、代码/约束、预算、种子等条件自动分组；TP/TCR/BD 越大越好，TM/RT/RV 越小越好，未提供 RV 保持空值，不生成综合排名。历史状态与当前连续认证分别展示。
+
+Gantt 支持任务/卫星搜索、任务定位后秒级放大、缩放、平移、UTC 时间范围与导航滑块。Hover 或键盘焦点显示精确任务提示，点击/触摸固定详情，Escape 关闭提示；真实观测时间不会随缩放改变。详见[交接和验证记录](docs/phase2/console_gantt_handoff.md)。

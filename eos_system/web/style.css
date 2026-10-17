@@ -144,6 +144,32 @@ tbody tr.selected { background: #20376b; box-shadow: inset 4px 0 #7cc4ff; }
 .error { color: #ffb4ad; font-size: 12px; }
 footer { padding: 24px; color: #aebbd0; text-align: center; font-size: 12px; }
 
+nav { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 14px; }
+a { color: #9ed8ff; text-underline-offset: 3px; }
+nav a { padding: 8px 0; }
+.comparison-card { grid-column: 2; }
+.form-card { grid-row: span 3; align-self: start; }
+.check-label { display: flex; align-items: center; gap: 10px; margin: 8px 0; min-height: 44px; }
+.check-label input, .compare-run { width: 24px; height: 24px; min-height: 24px; margin: 0; accent-color: #7cc4ff; }
+.check-label small, .run-id { display: block; color: var(--muted); font-size: 11px; }
+fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin: 0 0 16px; }
+legend { color: var(--accent); font-size: 13px; padding: 0 6px; }
+.parameter-note { margin-top: 12px; }
+.comparison-group { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 18px; }
+.comparison-group h3 { margin-top: 0; }
+.comparison-group td { white-space: normal; min-width: 84px; }
+.comparison-group th { white-space: normal; }
+.comparison-group th:first-child { min-width: 170px; max-width: 210px; }
+.run-id { overflow-wrap: anywhere; white-space: normal; }
+.comparison-group td:last-child { min-width: 210px; }
+.comparison-group button { margin: 4px 0; }
+.metric-best { color: #a7f3d0; font-weight: 700; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); font-size: 12px; font-weight: 400; }
+dialog { width: min(720px, calc(100vw - 32px)); max-height: 85vh; overflow: auto; background: var(--surface-raised); color: #f8fafc; border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+dialog::backdrop { background: #000a; }
+dt { color: var(--accent); font-weight: 700; margin-top: 20px; }
+dd { margin: 8px 0; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
@@ -151,6 +177,7 @@ footer { padding: 24px; color: #aebbd0; text-align: center; font-size: 12px; }
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
   .form-card { grid-row: auto; }
+  .comparison-card { grid-column: auto; }
   .metrics { grid-template-columns: repeat(2, 1fr); }
 }
 

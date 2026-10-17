@@ -61,6 +61,9 @@ class AlgorithmSpec:
     params_model: type[AlgorithmParams]
     build: Callable[[SolveContext], Solver] = field(repr=False)
     description: str = ""
+    strategy: str = ""
+    objectives: str = ""
+    limitations: str = ""
 
     def parse_params(self, raw: dict) -> AlgorithmParams:
         if not isinstance(raw, dict):
@@ -79,6 +82,10 @@ class AlgorithmSpec:
             "owner": self.owner,
             "version": self.version,
             "description": self.description,
+            "strategy": self.strategy,
+            "objectives": self.objectives,
+            "limitations": self.limitations,
+            "availability": "ready",
             "parameters": self.params_model.model_json_schema(),
         }
 
@@ -109,12 +116,18 @@ _SPECS: dict[str, AlgorithmSpec] = {
         owner="EOS-Bench", version="baseline-1", params_model=CompletionParams,
         build=lambda context: _build_legacy("completion_first", context),
         description="EOS-Bench 已有启发式算法，供成对实验对照。",
+        strategy="生成离散候选；按可行候选数量选择任务；默认随机打乱候选并接受首个可行安排。",
+        objectives="优先增加已安排任务数；不保证最早开始、最近距离或全局最优。",
+        limitations="每任务最多 256 个候选。earliest 是候选放置设置，不保证最终选择最早候选；目标权重不改变该算法的固定策略。",
     ),
     "adaptive_repair": AlgorithmSpec(
         algorithm_id="adaptive_repair", name="自适应修复（现有算法）", category="baseline",
         owner="课程项目第一阶段", version="baseline-1", params_model=AdaptiveRepairParams,
         build=lambda context: _build_legacy("adaptive_repair", context),
         description="第一阶段已有算法，四种第二阶段新算法另行登记。",
+        strategy="动态稀缺度选择、受限冲突链修复与破坏重建；所有接受的安排通过共享约束模型。",
+        objectives="按完成任务数、总任务优先级、较早观测的顺序进行字典序比较。",
+        limitations="候选数量和局部修复深度有限，不保证全局最优；遵守时间预算，目标权重不替代其固定字典序目标。",
     ),
 }
 

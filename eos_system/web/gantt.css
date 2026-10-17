@@ -1,0 +1,37 @@
+.gantt-layout { max-width: 1800px; padding: 24px; margin: auto; display: grid; gap: 18px; }
+h2 { margin: 0 0 18px; font-size: 18px; }
+.gantt-controls { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 16px; align-items: end; }
+.timeline-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; }
+.range-controls { grid-template-columns: 1fr 1fr auto; }
+.range-controls button { margin-bottom: 16px; }
+#time-navigator { padding: 0; }
+.chart-card { padding-bottom: 12px; }
+#mainArea { --gutter: 175px; }
+.axis-row, .gantt-row { display: flex; align-items: center; gap: 12px; }
+.axis-caption, .gantt-sat-label { flex: 0 0 var(--gutter); overflow-wrap: anywhere; font-size: 12px; color: var(--muted); }
+.gantt-sat-label { text-align: right; }
+#timeAxis { position: relative; flex: 1; height: 52px; overflow: hidden; border-bottom: 1px solid var(--border); }
+.axis-tick { position: absolute; top: 3px; font-size: 11px; color: #cbd8ed; white-space: pre; border-left: 1px solid var(--border); padding-left: 4px; height: 44px; }
+#ganttScroll { max-height: 58vh; overflow-y: auto; scrollbar-gutter: stable; }
+.axis-row { padding-right: 16px; }
+.gantt-row { min-height: 44px; margin: 8px 0; }
+.gantt-timeline { flex: 1; position: relative; height: 40px; background: #080e20; border-block: 1px solid #34425f; overflow: hidden; }
+.gantt-bar { position: absolute; top: 7px; height: 26px; min-height: 0; min-width: 0; padding: 0; border: 0; border-radius: 2px; color: #071122; background: #7cc4ff; overflow: hidden; white-space: nowrap; font-size: 11px; }
+.gantt-bar:nth-child(3n+2) { background: #a7f3d0; }
+.gantt-bar:nth-child(3n+3) { background: #ffd166; }
+.gantt-bar:hover { background: #fff; }
+.gantt-bar[aria-pressed="true"] { outline: 2px solid #fff; outline-offset: -2px; }
+.gantt-bar:focus-visible { outline-offset: -3px !important; }
+.chart-tip { margin-top: 18px; }
+#task-detail dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+#task-detail dt { margin-top: 0; font-size: 12px; color: var(--muted); }
+#task-detail dd { font-size: 14px; overflow-wrap: anywhere; }
+#task-tooltip { position: fixed; z-index: 2000; width: min(360px, calc(100vw - 24px)); padding: 14px; border: 1px solid #8ab4f8; border-radius: 8px; background: #0c1228; color: #f8fafc; box-shadow: 0 5px 20px #0009; font-size: 13px; white-space: pre-line; pointer-events: auto; }
+@media (max-width: 700px) {
+  .gantt-layout { padding: 12px; }
+  .gantt-controls, .range-controls { grid-template-columns: 1fr; gap: 0; }
+  #mainArea { --gutter: 90px; }
+  #task-detail dl { grid-template-columns: 1fr 1fr; }
+  .topbar { flex-wrap: wrap; }
+  .axis-caption, .gantt-sat-label { font-size: 10px; }
+}

@@ -1,3 +1,5 @@
+> 2026-10-17 控制台升级：`GET /api/algorithms` 增加策略/目标/限制/可用性字段，`GET /api/scenarios` 补充静态规模和来源状态；多算法提交仍逐项调用原 `POST /api/runs`，无新批次事务或状态。详见[当前控制台与 Gantt 契约](console_gantt_handoff.md)。
+
 > v0.3.2 已实现补充：场景元数据/可用性、自动登记与自适应预算见[六场景交接](six_scenario_scale_handoff.md)。配置 ID 保持，实际步长读 manifest，不写死 5 秒。
 
 > **2026-10-16 当前实现入口：**[v0.3.1 修复集成交接](restore_integration_handoff.md)。本文的 v0.2/v0.3 段落保留目标设计与历史背景；默认配置、READY 读取方式与已实现范围以该交接及当前代码为准。
