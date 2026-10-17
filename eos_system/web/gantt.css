@@ -20,6 +20,7 @@ h2 { margin: 0 0 18px; font-size: 18px; }
 .gantt-bar:nth-child(3n+2) { background: #a7f3d0; }
 .gantt-bar:nth-child(3n+3) { background: #ffd166; }
 .gantt-bar:hover { background: #fff; }
+.gantt-bar.is-snapped { background:#fff; outline:2px solid #ffd166; outline-offset:0; }
 .gantt-bar[aria-pressed="true"] { outline: 2px solid #fff; outline-offset: -2px; }
 .gantt-bar:focus-visible { outline-offset: -3px !important; }
 .chart-tip { margin-top: 18px; }

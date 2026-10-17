@@ -1,4 +1,4 @@
-> 当前实验契约（2026-10-18）：`POST /api/experiments` 原子创建父实验和多个算法 Run；新增 `/control` 单变量对照、分页/详情、受限比较和成员管理。原 Run/Worker/认证接口保留，原 Cesium 页面只增加实验上下文。见[最新实验 API](experiment_management_handoff.md)。
+> 当前实验契约（2026-10-18）：`POST /api/experiments` 原子创建父实验和多个算法 Run；新增 `/control` 单变量对照、分页/详情、受限比较和成员管理。原 Run/Worker/认证接口保留，原 Cesium 页面只增加实验上下文。见[最新实验 API](experiment_management_handoff.md)及[当前 UI 行为](unified_interactions_handoff.md)。
 
 > 历史 2026-10-17：逐项提交与条件组实现见[原控制台契约](console_gantt_handoff.md)，不代表当前实验组织方式。
 

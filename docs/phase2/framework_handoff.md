@@ -1,4 +1,4 @@
-> 当前（2026-10-18）：一个持久实验包含多个算法 Run；新增原子创建、模型对照复制及安全成员管理。schema v4 备份迁移，原 Worker/认证协议不变，Cesium 保持原页面。见[实验管理边界与验证](experiment_management_handoff.md)。
+> 当前（2026-10-18）：一个持久实验包含多个算法 Run；新增原子创建、模型对照复制及安全成员管理。schema v4 备份迁移，原 Worker/认证协议不变，Cesium 保持原页面。见[实验管理边界与验证](experiment_management_handoff.md)及[统一交互与浏览器验证](unified_interactions_handoff.md)。
 
 > 历史 2026-10-17 页面整合：当时的独立 Run 与条件组实现见[控制台与 Gantt 交接](console_gantt_handoff.md)，其批次/比较描述已被以上工作区替代。
 

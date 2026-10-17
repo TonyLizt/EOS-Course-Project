@@ -1,0 +1,22 @@
+#experiment-controls { font-size:13px; }
+#experiment-controls h3 { font-size:14px; margin:12px 0 6px; }
+#experiment-controls label { display:block; margin:8px 0; }
+#experiment-controls select,#experiment-controls textarea { width:100%; box-sizing:border-box; background:#080f21; color:#edf4ff; border:1px solid #7185ac; padding:8px; }
+#experiment-controls button { cursor:pointer; color:#e8f4ff; background:#203456; border:1px solid #7185ac; border-radius:4px; padding:8px; }
+#experiment-controls button:disabled { cursor:default; opacity:.6; }
+#experiment-controls :focus-visible { outline:3px solid #ffd166; outline-offset:2px; }
+#experiment-controls .algorithm-card { border:1px solid #41516f; border-radius:6px; margin:6px 0; }
+#experiment-controls .algorithm-heading { display:flex; align-items:stretch; }
+#experiment-controls .algorithm-choice { flex:1; min-width:0; padding:10px 12px; margin:0; font:inherit; text-align:left; align-self:center; }
+#experiment-controls .algorithm-toggle { flex-shrink:0; min-width:44px; min-height:44px; padding:10px 12px; border:0; background:transparent; }
+#experiment-controls .algorithm-toggle span { display:inline-block; }
+#experiment-controls .algorithm-toggle[aria-expanded="true"] span { transform:rotate(90deg); }
+#experiment-controls .algorithm-content { padding:12px; border-top:1px solid #41516f; }
+#experiment-controls .included { opacity:.65; background:#1d2940; }
+#experiment-controls .active,#experiment-controls tr.selected { background:#23446e; outline:2px solid #79caff; outline-offset:-2px; }
+#experiment-controls .table-wrap { overflow:auto; max-height:300px; }
+#experiment-controls table { border-collapse:collapse; font-size:12px; }
+#experiment-controls td,#experiment-controls th { padding:7px; border-bottom:1px solid #41516f; white-space:nowrap; text-align:left; }
+#cesium-current-algorithms,#cesium-add-algorithms { max-height:330px; overflow:auto; }
+#experiment-controls .hint { color:#bac7dc; font-size:12px; }
+#experiment-controls .mixed-choice { display:flex; gap:4px; flex-wrap:wrap; align-items:center; }

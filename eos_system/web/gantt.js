@@ -2,6 +2,7 @@
   'use strict';
   const $ = id => document.getElementById(id), T = ScheduleTimeline;
   let data = [], filtered = [], domain = [0, 1000], range = domain, chosen = null, tooltipOwner = null;
+  let magneticBar = null;
   const scheduleUrl = new URLSearchParams(location.search).get('schedule') || '../output/schedules/Scenario_S1_schedule.json';
   const match = scheduleUrl.match(/^\/api\/runs\/([^/]+)\/visualization\/schedule(?:\?|$)/);
   if (match) { $('cesium-link').href = '/visualization/cesium/' + encodeURIComponent(decodeURIComponent(match[1])); $('cesium-link').hidden = false; }
@@ -9,7 +10,7 @@
   const localInput = value => new Date(value).toISOString().slice(0, 19);
   function setRange(next) { range = T.clampRange(next[0], next[1], domain); render(); }
   function detailsText(a) { return `卫星：${a.satellite_id}\n任务：${a.task_id}\n开始：${T.fmt(a.start)}\n结束：${T.fmt(a.end)}\n曝光：${(a.end - a.start) / 1000} 秒${a.priority == null ? '' : '\n优先级：' + a.priority}`; }
-  function hideTooltip() { tooltipOwner?.removeAttribute('aria-describedby'); tooltipOwner = null; $('task-tooltip').hidden = true; }
+  function hideTooltip() { magneticBar?.classList.remove('is-snapped'); magneticBar=null; tooltipOwner?.removeAttribute('aria-describedby'); tooltipOwner = null; $('task-tooltip').hidden = true; }
   function showTooltip(a, button) {
     hideTooltip(); tooltipOwner = button;
     const box = $('task-tooltip'); box.textContent = detailsText(a); box.hidden = false;
@@ -69,6 +70,31 @@
         bar.addEventListener('focus', () => showTooltip(a, bar)); bar.addEventListener('blur', hideTooltip);
         bar.addEventListener('click', () => { showDetails(a); showTooltip(a, bar); }); track.append(bar);
       }
+      function hit(event) {
+        const direct=event.target.closest('.gantt-bar');
+        if(direct&&track.contains(direct))return direct;
+        const bars=[...track.querySelectorAll('.gantt-bar')];
+        const id=T.magneticHit({x:event.clientX,y:event.clientY},bars.map(bar=>{
+          const r=bar.getBoundingClientRect();return {id:bar.dataset.index,left:r.left,right:r.right,top:r.top,bottom:r.bottom};
+        }),12);
+        return id==null?null:bars.find(b=>b.dataset.index===id);
+      }
+      track.addEventListener('pointermove',event=>{
+        if(event.pointerType==='touch')return;
+        const bar=hit(event);
+        if(!bar){hideTooltip();return;}
+        if(magneticBar!==bar||$('task-tooltip').hidden){
+          showTooltip(data.find(a=>String(a.index)===bar.dataset.index),bar);
+          magneticBar=bar;bar.classList.add('is-snapped');
+        }
+      });
+      track.addEventListener('pointerleave',event=>{if(!event.relatedTarget||!$('task-tooltip').contains(event.relatedTarget))hideTooltip();});
+      track.addEventListener('click',event=>{
+        if(event.target.closest('.gantt-bar'))return;
+        const bar=hit(event);if(!bar)return;
+        const a=data.find(a=>String(a.index)===bar.dataset.index);showDetails(a);showTooltip(a,bar);
+        magneticBar=bar;bar.classList.add('is-snapped');
+      });
       track.style.height = Math.max(40, laneEnds.length * 34 + 8) + 'px'; row.append(label, track); fragment.append(row);
     }
     $('ganttContainer').replaceChildren(fragment);

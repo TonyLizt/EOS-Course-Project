@@ -1,130 +1,125 @@
-/* Runs remain independent API resources; a batch is a browser-side selection. */
+/* One persistent experiment owns its algorithm Runs; no arbitrary condition groups. */
 (() => {
   'use strict';
-  const selected = new Set();
-  const cache = new Map();
-  const params = new Map();
-  const terminal = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'TIMED_OUT']);
-  const E = escapeHtml;
-  const verification = run => run.status === 'SUCCEEDED'
-    ? (run.result_kind === 'planning_preview' ? '规划预览完成 · 曝光采样通过 · 未获正式连续认证'
-       : `Controller 已提交 · 连续认证 ${run.continuous_certification?.status || '未提供'}`)
-    : (run.error?.message || '未提交正式计划');
-  let activeAlgorithm = '', detailRun = null, comparing = false, submitting = false;
-  try { JSON.parse(sessionStorage.getItem('eos-comparison') || '[]').slice(0, 12).forEach(id => selected.add(id)); } catch (_) { /* Optional storage. */ }
-  function persist() {
-    try { sessionStorage.setItem('eos-comparison', JSON.stringify([...selected])); } catch (_) { /* Private browsing may deny storage. */ }
-  }
-  function catalog(algorithms) {
-    const firstReady = algorithms.find(a => a.availability === 'ready')?.algorithm_id;
-    $('algorithm-choices').innerHTML = algorithms.map(a => `<label class="check-label"><input type="checkbox" name="batch-algorithm" value="${E(a.algorithm_id)}" ${a.algorithm_id === firstReady ? 'checked' : ''} ${a.availability && a.availability !== 'ready' ? 'disabled' : ''}><span>${E(a.name)} <small>${E(a.version)} · ${E(a.availability || 'ready')} ${E(a.availability_message || '')}</small></span></label>`).join('');
-    activeAlgorithm = $('algorithm').value;
-  }
-  $('algorithm').addEventListener('change', () => {
-    if (activeAlgorithm) params.set(activeAlgorithm, $('params').value);
-    activeAlgorithm = $('algorithm').value;
-    $('params').value = params.get(activeAlgorithm) || '{}';
+  const UI=ExperimentUI, E=UI.E;
+  let experimentId=new URLSearchParams(location.search).get('experiment_id'), experiment=null, peerId='', pending=false, generation=0;
+  let submitKey=null, submitPayload=null;
+  let controlPending=false,controlKey=null,controlSignature=null;
+  const comparison=UI.comparison($('comparison-groups'),$('comparison-mode'),$('mixed-order'),(eid,rid)=>{
+    if(eid!==experimentId)showExperiment(eid,rid);else{selectedId=rid;refreshExperiments();}
   });
-  function showAlgorithm(id, run = null) {
-    const a = currentAlgorithms.find(item => item.algorithm_id === id);
-    $('algorithm-dialog-title').textContent = a?.name || id;
-    const rows = a ? [['ID / 类型 / 版本', `${a.algorithm_id} · ${a.category} · ${a.version}`], ['简介', a.description], ['调度策略', a.strategy || '注册表未提供'], ['优化目标', a.objectives || '注册表未提供'], ['适用与限制', a.limitations || '注册表未提供'], ['可用性', a.availability_message || '可运行'], ['初始模型关系', a.uses_initial_schedule ? '使用所选模型的初始解／候选最佳解。' : '按原实现独立建解，模型选择不改变该算法核心策略。'], ['参数定义（来自注册表）', JSON.stringify(a.parameters, null, 2)]] : [['算法', '历史算法当前未注册；下方保留该次运行的固化参数。']];
-    if (run) rows.push(['本次 Run / 算法版本', `${run.run_id} · ${run.config.algorithm_version}`], ['本次参数', JSON.stringify(run.config, null, 2)]);
-    $('algorithm-description').innerHTML = `<dl>${rows.map(([k, v]) => `<dt>${E(k)}</dt><dd><pre>${E(v)}</pre></dd>`).join('')}</dl>`;
-    $('algorithm-dialog').showModal();
-  }
-  $('algorithm-info').addEventListener('click', () => showAlgorithm($('algorithm').value));
-  $('run-algorithm-info').addEventListener('click', () => { if (detailRun) showAlgorithm(detailRun.config.algorithm_id, detailRun); });
-  $('close-algorithm-dialog').addEventListener('click', () => $('algorithm-dialog').close());
-  function detail(run) {
-    detailRun = run;
-    $('run-algorithm-info').hidden = !run;
-    $('run-config').textContent = run ? JSON.stringify({config: run.config, continuous_certification: run.continuous_certification || null, preview_validation: run.preview_validation || null}, null, 2) : '';
-    const last = run?.attempts?.at(-1);
-    $('run-summary').textContent = run ? `${run.config.algorithm_id} ${run.config.algorithm_version} · 初始模型 ${run.config.schedule_model || '历史未记录'} · ${run.config.scenario_id} · 提交 ${run.created_at} · 开始 ${last?.started_at || '尚未开始'} · 结束 ${run.finished_at || '尚未结束'} · ${verification(run)}` : '';
-    if (run) cache.set(run.run_id, run);
+  function catalog(algorithms) {
+    UI.setCatalog(algorithms);
+    const first=algorithms.find(a=>a.availability==='ready')?.algorithm_id;
+    $('algorithm-choices').innerHTML=algorithms.map(a=>UI.card('create',a.algorithm_id,
+      `<label class="check-label algorithm-choice"><input type="checkbox" name="batch-algorithm" value="${E(a.algorithm_id)}" ${a.algorithm_id===first?'checked':''} ${a.availability!=='ready'?'disabled':''}>${E(a.name)}</label>`,
+      UI.description(a)+`<label>算法参数 JSON<textarea aria-label="${E(a.name)}参数" data-params="${E(a.algorithm_id)}" rows="2" ${a.availability!=='ready'?'disabled':''}>{}</textarea></label><pre>${E(JSON.stringify(a.parameters,null,2))}</pre>`)).join('');
+    UI.bindCards($('algorithm-choices'));
   }
   async function submit() {
-    if (submitting) return;
-    const ids = [...document.querySelectorAll('[name="batch-algorithm"]:checked')].map(el => el.value);
-    if (!ids.length) { $('form-message').textContent = '请至少选择一个已注册算法。'; return; }
-    let requests;
+    if(pending)return;
     try {
-      params.set($('algorithm').value, $('params').value);
-      const common = buildRequest();
-      requests = ids.map(id => {
-        const value = JSON.parse(params.get(id) || '{}');
-        if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error(`${id} 的参数必须是 JSON 对象`);
-        return {...common, algorithm_id: id, algorithm_params: value};
+      const common=buildRequest();
+      const runs=[...document.querySelectorAll('[name="batch-algorithm"]:checked')].map(input=>{
+        const params=JSON.parse($('algorithm-choices').querySelector(`[data-params="${CSS.escape(input.value)}"]`).value);
+        if(!params||Array.isArray(params)||typeof params!=='object')throw Error('算法参数必须是 JSON 对象');
+        return {...common,algorithm_id:input.value,algorithm_params:params};
       });
-    } catch (error) { $('form-message').textContent = error.message; return; }
-    submitting = true;
-    $('submit').disabled = true;
-    $('form-message').textContent = '正在提交独立运行；已接受的运行会立即进入现有队列。';
-    $('submission-results').replaceChildren();
-    let accepted = 0;
-    // Sequential HTTP submission avoids a burst against the existing queue limit.
-    for (const request of requests) {
-      const li = document.createElement('li');
-      $('submission-results').append(li);
-      try {
-        const result = await api('/api/runs', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(request)});
-        accepted++;
-        selectedId = result.run_id;
-        if (selected.size < 12) selected.add(result.run_id);
-        li.textContent = `${request.algorithm_id}：已接受 · ${result.run_id}`;
-      } catch (error) { li.textContent = `${request.algorithm_id}：提交失败 · ${error.message}。可稍后单独重试；已接受的任务不受影响。`; }
-    }
-    persist();
-    pageOffset = 0;
-    await refresh();
-    $('form-message').textContent = `提交完成：${accepted}/${requests.length} 个已接受。队列满或参数错误会逐项显示。`;
-    submitting = false;
-    $('submit').disabled = !currentScenarios.some(s => s.scenario_id === $('scenario').value && (!s.availability || s.availability === 'ready'));
+      if(!runs.length)throw Error('请至少选择一种算法');
+      const payload=JSON.stringify({runs});
+      if(payload!==submitPayload){submitKey=crypto.randomUUID();submitPayload=payload;}
+      pending=true;$('submit').disabled=true;
+      const result=await api('/api/experiments',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':submitKey},body:payload});
+      experimentId=result.experiment_id;selectedId=result.runs[0]?.run_id||null;peerId='';pageOffset=0;
+      $('form-message').textContent=`已创建一个实验，包含 ${result.runs.length} 种算法。`;
+      $('submission-results').innerHTML=result.runs.map(r=>`<li>${E(UI.name(r.config.algorithm_id))}：已接受</li>`).join('');
+      submitKey=submitPayload=null;
+      await refreshExperiments();
+    } catch(error){$('form-message').textContent=error.message;}
+    finally{pending=false;$('submit').disabled=false;}
   }
-  function formatMetric(key, value) {
-    if (value == null) return '—';
-    return key === 'TCR' ? `${(value * 100).toFixed(1)}%` : Number(value).toFixed(3);
+  function detail(run) {
+    $('run-algorithm-info').hidden=!run;
+    $('run-config').textContent=run?JSON.stringify({config:run.config,continuous_certification:run.continuous_certification,preview_validation:run.preview_validation},null,2):'';
+    $('run-summary').textContent=run?`${UI.name(run.config.algorithm_id)} · ${UI.model(run.config.schedule_model)} · ${run.config.scenario_id}`:'';
   }
-  async function refreshComparison() {
-    if (comparing) return;
-    comparing = true;
+  function renderResults(records) {
+    comparison.set(records,selectedId);
+    $('comparison-status').textContent=experiment?`实验 ${experiment.experiment_id} · ${experiment.runs.length} 种算法${peerId?' · 与另一初始模型实验对照':''}`:'请选择一个实验';
+  }
+  async function showExperiment(id, rid=null) {
+    experimentId=id;peerId='';if(rid)selectedId=rid;
+    await refreshExperiments();
+  }
+  async function refreshExperiments() {
+    const token=++generation;
     try {
-      const errors = [];
-      const results = await Promise.all([...selected].map(async id => {
-        try {
-          const old = cache.get(id);
-          const run = old && terminal.has(old.status) ? old : await api(`/api/runs/${encodeURIComponent(id)}`);
-          cache.set(id, run);
-          if (!currentAlgorithms.some(a => a.algorithm_id === run.config.algorithm_id)) {
-            selected.delete(id); return null;
-          }
-          return run;
-        } catch (error) { errors.push(`${id}: ${error.message}`); return null; }
-      }));
-      const groups = RunComparison.groupRuns(results.filter(Boolean));
-      $('comparison-status').textContent = `${selected.size}/12 个已选运行 · ${groups.length} 个条件组${errors.length ? ' · 部分记录无法读取：' + errors.join('；') : ''}`;
-      const comparisonHtml = groups.map((group, i) => `<section class="comparison-group"><h3>条件组 ${i + 1} · ${E(group.runs[0].config.scenario_id)}</h3><p class="hint">${group.identified ? `场景 SHA ${E(group.conditions.scenario_sha256.slice(0, 12))} · seed ${group.conditions.seed} · 预算 ${group.conditions.time_budget_s}s` : '条件来源不完整：单独展示，不标记指标最佳值。'}</p><details><summary>比较条件与差异</summary><pre>${E(JSON.stringify(group.conditions, null, 2))}</pre><p>算法及其参数有意允许不同，各 Run 分别列出。不同 SHA、代码／约束、种子、预算、放置模式、权重和指标版本自动分组；这不是重复种子的统计结论。</p></details><div class="table-wrap" tabindex="0" aria-label="条件组 ${i + 1} 结果"><table><caption class="sr-only">同条件指标比较</caption><thead><tr><th>算法 / 运行</th><th>状态 / 核验</th><th>完成 / 未完成</th>${RunComparison.metrics.map(([k, d]) => `<th scope="col">${k} ${d > 0 ? '↑' : '↓'}</th>`).join('')}<th scope="col">查看</th></tr></thead><tbody>${group.runs.map(run => `<tr><th scope="row"><button class="run-select" data-detail="${E(run.run_id)}">${E(run.config.algorithm_id)} · ${E(run.config.algorithm_version)}</button><small class="run-id">${E(run.run_id)}</small><details><summary>算法参数</summary><pre>${E(JSON.stringify(run.config.algorithm_params, null, 2))}</pre></details></th><td>${E(run.status)}<br>${E(verification(run))}</td><td>${run.metrics ? `${run.metrics.completed_tasks} / ${run.metrics.total_tasks - run.metrics.completed_tasks}` : '—'}</td>${RunComparison.metrics.map(([k, d]) => { const value = run.metrics?.[k]; const winner = run.status === 'SUCCEEDED' && value != null && value === RunComparison.best(group, k, d); return `<td class="${winner ? 'metric-best' : ''}">${formatMetric(k, value)}${winner ? ' ★' : ''}</td>`; }).join('')}<td><button type="button" class="secondary" data-algorithm="${E(run.run_id)}">算法详情</button> ${run.status === 'SUCCEEDED' && run.plan ? `<a href="/visualization/gantt/${encodeURIComponent(run.run_id)}">Gantt</a> · <a href="/visualization/cesium/${encodeURIComponent(run.run_id)}">Cesium</a>` : `<button class="secondary" type="button" data-detail="${E(run.run_id)}">运行详情 / 取消</button>`}<button class="secondary" type="button" data-remove="${E(run.run_id)}" aria-label="移出比较 ${E(run.run_id)}">移出</button></td></tr>`).join('')}</tbody></table></div></section>`).join('') || '<p>选择算法提交一次运行，或从历史记录勾选要比较的实验。</p>';
-      if ($('comparison-groups').dataset.rendered !== comparisonHtml) {
-        $('comparison-groups').innerHTML = comparisonHtml;
-        $('comparison-groups').dataset.rendered = comparisonHtml;
-      }
-    } finally { comparing = false; }
+      let list=await api(`/api/experiments?limit=${pageSize}&offset=${pageOffset}`);
+      if(pageOffset>0&&pageOffset>=list.total){pageOffset=0;list=await api(`/api/experiments?limit=${pageSize}&offset=0`);}
+      if(token!==generation)return;
+      $('run-count').textContent=`共 ${list.total} 个实验（每行包含多个算法）`;
+      $('page-label').textContent=list.total?`${pageOffset+1}–${Math.min(pageOffset+pageSize,list.total)} / ${list.total}`:'0 / 0';
+      $('previous-page').disabled=pageOffset===0;$('next-page').disabled=pageOffset+pageSize>=list.total;
+      const html=list.items.map(item=>`<tr data-experiment="${E(item.experiment_id)}" class="${item.experiment_id===experimentId?'selected':''}"><td><button class="experiment-select" type="button" data-experiment="${E(item.experiment_id)}">实验 ${E(item.experiment_id.slice(0,8))}</button><small class="experiment-date">${E(new Date(item.created_at).toLocaleString('zh-CN'))}</small>${item.legacy?'<small>历史单次运行（无批次证据）</small>':''}</td><td>${E(item.config.scenario_id)}</td><td>${E(UI.model(item.config.schedule_model))}</td><td>${E(item.algorithms.map(a=>UI.name(a.algorithm_id)).join('、')||'暂无算法')}</td><td>${E(item.status)}</td></tr>`).join('');
+      UI.update($('runs'),html);
+      if(!experimentId){renderResults([]);return;}
+      const exp=await api(`/api/experiments/${encodeURIComponent(experimentId)}`);
+      if(token!==generation)return;
+      experiment=exp;
+      $('create-control').disabled=controlPending||exp.legacy||!exp.runs.length;
+      for(const option of $('control-model').options)option.disabled=option.value===exp.config.schedule_model;
+      $('control-model').value=exp.config.schedule_model==='completion_first'?'adaptive_repair':'completion_first';
+      if(!exp.runs.some(r=>r.run_id===selectedId))selectedId=exp.runs.find(UI.usable)?.run_id||exp.runs[0]?.run_id||null;
+      const options=exp.runs.map(r=>`<option value="${E(r.run_id)}">${E(UI.name(r.config.algorithm_id))} · ${E(r.status)}</option>`).join('');
+      if($('detail-algorithm').innerHTML!==options)$('detail-algorithm').innerHTML=options;
+      $('detail-algorithm').value=selectedId||'';$('detail-algorithm').disabled=!exp.runs.length;
+      const run=exp.runs.find(r=>r.run_id===selectedId);
+      if(run){showDetail(run);$('selected-run').textContent=`实验 ${exp.experiment_id} · 当前算法：${UI.name(run.config.algorithm_id)}`;$('open-cesium').href=`/visualization/experiments/${encodeURIComponent(exp.experiment_id)}/cesium?run_id=${encodeURIComponent(run.run_id)}`;$('delete-run').disabled=false;$('delete-option').hidden=true;}
+      else{clearDetail();$('selected-run').textContent=exp.experiment_id+' · 暂无算法';}
+      UI.available($('experiment-algorithm-add'),exp,async(id,params)=>{
+        await api(`/api/experiments/${encodeURIComponent(exp.experiment_id)}/algorithms`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({algorithm_id:id,algorithm_params:params})});
+        await refreshExperiments();
+      });
+      const peers=await api(`/api/experiments/${encodeURIComponent(exp.experiment_id)}/peers`);
+      if(token!==generation)return;
+      const peerOptions='<option value="">仅当前实验</option>'+peers.items.map(p=>`<option value="${E(p.experiment_id)}">${E(UI.model(p.schedule_model))} · ${E(new Date(p.created_at).toLocaleString())}</option>`).join('');
+      if($('model-comparison').innerHTML!==peerOptions)$('model-comparison').innerHTML=peerOptions;
+      if(!peers.items.some(p=>p.experiment_id===peerId))peerId='';
+      $('model-comparison').value=peerId;
+      let records=[exp];
+      if(peerId)records=(await api(`/api/experiments/${encodeURIComponent(exp.experiment_id)}/compare/${encodeURIComponent(peerId)}`)).items;
+      if(token===generation)renderResults(records);
+    }catch(error){$('list-message').textContent=error.message;}
   }
-  $('runs').addEventListener('change', event => {
-    const input = event.target.closest('.compare-run');
-    if (!input) return;
-    if (input.checked && selected.size >= 12) { input.checked = false; $('list-message').textContent = '一次最多比较 12 个运行，请先移出已有记录。'; return; }
-    if (input.checked) selected.add(input.dataset.run); else selected.delete(input.dataset.run);
-    persist(); refreshComparison();
+  async function removeSelectedAlgorithm() {
+    const run=experiment?.runs.find(r=>r.run_id===selectedId);
+    if(!run||!confirm(`从实验移除「${UI.name(run.config.algorithm_id)}」？未完成运行会取消，已生成历史和文件保留。`))return;
+    try{await api(`/api/experiments/${encodeURIComponent(experimentId)}/algorithms/${encodeURIComponent(run.config.algorithm_id)}`,{method:'DELETE'});await refreshExperiments();}
+    catch(error){$('detail-error').textContent=error.message;}
+  }
+  $('runs').addEventListener('click',event=>{const b=event.target.closest('[data-experiment]');if(b)showExperiment(b.dataset.experiment);});
+  $('detail-algorithm').addEventListener('change',()=>{selectedId=$('detail-algorithm').value;refreshExperiments();});
+  $('model-comparison').addEventListener('change',()=>{peerId=$('model-comparison').value;refreshExperiments();});
+  $('create-control').addEventListener('click',async()=>{
+    if(!experiment||controlPending)return;controlPending=true;$('create-control').disabled=true;
+    try{
+      const signature=experimentId+'|'+$('control-model').value;
+      if(signature!==controlSignature){controlSignature=signature;controlKey=crypto.randomUUID();}
+      const result=await api(`/api/experiments/${encodeURIComponent(experimentId)}/control`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':controlKey},body:JSON.stringify({schedule_model:$('control-model').value})});
+      controlKey=controlSignature=null;
+      peerId=result.experiment_id;
+      $('list-message').textContent=`已创建对照实验 ${result.experiment_id}；仅改变初始排程模型，原实验未覆盖。`;
+      await refreshExperiments();
+    }catch(error){$('list-message').textContent=error.message;}
+    finally{controlPending=false;$('create-control').disabled=!experiment||experiment.legacy||!experiment.runs.length;}
   });
-  $('comparison-groups').addEventListener('click', event => {
-    const action = event.target.closest('button');
-    if (!action) return;
-    if (action.dataset.detail) { selectedId = action.dataset.detail; refresh(); $('detail-heading').scrollIntoView({block: 'start'}); }
-    if (action.dataset.algorithm) { const run = cache.get(action.dataset.algorithm); if (run) showAlgorithm(run.config.algorithm_id, run); }
-    if (action.dataset.remove) { selected.delete(action.dataset.remove); persist(); refresh(); }
+  $('run-algorithm-info').addEventListener('click',()=>{
+    const run=experiment?.runs.find(r=>r.run_id===selectedId);if(!run)return;
+    const spec=currentAlgorithms.find(a=>a.algorithm_id===run.config.algorithm_id);
+    $('algorithm-dialog-title').textContent=UI.name(run.config.algorithm_id);
+    $('algorithm-description').textContent=(spec?.strategy||'历史算法')+'\n'+(spec?.limitations||'')+'\n'+JSON.stringify(run.config,null,2);
+    $('algorithm-dialog').showModal();
   });
-  $('clear-comparison').addEventListener('click', () => { selected.clear(); persist(); refresh(); });
-  window.ConsoleUI = {catalog, detail, submit, refreshComparison, has: id => selected.has(id)};
+  $('close-algorithm-dialog').addEventListener('click',()=>$('algorithm-dialog').close());
+  window.ConsoleUI={catalog,detail,submit,refreshExperiments,removeSelectedAlgorithm};
 })();

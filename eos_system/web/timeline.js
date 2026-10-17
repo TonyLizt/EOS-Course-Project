@@ -26,7 +26,20 @@
     return steps.find(s => s >= wanted) || Math.ceil(wanted / 86400000) * 86400000;
   }
   function fmt(value) { return new Date(value).toISOString().replace('T', ' ').replace('.000Z', ' UTC'); }
-  const api = {parseTime, normalize, clampRange, zoom, tickStep, fmt};
+  function magneticHit(point, rects, radius=12) {
+    const candidates=rects.map(r=>{
+      const dx=Math.max(r.left-point.x,point.x-r.right,0),dy=Math.max(r.top-point.y,point.y-r.bottom,0);
+      return {id:r.id,distance:Math.hypot(dx,dy),center:Math.hypot((r.left+r.right)/2-point.x,(r.top+r.bottom)/2-point.y)};
+    }).filter(r=>Number.isFinite(r.distance)&&r.distance<=radius)
+      .sort((a,b)=>a.distance-b.distance||a.center-b.center);
+    if(!candidates.length)return null;
+    // Equidistant dense records are genuinely ambiguous: never pick an arbitrary
+    // neighbour just to show a tooltip. Exact hits and lane geometry win first.
+    if(candidates[1]&&Math.abs(candidates[0].distance-candidates[1].distance)<1e-6
+       &&Math.abs(candidates[0].center-candidates[1].center)<1e-6)return null;
+    return candidates[0].id;
+  }
+  const api = {parseTime, normalize, clampRange, zoom, tickStep, fmt, magneticHit};
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ScheduleTimeline = api;
 })(typeof window === 'undefined' ? globalThis : window);

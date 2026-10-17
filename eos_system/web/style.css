@@ -75,6 +75,23 @@ input, select {
 input, select, button, .link-button { min-height: 44px; }
 .toolbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.algorithm-card { border: 1px solid var(--border, #415579); border-radius: 8px; padding: 0; margin: 8px 0; min-width: 0; }
+.algorithm-heading { display:flex; align-items:stretch; justify-content:space-between; }
+.algorithm-choice { padding:10px 12px; flex:1; min-width:0; margin:0 !important; align-self:center; }
+.algorithm-heading .algorithm-toggle { padding:10px 12px; min-width:44px; min-height:44px; margin:0; background:transparent; border:0; color:#b9ddff; border-radius:6px; flex-shrink:0; }
+.algorithm-toggle span { display:inline-block; transition:transform .15s; }
+.algorithm-toggle[aria-expanded="true"] span { transform:rotate(90deg); }
+.algorithm-content { padding:12px; border-top:1px solid var(--border); }
+.experiment-select { background:transparent; border:0; padding:4px 0; color:var(--accent); font:inherit; font-weight:500; text-align:left; }
+.experiment-date { color:var(--muted); font-size:12px; font-weight:400; }
+.mixed-choice { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.mixed-choice label { flex:1; min-width:180px; }
+.mixed-choice button { padding:4px 10px; min-width:36px; }
+.algorithm-card.included { opacity: .65; background: #1d2940; }
+.algorithm-card textarea { width: 100%; box-sizing: border-box; background: #080f21; color: #edf4ff; border: 1px solid #7185ac; padding: 8px; }
+.algorithm-card pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+#runs small { display: block; }
+tr.selected { background: #233d6b; outline: 2px solid #79caff; outline-offset: -2px; }
 details { padding-top: 12px; border-top: 1px solid #34425f; }
 summary { min-height: 44px; margin-bottom: 14px; color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer; }
 

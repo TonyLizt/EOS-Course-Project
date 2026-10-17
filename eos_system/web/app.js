@@ -8,9 +8,7 @@ let replayConfigId = null;
 let replayPendingId = null;
 const pageSize = 30;
 let pageOffset = 0;
-let deletingRunId = null;
 let autoRefresh = true;
-let refreshGeneration = 0;
 let scenarioGeneration = 0;
 
 function escapeHtml(value) {
@@ -35,8 +33,6 @@ async function bootstrap() {
     $("output-profile").innerHTML = profiles.items.map((p) => `<option value="${escapeHtml(p.profile_id)}">${escapeHtml(p.name)}</option>`).join("");
     replayConfigId = replayConfigs.default_id;
     currentAlgorithms = algorithms.items;
-    $("algorithm").innerHTML = currentAlgorithms.map((a) => `<option value="${escapeHtml(a.algorithm_id)}">${escapeHtml(a.name)}</option>`).join("");
-    $("algorithm").value = currentAlgorithms.find(a => a.availability === 'ready')?.algorithm_id || '';
     $("schedule-model").innerHTML = algorithms.models.map(m => `<option value="${escapeHtml(m.model_id)}">${escapeHtml(m.name)}</option>`).join('');
     window.ConsoleUI?.catalog(currentAlgorithms);
     await loadScenarios();
@@ -85,9 +81,6 @@ function updateHints() {
     for (const option of $("output-profile").options) option.disabled = outputProfiles.find(p => p.profile_id === option.value)?.kind === 'directory';
     $("output-profile").value = outputProfiles.find(p => p.kind === 'download')?.profile_id || '';
   }
-  const algorithm = currentAlgorithms.find((a) => a.algorithm_id === $("algorithm").value);
-  const properties = Object.keys(algorithm?.parameters?.properties || {});
-  $("algorithm-hint").textContent = algorithm ? `${algorithm.description || ""} ${algorithm.availability_message || ''} 参数：${properties.length ? properties.join("、") : "无"}` : "";
   const profile = outputProfiles.find((p) => p.profile_id === $("output-profile").value);
   $("output-hint").textContent = profile?.kind === "directory"
     ? `正式 JSON/CSV 将保存到 ${profile.root_path}/<run_id>/；浏览器仍可下载。`
@@ -107,7 +100,6 @@ $("execution-mode").addEventListener("change", () => {
   if (preview) $("output-profile").value = outputProfiles.find(p => p.kind === 'download')?.profile_id || '';
   loadScenarios().catch(error => { $("form-message").textContent = error.message; });
 });
-$("algorithm").addEventListener("change", updateHints);
 $("output-profile").addEventListener("change", updateHints);
 
 $("register-location").addEventListener("click", async () => {
@@ -136,16 +128,14 @@ $("register-location").addEventListener("click", async () => {
 });
 
 function buildRequest() {
-  const params = JSON.parse($("params").value || "{}");
-  if (params === null || Array.isArray(params) || typeof params !== "object") throw new Error("算法参数必须是 JSON 对象");
   return {
     execution_mode: $("execution-mode").value,
     source_id: $("source").value,
     scenario_id: $("scenario").value,
-    algorithm_id: $("algorithm").value,
+    algorithm_id: currentAlgorithms.find(a=>a.availability==='ready')?.algorithm_id,
     schedule_model: $("schedule-model").value,
     output_profile_id: $("output-profile").value,
-    algorithm_params: params,
+    algorithm_params: {},
     seed: Number($("seed").value),
     placement_mode: $("placement").value,
     constraints: {
@@ -162,57 +152,11 @@ function buildRequest() {
 $("run-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   if (window.ConsoleUI) return window.ConsoleUI.submit();
-  $("submit").disabled = true;
-  $("form-message").textContent = "正在提交…";
-  try {
-    const result = await api("/api/runs", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(buildRequest())});
-    selectedId = result.run_id;
-    $("form-message").textContent = `已创建实验 ${result.run_id}`;
-    await refresh();
-  } catch (error) { $("form-message").textContent = error.message; }
-  finally { $("submit").disabled = false; }
+  $("form-message").textContent = '实验控制台组件未加载，请刷新页面；没有创建运行。';
 });
 
 async function refresh() {
-  const generation = ++refreshGeneration;
-  try {
-    let list = await api(`/api/runs?limit=${pageSize}&offset=${pageOffset}`);
-    if (pageOffset > 0 && pageOffset >= list.total) {
-      pageOffset = Math.max(0, Math.floor((list.total - 1) / pageSize) * pageSize);
-      list = await api(`/api/runs?limit=${pageSize}&offset=${pageOffset}`);
-    }
-    if (generation !== refreshGeneration) return;
-    $("run-count").textContent = `共 ${list.total} 条实验 · ${autoRefresh ? '状态每两秒刷新' : '自动更新已暂停'}`;
-    $("page-label").textContent = list.total ? `${pageOffset + 1}–${Math.min(pageOffset + pageSize, list.total)} / ${list.total}` : "0 / 0";
-    $("previous-page").disabled = pageOffset === 0;
-    $("next-page").disabled = pageOffset + pageSize >= list.total;
-    const listHtml = list.items.map((r) => `<tr data-id="${escapeHtml(r.run_id)}" class="${r.run_id === selectedId ? "selected" : ""}">
-      <td><input class="compare-run" type="checkbox" data-run="${escapeHtml(r.run_id)}" aria-label="比较实验 ${escapeHtml(r.run_id)}" ${window.ConsoleUI?.has(r.run_id) ? 'checked' : ''} ${currentAlgorithms.some(a => a.algorithm_id === r.algorithm_id) ? '' : 'disabled title="旧模型单独运行，不属于九算法比较"'}></td>
-      <td><button type="button" class="run-select" data-id="${escapeHtml(r.run_id)}"${r.run_id === selectedId ? ' aria-current="true"' : ''}>${escapeHtml(new Date(r.created_at).toLocaleString())}</button></td><td>${escapeHtml(r.scenario_id)}</td>
-      <td>${escapeHtml(r.algorithm_id)}</td><td>${escapeHtml(r.status)}</td>
-      <td>${r.TCR == null ? "—" : (Number(r.TCR) * 100).toFixed(1) + "%"}</td></tr>`).join("");
-    if ($("runs").dataset.rendered !== listHtml) {
-      const active = document.activeElement;
-      const focusSelector = $("runs").contains(active)
-        ? active.matches('.compare-run') ? `.compare-run[data-run="${CSS.escape(active.dataset.run)}"]`
-          : active.matches('.run-select') ? `.run-select[data-id="${CSS.escape(active.dataset.id)}"]` : null
-        : null;
-      $("runs").innerHTML = listHtml;
-      $("runs").dataset.rendered = listHtml;
-      if (focusSelector) $("runs").querySelector(focusSelector)?.focus({preventScroll: true});
-      document.querySelectorAll("#runs tr[data-id]").forEach((row) => row.addEventListener("click", (event) => {
-      if (event.target.closest('.compare-run')) return;
-      if (selectedId !== row.dataset.id) $("delete-files").checked = false;
-      selectedId = row.dataset.id; refresh();
-      }));
-    }
-    if (selectedId) {
-      const requestedId = selectedId;
-      try { const run = await api(`/api/runs/${encodeURIComponent(requestedId)}`); if (selectedId === requestedId && generation === refreshGeneration) showDetail(run); }
-      catch (error) { if (selectedId === requestedId) $("detail-error").textContent = error.message; }
-    }
-    window.ConsoleUI?.refreshComparison();
-  } catch (error) { $("form-message").textContent = error.message; }
+  if (window.ConsoleUI?.refreshExperiments) return window.ConsoleUI.refreshExperiments();
 }
 
 function clearDetail() {
@@ -241,7 +185,7 @@ function showDetail(run) {
   $("detail-status").className = `badge ${["FAILED","CANCELLED","TIMED_OUT"].includes(run.status) ? "failed" : ["RUNNING","QUEUED","VERIFYING"].includes(run.status) ? "running" : ""}`;
   $("actions").hidden = false;
   $("cancel").disabled = ["SUCCEEDED","FAILED","CANCELLED","TIMED_OUT"].includes(run.status) || run.cancel_requested;
-  $("delete-run").disabled = deletingRunId === run.run_id || !["SUCCEEDED","FAILED","CANCELLED","TIMED_OUT"].includes(run.status);
+  $("delete-run").disabled = false;
   $("delete-option").hidden = !(run.exports || []).some((item) => item.artifact_path);
   if ($("delete-option").hidden) $("delete-files").checked = false;
   $("export-json").hidden = run.status !== "SUCCEEDED" || !run.plan || run.result_kind === 'planning_preview';
@@ -316,28 +260,14 @@ $("cancel").addEventListener("click", async () => {
   catch (error) { $("detail-error").textContent = error.message; }
 });
 $("delete-run").addEventListener("click", async () => {
-  if (!selectedId) return;
-  const runId = selectedId;
-  const deleteFiles = $("delete-files").checked;
-  const filesNote = deleteFiles ? "同时删除未被修改的正式 JSON/CSV 文件。" : "服务器导出文件将保留。";
-  if (!window.confirm(`确定永久删除实验 ${runId} 的数据库记录吗？此操作无法撤销。${filesNote}`)) return;
-  deletingRunId = runId;
-  $("delete-run").disabled = true;
-  try {
-    const result = await api(`/api/runs/${encodeURIComponent(runId)}?delete_files=${deleteFiles}`, {method:"DELETE"});
-    selectedId = null;
-    clearDetail();
-    $("list-message").textContent = `已删除实验 ${runId}；${result.database_compacted ? "数据库已压缩" : "数据库空闲页可复用"}。${result.files_removed ? `已删除 ${result.files_removed} 个导出文件。` : ""}${result.warnings.join("；")}`;
-    await refresh();
-  } catch (error) { $("detail-error").textContent = error.message; }
-  finally { deletingRunId = null; if (selectedId) $("delete-run").disabled = false; }
+  if (window.ConsoleUI?.removeSelectedAlgorithm) return window.ConsoleUI.removeSelectedAlgorithm();
 });
 $("refresh").addEventListener("click", refresh);
 $("toggle-refresh").addEventListener("click", () => {
   autoRefresh = !autoRefresh;
   $("toggle-refresh").setAttribute("aria-pressed", autoRefresh ? "false" : "true");
-  $("toggle-refresh").textContent = autoRefresh ? "暫停自動更新" : "繼續自動更新";
-  $("run-count").textContent = autoRefresh ? "狀態每兩秒刷新一次。" : "自動更新已暫停。";
+  $("toggle-refresh").textContent = autoRefresh ? "暂停自动更新" : "继续自动更新";
+  $("run-count").textContent = autoRefresh ? "状态每两秒刷新一次。" : "自动更新已暂停。";
 });
 $("previous-page").addEventListener("click", () => { pageOffset = Math.max(0, pageOffset - pageSize); refresh(); });
 $("next-page").addEventListener("click", () => { pageOffset += pageSize; refresh(); });

@@ -1,111 +1,110 @@
-/* Real Chromium, real API/Worker failures; historical success is a labelled QA fixture. */
-const fs = require('node:fs');
-const assert = require('node:assert/strict');
-const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-(async () => {
-  const info = JSON.parse(fs.readFileSync(process.env.EOS_BROWSER_QA_COORD, 'utf8'));
-  const browser = await chromium.launch({headless: true, args: ['--no-sandbox']});
-  const errors = [];
-  try {
-    const context = await browser.newContext({viewport: {width: 1536, height: 1080}, timezoneId: 'Asia/Hong_Kong'});
-    const page = await context.newPage(); page.on('pageerror', e => errors.push(String(e)));
-    await page.goto(info.url);
-    await page.waitForFunction(() => document.querySelectorAll('[name="batch-algorithm"]').length === 9);
-    assert.equal(await page.locator('#schedule-model option').count(), 2);
-    assert.equal(await page.locator('#comparison-heading').innerText(), '算法比较');
-    // This fixture verifies the strict formal gate; UI defaults to preview now.
-    await page.selectOption('#execution-mode', 'formal');
-    await page.waitForFunction(() => {
-      const select = document.querySelector('#scenario');
-      return !select.disabled && [...select.options].some(option => option.value === 'empty');
-    });
-    await page.click('#algorithm-info');
-    assert.match(await page.locator('#algorithm-description').innerText(), /收益/);
-    await page.keyboard.press('Escape');
-    await page.locator('#run-form > details > summary').click();
-    // Per-algorithm input remains separate when changing editors.
-    await page.selectOption('#algorithm', 'sa'); await page.fill('#params', '{"max_iterations":2}');
-    await page.selectOption('#algorithm', 'profit_first'); assert.equal(await page.inputValue('#params'), '{}');
-    await page.selectOption('#algorithm', 'sa'); assert.equal(await page.inputValue('#params'), '{"max_iterations":2}');
-    await page.selectOption('#scenario', 'empty'); await page.fill('#budget', '1');
-    await page.click('#submit');
-    await page.waitForFunction(() => document.querySelector('#form-message').textContent.includes('1/1'));
-    const singleId = (await page.locator('#submission-results li').innerText()).match(/[0-9a-f]{8}-[0-9a-f-]{27,}/)[0];
-    await page.locator('[name="batch-algorithm"][value="sa"]').check();
-    await page.click('#submit');
-    await page.waitForFunction(() => document.querySelector('#form-message').textContent.includes('2/2'));
-    assert.equal(await page.locator('#submission-results li').count(), 2);
-    const batchIds = await page.locator('#submission-results li').allTextContents();
-    let single;
-    for (let attempt = 0; attempt < 100; attempt++) {
-      single = await (await context.request.get(info.url+'/api/runs/'+singleId)).json();
-      if (['SUCCEEDED','FAILED','CANCELLED','TIMED_OUT'].includes(single.status)) break;
-      await page.waitForTimeout(200);
-    }
-    // The existing production gate refuses an untrusted empty scenario. Never bypass it.
-    assert.equal(single.status, 'FAILED'); assert.ok(single.error);
-    const chooser = await context.newPage();
-    await chooser.goto(info.url+'/visualization/gantt');
-    await chooser.waitForSelector('#gantt-runs a');
-    await chooser.locator(`#gantt-runs a[href="/visualization/gantt/${info.runs[0]}"]`).click();
-    await chooser.waitForSelector('.gantt-bar', {state:'attached'});
-    await page.click('#clear-comparison');
-    for (const id of info.runs) await page.locator(`.compare-run[data-run="${id}"]`).check();
-    await page.waitForFunction(() => document.querySelectorAll('#comparison-groups .metric-best').length > 0);
-    assert.equal(await page.locator('.comparison-group').count(), 1);
-    await page.locator('#comparison-groups [data-algorithm]').first().click();
-    assert.match(await page.locator('#algorithm-description').innerText(), /本次参数/); await page.keyboard.press('Escape');
-    const selectedRow = page.locator(`tr[data-id="${info.runs[0]}"]`);
-    await selectedRow.locator('.run-select').click();
-    await page.waitForFunction(() => document.querySelector('#detail-status').textContent === 'SUCCEEDED');
-    assert.match(await page.locator('#open-gantt').getAttribute('href'), new RegExp(info.runs[0]));
-    assert.match(await page.locator('#open-cesium').getAttribute('href'), new RegExp(info.runs[0]));
-    await page.locator('#clear-comparison').focus(); await page.waitForTimeout(2200);
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'clear-comparison');
-    await page.screenshot({path: '/tmp/eos-console-desktop.png', fullPage: true});
-    await page.setViewportSize({width: 390, height: 844});
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-    await page.setViewportSize({width: 1536, height: 1080});
-    const gantt = await context.newPage(); gantt.on('pageerror', e => errors.push(String(e)));
-    await gantt.goto(info.url+'/visualization/gantt/'+info.gantt_run);
-    await gantt.waitForSelector('.gantt-bar');
-    const original = await gantt.locator('.gantt-bar').first().getAttribute('aria-label');
-    await gantt.selectOption('#task-select', '0');
-    const bar = gantt.locator('.gantt-bar[data-index="0"]');
-    assert.ok((await bar.boundingBox()).width > 24);
-    await bar.hover(); await gantt.waitForSelector('#task-tooltip:not([hidden])');
-    assert.match(await gantt.locator('#task-tooltip').innerText(), /M1.*|曝光：5 秒/);
-    await gantt.keyboard.press('Escape'); assert.equal(await gantt.locator('#task-tooltip').isVisible(), false);
-    await bar.focus(); await gantt.keyboard.press('Enter');
-    assert.match(await gantt.locator('#task-detail').innerText(), /00:00:10 UTC/);
-    const before = await gantt.inputValue('#range-end'); await gantt.click('#zoom-out');
-    assert.notEqual(await gantt.inputValue('#range-end'), before);
-    await gantt.click('#pan-right'); await gantt.click('#pan-left');
-    await gantt.click('#fit-all');
-    assert.match(await gantt.locator('#timeRangeLabel').innerText(), /86400/);
-    await gantt.selectOption('#task-select', '0');
-    assert.equal(await gantt.locator('.gantt-bar[data-index="0"]').getAttribute('aria-label'), original);
-    await gantt.fill('#task-search', 'M2');
-    assert.equal(await gantt.locator('#task-select option').count(), 2);
-    await gantt.selectOption('#task-select', '1');
-    await gantt.fill('#range-start', '2026-01-01T00:00:35');
-    await gantt.fill('#range-end', '2026-01-01T00:00:55');
-    await gantt.click('#apply-range');
-    assert.match(await gantt.locator('#timeRangeLabel').innerText(), /20.0/);
-    await gantt.screenshot({path: '/tmp/eos-gantt-desktop.png', fullPage: true});
-    await gantt.setViewportSize({width: 390, height: 844});
-    await gantt.waitForTimeout(100);
-    assert.equal(await gantt.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-    await gantt.locator('.gantt-bar').click(); assert.match(await gantt.locator('#task-detail').innerText(), /M2/);
-    await gantt.screenshot({path: '/tmp/eos-gantt-mobile.png', fullPage: true});
-    const touchContext = await browser.newContext({hasTouch: true, viewport: {width: 390, height: 844}});
-    const touch = await touchContext.newPage();
-    await touch.goto(info.url+'/visualization/gantt/'+info.gantt_run);
-    await touch.waitForSelector('.gantt-bar', {state: 'attached'}); await touch.selectOption('#task-select', '0');
-    await touch.locator('.gantt-bar[data-index="0"]').tap();
-    assert.match(await touch.locator('#task-detail').innerText(), /M1/);
-    await touchContext.close();
-    assert.deepEqual(errors, []);
-    console.log('CONSOLE_GANTT_OK '+JSON.stringify({singleId, singleStatus: single.status, batchIds, historicalComparison: true, errors}));
-  } finally { await browser.close(); }
-})().catch(e => { console.error(e); process.exitCode = 1; });
+/* Isolated real Chromium/Cesium UI. Seeded successful schedules use explicitly
+   synthetic UNIT_TEST_INJECTION_ONLY receipts, not physical certification. */
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+(async()=>{
+ const info=JSON.parse(fs.readFileSync(process.env.EOS_BROWSER_QA_COORD,'utf8'));
+ const proxyValue=process.env.EOS_BROWSER_PROXY||process.env.HTTPS_PROXY;
+ const browser=await chromium.launch({headless:true,
+  ...(proxyValue?{proxy:{server:proxyValue,bypass:'127.0.0.1,localhost'}}:{}),
+  args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ const errors=[];
+ try{
+  const context=await browser.newContext({viewport:{width:1536,height:1080},ignoreHTTPSErrors:true});
+  const page=await context.newPage();page.on('pageerror',e=>errors.push(String(e)));
+  await page.goto(info.url);await page.waitForFunction(()=>document.querySelectorAll('[name="batch-algorithm"]').length===9);
+  assert.equal(await page.locator('#algorithm').count(),0);
+  const initial=page.locator('.algorithm-card').filter({has:page.locator('[name="batch-algorithm"][value="profit_first"]')});
+  const triangle=initial.locator('.algorithm-toggle');assert.equal(await triangle.count(),1);
+  const checked=await initial.locator('input').isChecked();await triangle.click();
+  assert.equal(await triangle.getAttribute('aria-expanded'),'true');assert.equal(await initial.locator('input').isChecked(),checked);
+  await triangle.press('Space');assert.equal(await triangle.getAttribute('aria-expanded'),'false');
+  await page.locator(`button.experiment-select[data-experiment="${info.experiment}"]`).click();
+  await page.waitForFunction(()=>document.querySelectorAll('#comparison-groups tbody tr').length===2);
+  assert.equal(await page.locator('#runs tr[data-experiment="'+info.experiment+'"]').count(),1);
+  assert.match(await page.locator('.experiment-select').first().innerText(),/^实验 /);
+  assert.doesNotMatch(await page.locator('#comparison-groups').innerText(),/条件组|profit_first|console-1/);
+  await page.waitForSelector(`#model-comparison option[value="${info.peer}"]`,{state:'attached'});
+  await page.selectOption('#model-comparison',info.peer);
+  await page.waitForFunction(()=>document.querySelectorAll('#comparison-groups tbody tr').length===4);
+  const peer=(await(await context.request.get(info.url+'/api/experiments/'+info.peer)).json()).runs;
+  const ids=()=>page.locator('#comparison-groups .select-algorithm').evaluateAll(bs=>bs.map(b=>b.dataset.run));
+  assert.deepEqual(await ids(),[info.runs[0],peer[0].run_id,info.runs[1],peer[1].run_id]);
+  await page.selectOption('#comparison-mode','experiment');assert.deepEqual(await ids(),[...info.runs,...peer.map(r=>r.run_id)]);
+  await page.selectOption('#comparison-mode','mixed');
+  await page.locator(`[data-mixed-id="${info.runs[0]}"]`).uncheck();
+  await page.locator(`[data-move="${peer[1].run_id}"][data-delta="-1"]`).click();
+  assert.deepEqual(await ids(),[info.runs[1],peer[1].run_id,peer[0].run_id]);
+  const cloneResponse=page.waitForResponse(r=>r.url().endsWith('/control')&&r.request().method()==='POST');
+  await page.click('#create-control');const clone=await(await cloneResponse).json();
+  assert.equal(clone.control.source_experiment_id,info.experiment);assert.equal(clone.runs.length,2);
+  assert.ok(clone.runs.every(r=>!info.runs.includes(r.run_id)));
+  // A normal multi-algorithm submission adds one parent list entry.
+  const before=await(await context.request.get(info.url+'/api/experiments')).json();
+  await page.selectOption('#execution-mode','formal');await page.waitForSelector('#scenario option[value="empty"]',{state:'attached'});
+  await page.selectOption('#scenario','empty');await page.fill('#budget','1');
+  await page.locator('[name="batch-algorithm"][value="sa"]').check();
+  const sa=page.locator('.algorithm-card').filter({has:page.locator('[name="batch-algorithm"][value="sa"]')});
+  await sa.locator('.algorithm-toggle').click();await sa.locator('textarea').fill('{"max_iterations":2}');
+  const submitted=page.waitForResponse(r=>r.url()===info.url+'/api/experiments'&&r.request().method()==='POST');
+  await page.click('#submit');const created=await(await submitted).json();assert.equal(created.runs.length,2);
+  const after=await(await context.request.get(info.url+'/api/experiments')).json();assert.equal(after.total,before.total+1);
+  // Actual existing Cesium page and rendering engine, not an iframe shell.
+  const view=await context.newPage();view.on('pageerror',e=>errors.push(String(e)));
+  await view.goto(info.url+'/visualization/cesium/'+info.runs[0],{waitUntil:'domcontentloaded',timeout:60000});
+  async function rendered(runId,runtime,start){
+   await view.waitForFunction(()=>document.querySelector('#assetStatus').textContent.includes('2 body model'),null,{timeout:60000});
+   await view.waitForSelector(`#cesium-comparison tr.selected[data-run="${runId}"]`);
+   assert.match(await view.locator('#metrics').innerText(),new RegExp(runtime));
+   assert.match(await view.locator('#assignmentList').innerText(),new RegExp(start));
+   const url=new URL(view.url());assert.equal(url.searchParams.get('run_id'),runId);
+   assert.equal(url.searchParams.get('schedule'),`/api/runs/${runId}/visualization/schedule`);
+   assert.equal(url.searchParams.get('replay_status'),`/api/runs/${runId}/replay`);
+   assert.equal(url.searchParams.get('gantt'),`/visualization/gantt/${runId}`);
+   // Cesium itself owns an InfoBox iframe; only the old outer scene iframe is forbidden.
+   assert.equal(await view.locator('#algorithm-frame').count(),0);assert.equal(await view.locator('.payload-tile').count(),2);
+   assert.equal(await view.evaluate(()=>document.querySelector('#experiment-controls').parentElement.id),'leftPanel');
+   const parentOrder=await view.evaluate(()=>[...document.querySelector('#leftPanel').children].map(n=>n.id||n.querySelector('h2')?.textContent));
+   assert.ok(parentOrder.indexOf('Metrics')<parentOrder.indexOf('experiment-controls'));
+   assert.equal(await view.locator('#cesiumContainer canvas').count()>0,true);
+  }
+  await rendered(info.runs[0],'0.010','00:00:40');
+  await view.locator(`[data-replay="${info.runs[1]}"]`).click();
+  await view.waitForURL(url=>url.searchParams.get('run_id')===info.runs[1],{timeout:60000});
+  await rendered(info.runs[1],'0.020','00:00:50');
+  assert.equal(await view.locator('#cesium-comparison tr.selected').count(),1);
+  assert.equal(await view.locator('#cesium-add-algorithms .algorithm-card').count(),9);
+  const selectedCard=view.locator('#cesium-add-algorithms .algorithm-card').filter({has:view.locator('[data-add="profit_first"]')});
+  await selectedCard.locator('.algorithm-toggle').click();assert.equal(await selectedCard.locator('[data-add]').isDisabled(),true);
+  const add=view.locator('#cesium-add-algorithms .algorithm-card').filter({has:view.locator('[data-add="sa"]')});
+  await add.locator('.algorithm-toggle').click();await add.locator('textarea').fill('{"max_iterations":2}');await add.locator('[data-add]').click();
+  await view.waitForFunction(()=>document.querySelectorAll('#cesium-current-algorithms .algorithm-card').length===3);
+  const exp=await(await context.request.get(info.url+'/api/experiments/'+info.experiment)).json();
+  const added=exp.runs.find(r=>r.config.algorithm_id==='sa');assert.ok(added);
+  const remove=view.locator('#cesium-current-algorithms .algorithm-card').filter({has:view.locator('[data-remove="sa"]')});
+  await remove.locator('.algorithm-toggle').click();view.on('dialog',d=>d.accept());await remove.locator('[data-remove]').click();
+  await view.waitForFunction(()=>document.querySelectorAll('#cesium-current-algorithms .algorithm-card').length===2);
+  assert.equal((await context.request.get(info.url+'/api/runs/'+added.run_id)).status(),200);
+  assert.equal(new URL(view.url()).searchParams.get('run_id'),info.runs[1]);
+  // Gantt remains bound to the chosen Run, with magnetic hits outside tiny bars.
+  const gantt=await context.newPage();gantt.on('pageerror',e=>errors.push(String(e)));
+  await gantt.goto(info.url+'/visualization/gantt/'+info.runs[1]);await gantt.waitForSelector('.gantt-bar');
+  const original=await gantt.locator('.gantt-bar[data-index="1"]').getAttribute('aria-label');assert.match(original,/00:00:50/);
+  const tiny=gantt.locator('.gantt-bar[data-index="1"]'),rect=await tiny.boundingBox();
+  assert.ok(rect.width<12);await gantt.mouse.move(rect.x+rect.width+5,rect.y+rect.height/2);
+  await gantt.waitForSelector('.gantt-bar[data-index="1"].is-snapped');
+  assert.match(await gantt.locator('#task-tooltip').innerText(),/M2/);
+  await gantt.mouse.click(rect.x+rect.width+5,rect.y+rect.height/2);assert.match(await gantt.locator('#task-detail').innerText(),/00:00:50/);
+  await gantt.mouse.move(rect.x+100,rect.y+rect.height/2);assert.equal(await gantt.locator('#task-tooltip').isVisible(),false);
+  await gantt.selectOption('#task-select','1');const bar=gantt.locator('.gantt-bar[data-index="1"]');
+  assert.ok((await bar.boundingBox()).width>24);assert.equal(await bar.getAttribute('aria-label'),original);
+  await bar.focus();await gantt.keyboard.press('Enter');assert.match(await gantt.locator('#task-detail').innerText(),/M2/);
+  await gantt.click('#zoom-out');await gantt.click('#pan-right');await gantt.click('#pan-left');
+  assert.match(await gantt.locator('#cesium-link').getAttribute('href'),new RegExp(info.runs[1]));
+  const traditional=/[實驗衛場狀顯視圖載關開與設標軌隨觀選務啟體護動暫兩時聯連計畫細捲結輸僅繼續頁報錯誤覽數據檔讀寫運]/;
+  for(const p of [page,view,gantt])assert.equal(traditional.test(await p.locator('body').innerText()),false);
+  await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  assert.deepEqual(errors,[]);
+  console.log('UNIFIED_INTERACTIONS_OK '+JSON.stringify({experiment:info.experiment,clone:clone.experiment_id,newExperiment:created.experiment_id,cesium:'real Chromium/SwiftShader, 2 satellites',errors}));
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});
