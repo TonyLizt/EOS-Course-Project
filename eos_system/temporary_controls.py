@@ -27,6 +27,7 @@ class TemporaryControls:
         self.lock = threading.RLock()
         self.sessions = {}
         self.runs = {}
+        self.schedules = {}  # Private, minimal Gantt data; never in polling snapshots.
 
     def _cancel(self, session):
         session['deleted'] = True
@@ -35,6 +36,7 @@ class TemporaryControls:
             run['cancel_requested_at'] = run['cancel_requested_at'] or now()
             run['metrics'] = None
             run['has_plan'] = False
+            self.schedules.pop(rid, None)
             if run['status'] == 'QUEUED':
                 run['status'] = 'CANCELLED'
 
@@ -97,6 +99,15 @@ class TemporaryControls:
             if session:
                 self._cancel(session)
             self._sweep()
+
+    def schedule(self, sid, rid):
+        with self.lock:
+            session = self.detail(sid)  # Membership, deletion and lease validation.
+            if not any(row['run_id'] == rid for row in session['runs']):
+                raise KeyError('该结果不属于当前临时对照')
+            if rid not in self.schedules:
+                raise ValueError('临时结果尚未通过核验，暂无 Gantt 数据')
+            return copy.deepcopy(self.schedules[rid])
 
     def close(self):
         with self.lock:
@@ -177,7 +188,12 @@ class TemporaryControls:
                 'RT':'runtime_efficiency','RV':'robustness_variance'}.items()}
             row.update(status='SUCCEEDED', has_plan=True)
             row['continuous_certification'] = {'status':'INCONCLUSIVE' if preview else 'CONTINUOUS_PASS'}
-            # Only metrics/validation retained: never a replayable temporary plan.
+            fields = ('task_id','satellite_id','sensor_id','sat_start_time','sat_end_time','priority')
+            self.schedules[rid] = {k:copy.deepcopy(plan.get(k)) for k in ('scenario_id','start_time','end_time')}
+            self.schedules[rid].update(temporary=True, result_kind=row['result_kind'],
+                algorithm_id=row['config']['algorithm_id'], schedule_model=row['config']['schedule_model'],
+                assignments=[{k:copy.deepcopy(a[k]) for k in fields if k in a} for a in plan['assignments']])
+            # Only the Gantt subset is retained: never a replayable/full export plan.
             return True
 
     def finish_preview(self, rid, attempt, plan, metrics, verify_s, *, receipt, deadline):

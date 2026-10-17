@@ -1,5 +1,7 @@
 # 临时对照、稳定比较与 Cesium 右侧比较区
 
+> 后续增量：临时结果现已在内存保留最小任务时间轴，支持独立临时 Gantt；选择区进一步降为轻量筛选。以下“没有 Gantt / 不保留计划”指初版，当前边界和验证见[临时 Gantt 交接](temporary_gantt_handoff.md)。
+
 日期：2026-10-18。分支：`feat/unified-experiment-interactions`。仅本地提交，不 Push/PR；不操作用户 8765 服务。
 
 ## 当前交互

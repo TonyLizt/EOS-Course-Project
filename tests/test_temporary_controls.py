@@ -74,6 +74,22 @@ class TemporaryControlTests(unittest.TestCase):
         self.assertEqual(detail['status'],'SUCCEEDED',detail)
         self.assertTrue(all(r['has_plan'] and r['metrics']['TCR']==0 for r in detail['runs']))
         self.assertTrue(all('plan' not in r for r in detail['runs']))
+        with patch.object(self.db,'write',side_effect=AssertionError('Gantt wrote SQLite')):
+            for row in detail['runs']:
+                schedule=self.route('/api/temporary-controls/{control_id}/runs/{run_id}/schedule','GET')(result['experiment_id'],row['run_id'])
+                self.assertTrue(schedule['temporary']);self.assertEqual(schedule['assignments'],[])
+                self.assertIn('algorithm_name',schedule)
+                redirect=self.route('/visualization/temporary-gantt/{control_id}/{run_id}','GET')(result['experiment_id'],row['run_id'])
+                self.assertIn('/visualization/gantt-page?',redirect.headers['location'])
+                self.assertNotIn('/api/runs/',redirect.headers['location'])
+                with self.assertRaises(HTTPException) as rejected:
+                    self.route('/visualization/cesium-page','GET')(
+                        schedule=f"/api/temporary-controls/{result['experiment_id']}/runs/{row['run_id']}/schedule")
+                self.assertEqual(rejected.exception.status_code,409)
+            with self.assertRaises(KeyError):self.memory.schedule(result['experiment_id'],self.source['runs'][0]['run_id'])
+            self.memory.delete(result['experiment_id'])
+            self.assertEqual(self.memory.schedules,{})
+            with self.assertRaises(KeyError):self.memory.schedule(result['experiment_id'],detail['runs'][0]['run_id'])
         self.assertEqual(self.counts(),before)
 
     def test_running_cancel_expiry_and_late_result_are_safe(self):

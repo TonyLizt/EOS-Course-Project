@@ -47,7 +47,7 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
       const rows=[...document.querySelectorAll('#comparison-groups tbody tr')];
       return rows.length===2&&rows.every(r=>r.textContent.includes('SUCCEEDED'));
     });
-    assert.match(await page.locator('#comparison-groups').innerText(),/未认证预览/);
+    assert.match(await page.locator('#comparison-groups').innerText(),/未认证/);
     const gantt = await browser.newPage();
     await gantt.goto(base+'/visualization/gantt/'+ids[0]);
     await gantt.waitForSelector('.gantt-bar',{state:'attached'});

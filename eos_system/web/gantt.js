@@ -4,9 +4,32 @@
   let data = [], filtered = [], domain = [0, 1000], range = domain, chosen = null, tooltipOwner = null;
   let magneticBar = null;
   const scheduleUrl = new URLSearchParams(location.search).get('schedule') || '../output/schedules/Scenario_S1_schedule.json';
+  const temporaryMatch = scheduleUrl.match(/^\/api\/temporary-controls\/([^/]+)\/runs\/([^/]+)\/schedule$/);
+  let expired=false, leaseTimer=null, checkingLease=false;
   const match = scheduleUrl.match(/^\/api\/runs\/([^/]+)\/visualization\/schedule(?:\?|$)/);
   if (match) { $('cesium-link').href = '/visualization/cesium/' + encodeURIComponent(decodeURIComponent(match[1])); $('cesium-link').hidden = false; }
-  $('sourceLabel').textContent = '正式排程：' + scheduleUrl;
+  $('sourceLabel').textContent = temporaryMatch?'临时对照 · 仅内存保存，不属于正式 Run':'正式排程：' + scheduleUrl;
+  function invalidateTemporary(){
+    expired=true;clearInterval(leaseTimer);hideTooltip();data=[];filtered=[];chosen=null;
+    $('ganttContainer').replaceChildren();$('timeAxis').replaceChildren();$('task-detail').textContent='临时结果已失效。';
+    $('task-select').replaceChildren(new Option('临时结果已失效',''));
+    $('satellite-filter').replaceChildren(new Option('临时结果已失效',''));
+    $('timeRangeLabel').textContent='';$('sourceLabel').textContent='临时对照 · 已失效';
+    document.querySelectorAll('main button,main input,main select').forEach(el=>{el.disabled=true;});
+    $('errorBox').hidden=false;$('errorBox').textContent='临时对照已删除、过期或连接中断，请返回控制台重新创建。';
+    $('chart-status').textContent='临时 Gantt 已清除，不再显示旧数据。';
+  }
+  async function checkTemporary(){
+    if(!temporaryMatch||expired||checkingLease)return;checkingLease=true;
+    try{
+      const response=await fetch('/api/temporary-controls/'+temporaryMatch[1],{cache:'no-store'});
+      if(!response.ok)throw Error('temporary unavailable');
+      const state=await response.json();
+      if(!state.temporary||!state.runs.some(r=>r.run_id===temporaryMatch[2]&&r.status==='SUCCEEDED'))throw Error('temporary unavailable');
+    }catch(_){invalidateTemporary();}finally{checkingLease=false;}
+  }
+  window.addEventListener('pagehide',()=>clearInterval(leaseTimer));
+  window.addEventListener('pageshow',event=>{if(event.persisted&&temporaryMatch)location.reload();});
   const localInput = value => new Date(value).toISOString().slice(0, 19);
   function setRange(next) { range = T.clampRange(next[0], next[1], domain); render(); }
   function detailsText(a) { return `卫星：${a.satellite_id}\n任务：${a.task_id}\n开始：${T.fmt(a.start)}\n结束：${T.fmt(a.end)}\n曝光：${(a.end - a.start) / 1000} 秒${a.priority == null ? '' : '\n优先级：' + a.priority}`; }
@@ -131,8 +154,13 @@
   $('task-tooltip').addEventListener('pointerleave', hideTooltip);
   window.addEventListener('scroll', hideTooltip, true);
   let resizeFrame; new ResizeObserver(() => { cancelAnimationFrame(resizeFrame); resizeFrame = requestAnimationFrame(() => { if (data.length) render(); }); }).observe($('timeAxis'));
-  fetch(scheduleUrl).then(async r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).then(schedule => {
-    if (schedule.result_kind === 'planning_preview') $('sourceLabel').textContent = '规划预览 · 未取得正式连续认证 · ' + scheduleUrl;
+  fetch(scheduleUrl,{cache:'no-store'}).then(async r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).then(schedule => {
+    if(expired)return;
+    if(temporaryMatch){
+      if(!schedule.temporary)throw Error('临时数据来源不符');
+      $('sourceLabel').textContent='临时对照 · '+(schedule.algorithm_name||schedule.algorithm_id)+' · '+(schedule.result_kind==='planning_preview'?'规划预览，未认证':'核验通过')+' · 删除对照后失效';
+      leaseTimer=setInterval(checkTemporary,5000);
+    }else if (schedule.result_kind === 'planning_preview') $('sourceLabel').textContent = '规划预览 · 未取得正式连续认证 · ' + scheduleUrl;
     data = T.normalize(schedule.assignments || []);
     if (!data.length) throw new Error('此排程没有有效观测记录。');
     const first = Math.min(...data.map(a => a.start)), last = Math.max(...data.map(a => a.end));
@@ -142,5 +170,5 @@
     range = domain.slice();
     $('satellite-filter').append(...[...new Set(data.map(a => a.satellite_id))].sort().map(s => new Option(s, s)));
     filter();
-  }).catch(error => { $('errorBox').hidden = false; $('errorBox').textContent = '无法读取排程：' + error.message; $('chart-status').textContent = '暂无可显示的观测。'; });
+  }).catch(error => { if(temporaryMatch&&error.message!=='此排程没有有效观测记录。'){invalidateTemporary();return;}$('errorBox').hidden = false; $('errorBox').textContent = '无法读取排程：' + error.message; $('chart-status').textContent = '暂无可显示的观测。'; });
 })();

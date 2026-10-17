@@ -18,10 +18,19 @@ test('two grouped views filter results but never manually reorder records',()=>{
  assert.deepEqual(ids('experiment',['b','a','outside','d','c']),['a','b','c','d']);assert.deepEqual(ids('algorithm',[]),[]);
  assert.equal(JSON.stringify(experiments),before);
 });
-test('temporary successful metrics cannot link to persistent Run or Gantt',()=>{
+test('temporary successful metrics link only to the temporary Gantt route',()=>{
  const row={...run('temporary-run','sa'),status:'SUCCEEDED',temporary:true,has_plan:true,metrics:{TP:4}};
  const html=UI.results([{experiment_id:'temporary-session',temporary:true,runs:[row]}],null);
- assert.match(html,/4\.000/);assert.match(html,/临时对照/);assert.doesNotMatch(html,/href=|data-experiment=/);
+ assert.match(html,/4\.000/);assert.match(html,/临时 Gantt/);
+ assert.match(html,/href="\/visualization\/temporary-gantt\/temporary-session\/temporary-run"/);
+ assert.doesNotMatch(html,/href="\/visualization\/gantt\/|cesium|data-experiment=/);
+});
+test('console filters show source once per group and no result details or nested fieldsets',()=>{
+ const records=experiments.map((e,i)=>({...e,temporary:!!i,config:{schedule_model:i?'adaptive_repair':'completion_first'}}));
+ const html=UI.filterChoices(records,['a','c']);
+ assert.equal((html.match(/正式实验/g)||[]).length,2); // Visible heading + accessible group name.
+ assert.equal((html.match(/type="checkbox"/g)||[]).length,4);
+ assert.doesNotMatch(html,/<fieldset|<legend|SUCCEEDED|FAILED|曝光|未认证|Gantt|TP|TCR|99/);
 });
 test('failed or unavailable plans cannot display successful metrics',()=>{
  UI.setCatalog([{algorithm_id:'sa',name:'模拟退火 SA'},{algorithm_id:'ga',name:'遗传算法 GA'}]);

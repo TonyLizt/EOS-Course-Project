@@ -170,6 +170,8 @@ node tests/satellite_follow.test.cjs
 
 ## 统一调度控制台与 Gantt
 
+当前比较区采用轻量来源分区筛选，详细指标在下方表格。临时结果可通过独立的“临时 Gantt”查看任务时间轴，数据仅存内存，删除或过期后图表清空；仍不进入数据库、正式列表或 Cesium。见[临时 Gantt 与定向验证](docs/phase2/temporary_gantt_handoff.md)。
+
 首页可勾选一个或多个**实际已注册**算法，一次原子创建一个 Experiment 和多个独立 Run；共用场景、种子、预算和约束，算法参数分别保存。算法名称来自注册元数据，列表每个实验仅一行，日期为次要信息。算法卡片的三角展开策略、限制及参数；支持取消及原 Run 的 Cesium/Gantt/导出入口。
 
 比较限当前实验及条件核验通过的临时模型对照；按算法、按实验稳定分组，仅勾选结果，不提供手动排序、序号或混合模式。首页对照仅驻留内存，可创建/移除，不新增正式 Experiment/Run，不进入历史列表或 Cesium。Cesium 的算法比较完整移至右侧 Observation Intervals 下方，仅显示当前持久实验。TP/TCR/BD 越大越好，TM/RT/RV 越小越好，未提供 RV 保持空值，不生成综合排名。新增算法采用勾选确认，载荷 Hide/Show Grid 保持正常。见[当前临时对照与验证](docs/phase2/temporary_comparison_handoff.md)。

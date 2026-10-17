@@ -19,6 +19,7 @@
 .experiment-ui td,.experiment-ui th { padding:7px; border-bottom:1px solid #41516f; white-space:nowrap; text-align:left; }
 #cesium-current-algorithms,#cesium-add-algorithms { max-height:none; overflow:visible; min-width:0; }
 .experiment-ui .hint { color:#bac7dc; font-size:12px; }
+.experiment-ui .validation-note { display:block; font-size:11px; color:#bac7dc; max-width:220px; white-space:normal; }
 .experiment-ui .add-algorithm-option.is-chosen { background:#1c3455; border-color:#7cc4ff; }
 .experiment-ui .add-algorithm-option { display:flex; align-items:center; gap:6px; flex:1; min-width:0; margin:0; min-height:32px; cursor:pointer; }
 .experiment-ui input[type="checkbox"] { width:16px; height:16px; flex:0 0 16px; margin:0; accent-color:#7cc4ff; }

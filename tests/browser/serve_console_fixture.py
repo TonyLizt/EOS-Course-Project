@@ -17,7 +17,7 @@ PROJECT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT))
 sys.path.insert(0, str(PROJECT / "tests"))
 from test_integrated_replay import fixture
-from certification_fixtures import storage_receipt
+from certification_fixtures import storage_receipt, unit_receipt
 from eos_system.config import algorithm_source_sha256
 from eos_system.storage import now
 from eos_system.provenance import capture_provenance
@@ -28,6 +28,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--coord', type=Path, required=True)
     parser.add_argument('--port', type=int, default=18769)
+    parser.add_argument('--synthetic-temporary', action='store_true', help='UNIT_TEST_INJECTION_ONLY temporary schedules for Gantt UI')
     args = parser.parse_args()
     with fixture(duration_s=3600) as f:
         cache=orbit_cache_file(f.settings,f.sha)
@@ -67,6 +68,17 @@ def main():
             'satellites': [], 'missions': [], 'observation_windows': []}))
         os.environ['PYTHONDONTWRITEBYTECODE'] = '1'
         os.environ['MPLCONFIGDIR'] = '/tmp/eos-console-mpl'
+        if args.synthetic_temporary:
+            original_execute=f.app.state.controller._execute
+            def execute(config, attempt, store=None):
+                if store is not f.app.state.temporary_controls:
+                    return original_execute(config,attempt,store)
+                plan=json.loads(json.dumps(f.db.get_run(ids[0])['plan']))
+                plan['assignments'][1].update(sat_start_time='2026-01-01T00:00:50',sat_end_time='2026-01-01T00:00:55')
+                if not store.set_verifying(config.run_id,attempt):return
+                receipt=unit_receipt(config.run_id,config.scenario_sha256,plan,context=store.expected_certification_context())
+                store.finish_success(config.run_id,attempt,plan,metrics,.001,certification=receipt,deadline=time.monotonic()+20)
+            f.app.state.controller._execute=execute
         base = f'http://127.0.0.1:{args.port}'
         # Receipts are process-bound: seed and serve inside the same trusted process.
         server = uvicorn.Server(uvicorn.Config(f.app, host='127.0.0.1', port=args.port,

@@ -646,6 +646,7 @@
     }
 
     integratedBundle().then(function ([ds,schedule,replay]) {
+      if (schedule && schedule.temporary) throw new Error('临时比较结果仅支持 Gantt，不支持 Cesium 回放');
       const sourceAdded=viewer.dataSources.add(ds);
       viewer.zoomTo(ds).then(flyToEarthCenter);
       setupMetrics(schedule);

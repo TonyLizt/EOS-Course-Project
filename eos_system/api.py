@@ -9,7 +9,7 @@ import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit, unquote
 
 from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
@@ -83,7 +83,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.middleware("http")
     async def current_ui(request: Request, call_next):
         response = await call_next(request)
-        if request.url.path == "/" or request.url.path.startswith(("/static/", "/visualization/experiments/")) or request.url.path in {"/visualization/gantt-page", "/visualization/gantt", "/visualization/cesium-page"}:
+        if request.url.path == "/" or request.url.path.startswith(("/static/", "/visualization/experiments/", "/api/temporary-controls/", "/visualization/temporary-gantt/")) or request.url.path in {"/visualization/gantt-page", "/visualization/gantt", "/visualization/cesium-page"}:
             response.headers["Cache-Control"] = "no-store, max-age=0"
             response.headers["Pragma"] = "no-cache"
             response.headers["X-EOS-UI-Build"] = ui_build_id
@@ -293,6 +293,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         temporary.delete(control_id)
         return {'removed':True, 'temporary':True}
 
+    @app.get('/api/temporary-controls/{control_id}/runs/{run_id}/schedule')
+    def temporary_gantt_schedule(control_id: str, run_id: str):
+        schedule = experiment_call(temporary.schedule, control_id, run_id)
+        schedule['algorithm_name'] = get_algorithm(schedule['algorithm_id']).name
+        return schedule
+
+    @app.get('/visualization/temporary-gantt/{control_id}/{run_id}')
+    def temporary_gantt_page(control_id: str, run_id: str):
+        experiment_call(temporary.schedule, control_id, run_id)
+        url = f'/api/temporary-controls/{control_id}/runs/{run_id}/schedule'
+        return RedirectResponse('/visualization/gantt-page?' + urlencode({'schedule':url}),status_code=303)
+
     # Compatibility API for explicit persistent model-only experiments; no UI uses it.
     @app.post('/api/experiments/{experiment_id}/control',status_code=202)
     def create_control_experiment(experiment_id: str, request: ControlExperimentRequest,
@@ -484,7 +496,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "gantt_viewer.html")
 
     @app.get("/visualization/cesium-page")
-    def cesium_page():
+    def cesium_page(schedule: str | None = None):
+        if schedule and urlsplit(unquote(schedule)).path.startswith('/api/temporary-controls/'):
+            raise HTTPException(status_code=409, detail='临时比较结果仅支持 Gantt，不支持 Cesium 回放')
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "cesium_viewer.html")
 
     @app.get("/visualization/fixed-payload-state.js")
