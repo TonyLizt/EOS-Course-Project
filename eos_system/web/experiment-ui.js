@@ -28,10 +28,10 @@
   if(!rows.length)return '<p>暂无已选择结果；请在上方选择需要比较的算法结果。</p>';
   return `<div class="table-wrap comparison-results" tabindex="0" aria-label="算法比较"><table><thead><tr><th scope="col">算法</th><th scope="col">来源 / 初始模型</th><th scope="col">状态 / 核验</th><th scope="col">完成任务</th>${metrics.map(([m])=>`<th scope="col">${m}</th>`).join('')}<th scope="col">查看</th></tr></thead><tbody>${rows.map(({experiment,run})=>{
    const m=usable(run)?run.metrics:null;
-   const validation=run.result_kind==='planning_preview'?'采样通过 · 未认证':run.continuous_certification?.status||'核验未提供';
+   const validation=run.result_kind==='physical_validation'?'工程物理采样通过':run.result_kind==='planning_preview'?'采样通过 · 未认证':run.continuous_certification?.status||'核验未提供';
    const status=run.status==='SUCCEEDED'&&!m?'计划不可用':run.status;
    const note=m?validation:run.status==='SUCCEEDED'?(run.continuous_certification?.status||'核验未提供'):'';
-   const source=experiment.temporary?'临时':'正式';
+   const source=experiment.temporary?'临时':'已保存';
    const gantt=experiment.temporary?`/visualization/temporary-gantt/${encodeURIComponent(experiment.experiment_id)}/${encodeURIComponent(run.run_id)}`:`/visualization/gantt/${encodeURIComponent(run.run_id)}`;
    return `<tr class="${run.run_id===selected?'selected':''}" ${run.run_id===selected?'aria-current="true"':''} data-run="${E(run.run_id)}"><th scope="row">${experiment.temporary?E(name(run.config.algorithm_id)):`<button type="button" class="select-algorithm" data-experiment="${E(experiment.experiment_id)}" data-run="${E(run.run_id)}">${E(name(run.config.algorithm_id))}</button>`}</th><td><span class="result-source">${source}</span> ${E(model(run.config.schedule_model))}</td><td><span>${E(status)}</span>${note?'<small class="validation-note">'+E(note)+'</small>':''}${run.error?'<small class="validation-note">'+E(run.error.message)+'</small>':''}</td><td>${m?`${m.completed_tasks} / ${m.total_tasks}`:'—'}</td>${metrics.map(([k])=>`<td>${format(k,m?.[k])}</td>`).join('')}<td>${usable(run)?`<a href="${E(gantt)}" target="_blank" rel="noopener">${experiment.temporary?'临时 Gantt':'Gantt'}</a>`:'尚无计划'}</td></tr>`;
   }).join('')}</tbody></table></div>`;
@@ -46,7 +46,7 @@
  function filterChoices(records,active){
   const checked=new Set(active);
   return '<p class="hint">选择要比较的结果</p><div class="comparison-filters">'+records.map(experiment=>{
-   const source=(experiment.temporary?'临时对照':'正式实验')+' · '+model(experiment.config?.schedule_model||experiment.runs[0]?.config.schedule_model);
+   const source=(experiment.temporary?'临时对照':'已保存实验')+' · '+model(experiment.config?.schedule_model||experiment.runs[0]?.config.schedule_model);
    return `<div class="comparison-filter-group"><p class="filter-source">${E(source)}</p><div class="filter-options" role="group" aria-label="${E(source)}">${experiment.runs.map(run=>{
     const id=run.run_id;
     return `<label class="result-choice ${checked.has(id)?'is-chosen':''}"><input type="checkbox" data-result-id="${E(id)}" data-focus-key="check-${E(id)}" ${checked.has(id)?'checked':''}><span>${E(name(run.config.algorithm_id))}</span></label>`;

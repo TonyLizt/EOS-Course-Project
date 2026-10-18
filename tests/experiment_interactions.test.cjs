@@ -28,7 +28,7 @@ test('temporary successful metrics link only to the temporary Gantt route',()=>{
 test('console filters show source once per group and no result details or nested fieldsets',()=>{
  const records=experiments.map((e,i)=>({...e,temporary:!!i,config:{schedule_model:i?'adaptive_repair':'completion_first'}}));
  const html=UI.filterChoices(records,['a','c']);
- assert.equal((html.match(/正式实验/g)||[]).length,2); // Visible heading + accessible group name.
+ assert.equal((html.match(/已保存实验/g)||[]).length,2); // Visible heading + accessible group name.
  assert.equal((html.match(/type="checkbox"/g)||[]).length,4);
  assert.doesNotMatch(html,/<fieldset|<legend|SUCCEEDED|FAILED|曝光|未认证|Gantt|TP|TCR|99/);
 });

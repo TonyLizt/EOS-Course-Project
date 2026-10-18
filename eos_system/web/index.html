@@ -7,29 +7,54 @@
   <title>EOS · 统一调度控制台</title>
   <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="/static/algorithm-parameters.css">
+  <link rel="stylesheet" href="/static/workspace.css">
   <script defer src="/static/algorithm-parameters.js"></script>
   <script defer src="/static/experiment-ui.js"></script>
   <script defer src="/static/app.js"></script>
   <script defer src="/static/console.js"></script>
+  <script defer src="/static/workspace-pages.js"></script>
+  <script defer src="/static/workspace.js"></script>
 </head>
-<body>
+<body class="console-workspace">
   <a class="skip-link" href="#main-content">跳到主要內容</a>
   <header class="topbar">
-    <div><p class="eyebrow">EOS · MISSION OPERATIONS</p><h1>统一调度控制台</h1><nav aria-label="控制台导航"><a href="#create-heading">运行调度</a><a href="#comparison">算法比较</a><a href="#runs-heading">历史记录</a><a href="/visualization/gantt">Gantt 运行页</a></nav></div>
-    <span id="health" class="badge" role="status" aria-live="polite">正在连接服务…</span>
+    <a class="brand" href="#new-experiment" data-console-route="create" aria-label="EOS 实验工作台首页"><span class="brand-mark" aria-hidden="true">E</span><span><span class="eyebrow">EOS · COURSE PROJECT</span><strong>调度实验工作台</strong></span></a>
+    <nav aria-label="控制台导航"><a href="#new-experiment" data-console-route="create">新建实验</a><a href="#experiments" data-console-route="records">实验管理</a><a href="#comparison" data-console-route="compare">结果比较</a><a href="/visualization/gantt">甘特图 ↗</a></nav>
+    <details class="service-info"><summary><span id="workspace-service-label">服务状态</span> <span class="status-dot" aria-hidden="true"></span></summary><span id="health" class="badge" role="status" aria-live="polite">正在连接服务…</span></details>
   </header>
+  <div class="workspace-intro"><div><p class="eyebrow">SCHEDULING WORKSPACE</p><h1 id="workspace-page-title">新建实验</h1><p id="workspace-page-description">选择场景与算法，设置预算后开始运行。</p></div><span class="intro-note">一份场景 · 多算法对照</span></div>
   <main class="layout" id="main-content" tabindex="-1">
+    <section class="workspace-page create-page" id="new-experiment" data-console-page="create" aria-label="新建实验工作区">
     <section class="card form-card" aria-labelledby="create-heading">
-      <div class="section-title"><h2 id="create-heading">运行调度</h2><p>提交一次建立一个实验；选中的算法作为实验内的独立运行，由现有 Worker 队列执行。</p></div>
+      <div class="section-title"><p class="eyebrow">CREATE EXPERIMENT</p><h2 id="create-heading">新建实验</h2><p>按三个步骤完成配置。所有高级设置都可以展开调整。</p></div>
+      <div class="panel-scroll create-scroll" role="region" aria-label="实验配置与目录管理" tabindex="0">
       <form id="run-form">
-        <label>实验模式<select id="execution-mode"><option value="planning_preview">规划预览（可运行、比较和回放；未经正式连续认证）</option><option value="formal">正式认证（需要可信窗口与连续区间证明）</option></select></label>
-        <p id="mode-hint" class="hint">规划预览保留来源、窗口、资源和转向约束，并进行真实曝光采样检查；不能作为正式认证结果导出。</p>
-        <label>数据源<select id="source" required></select></label>
+        <div class="workflow-tabs" aria-label="实验配置步骤">
+          <button type="button" class="workflow-tab" data-workspace-step="1" aria-controls="workspace-step-1" aria-current="step"><span>01</span><strong>选择场景</strong><small>数据与物理核验</small></button>
+          <button type="button" class="workflow-tab" data-workspace-step="2" aria-controls="workspace-step-2"><span>02</span><strong>选择算法</strong><small id="workspace-selection-count">选择要比较的算法</small></button>
+          <button type="button" class="workflow-tab" data-workspace-step="3" aria-controls="workspace-step-3"><span>03</span><strong>确认并运行</strong><small>预算与输出设置</small></button>
+        </div>
+        <section class="workflow-panel" id="workspace-step-1" aria-labelledby="workspace-heading-1">
+        <div class="panel-heading"><div><h3 id="workspace-heading-1" tabindex="-1">先选择本次实验的场景</h3><p>从已登记的数据源中选择；需要新目录时，展开下方「目录管理」。</p></div><span class="step-count">步骤 1 / 3</span></div>
+        <!-- 统一常规流程；保留字段ID供已有提交逻辑使用，不再要求用户选认证模式。 -->
+        <select id="execution-mode" hidden aria-label="核验流程"><option value="physical_validation" selected>工程物理核验</option></select>
+        <p id="mode-hint" class="hint">统一执行来源、资源、转向及 Orekit 全曝光物理采样检查；通过后可导出与回放。采样核验不等同于严格连续区间证明。</p>
+        <div class="workspace-fields"><label>数据源<select id="source" required></select></label>
         <label>场景<select id="scenario" required></select></label>
-        <p id="scenario-hint" class="hint" role="status"></p>
-        <label>初始排程模型<select id="schedule-model" required></select></label>
-        <p class="hint">模型与比较算法分别选择。SA 使用模型初始解，GA／ACO 保留其为候选最佳解；其余算法依原实现自行建解，模型不改变其核心策略。</p>
+        </div><details class="quiet-details"><summary>场景规模、来源与 SHA 校验</summary><p id="scenario-hint" class="hint" role="status"></p></details>
+        <div class="workflow-actions"><span>下一步：勾选本次需要运行的算法</span><button type="button" data-workspace-next="2">选择算法 <span aria-hidden="true">→</span></button></div>
+        </section>
+        <section class="workflow-panel" id="workspace-step-2" aria-labelledby="workspace-heading-2">
+        <div class="panel-heading"><div><h3 id="workspace-heading-2" tabindex="-1">选择要放在一起比较的算法</h3><p>可多选。勾选名称选择算法；点击右侧三角查看说明和专属参数。</p></div><span class="step-count">步骤 2 / 3</span></div>
         <fieldset><legend>本实验算法（勾选后可展开配置参数）</legend><div id="algorithm-choices"></div></fieldset>
+<div class="model-setting">        <label>初始排程模型<select id="schedule-model" required></select></label>
+        <p class="hint">模型与比较算法分别选择。SA 使用模型初始解，GA／ACO 保留其为候选最佳解；其余算法依原实现自行建解，模型不改变其核心策略。</p>
+</div>        <p id="workspace-step-error" class="error" role="alert"></p>
+        <div class="workflow-actions"><button class="secondary" type="button" data-workspace-next="1">← 选择场景</button><button type="button" data-workspace-next="3">确认运行设置 →</button></div>
+        </section>
+        <section class="workflow-panel" id="workspace-step-3" aria-labelledby="workspace-heading-3">
+        <div class="panel-heading"><div><h3 id="workspace-heading-3" tabindex="-1">确认设置，开始本次实验</h3><p>默认参数可以直接使用；每种算法独立运行并保存状态。</p></div><span class="step-count">步骤 3 / 3</span></div>
+        <dl class="configuration-summary"><div><dt>已选场景</dt><dd id="workspace-scene-summary">等待加载场景…</dd></div><div><dt>本次算法</dt><dd id="workspace-algorithm-summary">尚未选择</dd></div></dl>
         <label>结果输出<select id="output-profile" required></select></label>
         <p id="output-hint" class="hint"></p>
         <div class="two-cols">
@@ -37,7 +62,7 @@
           <label>算法预算 / 秒<input id="budget" type="number" min="1" max="600" value="60" required></label>
         </div>
         <label>任务放置模式<select id="placement"><option value="earliest">最早可行时间</option><option value="center">窗口中心</option></select></label>
-        <details><summary>实验参数</summary>
+        <details class="advanced-settings"><summary>高级实验参数 <span>目标权重、资源与转向约束</span></summary>
           <p class="hint">SA／GA／ACO、CAABS／RABAS 使用目标权重；CAABS／RABAS 仍以完成任务数优先。固定策略启发式保持原策略。</p>
           <div class="two-cols">
             <label>收益权重<input id="weight-profit" type="number" min="0" step="any" value="0"></label>
@@ -52,40 +77,39 @@
           <label>机动能力<select id="agility"><option>Standard-Agility</option><option>Low-Agility</option><option>High-Agility</option></select></label>
           <label>非敏捷转向秒数<input id="transition" type="number" min="0" step="any" value="10"></label>
         </details>
-        <button type="submit" id="submit">运行选中算法</button>
+        <div class="workflow-actions"><button class="secondary" type="button" data-workspace-next="2">← 调整算法</button><button type="submit" id="submit">运行选中算法 <span aria-hidden="true">→</span></button></div>
+        </section>
         <p id="form-message" class="message" role="status"></p>
         <ul id="submission-results" class="files" aria-label="逐算法提交结果"></ul>
       </form>
-      <details class="location-setup"><summary>登记新的数据源或输出目录</summary>
-        <label>位置用途<select id="register-kind"><option value="source">只读数据源</option><option value="output">正式文件输出</option></select></label>
+      <details class="location-setup"><summary>目录管理 <span>登记新的数据源或输出位置</span></summary>
+        <label>位置用途<select id="register-kind"><option value="source">只读数据源</option><option value="output">结果文件输出</option></select></label>
         <label>显示名称<input id="register-name" placeholder="例如：刘懋兴固定场景" maxlength="120"></label>
         <label>Windows 或 WSL 目录<input id="register-path" placeholder="例如 C:\EOS-Bench\output_s1 或 /home/bj201/results" maxlength="2048"></label>
         <button class="secondary" type="button" id="register-location">登记目录</button>
         <p id="register-message" class="message" role="status"></p>
       </details>
+      </div>
+    </section>
     </section>
 
-    <section class="card comparison-card" id="comparison" aria-labelledby="comparison-heading">
-      <div class="comparison-header"><div class="section-title"><p class="eyebrow">COMPARE · CURRENT EXPERIMENT</p><h2 id="comparison-heading">算法比较</h2><p>当前正式实验与临时模型对照</p></div><div class="control-action"><label for="control-model" class="sr-only">对照实验初始模型</label><select id="control-model"><option value="completion_first">完成率优先</option><option value="adaptive_repair">自适应修复</option></select><button type="button" class="secondary" id="create-control" disabled>一键创建对照实验</button></div></div>
-      <p class="hint">TP ↑ 收益 · TCR ↑ 完成率 · BD ↑ 均衡度 · TM ↓ 等待时间 · RT ↓ 秒 · RV ↓ 多次收益方差（单次通常无值）。</p>
-      <p id="control-status" class="hint" role="status">对照仅用于本页临时比较，不保存到实验列表或 Cesium。</p>
-      <label>结果组织方式<select id="comparison-mode"><option value="algorithm">按算法比较</option><option value="experiment">按实验比较</option></select></label><div id="comparison-choices"></div>
-      <p id="comparison-status" class="message" role="status"></p><div id="comparison-groups"></div>
-    </section>
+    <section class="workspace-page records-page" id="experiments" data-console-page="records" aria-label="实验管理工作区" hidden>
+      <div class="page-toolbar"><p>在列表中选择实验，右侧查看进度、计划与导出。</p><a href="#comparison" data-console-route="compare" class="workspace-text-link">比较当前实验 <span aria-hidden="true">→</span></a></div>
     <section class="card list-card" aria-labelledby="runs-heading">
-      <div class="section-title inline"><div><h2 id="runs-heading">实验列表</h2><p id="run-count">状态每两秒刷新一次。</p></div><div class="toolbar"><button class="secondary" id="toggle-refresh" type="button" aria-pressed="false">暂停自动更新</button><button class="secondary" id="refresh" type="button">立即刷新</button></div></div>
+      <div class="section-title inline"><div><p class="eyebrow">EXPERIMENTS</p><h2 id="runs-heading">实验列表</h2><p id="run-count">状态每两秒刷新一次。</p></div><div class="toolbar"><button class="secondary" id="toggle-refresh" type="button" aria-pressed="false">暂停自动更新</button><button class="secondary" id="refresh" type="button">立即刷新</button></div></div>
       <div class="table-wrap" tabindex="0" aria-label="实验列表，可水平滚动"><table><caption class="sr-only">一个实验一行，内含多种算法</caption><thead><tr><th scope="col">实验 / 创建时间</th><th scope="col">场景</th><th scope="col">初始模型</th><th scope="col">算法</th><th scope="col">状态</th></tr></thead><tbody id="runs"></tbody></table></div>
       <div class="list-footer"><button class="secondary" id="previous-page" type="button">上一页</button><span id="page-label"></span><button class="secondary" id="next-page" type="button">下一页</button></div>
       <p id="list-message" class="message" role="status"></p>
     </section>
 
     <section class="card detail-card" aria-labelledby="detail-heading">
-      <div class="section-title inline"><div><h2 id="detail-heading">实验详情</h2><p id="selected-run">选择列表中的实验</p></div><span id="detail-status" class="badge muted" role="status">尚未选择</span></div>
+      <div class="section-title inline"><div><p class="eyebrow">SELECTED EXPERIMENT</p><h2 id="detail-heading">实验详情</h2><p id="selected-run">选择列表中的实验</p></div><span id="detail-status" class="badge muted" role="status">尚未选择</span></div>
+      <div class="panel-scroll detail-scroll" role="region" aria-label="所选实验详情" tabindex="0">
       <label>查看实验内算法<select id="detail-algorithm"></select></label>
-      <div id="experiment-algorithm-add"></div>
+      <details class="quiet-details add-algorithms"><summary>为当前实验添加算法</summary><div id="experiment-algorithm-add"></div></details>
       <div id="metrics" class="metrics"></div>
       <p id="run-summary" class="hint"></p><button id="run-algorithm-info" type="button" class="secondary" hidden>算法与本次参数</button>
-      <details><summary>本次运行条件与核验信息</summary><pre id="run-config"></pre></details>
+      <details class="quiet-details"><summary>本次运行条件与核验信息</summary><pre id="run-config"></pre></details>
       <div id="actions" class="actions" hidden>
         <button class="secondary" id="cancel" type="button">取消当前算法运行</button>
         <a id="export-json" class="link-button" href="#">导出 JSON</a>
@@ -95,14 +119,25 @@
         <a id="open-cesium" class="link-button secondary" href="#" target="_blank" rel="noopener" aria-label="在新窗口打开 Cesium 回放">Cesium 回放</a>
         <button class="danger" id="delete-run" type="button">移除此算法（保留历史）</button>
       </div>
-      <label class="delete-option" id="delete-option" hidden><input id="delete-files" type="checkbox">同时删除本实验在服务器输出目录中的正式 JSON/CSV 文件</label>
+      <label class="delete-option" id="delete-option" hidden><input id="delete-files" type="checkbox">同时删除本实验在服务器输出目录中的 JSON/CSV 结果文件</label>
       <p id="replay-status" class="hint" role="status"></p>
       <p id="scenario-provenance" class="hint"></p>
       <p id="detail-error" class="error" role="alert"></p>
-      <h3>服务器输出文件</h3><ul id="files" class="files"></ul>
-      <h3>运行记录</h3><ol id="events" class="events"></ol>
-      <h3>计划明细 <span id="assignment-count"></span></h3>
+      <details class="quiet-details"><summary>服务器输出文件</summary><ul id="files" class="files"></ul></details>
+      <details class="quiet-details"><summary>运行记录与事件</summary><ol id="events" class="events"></ol></details>
+      <h3 class="plan-heading">计划明细 <span id="assignment-count"></span></h3>
       <div class="table-wrap" tabindex="0" aria-label="计划明细，可水平滚动"><table><caption class="sr-only">所选实验的任务计划</caption><thead><tr><th scope="col">任务</th><th scope="col">卫星</th><th scope="col">开始</th><th scope="col">结束</th></tr></thead><tbody id="assignments"></tbody></table></div>
+      </div>
+    </section>
+    </section>
+    <section class="card comparison-card workspace-page" data-console-page="compare" hidden id="comparison" aria-labelledby="comparison-heading">
+      <div class="comparison-header"><div class="section-title"><p class="eyebrow">COMPARE RESULTS</p><h2 id="comparison-heading">结果比较</h2><p>选择实验后，在这里比较各算法与临时模型对照。</p></div><div class="control-action"><label for="control-model" class="sr-only">对照实验初始模型</label><select id="control-model"><option value="completion_first">完成率优先</option><option value="adaptive_repair">自适应修复</option></select><button type="button" class="secondary" id="create-control" disabled>一键创建对照实验</button></div></div>
+      <div class="panel-scroll comparison-scroll" role="region" aria-label="结果比较内容" tabindex="0">
+      <details class="quiet-details metric-guide"><summary>如何阅读比较指标</summary><p class="hint">TP ↑ 收益 · TCR ↑ 完成率 · BD ↑ 均衡度 · TM ↓ 等待时间 · RT ↓ 秒 · RV ↓ 多次收益方差（单次通常无值）。</p></details>
+      <p id="control-status" class="hint" role="status">对照仅用于本页临时比较，不保存到实验列表或 Cesium。</p>
+      <label>结果组织方式<select id="comparison-mode"><option value="algorithm">按算法比较</option><option value="experiment">按实验比较</option></select></label><div id="comparison-choices"></div>
+      <p id="comparison-status" class="message" role="status"></p><div id="comparison-groups"></div>
+      </div>
     </section>
   </main>
   <dialog id="algorithm-dialog" aria-labelledby="algorithm-dialog-title"><div class="inline"><h2 id="algorithm-dialog-title">算法详情</h2><button type="button" id="close-algorithm-dialog" class="secondary">关闭</button></div><div id="algorithm-description"></div></dialog>

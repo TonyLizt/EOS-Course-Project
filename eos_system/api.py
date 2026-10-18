@@ -24,7 +24,7 @@ from .experiments import Experiments
 from .controller import Controller
 from .temporary_controls import TemporaryControls
 from .deletion import remove_exported_files
-from .exporting import render_csv, render_json, require_certified_record
+from .exporting import render_csv, render_json, require_certified_record, require_exportable_record
 from .storage import Database, now
 from .replay_service import ReplayError, ReplayService, REPLAY_CONFIG_ID
 from .visualization import OrbitUnavailable, orbit_cache_path
@@ -124,12 +124,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "ui": {"name": "统一调度控制台", "build_id": ui_build_id}}
 
     @app.get("/api/scenarios")
-    def scenarios(source_id: str = "runtime", execution_mode: Literal['formal','planning_preview'] = 'formal'):
+    def scenarios(source_id: str = "runtime", execution_mode: Literal['formal','planning_preview','physical_validation'] = 'physical_validation'):
         source = database.get_data_source(source_id)
         if source is None:
             raise HTTPException(status_code=404, detail="数据源未登记")
         return {"source_id": source_id, "items": catalog.list_scenarios(Path(source["root_path"]), source_id,
-            planning_preview=execution_mode == 'planning_preview')}
+            planning_preview=execution_mode in ('planning_preview', 'physical_validation'))}
 
     @app.get("/api/data-sources")
     def data_sources():
@@ -405,7 +405,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if record["status"] != "SUCCEEDED" or record["plan"] is None or record["metrics"] is None:
                 raise HTTPException(status_code=409, detail="实验尚无正式成功结果")
             try:
-                require_certified_record(record)
+                require_exportable_record(record)
             except ValueError as exc:
                 raise HTTPException(status_code=409, detail=str(exc)) from exc
             public = _public_run(record)
@@ -422,7 +422,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if record["status"] != "SUCCEEDED" or record["plan"] is None or record["metrics"] is None:
             raise HTTPException(status_code=409, detail="实验尚无正式成功结果")
         try:
-            if allow_preview and record['config'].get('execution_mode') == 'planning_preview':
+            if allow_preview and record['config'].get('execution_mode') in ('planning_preview', 'physical_validation'):
                 require_preview_record(record)
             else:
                 require_certified_record(record)
@@ -435,7 +435,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """保持旧页面使用的顶层计划结构，只附加正式计划的身份摘要。"""
         record = successful_run(run_id)
         source = database.get_replay_source(run_id)
-        schedule = (preview_schedule(record) if record.get('result_kind') == 'planning_preview'
+        schedule = (preview_schedule(record) if record.get('result_kind') in ('planning_preview', 'physical_validation')
                     else json.loads(render_json(record)))
         schedule["plan_sha256"] = source["plan_sha256"]
         schedule["provenance"]["plan_sha256"] = source["plan_sha256"]

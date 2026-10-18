@@ -77,7 +77,7 @@ def verify_candidate(config: RunConfig, candidate: dict, runtime_s: float) -> tu
     official = schedule_to_dict(schedule, problem)
     metric_data = asdict(metrics)
     metric_data.update({"completed_tasks": len(seen_tasks), "total_tasks": len(problem.tasks)})
-    if config.execution_mode == 'planning_preview':
+    if config.execution_mode in ('planning_preview', 'physical_validation'):
         from utils.continuous_exposure import _RUNTIME
         runtime = getattr(_RUNTIME, 'value', None)
         receipt = audit_preview(config, official, deadline=runtime[0] if runtime else time.monotonic()+30)

@@ -35,6 +35,8 @@
       $('submission-results').innerHTML=result.runs.map(r=>`<li>${E(UI.name(r.config.algorithm_id))}：已接受</li>`).join('');
       submitKey=submitPayload=null;
       await refreshExperiments();
+      // 提交成功才切到管理页；失败留在原表单，便于修正且不丢配置。
+      window.ConsoleWorkspace?.showPage('records');
     } catch(error){$('form-message').textContent=error.message;}
     finally{pending=false;$('submit').disabled=false;}
   }

@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .contracts import RunConfig
-from .planning_preview import PreviewReceipt, PreviewRecord, validate_preview
+from .planning_preview import PreviewReceipt, PreviewRecord, PhysicalValidatedRecord, validate_preview
 
 
 TERMINAL = {"SUCCEEDED", "FAILED", "CANCELLED", "TIMED_OUT"}
@@ -541,11 +541,13 @@ class Database:
             db.execute('INSERT INTO metrics(run_id,completed_tasks,total_tasks,TP,TCR,BD,TM,RT,RV,mip_gap,computed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
                 (run_id,metrics['completed_tasks'],metrics['total_tasks'],metrics['task_profit'],metrics['task_completion_rate'],
                  metrics['balance_degree'],metrics['timeliness_metric'],metrics['runtime_efficiency'],metrics['robustness_variance'],metrics['mip_gap'],now()))
-            self._event(db, run_id, attempt, 'controller', None, 'PREVIEW_VALIDATED', evidence)
+            kind = json.loads(row['config_json'])['execution_mode']
+            self._event(db, run_id, attempt, 'controller', None,
+                'PHYSICS_VALIDATED' if kind == 'physical_validation' else 'PREVIEW_VALIDATED', evidence)
             db.execute("UPDATE run_attempts SET outcome='SUCCEEDED',ended_at=?,algorithm_runtime_s=?,verification_runtime_s=? WHERE run_id=? AND attempt_no=?",
                        (now(),metrics['runtime_efficiency'],verify_s,run_id,attempt))
             db.execute("UPDATE runs SET status='SUCCEEDED',updated_at=?,finished_at=? WHERE run_id=?", (now(),now(),run_id))
-            self._event(db, run_id, attempt, 'controller', None, 'SUCCEEDED', {'result_kind':'planning_preview'})
+            self._event(db, run_id, attempt, 'controller', None, 'SUCCEEDED', {'result_kind':kind})
             return True
 
     def request_cancel(self, run_id: str) -> tuple[str, bool] | None:
@@ -610,16 +612,16 @@ class Database:
             evidence = next((event["payload"] for event in reversed(result["events"])
                              if event["event_type"] == "CONTINUOUS_CERTIFIED"
                              and event["source"] == "controller"), None)
-            if result['config'].get('execution_mode') == 'planning_preview':
+            if result['config'].get('execution_mode') in ('planning_preview', 'physical_validation'):
                 preview = next((event['payload'] for event in reversed(result['events'])
-                    if event['event_type'] == 'PREVIEW_VALIDATED' and event['source'] == 'controller'), None)
-                result['result_kind'] = 'planning_preview'
-                result['continuous_certification'] = {'status':'NOT_CERTIFIED', 'reason':'PLANNING_PREVIEW_ONLY'}
+                    if event['event_type'] == ('PHYSICS_VALIDATED' if result['config']['execution_mode'] == 'physical_validation' else 'PREVIEW_VALIDATED') and event['source'] == 'controller'), None)
+                result['result_kind'] = result['config']['execution_mode']
+                result['continuous_certification'] = {'status':'NOT_CERTIFIED', 'reason':'SAMPLED_PHYSICS_ONLY' if result['result_kind'] == 'physical_validation' else 'PLANNING_PREVIEW_ONLY'}
                 try:
                     if result['status'] != 'SUCCEEDED' or not plan or hashlib.sha256(plan['plan_json'].encode()).hexdigest() != plan['plan_sha256']:
                         raise ValueError('no valid preview plan')
                     result['preview_validation'] = validate_preview(preview, result['config'], result['plan'])
-                    return PreviewRecord(result)
+                    return (PhysicalValidatedRecord if result['result_kind'] == 'physical_validation' else PreviewRecord)(result)
                 except (ValueError, TypeError, KeyError):
                     result['plan'] = None
                     return result
@@ -805,8 +807,8 @@ class Database:
     def record_export(self, run_id: str, format_name: str, data: bytes | None,
                       artifact_path: str | None = None, error_message: str | None = None) -> None:
         if error_message is None:
-            from .exporting import require_certified_record
-            require_certified_record(self.get_run(run_id))
+            from .exporting import require_exportable_record
+            require_exportable_record(self.get_run(run_id))
         with self.write() as db:
             status = "FAILED" if error_message else "SUCCEEDED"
             digest = hashlib.sha256(data).hexdigest() if data is not None else None

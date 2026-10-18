@@ -6,7 +6,7 @@ from utils.time_parsing import parse_orbit_epoch
 
 
 def candidate_exposure(problem, window, start, end, duration):
-    if getattr(problem, 'execution_mode', 'formal') != 'planning_preview':
+    if getattr(problem, 'execution_mode', 'formal') not in ('planning_preview', 'physical_validation'):
         return planning_exposure(window, start, end, duration)
     try:
         first, last = exposure_times(start, end, duration)

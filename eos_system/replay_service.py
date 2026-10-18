@@ -266,8 +266,8 @@ class ReplayService:
                 "replay_config_json": compact_json(config),
                 "replay_config_sha256": cfg_sha,
                 "algorithm_code_sha": json.loads(source["config_json"]).get("algorithm_code_sha"),
-                "provenance_warning": ('规划预览：未取得正式连续认证；几何回放仅供分析。'
-                    if json.loads(source['config_json']).get('execution_mode') == 'planning_preview'
+                "provenance_warning": ('物理采样核验：未取得严格连续区间证明；几何回放供分析。'
+                    if json.loads(source['config_json']).get('execution_mode') in ('planning_preview', 'physical_validation')
                     else (None if json.loads(source["config_json"]).get("algorithm_code_sha")
                                        else "历史实验未保存可验证的算法代码 SHA")),
                 "builder_code_sha": self._builder_sha, **versions,

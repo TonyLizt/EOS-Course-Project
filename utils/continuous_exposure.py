@@ -257,6 +257,17 @@ GRID_V2_SOURCE_SHA256 = "401cf0ae4989af5ac088de9ac9f74dfb58f279018d44b506fa9e61b
 
 
 
+WINDOW_PHYSICS_FILES = ('utils/visibility.py', 'utils/time_parsing.py')
+WINDOW_PHYSICS_SCHEMA = 'orekit-window-physics-lf-v1'
+
+
+def window_physics_sources(root=None):
+    """窗口来源只绑定实际几何/Epoch实现；仅统一CRLF/LF，不忽略代码差异。"""
+    root = Path(root) if root is not None else Path(__file__).resolve().parents[1]
+    return {name: hashlib.sha256((root/name).read_bytes().replace(b'\r\n', b'\n')).hexdigest()
+            for name in WINDOW_PHYSICS_FILES}
+
+
 def window_generation_record(step_s, min_elevation_deg, coarse_step_min):
     from utils.visibility import VISIBILITY_ALGORITHM_VERSION, EXIT_BOUNDARY_PRECISION_US
     return dict(window_algorithm_version=VISIBILITY_ALGORITHM_VERSION,
@@ -269,7 +280,9 @@ def window_generation_record(step_s, min_elevation_deg, coarse_step_min):
                 scan_step_s=step_s, min_elevation_deg=min_elevation_deg,
                 coarse_step_min=coarse_step_min, interval_semantics="half_open",
                 continuous_certification=dict(status="NOT_RUN", audit_version=AUDIT_VERSION),
-                source_files_sha256=source_identity())
+                source_files_sha256=source_identity(),
+                physics_provenance_schema=WINDOW_PHYSICS_SCHEMA,
+                physics_sources_sha256_lf=window_physics_sources())
 
 
 def planning_evidence(scene, path, scene_sha):
@@ -280,11 +293,13 @@ def planning_evidence(scene, path, scene_sha):
     """
     sidecar = Path(path).parent/'provenance'/(Path(path).name+'.provenance.json')
     record = scene.get("metadata",{}).get("extra",{}).get("window_generation",{})
+    fresh = False
     if sidecar.exists() or sidecar.is_symlink():
         if sidecar.is_symlink() or not sidecar.is_file() or sidecar.stat().st_size > 1024*1024:
             return None
         raw = sidecar.read_bytes()
         data = json.loads(raw)
+        fresh = data.get('artifact_kind') == 'fresh_generated_shared_v1'
         version = data.get("window_boundary_version")
         code = data.get("source_files_sha256",{}).get("utils/visibility.py")
         settings = data.get("calculation_settings",{})
@@ -299,8 +314,15 @@ def planning_evidence(scene, path, scene_sha):
             record = data.get("window_generation",{})
         else:
             return None
+    # 仍检查当前进程没有加载A后偷偷换盘上B。新共享数据把窗口生成身份
+    # 与API/Controller/Storage部署身份分开，完整生产源码快照另行留存。
+    current_sources = source_identity()
+    source_matches = isinstance(record,dict) and record.get('source_files_sha256') == current_sources
+    if fresh and isinstance(record,dict) and 'physics_sources_sha256_lf' in record:
+        source_matches = (record.get('physics_provenance_schema') == WINDOW_PHYSICS_SCHEMA
+                          and record.get('physics_sources_sha256_lf') == window_physics_sources())
     if (isinstance(record,dict) and record.get("window_algorithm_version")=="visibility_exit_refined_v3"
-            and record.get("source_files_sha256")==source_identity()
+            and source_matches
             and record.get("endpoint_semantics")=="visible_side_exit_or_evaluated_horizon"
             and record.get("interval_semantics")=="half_open"
             and record.get("boundary_refinement_version")=="visible_side_bisection_v1"
