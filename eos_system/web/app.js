@@ -72,6 +72,18 @@ async function loadScenarios() {
 function updateScenarioHint() {
   const scene=currentScenarios.find(s => s.scenario_id===$("scenario").value);
   if(!scene) { $("scenario-hint").textContent="";return; }
+  const developmentOnly = currentScenarios.some(s => s.execution_modes?.includes('planning_preview') && !s.execution_modes.includes('physical_validation'));
+  $("execution-mode-control").hidden = !developmentOnly;
+  if (!developmentOnly) $("execution-mode").value = 'physical_validation';
+  const mode = $("execution-mode").value;
+  const allowed = !scene.execution_modes || scene.execution_modes.includes(mode);
+  $("submit").disabled = !allowed || (scene.availability && scene.availability !== 'ready');
+  $("mode-hint").textContent = !allowed
+    ? '此开发来源仅允许规划预览；请选择开发规划预览后运行，不得提升为工程或正式认证来源。'
+    : mode === 'planning_preview'
+      ? '开发规划预览：曝光与下传采样不构成连续区间证明；仅支持比较和回放，正式 JSON/CSV 导出不可用。'
+      : '工程物理核验：保留来源、资源、转向及真实物理采样；可导出带采样标识的工程结果，不是严格连续认证。';
+  updateHints();
   $("scenario-hint").textContent=`${scene.satellite_count ?? '未知'} 颗卫星 · ${scene.mission_count ?? '未知'} 个任务 · ${scene.duration_s == null ? '未知时长' : (scene.duration_s/3600).toFixed(2)+' 小时'} · ${scene.scenario_physics_version || 'legacy_unknown'} · 来源 ${scene.provenance_status || 'unknown'} · 物理验证 ${scene.physical_validation_status || 'UNKNOWN'} · ${scene.availability || 'ready'}。${scene.validation_message || ''} 提交时重新核对场景 SHA：${scene.sha256 || '未知'}`;
 }
 $("scenario").addEventListener("change",updateScenarioHint);
@@ -94,7 +106,7 @@ $("execution-mode").addEventListener("change", () => {
   const preview = $("execution-mode").value === 'planning_preview';
   $("mode-hint").textContent = preview
     ? '规划预览：可比较和回放；曝光采样检查不构成连续区间证明，不得作为正式认证计划导出。'
-    : '正式认证：保留严格连续认证门禁；缺少可信物理来源或连续区间证明时不会发布成功计划。';
+    : '工程物理核验：执行来源、资源、转向及物理采样；采样结果不是正式连续认证。';
   for (const option of $("output-profile").options) {
     option.disabled = preview && outputProfiles.find(p => p.profile_id === option.value)?.kind === 'directory';
   }
@@ -182,7 +194,7 @@ function clearDetail() {
 function showDetail(run) {
   if (window.ConsoleUI) window.ConsoleUI.detail(run);
   $("selected-run").textContent = run.run_id;
-  $("detail-status").textContent = run.status + (run.result_kind === 'physical_validation' ? ' · 工程物理核验' : run.result_kind === 'planning_preview' ? ' · 历史规划预览' : '');
+  $("detail-status").textContent = run.status + (run.result_kind === 'physical_validation' ? ' · 工程物理核验' : run.result_kind === 'planning_preview' ? ' · 开发规划预览' : '');
   $("detail-status").className = `badge ${["FAILED","CANCELLED","TIMED_OUT"].includes(run.status) ? "failed" : ["RUNNING","QUEUED","VERIFYING"].includes(run.status) ? "running" : ""}`;
   $("actions").hidden = false;
   $("cancel").disabled = ["SUCCEEDED","FAILED","CANCELLED","TIMED_OUT"].includes(run.status) || run.cancel_requested;
