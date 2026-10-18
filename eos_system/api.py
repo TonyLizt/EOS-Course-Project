@@ -28,7 +28,7 @@ from .exporting import render_csv, render_json, require_certified_record, requir
 from .storage import Database, now
 from .replay_service import ReplayError, ReplayService, REPLAY_CONFIG_ID
 from .visualization import OrbitUnavailable, orbit_cache_path
-from .provenance import capture_provenance
+from .provenance import capture_execution_provenance
 from .scenario_catalog import ScenarioCatalog
 from .config import sha256_file
 from .planning_preview import require_preview_record, preview_schedule
@@ -198,7 +198,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             scene, digest = resolve_scenario_in(Path(source["root_path"]), request.scenario_id)
             catalog.verify_identity(scene, digest)
-            provenance = capture_provenance(scene, digest)
+            provenance = capture_execution_provenance(scene, digest, request.execution_mode)
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except ValueError as exc:

@@ -20,7 +20,9 @@ def canonical(value):
     return (json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n").encode()
 
 
-def generate(output, satellites, satellite_id, data_path):
+def generate(output, satellites, satellite_id, data_path, *, tasks_per_target=1):
+    if type(tasks_per_target) is not int or not 1 <= tasks_per_target <= 8:
+        raise ValueError("tasks_per_target must be an integer in [1,8]")
     from core.models import (Satellite, SatelliteSpecs, OrbitalParameters, OrbitalType, ObservationCapability,
         ObservationSensor, SensorResolution, SensorMode, ManeuverabilityCapability, ManeuverabilityType,
         Mission, TargetLocation, ObservationRequirement, MissionInfo)
@@ -61,14 +63,17 @@ def generate(output, satellites, satellite_id, data_path):
         date = datetime_to_absolutedate(start + timedelta(seconds=second))
         position = prop.propagateOrbit(date).getPVCoordinates(ctx.inertial).getPosition()
         geo = ctx.earth.transform(position, ctx.inertial, date)
-        missions.append(Mission(f"DEV{index:02d}", TargetLocation(math.degrees(geo.getLatitude()),
-                        math.degrees(geo.getLongitude()), 0.), index, ObservationRequirement(10.)))
+        for repeat in range(tasks_per_target):
+            missions.append(Mission(f"DEV{index:02d}-{repeat:02d}", TargetLocation(math.degrees(geo.getLatitude()),
+                            math.degrees(geo.getLongitude()), 0.), index, ObservationRequirement(10.)))
     metadata = ScenarioMetadata("CAABS real orbit development", start, 360., 1.,
         description="REAL_OREKIT_DEVELOPMENT_ONLY: orbit-derived targets, not a random/final dataset",
         extra={"development_generation_contract": "gen02.development.v1", "initial_attitudes": initial,
                "visibility_settings": {"min_elevation_deg": 5., "coarse_step_min": 60.},
                "task_source": "deterministic_orbit_subpoints_at_80_180_280_seconds",
-               "generator_version": "gen02-dev-1.0.0", "raw_satellite_sha256": satellite_sha})
+               "generator_version": "gen02-dev-1.0.0", "raw_satellite_sha256": satellite_sha,
+               "tasks_per_target": tasks_per_target,
+               "stress_repeats_are_independent_dataset_roots": False})
     scene = Scenario("caabs-real-dev", [sat], missions, [], MissionInfo(0, [[-80, 80]], [[-180, 180]]), metadata)
     tasks_before = canonical([m.to_dict() for m in missions])
     calculation_start = time.monotonic()
@@ -130,10 +135,13 @@ def main(argv=None):
     parser.add_argument("--satellites", type=Path, default=root / "input/10_satellites.json")
     parser.add_argument("--satellite-id", default="ALOS-2_39766")
     parser.add_argument("--orekit-data", type=Path, required=True)
+    parser.add_argument("--tasks-per-target", type=int, default=1, choices=range(1, 9),
+                        help="Optional co-located real tasks for cancellation stress, not independent dataset roots")
     args = parser.parse_args(argv)
     from utils.visibility import ensure_orekit
     ensure_orekit(str(args.orekit_data))  # Main thread, before importing Java classes.
-    print(json.dumps(generate(args.output, args.satellites, args.satellite_id, str(args.orekit_data)), indent=2))
+    print(json.dumps(generate(args.output, args.satellites, args.satellite_id, str(args.orekit_data),
+                              tasks_per_target=args.tasks_per_target), indent=2))
 
 
 if __name__ == "__main__":

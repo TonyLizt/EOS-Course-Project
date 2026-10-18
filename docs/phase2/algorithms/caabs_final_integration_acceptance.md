@@ -44,6 +44,29 @@ P2实际命令：`python -B scripts/generate_caabs_development_scene.py --output
 
 三轮日志保留于`p3-round1/2/3`：第一轮暴露清理和分阶段测试等待问题（13项shutdown中1失败2错误），针对性修复后连续两轮全部通过，分别runtime2、IPC20、process_group15、shutdown13，共50项/轮、0跳过、4进程退出0。第二轮各模块墙钟1.379/18.728/9.723/41.432秒；第三轮0.884/19.881/8.935/45.905秒。所有结果是/mnt/d真实Spawn运行；没有把分组通过等同全量回归。
 
+## P4：真实非空全链路与对照
+
+入口 `scripts/validate_caabs_real_integration.py --output NEW_ABSOLUTE_DIRECTORY --orekit-data REAL_ZIP`，目录必须全新且在仓库外。实际命令前缀为 `/home/meteor/eos-course-runtime/venv/bin/python -B`，运行输出 `/tmp/caabs-final-20261018/p4-final`；300秒外层上限，退出0，墙钟75.647秒。脚本用真实Registry、真实公共候选/约束、真实Spawn Worker、真实SQLite Controller及独立Verifier，无替换Worker或注入认证。
+
+最终小场景 `p4-final/small/scene.json` SHA **`9f444fddf9a9b4635fe5d8f6a56f6552dfa324cdf1ef5f58171a95e76f0c0c32`**，3任务/3真实窗口/3可信planning窗口。Raw10及Orekit ZIP SHA见P0/P2，输入未改。真实侧车在同目录provenance，冻结的任务和源码/数据身份全部绑定。另生成24任务压力场景，3个相同物理目标各8项独立请求，逐项重新实际计算窗口；明确不算24个独立数据集根，仅用于取消/预算负载。
+
+两算法统一场景SHA、seed42、center放置、公共默认约束、利润权重1（其余0）、2秒名义搜索预算：
+
+| Runner | 完成/TCR | TP | TM | 搜索RT秒 |
+|---|---:|---:|---:|---:|
+| caabs v0.2.0 | 3/3，1.0 | 6.0 | 0.487963 | 0.053682 |
+| completion_first baseline-1 | 3/3，1.0 | 6.0 | 0.348148 | 0.007248 |
+
+CAABS使用默认8/8/16，9次公共候选构造、28次扩展约束核验、7次安全预筛拒绝，实际前沿8、23次接受插入、3层、stop_reason=completed。Solver报告作为`untrusted_solver_diagnostics`事件保留，独立Verifier丢弃这些遥测并重新装载来源/实例化公共约束及计算指标；没有以遥测替代核验。Completion曾因公共candidate_pool遗漏n+1四元数末端而返回空，已最小修正该字段切片，不改任何旧算法排序，真实来源回归覆盖此反例。
+
+24任务真实Runner协作取消：0.159975秒返回，stop_reason=cancelled，保留3任务incumbent（TP5/TCR0.125），独立公共约束/来源及真实采样重放通过。Controller真实流程6次：CAABS正常、Completion正常、60ms短预算、运行中取消、当前身份pidfd注入Worker SIGKILL、同SQLite/目录Controller重新启动后再次CAABS。正常与重启均非空开发预览SUCCEEDED；取消CANCELLED/退出0/无Candidate，崩溃FAILED/IPC_DISCONNECTED/退出-9/无Candidate；全部进程回收、Worker日志清除、flock释放。状态按真实源码为QUEUED→RUNNING（started/LOADING/SEARCHING/SERIALIZING事件）→VERIFYING→终态，不虚构STARTING数据库状态。
+
+60ms是best-effort而非硬实时：第一次压力运行单次不可中断候选构造导致0.067257秒，Controller严格TIMED_OUT/SEARCH_BUDGET且不存计划（`p4-third`，脚本原先误期待必成功的断言失败已保留）；最终运行0.058809秒正常停止并返回结构性空fallback，被明确保存为开发预览，**不算非空验收或认证**。未提高Controller预算、不伪造RT。
+
+HTTP/API和场景目录现在只在显式planning_preview时消费新开发合同，正式请求仍422。独立真实loopback HTTP测试使用独立端口/进程/数据库/来源根，核验CAABS版本、参数传递、非空结果、事件和JSON可视化；正式JSON/CSV导出均409。原窗口导出还修复agile-only时遗漏四元数边界的条件，添加纯单元回归。未重写CAABS算法核心。
+
+正式`certify_schedule`在同一真实计划上再次传播得到 **INCONCLUSIVE / NO_CONTINUITY_CERTIFICATE**。每条10秒曝光含端点201点均由真实Orekit检查；采样再密也不构成区间证明。正式开发来源门禁和正式导出门禁均维持拒绝。`SUCCEEDED`仅对应已有planning_preview结果类型，Storage发PreviewRecord而非CertifiedRecord，continuous_certification明确NOT_CERTIFIED。
+
 ## 后续阶段状态
 
-P4/P5尚在执行。正式连续认证没有通过，不能据非空规划声称正式系统成功。
+P5全量回归正在执行。正式连续认证没有通过，不能据非空预览声称正式系统成功。

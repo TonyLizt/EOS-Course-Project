@@ -176,7 +176,8 @@ def enumerate_task_candidates(
                 out = {}
                 for kk, vv in payload.items():
                     if isinstance(vv, (list, dict)):
-                        out[kk] = _slice_angles_payload(vv, start_idx, count)
+                        # An n-sample exposure owns n+1 exact boundary states.
+                        out[kk] = _slice_angles_payload(vv, start_idx, count + (kk == "boundary_quaternions_xyzw"))
                     else:
                         out[kk] = vv
                 return out

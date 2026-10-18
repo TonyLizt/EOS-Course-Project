@@ -9,6 +9,12 @@ import shutil
 import tempfile
 import unittest
 import uuid
+import time
+import socket
+import subprocess
+import sys
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 
 @unittest.skipUnless(os.environ.get("EOS_RUN_GEN02_PHYSICS") == "1", "real Orekit opt-in")
@@ -76,6 +82,19 @@ class RealDevelopmentSourceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not eligible for formal"):
             verify_provenance(config.model_copy(update={"execution_mode": "formal"}))
 
+    def test_completion_first_real_candidates_keep_n_plus_one_boundary_states(self):
+        from eos_system.runner import calculate
+        from eos_system.algorithm_registry import get_algorithm
+        from eos_system.verification import verify_candidate
+        config = self.config().model_copy(update={"algorithm_id": "completion_first",
+            "algorithm_version": get_algorithm("completion_first").version, "algorithm_params": {}})
+        plan, runtime = calculate(config)
+        self.assertGreater(len(plan["assignments"]), 0)
+        for a in plan["assignments"]:
+            self.assertEqual(len(a["sat_angles"]["boundary_quaternions_xyzw"]), 11)
+        _, metrics, _ = verify_candidate(config, plan, runtime)
+        self.assertGreater(metrics["completed_tasks"], 0)
+
     def test_deleted_sidecar_cannot_fall_back_to_embedded_record(self):
         self.sidecar.unlink()  # Owned negative-test copy only.
         self.assert_untrusted()
@@ -120,6 +139,81 @@ class RealDevelopmentSourceTests(unittest.TestCase):
         self.assertEqual(summary["status"], "INCONCLUSIVE")
         self.assertTrue(all(r["reason"] == "NO_CONTINUITY_CERTIFICATE" for r in summary["rows"]))
         self.assertEqual(len(official["assignments"]), len(plan["assignments"]))
+
+    def test_http_real_spawn_development_preview_and_formal_export_gate(self):
+        runtime_temp = tempfile.TemporaryDirectory(prefix="caabs-http-runtime-")
+        self.addCleanup(runtime_temp.cleanup)
+        runtime = Path(runtime_temp.name)
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1", 0))
+            port = sock.getsockname()[1]
+        environment = os.environ | dict(EOS_PORT=str(port), EOS_RUNTIME_DIR=str(runtime),
+            EOS_SCENARIO_DIR=str(self.directory), EOS_PREINITIALIZE_OREKIT="1")
+        def request_api(path, data=None):
+            request = Request(f"http://127.0.0.1:{port}{path}",
+                data=json.dumps(data).encode() if data is not None else None,
+                headers={"Content-Type": "application/json"})
+            try:
+                with urlopen(request, timeout=10) as response:
+                    return response.status, json.load(response)
+            except HTTPError as exc:
+                return exc.code, json.load(exc)
+        log = (self.directory / "http.log").open("w+")
+        server = subprocess.Popen([sys.executable, "-B", "-m", "eos_system"],
+            cwd=Path(__file__).resolve().parents[1], env=environment, stdout=log, stderr=log)
+        try:
+            deadline = time.monotonic() + 60
+            while True:
+                try:
+                    code, body = request_api("/api/algorithms")
+                    break
+                except (URLError, ConnectionError):
+                    if server.poll() is not None or time.monotonic() >= deadline:
+                        log.seek(0)
+                        self.fail(log.read())
+                    time.sleep(.1)
+            self.assertEqual(code, 200)
+            algorithms = body["items"]
+            caabs = next(a for a in algorithms if a["algorithm_id"] == "caabs")
+            self.assertEqual(caabs["version"], "0.2.0")
+            self.assertIn("beam_width", caabs["parameters"]["properties"])
+            listing = request_api("/api/scenarios?execution_mode=planning_preview")[1]["items"]
+            row = next(r for r in listing if r["scenario_id"] == "scene")
+            self.assertEqual(row["availability"], "ready")
+            self.assertEqual(row["execution_modes"], ["planning_preview"])
+            request = dict(scenario_id="scene", algorithm_id="caabs", placement_mode="center",
+                execution_mode="planning_preview", time_budget_s=1.,
+                algorithm_params=dict(beam_width=4, branch_limit=4, max_candidates_per_task=8))
+            self.assertEqual(request_api("/api/runs", request | dict(execution_mode="formal"))[0], 422)
+            code, response = request_api("/api/runs", request)
+            self.assertEqual(code, 202, response)
+            run_id = response["run_id"]
+            deadline = time.monotonic() + 80
+            while time.monotonic() < deadline:
+                record = request_api(f"/api/runs/{run_id}")[1]
+                if record["status"] in {"SUCCEEDED", "FAILED", "CANCELLED", "TIMED_OUT"}:
+                    break
+                time.sleep(.05)
+            self.assertEqual(record["status"], "SUCCEEDED", record["error"])
+            self.assertGreater(record["metrics"]["completed_tasks"], 0)
+            self.assertEqual(record["continuous_certification"]["status"], "NOT_CERTIFIED")
+            telemetry = next(e["payload"] for e in record["events"] if e["event_type"] == "candidate_result")
+            self.assertEqual(telemetry["untrusted_solver_diagnostics"]["caabs"]["stop_reason"], "completed")
+            self.assertEqual(request_api(f"/api/runs/{run_id}/export?format=json")[0], 409)
+            self.assertEqual(request_api(f"/api/runs/{run_id}/export?format=csv")[0], 409)
+            code, view = request_api(f"/api/runs/{run_id}/visualization/schedule")
+            self.assertEqual(code, 200, view)
+            self.assertEqual(view["result_kind"], "planning_preview")
+        finally:
+            server.terminate()
+            try:
+                server.wait(timeout=25)
+            except subprocess.TimeoutExpired:
+                server.kill()
+                server.wait(timeout=5)
+                self.fail("real HTTP Controller did not gracefully shut down; http.log retained until cleanup")
+            finally:
+                log.close()
 
 
 if __name__ == "__main__":

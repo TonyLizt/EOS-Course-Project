@@ -447,6 +447,10 @@ class Database:
             db.execute("UPDATE run_attempts SET last_seq=?,worker_pid=COALESCE(?,worker_pid),worker_start_token=COALESCE(?,worker_start_token) WHERE run_id=? AND attempt_no=?",
                        (seq, message["payload"].get("worker_pid"), message["payload"].get("worker_start_token"), run_id, attempt))
             payload = message["payload"] if message["kind"] != "candidate_result" else {"algorithm_runtime_s": message["payload"].get("algorithm_runtime_s")}
+            if message["kind"] == "candidate_result":
+                diagnostics = message["payload"].get("plan", {}).get("solver_diagnostics")
+                if isinstance(diagnostics, dict):
+                    payload["untrusted_solver_diagnostics"] = diagnostics
             self._event(db, run_id, attempt, "worker", seq, message["kind"], payload)
             return True
 

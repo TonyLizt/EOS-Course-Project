@@ -10,6 +10,18 @@ from utils.attitude_frames import fixed_camera_in_fov, quaternion_distance_deg, 
 
 
 class FrameMathTests(unittest.TestCase):
+    def test_agile_only_window_export_preserves_exact_quaternion_boundaries(self):
+        from core.models import AgileData, TimeWindow
+        from core.scenario import Scenario
+        start = datetime(2025, 11, 18, 12)
+        quaternions = [[0., 0., 0., 1.], [0., 0., .01, math.sqrt(1-.01**2)]]
+        window = TimeWindow(start, start + timedelta(seconds=1),
+                            AgileData([0.], [0.], [0.], quaternions), orbit_number=1)
+        # The serializer does not need a populated Scenario for an explicit orbit.
+        result = Scenario._time_window_to_dict(None, window)
+        self.assertEqual(result["agile_data"]["boundary_quaternions_xyzw"], quaternions)
+        self.assertNotIn("non_agile_data", result)
+
     def test_fixed_square_fov_front_boundary_and_back(self):
         edge = math.tan(math.radians(22.5))
         self.assertTrue(fixed_camera_in_fov((edge, edge, 1), 45))
