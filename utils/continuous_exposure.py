@@ -126,7 +126,7 @@ class PlanExposureAuditor:
         return float(value)
 
     def evaluator(self, satellite, mission):
-        from utils.visibility import create_visibility_evaluator, ensure_orekit
+        from utils.visibility import create_visibility_evaluator, ensure_orekit, effective_minimum_elevation
         op = satellite["orbital_params"]
         location = mission["target_location"]
         limits = satellite["maneuverability_capability"]
@@ -145,6 +145,9 @@ class PlanExposureAuditor:
         params.update(field_of_view_deg=(sensors[0].get("field_of_view_deg", 45.0) if sensors else 45.0),
                       maneuverability_type=limits.get("maneuverability_type", "agile"),
                       max_tracking_rate_deg_s=limits.get("slew_rate_deg_per_s"))
+        params['min_elevation_deg']=effective_minimum_elevation(self.minimum,
+            sensors[0].get('min_elevation_angle_deg') if sensors else None,
+            mission.get('observation_requirement',{}).get('min_elevation_angle_deg'))
         if (params["a_m"]<=0 or not 0<=params["e"]<1 or not -90<=params["target_lat_deg"]<=90
                 or any(params[k]<0 for k in ("max_yaw_deg","max_pitch_deg","max_roll_deg"))):
             raise ValueError("physical inputs outside supported Keplerian/target/attitude domain")

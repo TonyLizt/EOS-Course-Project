@@ -48,6 +48,14 @@ VISIBILITY_ALGORITHM_VERSION = "visibility_exit_refined_v3"
 EXIT_BOUNDARY_PRECISION_US = 1
 
 
+def effective_minimum_elevation(base, *declared):
+    """All explicit global/sensor/task limits apply; missing optional is None."""
+    values=[base]+[v for v in declared if v is not None]
+    if any(type(v) not in (int,float) or not math.isfinite(v) or not -90<=v<=90 for v in values):
+        raise ValueError('invalid declared minimum elevation')
+    return max(values)
+
+
 def _to_utc(dt: datetime) -> datetime:
     """Treat naive datetime as UTC; convert aware datetime to UTC."""
     if dt.tzinfo is None:
@@ -445,7 +453,11 @@ def create_visibility_evaluator(
         camera_visible = False
         tracking_rate_deg_s = None
 
-        if elevation_rad > min_el_rad:
+        # Opaque convex WGS84 ground-target model. Underground targets are
+        # interior to the opaque body; positive ground-normal elevation is a
+        # sufficient unobstructed-ray condition. No terrain certificate claim.
+        earth_unoccluded = float(target_alt_m)>=0 and elevation_rad>0
+        if elevation_rad > min_el_rad and earth_unoccluded:
             # target -> inertial
             transform = ctx.itrf.getTransformTo(ctx.inertial, date)
             target_in_inertial = transform.transformPosition(target_in_itrf)
@@ -501,6 +513,7 @@ def create_visibility_evaluator(
             "attitude_model_version": ATTITUDE_MODEL_VERSION,
             "camera_visible": camera_visible,
             "tracking_rate_deg_s": tracking_rate_deg_s,
+            "earth_unoccluded": bool(earth_unoccluded),
         }
 
     return eval_full
@@ -731,6 +744,10 @@ def calculate_windows_orekit(
                 sensors = getattr(getattr(sat, "observation_capability", None), "sensors", [])
                 if len(sensors) != 1:
                     raise ValueError("physical generation requires one explicit fixed camera per satellite")
+                requirement=getattr(mission,'observation_requirement',None)
+                sensor_min=getattr(sensors[0],'min_elevation_angle',getattr(sensors[0],'min_elevation_angle_deg',None))
+                task_min=getattr(requirement,'min_elevation_angle',getattr(requirement,'min_elevation_angle_deg',None))
+                effective_min=effective_minimum_elevation(min_elevation_deg,sensor_min,task_min)
 
                 vis_windows, _samples, visible_attitudes = compute_visibility_and_attitude(
                     a_m=float(orbit_map[sat_id]["a_m"]),
@@ -749,7 +766,7 @@ def calculate_windows_orekit(
                     max_yaw_deg=yaw_lim,
                     max_pitch_deg=pitch_lim,
                     max_roll_deg=roll_lim,
-                    min_elevation_deg=float(min_elevation_deg),
+                    min_elevation_deg=effective_min,
                     coarse_step_min=float(coarse_step_min),
                     field_of_view_deg=float(sensors[0].field_of_view),
                     maneuverability_type=maneuverability,

@@ -33,7 +33,7 @@ SOURCE_NAMES = (
 MODEL = {"propagation": "Orekit-Keplerian", "inertial_frame": "EME2000",
          "terrestrial_frame": "ITRF-IERS2010-simpleEOP", "ellipsoid": "WGS84",
          "attitude": "NadirRelative-TargetPointing-fixedBodyZ-v1", "time_scale": "UTC",
-         "predicate": "elevation_and_stored_axis_limits_v1"}
+         "predicate": "opaque_wgs84_declared_elevation_fixed_camera_axis_rate_v2"}
 
 
 def _digest(value):
