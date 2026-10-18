@@ -87,6 +87,18 @@
 - 不改算法核心、参数契约、Controller/Worker、数据库模式、指标或物理约束。JavaScript 6项、Python定向28项通过；一次隔离Chromium验证全部11种卡片及多种Schema绑定、双算法单实验、Gantt/Cesium/窄侧栏通过（合成UNIT_TEST_ONLY，不是物理认证）。见 [实现及验证说明](docs/phase2/algorithm_parameter_ui.md)。后续按用户授权准备推送并提交PR；fetch确认main仍为`3e9413d`，无需rebase/merge，独立审核通过后才能合并。
 - 追加修复旧实验新增算法回归：展示元数据移出执行Registry，恢复原执行指纹；仅兼容已核实的两份展示差异完整源码摘要，记录原/新真实指纹审计事件，不改写历史、不放宽真实场景或源码变化门禁。直接API/数据库定向14项、前端6项通过，本次未重跑浏览器/正式用户服务。
 
+## DARTIS 与 LAVIS 注册表合流（2026-10-19，rebase 冲突处理）
+
+- 保留当前 main 的 LAVIS 及本分支 DARTIS，比较算法清单合流后为 13 种；下列两算法的 12 种记录分别是各自完成时的历史快照。仅处理登记、清单和文档兼容性；此时 rebase 尚未继续，未做全量测试。
+
+## 算法 A：DARTIS G1-A / G1-B + G2 隔离集成（2026-10-18）
+
+- 分支 `feat/hmt-algorithm-a`；G1-A 两份文件已由何明涛提交于 `588dbd2`，本地 `origin/main` 仍为基线 `3e9413d`（本轮未 fetch），G1-B/G2 改动保留工作区。新增 `dartis` Registry 元数据、严格参数及比较清单，更新原清单长度测试；不改 Solver、Worker/Controller、HTTP 路径、SQLite 模式或物理核验器。
+- G1-A DARTIS 专项 **20/20**，G2 注册与隔离真实回环 HTTP/spawn/SQLite 专项 **7/7**。合成 3 任务经真实 Worker、公共来源/离散约束核验与正式 SQLite 事务完成 3/3，TCR=1.0、TP=6.0、BD=0.5、TM=0.2777777778，Worker exit_code=0；连续认证收据是测试服务进程限定的 `UNIT_TEST_ONLY` 注入，**不代表真实场景正式物理认证**。测试时钟触发正常预算返回并提交 1 项完整部分计划；DARTIS 运行中取消为 CANCELLED、故障求解器为 FAILED，均无正式计划且 Worker 被回收。
+- 只读 EOS-Bench 母文件 `output_s1/Sats1_M100_T7d_dist0.json` SHA-256 `b61f4de708894f0bc30b6e0614aafc2ac9340880306ed0617fdc50cf492d198a` 派生临时 1 星/30 任务/24 h 场景，真实 HTTP/Worker 产出候选；生产预览认证因本环境缺 `orekit_jpype` 拒绝（`FAILED/PREVIEW_REJECTED/PHYSICS_UNAVAILABLE`），无正式计划/指标，母文件前后 SHA 一致。
+- G1-B/G2 收尾：`algorithm_integration.md` 已列出当前 12 种比较算法并保留旧 10/11 种历史记录；定向复跑 DARTIS、注册表、RABAS/CAABS 相关模块 **125 项，124 通过、1 项因 LFS 实体缺失跳过**，无新增代码失败。G3 首组临时真实派生场景 SHA `c405f7f23a8c34cd4c76ac3ceac79b90dec75610fb45d671dec59df9115c2da9`：同 seed 42、同 5 秒预算、同预览模式与公共离散回放，LLF/EDF/Greedy/RABAS 均为候选 24/30、离散 PASS；CAABS 因 37/37 窗口无可信来源而只返回空候选，不能作性能排名。本组 Orekit preview 与正式连续认证均未运行，不作为 SQLite 正式成绩；细节见 [算法 A 专题](docs/phase2/algorithms/deadline_insertion.md)。
+- 完整 `python -m unittest discover -s tests -v`：**589 项，2 失败、10 错误、9 跳过**。本地仓库场景仍为 Git LFS 指针，依赖真实 JSON 的既有历元/几何/目录测试失败；未改场景或放宽断言。定向专项通过不等于全量通过。大网格惰性候选 helper、正式真实场景认证及成对实验待后续评审；本轮未执行 Git 写操作。
+
 ## 算法 B：RABAS 资源感知任务包竞价（2026-10-18）
 
 - PR #22 提交前同步 main `702f46e`（PR #21），merge提交 `68c630a`，无需rebase。完整Python发现565项：首次因未展开LFS输入出现1失败/7子项错误、8项跳过；从本地缓存展开原版及epoch-fixed场景（内容不变）后，仅重跑受影响两模块13项全部通过，未再次重跑全套。合并后真实Chromium验证双算法单实验、RABAS参数/比较、3任务Gantt、Cesium自动回放及高亮通过（合成UNIT_TEST_ONLY认证）。PR邀请TonyLizt/Mint221018审核，尚未合并。
