@@ -68,7 +68,7 @@ class ReplayRequest(StrictModel):
 
 
 class ExperimentRequest(StrictModel):
-    runs: list[RunRequest] = Field(min_length=1, max_length=9)
+    runs: list[RunRequest] = Field(min_length=1, max_length=10)
 
 
 class ExperimentAlgorithm(StrictModel):

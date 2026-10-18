@@ -1,6 +1,6 @@
 # EOS-Course-Project：地球观测卫星任务调度课程系统
 
-首页统一控制台默认使用「规划预览」：选择场景、初始排程模型（完成率优先／自适应修复），再从九种算法中选择一项或多项提交，在「算法比较」查看结果。MIP/PPO 缺依赖或可信模型接入时明确禁用；部分算法不使用初始解，详见[九算法交接](docs/phase2/nine_algorithm_console_handoff.md)。预览不代表正式连续认证，正式门禁不变。
+首页统一控制台默认使用「规划预览」：选择场景、初始排程模型（完成率优先／自适应修复），再从注册算法中选择一项或多项提交，在「算法比较」查看结果。同步最新 main 后共十种（原九种加 CAABS），MIP/PPO 缺依赖或可信模型接入时明确禁用；部分算法不使用初始解，详见[原九算法交接](docs/phase2/nine_algorithm_console_handoff.md)及[CAABS](docs/phase2/algorithms/conflict_beam.md)。预览不代表正式连续认证，正式门禁不变。
 
 一次提交只新增一个实验，内含多个算法。算法卡片右侧三角独立展开参数及说明；选中实验后只比较其算法，也可一键创建同场景、仅初始模型不同的对照实验。Cesium 在原 Metrics 下增加算法管理和比较，不增加外层 iframe。见[统一交互说明](docs/phase2/unified_interactions_handoff.md)及[实验 API](docs/phase2/experiment_management_handoff.md)。
 
@@ -177,3 +177,5 @@ node tests/satellite_follow.test.cjs
 比较限当前实验及条件核验通过的临时模型对照；按算法、按实验稳定分组，仅勾选结果，不提供手动排序、序号或混合模式。首页对照仅驻留内存，可创建/移除，不新增正式 Experiment/Run，不进入历史列表或 Cesium。Cesium 的算法比较完整移至右侧 Observation Intervals 下方，仅显示当前持久实验。TP/TCR/BD 越大越好，TM/RT/RV 越小越好，未提供 RV 保持空值，不生成综合排名。新增算法采用勾选确认，载荷 Hide/Show Grid 保持正常。见[当前临时对照与验证](docs/phase2/temporary_comparison_handoff.md)。
 
 Gantt 支持任务/卫星搜索、任务定位后秒级放大、缩放、平移、UTC 时间范围与导航滑块。任务条附近 12px 内提供吸附反馈；Hover 或键盘焦点显示精确任务提示，点击/触摸固定详情，Escape 关闭提示；真实观测时间及条宽不因吸附改变。详见[当前交接和验证记录](docs/phase2/unified_interactions_handoff.md)。
+
+场景来源与只读身份核验见 [R1-02 Artifact / Provenance 索引](docs/phase2/scenario_artifact_index_r1_02.md)；Raw 独立清点，六 Legacy 与四 Candidate 保持原位，索引不批准发布。

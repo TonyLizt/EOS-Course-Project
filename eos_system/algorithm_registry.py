@@ -9,21 +9,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from math import isfinite
 from importlib.util import find_spec
-from typing import Callable, Protocol
+from typing import Callable
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import Field, ValidationError
 
+from algorithms.conflict_beam import CAABSParams, ConflictBeamScheduler, VERSION as CAABS_VERSION
 from algorithms.factory import create_algorithm
 from algorithms.objectives import ObjectiveWeights
+# Re-export the existing public names for HTTP/Worker and third-party callers.
+from algorithms.solver_contracts import AlgorithmParams, SolveContext, Solver
 from schedulers.constraint_model import ConstraintModel, Schedule
 from schedulers.engine import SchedulingEngine
 from schedulers.scenario_loader import SchedulingProblem
-
-
-class AlgorithmParams(BaseModel):
-    """组员可自行定义嵌套参数；未知字段必须明确报错。"""
-
-    model_config = ConfigDict(extra="forbid")
 
 
 class CompletionParams(AlgorithmParams):
@@ -76,24 +73,6 @@ def availability(algorithm_id: str) -> tuple[str, str]:
     if algorithm_id == 'ppo':
         return 'unavailable', ('缺少 PyTorch；' if find_spec('torch') is None else '') + '尚未接入受信任训练模型及共享约束，禁止随机策略冒充训练结果。'
     return 'ready', ''
-
-
-@dataclass(frozen=True)
-class SolveContext:
-    """每次求解的受控服务；算法可选择是否构造初始计划。"""
-
-    seed: int
-    time_budget_s: float
-    objective_weights: ObjectiveWeights
-    params: AlgorithmParams
-    schedule_model: str = 'completion_first'
-    # 正式 Worker 接入协作取消后可替换此回调；硬超时仍由 Controller 负责。
-    is_cancelled: Callable[[], bool] = field(default=lambda: False, repr=False)
-
-
-class Solver(Protocol):
-    def solve(self, problem: SchedulingProblem, constraints: ConstraintModel, context: SolveContext) -> Schedule:
-        """产出候选计划；正式可行性和指标由 Controller 独立判定。"""
 
 
 @dataclass(frozen=True)
@@ -188,11 +167,17 @@ _SPECS: dict[str, AlgorithmSpec] = {
         objectives="按完成任务数、总任务优先级、较早观测的顺序进行字典序比较。",
         limitations="候选数量和局部修复深度有限，不保证全局最优；遵守时间预算，目标权重不替代其固定字典序目标。",
     ),
+    "caabs": AlgorithmSpec(
+        algorithm_id="caabs", name="冲突感知 Beam Search（CAABS）", category="traditional",
+        owner="刘懋兴", version=CAABS_VERSION, params_model=CAABSParams,
+        build=lambda context: ConflictBeamScheduler(),
+        description="完成数优先的有界多路径搜索；返回候选计划，仍须公共核验。",
+    ),
 }
 
 
 COMPARISON_ALGORITHMS = ('mip', 'profit_first', 'timeliness_first', 'balance_first',
-                         'pressure_repair', 'sa', 'ga', 'aco', 'ppo')
+                         'pressure_repair', 'sa', 'ga', 'aco', 'ppo', 'caabs')
 
 _DEFINITIONS = [
     ('mip', '混合整数规划 MIP', 'exact', MIPParams, '离散候选与冲突约束构建 MILP，由 CBC 求解。', '候选集上的加权目标优化，含实现中的主目标增强。', '候选集有限；独立建模，不使用初始模型解。'),

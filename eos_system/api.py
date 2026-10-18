@@ -177,7 +177,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             spec = get_algorithm(request.algorithm_id)
             if request.algorithm_id not in COMPARISON_ALGORITHMS:
-                raise ValueError('请选择九种比较算法之一；完成率优先和自适应修复请在初始排程模型中选择。')
+                raise ValueError('请选择已注册的比较算法；完成率优先和自适应修复请在初始排程模型中选择。')
             state, message = availability(request.algorithm_id)
             if state != 'ready':
                 raise ValueError(message)

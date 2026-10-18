@@ -12,7 +12,8 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  try{
   const context=await browser.newContext({viewport:{width:1536,height:1080},ignoreHTTPSErrors:true});
   const page=await context.newPage();page.on('pageerror',e=>errors.push(String(e)));
-  await page.goto(info.url);await page.waitForFunction(()=>document.querySelectorAll('[name="batch-algorithm"]').length===9);
+  const catalog=(await(await context.request.get(info.url+'/api/algorithms')).json()).items;
+  await page.goto(info.url);await page.waitForFunction(n=>document.querySelectorAll('[name="batch-algorithm"]').length===n,catalog.length);
   assert.equal(await page.locator('#algorithm').count(),0);
   const initial=page.locator('.algorithm-card').filter({has:page.locator('[name="batch-algorithm"][value="profit_first"]')});
   const triangle=initial.locator('.algorithm-toggle');assert.equal(await triangle.count(),1);
@@ -93,7 +94,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   await view.waitForURL(url=>url.searchParams.get('run_id')===info.runs[1],{timeout:60000});
   await rendered(info.runs[1],'0.020','00:00:50');
   assert.equal(await view.locator('#cesium-comparison tr.selected').count(),1);
-  assert.equal(await view.locator('#cesium-add-algorithms [data-add-choice]').count(),7);
+  assert.equal(await view.locator('#cesium-add-algorithms [data-add-choice]').count(),catalog.length-2);
   assert.equal(await view.locator('#cesium-add-algorithms [data-add-choice="profit_first"]').count(),0);
   assert.doesNotMatch(await view.locator('#cesium-current-algorithms .algorithm-heading').allInnerTexts().then(x=>x.join(' ')),/SUCCEEDED|当前回放/);
   assert.equal(await view.locator('#cesium-current-algorithms [aria-current="true"]').count(),1);

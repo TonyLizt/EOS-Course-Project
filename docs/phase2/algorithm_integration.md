@@ -7,7 +7,7 @@
 ## 1. 组员要交付什么
 
 1. 在 `algorithms/` 下实现一个类，提供 `solve(problem, constraints, context) -> Schedule`。
-2. 定义自己的 `AlgorithmParams` 子类（Pydantic），声明可配置参数与类型/范围。
+2. 从 `algorithms.solver_contracts` 导入共用契约，定义自己的 `AlgorithmParams` 子类（Pydantic），声明可配置参数与类型/范围。
 3. 在 `eos_system/algorithm_registry.py` 显式登记唯一 ID、名称、负责人、类别、版本、参数模型和构造函数。
 4. 提交机制说明、固定种子小实例、统一约束回放、同场景成对实验及依赖说明。
 
@@ -24,11 +24,13 @@
 
 当前分支的 Worker 已将线程安全取消标记接入 `context.is_cancelled()`；运行中取消由 Controller 通过控制 Pipe 发送，`cancel_ack` 不表示算法或进程已退出。算法应主动轮询该回调；不合作算法仍由 Controller 按期限回收。模型准备和场景加载发生在 `SEARCHING` 阶段之前，`solve()` 的时间才计入算法运行秒数。现有 `LegacySearchAdapter` 已通过真实 HTTP → Worker → 核验 → SQLite 基线闭环，但旧算法本身不保证主动响应取消。
 
+共用 `AlgorithmParams`、`SolveContext`、`Solver` 定义在 `algorithms/solver_contracts.py`，不导入 Registry 或工厂。算法实现依赖这一契约层，Registry 再显式导入已审核的算法，避免登记时形成反向导入。`eos_system.algorithm_registry` 继续导出同一组类型，已有 Runner/Worker 调用方无需改导入路径。
+
 ## 3. 接入形状
 
 ```python
 from pydantic import Field
-from eos_system.algorithm_registry import AlgorithmParams
+from algorithms.solver_contracts import AlgorithmParams
 from schedulers.constraint_model import Schedule
 
 class MyParams(AlgorithmParams):
@@ -46,6 +48,8 @@ class MyScheduler:
 在 `algorithm_registry.py` 中增加一项 `AlgorithmSpec`，例如 `algorithm_id="algorithm-a"`、`params_model=MyParams`、`build=lambda context: MyScheduler()`。注册表的 `version` 是**该算法实现版本**；修改搜索规则或模型后应更新它。不要把旧算法改名登记为 A/B/C/D。
 
 现有 `completion_first` 和 `adaptive_repair` 通过 `LegacySearchAdapter` 保留旧 `search(problem, constraint_model, initial_schedule)` 协议及旧 CLI。新算法直接实现 `solve`；若算法需要初始计划，可自行调用 `constraints.build_initial_schedule()`。
+
+CAABS 以 `caabs` 登记，版本取算法的 `VERSION`（当前 `0.1.0`），参数模型为 `CAABSParams`，直接构造 `ConflictBeamScheduler`，不走旧 CLI 工厂。登记可查询、参数合法、能返回候选 Schedule 不等于来源窗口消歧或严格连续认证通过；I1 验证和仍未处理的 I2 边界见 [R2-B 报告](algorithms/caabs_i1_registry_fix_20261018.md)。
 
 ## 4. 机器学习算法 D
 

@@ -51,7 +51,7 @@ class TemporaryControls:
                 del self.sessions[sid]
 
     def create(self, source_id, configs, key=None):
-        if not configs or len(configs) > 9 or len({c.algorithm_id for c in configs}) != len(configs):
+        if not configs or len(configs) > 10 or len({c.algorithm_id for c in configs}) != len(configs):
             raise ValueError('临时对照算法集合无效')
         shared = common_config(configs[0].model_dump())
         if any(common_config(c.model_dump()) != shared for c in configs):

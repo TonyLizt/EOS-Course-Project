@@ -1,3 +1,9 @@
+## 统一控制台 PR 集成与最新 main 同步（2026-10-18）
+
+- 按团队规范 merge origin/main（5e37ba7），保留 CAABS 和来源索引改动，不重写历史。Solver 公共契约复用队友的新模块，初始模型作为兼容默认字段保留；新增 CAABS 进入注册驱动的控制台清单（原九种加一），模型仍单独选择。
+- 本次 PR 汇总持久实验/多算法、规划预览、轻量比较、Cesium 增量管理、交互 Gantt 和非持久临时 Gantt；schema v4 备份迁移，正式认证门禁不放宽。原目录脏工作区不纳入 PR。
+- 定向验证及尚未运行的完整默认套件将在 PR 和集成交接说明中据实记录；须独立组员审核，并请李泽同确认公共接口、Controller 和数据库影响，不自行合并。
+
 ## 临时模型对照与右侧比较区（2026-10-18）
 
 - 删除比较排序箭头、序号及手动排序状态，两种模式按稳定成员顺序筛选。Cesium 比较区整体移到右侧 Observation Intervals 后，仍只加载当前持久实验。
@@ -42,12 +48,55 @@
 
 ---
 
+## R2-B / I1：CAABS Algorithm Registry 接入（2026-10-18）
+
+- fix/caabs-registry-i1 基于0a1a941（Core PR #17）；实际基线双导入均成功，caabs查询未登记失败。迁移中立Solver契约、保留旧Registry导出并显式登记caabs/0.1.0，CAABS仅改import。
+- WSL限定验收91项：90通过、0失败/错误、1个Orekit opt-in跳过；其中Registry17/17、Core48/48，真实非空候选公共约束重放及Runner/ASGI元数据可用。
+- Windows Core48通过，Registry16通过/1缺FastAPI跳过；旧公共POSIX/依赖失败保留。I2、连续认证、Controller门禁、数据库和冻结场景不修改，不宣称全系统发布可用。
+- 详见 [I1修复报告](docs/phase2/algorithms/caabs_i1_registry_fix_20261018.md) 和 [独立PR草稿](docs/phase2/algorithms/caabs_i1_registry_pr_draft_20261018.md)。未提交、推送、rebase或创建PR，等待人工审核。
+
+## CAABS v0.1 R1.1：M1 修复与审查收口（2026-10-17）
+
+- 分支 feat/algorithm-c-caabs，沿用独立 worktree；起点 158b41402627d896fb810fbeebe2146d390e6db1。
+- 修复提交 ce833caee606e3d366026ec0c44b2b4a2719505a：仅为 canonical key 的 list/tuple 分设标签，嵌套类型与顺序保留，未改公共模型或算法参数。
+- 专项42→48项；旧实现下4个方法失败（6个failure含子测试），真实公共可行性不同而键相同及实际去重丢路径均复现；修复后 Windows/WSL 均48通过、0失败、0跳过、退出0。
+- 两环境各执行70项：69通过、0失败、1个可选Orekit跳过，全部命令退出0。含过渡模型4/4、公共曝光门禁14/15加1跳过、adaptive_repair 3/3；命令与时长见算法文档R1.1节。
+- C-4 新增三层饱和前沿：宽度1/4/8/16分别为[1,1,1]/[4,4,4]/[4,8,8]/[4,16,16]，双轮排序、去重、游标及公共回放均通过。
+- M1 RESOLVED；建议核心升级 CORE REVIEW PASS，保留 REGRESSION INCOMPLETE / INTEGRATION NOT VERIFIED。I1、I2与全量超时未处理，未运行正式认证。
+- 纳入原R1报告并仅追加有日期/修复SHA的复验附录，历史结论保留。无Registry/Worker/Controller/HTTP/IPC/SQLite/公共约束改动，无push、PR或合并。
+- 详见 [CAABS 文档](docs/phase2/algorithms/conflict_beam.md) 与 [R1/R1.1 审查报告](docs/phase2/algorithms/caabs_r1_independent_review.md)。
+
+---
+
+## CAABS v0.1 算法正确性验收（2026-10-17）
+
+- 刘懋兴；feat/algorithm-c-caabs；独立 worktree EOS-Course-Project-caabs；固定基线 d0d9325759f078ef13f41cc9eee74c5e7733758a。
+- 有界分星/窗口候选适配、完整规范键与深拷贝；真正多路径 Beam Search、skip、Top-B、独立 incumbent、稀疏安全预筛、单调预算与取消。
+- C-1 至 C-6 通过；Windows/WSL 专项42/42，失败0、跳过0、退出0。原有回归：adaptive_repair 3/3、transition_model 4/4；曝光15项中14通过、1跳过，均退出0。
+- 全量未完成：360秒内层／380秒外层尝试超时；180秒fail-fast诊断记录123通过、1跳过后超时（内层124），无完整汇总；单独HTTP取消复现1/1通过（退出0），未确认公共模块必现故障。完整失败／跳过总数不可确定。
+- 细节、命令及已知限制见 [CAABS 文档](docs/phase2/algorithms/conflict_beam.md)。
+- 未登记 registry、未改公共约束/可信证据/认证/生命周期/HTTP/IPC/SQLite；无 push、PR 或合并。搜索可行与正式认证明确区分。
+- 本地提交按基础、搜索核心、专项验收三个阶段组织；前两阶段分别10/10和22/22通过。候选覆盖有限，单次公共调用不可中断；不宣称性能或最优性优势。
+## R1-02：Rebase 后证据身份兼容修复（2026-10-17）
+
+- 基于 origin/main f230c3b 的 feat/registry-provenance；固定核验器核心 LF，归档 d0d9325 数据库文档的原 CRLF 身份并保留旧 SHA/路径/版本；原 LFS 属性不变。
+- WSL 专项 31/31、Manifest 47/47；真实索引 275 PASS / 28 WARN / 0 FAIL，WARN 含义及来源边不变。原生 Windows 字节策略另测，stat/fstat 兼容限制详见审计。
+- 不改冻结数据、27 字段 Manifest、数据库或发布流程；候选与曝光认证状态不变。详见 [Rebase 身份审计](docs/phase2/r1-02_rebase_identity_audit_20261017.md)。未提交、推送或创建 PR。
+
 ## v0.3.5：Fixed Payload View 原子帧提交（2026-10-17）
 
 - 根因为单一隐藏 Cesium Scene 在多个固定镜头之间逐帧切换后，未等 imagery/terrain LOD 完成便复制默认 framebuffer；不是主 ENU 跟随相机或卫星 quaternion 跳变。
 - 新增串行 queue、queued frame 合并、选中/普通 tile 公平轮巡、连续两个完整 render frame 门槛、原子 Canvas commit、512-tile 有界 working set，以及 context lost/restore 处理。状态文字与图像在同一 commit 更新。
 - 新增 `debug_payload=1` 诊断，记录每个固定镜头的时间、姿态、矩阵、Canvas/framebuffer、tile loading、resize/context 状态；默认关闭并限制 2000 条。
 - 真实 Chromium 2 星与 10 星各连续 30 秒，覆盖正常倍速、60x、2×2、切星、暂停/恢复及 Escape；无跨窗 ownership、WebGL、console 或 HTTP error。依用户指示不再增加长测；50 星仅完成快速 queue/ownership 单元测试，真实 GPU 吞吐列为未实测限制。详见 [Fixed Payload 频闪交接](docs/phase2/fixed_payload_flicker_handoff.md)。
+## R1-02：只读 Scenario Artifact / Provenance 索引（2026-10-17）
+
+- feat/registry-provenance 基于 d0d9325；Raw 30（20 卫星配置 + 10 城市）独立于六 Legacy、四冻结 Candidate，原文件/侧车/证据只读。
+- 新增独立小型索引、来源矩阵、stdout-only 核验 CLI 与合成测试；不改 27 字段 Manifest、数据库、Controller/Worker 或发布流程。
+- 五项历史源码找到与侧车完全相符的 Git blob；base_git_sha 不冒充工具提交，后继主线实现与审核工具分开记录。
+- WSL 新增单测 25/25；Manifest 47/47；完整默认套件 363 passed / 0 failed / 0 errors / 8 skipped。未开启额外 Orekit 开关，真实场景不求解、不重算。
+- 四候选仍 candidate_only / formal_release_eligible=false；80 条原曝光仍 INCONCLUSIVE / NO_CONTINUITY_CERTIFICATE；外部规范为提案、Raw 历史来源/seed/ML lineage 缺证据。未提交、推送、合并或创建 PR。
+- 详见 [R1-02 索引交接](docs/phase2/scenario_artifact_index_r1_02.md)。历史记录以下保留。
 
 ---
 
