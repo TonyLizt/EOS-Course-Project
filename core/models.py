@@ -225,6 +225,8 @@ class AgileData:
     pitch_angles: List[float]
     yaw_angles: List[float]
     roll_angles: List[float]
+    # Grid attitude boundaries plus the independently evaluated safe window end.
+    boundary_quaternions_xyzw: Optional[List[List[float]]] = None
 
 
 @dataclass

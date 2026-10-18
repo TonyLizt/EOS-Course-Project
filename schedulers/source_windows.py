@@ -24,7 +24,8 @@ def _slice_angles(payload, offset, count):
     if isinstance(payload, list):
         return payload[offset:offset + count]
     if isinstance(payload, dict):
-        return {key: _slice_angles(value, offset, count) for key, value in payload.items()}
+        return {key: _slice_angles(value, offset, count + (key == 'boundary_quaternions_xyzw'))
+                for key, value in payload.items()}
     return payload
 
 
@@ -61,6 +62,14 @@ def observation_source_matches(problem, task, window, item, start, end, *, check
             return True
         count = max(1, math.ceil(task.required_duration / step - 1e-9))
         expected = _slice_angles(window.agile_data, k, count)
+        if isinstance(expected, dict) and "boundary_quaternions_xyzw" in expected:
+            # This model stores exact grid states, never interpolates a quaternion
+            # at an unsupported fractional exposure endpoint.
+            end_offset = (end - window.start_time).total_seconds() / step
+            if abs(end_offset - round(end_offset)) > 1e-6:
+                return False
+            if len(expected["boundary_quaternions_xyzw"]) != count + 1:
+                return False
     return not check_angles or item['sat_angles'] == expected
 
 

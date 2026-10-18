@@ -333,6 +333,8 @@ class Scenario:
                 "roll_angles": tw.agile_data.roll_angles,
             }
         if tw.non_agile_data is not None:
+            if tw.agile_data is not None and getattr(tw.agile_data, "boundary_quaternions_xyzw", None) is not None:
+                out["agile_data"]["boundary_quaternions_xyzw"] = tw.agile_data.boundary_quaternions_xyzw
             out["non_agile_data"] = {
                 "pitch_angle": tw.non_agile_data.pitch_angle,
                 "yaw_angle": tw.non_agile_data.yaw_angle,

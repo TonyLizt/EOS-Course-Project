@@ -139,6 +139,12 @@ class PlanExposureAuditor:
             target_alt_m=n(location,"altitude_km")*1000,
             max_yaw_deg=n(limits,"max_yaw_angle_deg"),max_pitch_deg=n(limits,"max_pitch_angle_deg"),
             max_roll_deg=n(limits,"max_roll_angle_deg"),min_elevation_deg=self.minimum)
+        sensors = satellite.get("observation_capability", {}).get("sensors", [])
+        if len(sensors) != 1 and self.factory is None:
+            raise ValueError("physical audit requires one explicit fixed camera")
+        params.update(field_of_view_deg=(sensors[0].get("field_of_view_deg", 45.0) if sensors else 45.0),
+                      maneuverability_type=limits.get("maneuverability_type", "agile"),
+                      max_tracking_rate_deg_s=limits.get("slew_rate_deg_per_s"))
         if (params["a_m"]<=0 or not 0<=params["e"]<1 or not -90<=params["target_lat_deg"]<=90
                 or any(params[k]<0 for k in ("max_yaw_deg","max_pitch_deg","max_roll_deg"))):
             raise ValueError("physical inputs outside supported Keplerian/target/attitude domain")
@@ -270,7 +276,12 @@ def window_physics_sources(root=None):
 
 def window_generation_record(step_s, min_elevation_deg, coarse_step_min):
     from utils.visibility import VISIBILITY_ALGORITHM_VERSION, EXIT_BOUNDARY_PRECISION_US
+    from utils.attitude_frames import ATTITUDE_MODEL_VERSION, CAMERA_TO_BODY_XYZW
     return dict(window_algorithm_version=VISIBILITY_ALGORITHM_VERSION,
+                attitude_model_version=ATTITUDE_MODEL_VERSION,
+                attitude_reference="nominal_nadir", body_optical_axis="+Z",
+                camera_to_body_quaternion_xyzw=list(CAMERA_TO_BODY_XYZW),
+                field_of_view_semantics="square_full_angle",
                 boundary_refinement_version="visible_side_bisection_v1",
                 exit_precision_us=EXIT_BOUNDARY_PRECISION_US,
                 endpoint_semantics="visible_side_exit_or_evaluated_horizon",

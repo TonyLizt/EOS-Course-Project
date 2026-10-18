@@ -18,6 +18,7 @@ from schedulers.transition_utils import compute_transition_time_agile, delta_g_b
 from utils.continuous_exposure import planning_exposure, ExposureStatus
 from schedulers.preview_exposure import candidate_exposure
 from utils.time_parsing import parse_orbit_epoch
+from utils.attitude_frames import quaternion_distance_deg
 from .source_windows import communication_source_matches, observation_source_matches
 from typing import List, Dict, Optional, Protocol
 from datetime import datetime, timedelta
@@ -256,7 +257,20 @@ class ConstraintModel:
             # If angle data is missing, fall back to a minimum constant conservatively
             return 11.66
 
-        return float(compute_transition_time_agile(dg, self.agility_profile))
+        minimum = float(compute_transition_time_agile(dg, self.agility_profile))
+        first = prev_a.sat_angles if isinstance(prev_a.sat_angles, dict) else {}
+        last = next_a.sat_angles if isinstance(next_a.sat_angles, dict) else {}
+        if "boundary_quaternions_xyzw" in first or "boundary_quaternions_xyzw" in last:
+            try:
+                angle = quaternion_distance_deg(first["boundary_quaternions_xyzw"][-1],
+                                                last["boundary_quaternions_xyzw"][0])
+                rate = sat.slew_rate_deg_per_s
+                if not rate > 0:
+                    return float("inf")
+                minimum = max(minimum, angle / rate + sat.stabilization_time_s)
+            except (KeyError, IndexError, TypeError, ValueError):
+                return float("inf")
+        return minimum
 
     def _check_per_orbit_resource(self, assignment: Assignment, schedule: Schedule) -> bool:
         """Check per-orbit capacity and energy limits."""
@@ -317,9 +331,26 @@ class ConstraintModel:
             return False
         # Planning preserves the existing attitude/slew parser contract. The
         # independent Verifier additionally compares angles to Scenario data.
+        rigid_attitude = (isinstance(windows[0].agile_data, dict)
+                          and "boundary_quaternions_xyzw" in windows[0].agile_data)
         if not observation_source_matches(self.problem, task, windows[0], vars(assignment),
-                assignment.sat_start_time, assignment.sat_end_time, check_angles=False):
+                assignment.sat_start_time, assignment.sat_end_time, check_angles=rigid_attitude):
             return False
+        if rigid_attitude and satellite.maneuverability_type != "non_agile":
+            previous = schedule.get_assignments_for_satellite(satellite.id)
+            if not any(a.sat_start_time < assignment.sat_start_time for a in previous):
+                try:
+                    initial = self.problem.initial_attitudes[satellite.id]
+                    initial_time = parse_orbit_epoch(initial["time"]).replace(tzinfo=None)
+                    if initial_time != self.problem.start_time or satellite.slew_rate_deg_per_s <= 0:
+                        return False
+                    angle = quaternion_distance_deg(initial["inertial_to_body_quaternion_xyzw"],
+                        assignment.sat_angles["boundary_quaternions_xyzw"][0])
+                    required = angle / satellite.slew_rate_deg_per_s + satellite.stabilization_time_s
+                    if (assignment.sat_start_time - initial_time).total_seconds() < required:
+                        return False
+                except (KeyError, IndexError, TypeError, ValueError):
+                    return False
         if self.has_ground_stations:
             if (type(assignment.gs_window_id) is not int or assignment.gs_window_id <= 0
                     or assignment.ground_station_id not in self.problem.ground_stations
@@ -519,7 +550,7 @@ class ConstraintModel:
                     out = {}
                     for kk, vv in payload.items():
                         if isinstance(vv, (list, dict)):
-                            out[kk] = _slice_angles_payload(vv, start_idx, count)
+                            out[kk] = _slice_angles_payload(vv, start_idx, count + (kk == "boundary_quaternions_xyzw"))
                         else:
                             out[kk] = vv
                     return out

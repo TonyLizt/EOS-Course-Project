@@ -224,6 +224,9 @@ def serialize_windows(observations, communications):
             result["agile_data"] = {f"{axis}_angles": getattr(window.agile_data, f"{axis}_angles")
                                     for axis in ("pitch", "yaw", "roll")}
         if window.non_agile_data is not None:
+            quaternions = getattr(window.agile_data, "boundary_quaternions_xyzw", None)
+            if quaternions is not None:
+                result["agile_data"]["boundary_quaternions_xyzw"] = quaternions
             result["non_agile_data"] = {f"{axis}_angle": getattr(window.non_agile_data, f"{axis}_angle")
                                         for axis in ("pitch", "yaw", "roll")}
         return result
