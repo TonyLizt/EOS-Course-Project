@@ -41,9 +41,13 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   await gantt.waitForFunction(()=>!document.querySelector('#task-tooltip').hidden);
   const view=await context.newPage();await view.goto(info.url+'/visualization/cesium/'+rid,{waitUntil:'domcontentloaded',timeout:45000});
   await view.waitForFunction(()=>document.querySelector('#assetStatus').textContent.includes('body model'),null,{timeout:60000});
+  await view.waitForFunction(()=>document.querySelectorAll('#assignmentList .assignment-row').length===3);
+  await view.waitForFunction(id=>document.querySelector(`#cesium-comparison tr[data-run="${id}"]`)
+    ?.getAttribute('aria-current')==='true',rid);
+  assert.equal(new URL(view.url()).searchParams.get('run_id'),rid);
   const state=await view.evaluate(()=>({asset:document.querySelector('#assetStatus').textContent,
    replay:document.querySelector('#replayBuildStatus').textContent,
-   intervals:document.querySelector('#observationTable')?.textContent||document.querySelector('#intervalsTable')?.textContent||''}));
+   intervals:document.querySelectorAll('#assignmentList .assignment-row').length}));
   assert.match(state.asset,/2 body model/);assert.equal(errors.length,0,errors.join('\n'));
   console.log('RABAS_BROWSER_PASS '+JSON.stringify({experiment:experiment.experiment_id,run_id:rid,
    algorithms:2,experiments:1,completed:3,gantt_tasks:await gantt.locator('#ganttContainer button').count(),...state,

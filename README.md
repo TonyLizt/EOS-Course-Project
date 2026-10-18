@@ -1,5 +1,7 @@
 # EOS-Course-Project：地球观测卫星任务调度课程系统
 
+算法 B **RABAS · 资源感知任务包竞价调度**已接入现有注册驱动控制台：支持真实多任务 Bundle、资源/机会成本和中标后全量重报价；当前比较清单为原九种 + CAABS + RABAS，共11种。展开 RABAS 卡片右侧三角即可编辑参数，和其他算法同实验运行、比较及查看 Gantt/Cesium，无需新页面。机制、真实消融及正式认证限制见 [RABAS说明](docs/phase2/algorithms/auction_bundle.md)；下文10种为历史集成快照。
+
 首页统一控制台默认使用「规划预览」：选择场景、初始排程模型（完成率优先／自适应修复），再从注册算法中选择一项或多项提交，在「算法比较」查看结果。同步最新 main 后共十种（原九种加 CAABS），MIP/PPO 缺依赖或可信模型接入时明确禁用；部分算法不使用初始解，详见[原九算法交接](docs/phase2/nine_algorithm_console_handoff.md)及[CAABS](docs/phase2/algorithms/conflict_beam.md)。预览不代表正式连续认证，正式门禁不变。
 
 一次提交只新增一个实验，内含多个算法。算法卡片右侧三角独立展开参数及说明；选中实验后只比较其算法，也可一键创建同场景、仅初始模型不同的对照实验。Cesium 在原 Metrics 下增加算法管理和比较，不增加外层 iframe。见[统一交互说明](docs/phase2/unified_interactions_handoff.md)及[实验 API](docs/phase2/experiment_management_handoff.md)。

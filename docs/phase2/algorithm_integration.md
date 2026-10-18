@@ -1,5 +1,7 @@
 # 第二阶段个人算法接入说明（v0.2）
 
+> 2026-10-18 RABAS 增量：算法 B `rabas` / `1.0.0` 直接实现共享 solve，不走旧 search 工厂；严格参数由注册表公开，新增至比较算法（原九种 + CAABS + RABAS，共11种）。Web 自动读取清单，无独立前端或 Solver API。Worker/Controller/SQLite/物理门禁不改；真实小场景预览20/20与合成正式生命周期正例分开报告，真实正式非空认证仍受数据谱系门禁阻挡。见 [RABAS实现及消融](algorithms/auction_bundle.md)。下文10种清单为此前集成快照。
+
 > 2026-10-18：集成 main PR #19 / 22299b4 后 Web 比较列表为原九算法加 CAABS（十种），完成率优先/自适应修复作为初始排程模型独立选择；`get_algorithm` 仍保留两个模型的历史 ID。共用 SolveContext 在原取消回调之后增加有默认值的 schedule_model，保留中立契约和 Registry 同一类型重导出。MIP/PPO 及初始解限制见[九算法历史交接](nine_algorithm_console_handoff.md)，CAABS 保持上游真实实现与参数，I2 来源身份和正式认证门禁不放宽。
 
 本接口只固定**实验边界**：算法 ID、参数、输入场景、预算、候选计划和独立核验。算法可采用构造、修复、搜索、整数规划、监督学习或强化学习等机制；无需继承旧启发式步骤，也无需先得到初始计划。

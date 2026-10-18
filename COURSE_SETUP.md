@@ -1,3 +1,9 @@
+## 算法 B：RABAS 资源感知任务包竞价（2026-10-18）
+
+- 从已合并 main 7a1875f 独立分支实现 RABAS 1.0.0；真正的2/3任务包、真实转向/资源成本、有界独占任务机会损失、完成数优先全局中标和全量版本化重报价。只追加注册与一条 Web 权重提示，不修改公共约束/指标、DARTIS/CAABS核心、Worker/Controller、SQLite或IPC。
+- B-1至B-5等22项算法单元、4项真实Worker/Controller集成及Registry兼容定向验证完成；真实Chromium验证合成双算法单实验、参数、比较、Gantt及Cesium模型。真实10星20任务四组预览消融均20/20，h=2中标10轮，h=1为20轮；并非正式认证或统计优势结论。
+- 当前场景formal非空认证仍缺可信窗口谱系/物理设置；实际formal请求保持失败而非伪造成功。真实预览、合成UNIT_TEST_ONLY认证及实测指标严格区分。见 [RABAS实现/实验说明](docs/phase2/algorithms/auction_bundle.md)。仅本地Commit，不Push、不建PR，保留根目录既有修改。
+
 ## 统一控制台 PR 集成与最新 main 同步（2026-10-18）
 
 - 按团队规范 merge origin/main（最新 22299b4 / PR #19，非停留于 #18），保留 CAABS、来源索引及 I2 来源窗口恢复/核验，不重写历史。Solver 公共契约复用队友的新模块，初始模型作为兼容默认字段保留；新增 CAABS 进入注册驱动的控制台清单（原九种加一），模型仍单独选择。

@@ -21,6 +21,7 @@ from schedulers.constraint_model import ConstraintModel, Schedule
 from schedulers.evaluation_metrics import compute_evaluation_metrics
 from schedulers.scenario_loader import (SchedulingProblem, SchedulingSatellite, SchedulingTask,
                                       TaskWindow, SensorSpec, load_scheduling_problem_from_json)
+from eos_system.provenance import capture_provenance
 
 
 def synthetic(name):
@@ -48,7 +49,7 @@ def run(problem, budget):
     for size in (1,2):
         for opportunity in (0.,.5):
             params=RABASParams(max_bundle_size=size,opportunity_cost_weight=opportunity)
-            cm=ConstraintModel(problem,non_agile_transition_s=0)
+            cm=ConstraintModel(problem)  # same public defaults, including non-agile 10s
             context=SolveContext(42,budget,ObjectiveWeights(),params)
             begin=time.perf_counter()
             plan=ResourceAwareBundleAuctionScheduler().solve(problem,cm,context)
@@ -75,17 +76,22 @@ def main():
     if args.scenario:
         path=args.scenario.resolve()
         digest=hashlib.sha256(path.read_bytes()).hexdigest()
+        provenance=capture_provenance(path,digest)
         problem=load_scheduling_problem_from_json(path)
         problem.execution_mode=args.mode
         results={problem.scenario_id:run(problem,args.budget)}
         if hashlib.sha256(path.read_bytes()).hexdigest()!=digest:
             raise AssertionError('source scenario changed')
-        identity={'scenario_sha256':digest,'mode':args.mode,'synthetic':False}
+        identity={'scenario_sha256':digest,'mode':args.mode,'synthetic':False,
+                  'provenance':provenance}
     else:
         results={name:run(synthetic(name),args.budget) for name in ('B1-exclusive','B3-bundle')}
         identity={'mode':'synthetic_public_planning_only','synthetic':True}
     output={'algorithm_id':'rabas','version':VERSION,'seed':42,'budget_s':args.budget,
-            'physical_certification':'NOT_RUN','identity':identity,'results':results}
+            'physical_certification':'NOT_RUN','identity':identity,
+            'constraints':{'placement_mode':'earliest','agility_profile':'Standard-Agility',
+                'non_agile_transition_s':10.,'downlink_duration_ratio':1.,'unassigned_penalty':1000.},
+            'objective_weights':asdict(ObjectiveWeights()),'results':results}
     data=json.dumps(output,ensure_ascii=False,indent=2,allow_nan=False)
     if args.output:
         with args.output.open('x',encoding='utf-8') as stream: stream.write(data+'\n')
