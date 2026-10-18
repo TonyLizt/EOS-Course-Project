@@ -8,10 +8,24 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from eos_system.__main__ import controller_is_running, main
+from eos_system.__main__ import SupervisedServer, controller_is_running, main
 
 
 class CliStartupTests(unittest.TestCase):
+    def test_shutdown_intent_is_written_before_uvicorn_drain(self):
+        import signal
+        from eos_system.process_state import read_json
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.dict(os.environ, {'EOS_RUNTIME_DIR': directory, 'EOS_SUPERVISION_TOKEN': 'fixture'}):
+            server = object.__new__(SupervisedServer)
+            def check_marker(*args):
+                marker = read_json(Path(directory) / 'controller-stopping.json')
+                self.assertEqual(marker['token'], 'fixture')
+                self.assertEqual(marker['process']['pid'], os.getpid())
+            with patch('uvicorn.Server.handle_exit', side_effect=check_marker) as stop:
+                server.handle_exit(signal.SIGTERM, None)
+                stop.assert_called_once()
+
     def test_absent_lock_is_not_created(self):
         with tempfile.TemporaryDirectory() as directory:
             lock = Path(directory) / 'not-created' / 'controller.lock'

@@ -10,6 +10,10 @@
 
 > **2026-10-16 当前实现入口：**[v0.3.1 修复集成交接](restore_integration_handoff.md)。本文的 v0.2/v0.3 段落保留目标设计与历史背景；默认配置、READY 读取方式与已实现范围以该交接及当前代码为准。
 
+## 独立监护的当前接口增量（2026-10-18）
+
+`GET /api/health` 保留旧字段，追加 `controller.process`（PID/PPID/boot_id/starttime/session 等内核身份）、`dispatch_alive`、`stopping`、`progress_age_s`。旧 `status=ok` 不单独保证调度线程健康；Daemon 根据上述字段、实际子进程身份及可配置超时判定。CLI 为 `python -m eos_system.daemon start|run|status|stop`，服务新增 `EOS_PORT`，默认仍仅 127.0.0.1:8765。运行目录新增锁/状态/Worker 身份日志及停机意图 sidecar，无 SQLite/IPC/RunConfig 变化；独立进程控制不暴露为 Web API。当前实现、配置和保守孤儿恢复限制见 [Daemon 专题](daemon_implementation_and_validation.md)，后文 Daemon 待实现描述是原目标稿历史状态。
+
 # 第二阶段接口设计文档（审核稿）
 
 > 2026-10-18 I2工作树待审核变更：计划JSON保留sat_window_id及适用的gs_window_id，CSV增加两类来源ID及orbit_number；无新增HTTP请求字段或路由。旧格式唯一来源才兼容，显式错误/歧义拒绝。编号作用域、跨模块影响及发布边界见 [Assignment来源契约](assignment_source_window_contract_v1.md)。本说明不代表已合并的公共承诺。

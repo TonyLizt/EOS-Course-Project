@@ -1,5 +1,7 @@
 # EOS-Course-Project：地球观测卫星任务调度课程系统
 
+独立 Linux/WSL2 Daemon：`python -m eos_system.daemon start|status|stop`（前台用 `run`），监护整个 FastAPI/Controller 进程，支持有界退避恢复。先正常停止原服务，或配置独立 `EOS_RUNTIME_DIR` 和端口；不要删除锁。启动命令、已确认身份的 Worker 恢复边界见 [Daemon 实现与验证](docs/phase2/daemon_implementation_and_validation.md)，逐项命令及预期结果见 [Daemon 测试与故障演示](L_readme/Daemon守护进程_测试与故障演示说明.md)。无数据库迁移；下文旧版本中“Daemon 尚未交付”是历史记录，以此专题为准。
+
 首页统一控制台默认使用「规划预览」：选择场景、初始排程模型（完成率优先／自适应修复），再从注册算法中选择一项或多项提交，在「算法比较」查看结果。同步最新 main 后共十种（原九种加 CAABS），MIP/PPO 缺依赖或可信模型接入时明确禁用；部分算法不使用初始解，详见[原九算法交接](docs/phase2/nine_algorithm_console_handoff.md)及[CAABS](docs/phase2/algorithms/conflict_beam.md)。预览不代表正式连续认证，正式门禁不变。
 
 一次提交只新增一个实验，内含多个算法。算法卡片右侧三角独立展开参数及说明；选中实验后只比较其算法，也可一键创建同场景、仅初始模型不同的对照实验。Cesium 在原 Metrics 下增加算法管理和比较，不增加外层 iframe。见[统一交互说明](docs/phase2/unified_interactions_handoff.md)及[实验 API](docs/phase2/experiment_management_handoff.md)。
