@@ -656,3 +656,8 @@ cd /Users/tonylizt/Projects/EOS-Course-Project
 - 新建场景记录窗口版本、已检测退出括区精度、扫描配置及连续认证 NOT_RUN；窗口精度与连续证明分别记录。
 - `tests/certification_fixtures.py` 仅用于临时单元测试注入，所有模拟凭证标记 UNIT_TEST_INJECTION_ONLY；没有 HTTP/JSON/环境变量开关可启用模拟认证。
 - 本轮完整命令、最终结果与 31 文件清单见连续曝光审计报告第 11 节起；正式发布仍受连续区间证明缺失阻断。
+## CAABS 全链路修复与实际物理验收（2026-10-18）
+
+- 独立工作树`EOS-Course-Project-caabs-latest`保留`8cf282b`算法核心，新增相对Nadir刚体姿态/固定相机/FOV及速率检查、真实边界四元数/转向核验、当前真实Orekit开发场景及严格开发来源合同。未追认Legacy/C6旧哈希，不改变正式认证门禁。
+- 本地P0至P5修复提交：`7025151`、`ee7d0e2`、`be92f1d`、`3f2cff0`、`aa7a9b7`、`0b9f48d`；实际3/3非空CAABS与Completion同预算对照、独立Verifier及真实Worker取消/崩溃/Controller重启通过。105项原回归通过，生命周期50项连续两轮通过。
+- 最终代码完整发现599项，592成功、2个失败测试（含3条failure）、5个opt-in跳过，退出1；另行启用剩余几何测试后微秒CZML/插值通过，旧绝对姿态GPM窗口基准失败。历史物理fixture迁移与连续区间证书仍阻断合并/正式发布，不宣称全绿。真实场景SHA `a2ec9d89b2610eba6633a2b637b6d391eda95fde9baa20ad6859d359d177d10a`，仅开发预览；未push/PR/merge。详见[最终验收与Draft PR材料](docs/phase2/algorithms/caabs_final_integration_acceptance.md)。
