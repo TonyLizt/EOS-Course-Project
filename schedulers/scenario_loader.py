@@ -27,6 +27,9 @@ class TaskWindow:
     on a specific satellite.
 
     Note:
+    window_id is a positive 1-based Loader ordinal across all retained
+    observation windows in one unchanged Scenario, not a JSON-provided ID.
+    It is independent of the communication-window namespace.
     orbit_number is supported since v21 and is used for per-orbit
     resource constraints.
     """
@@ -53,6 +56,9 @@ class TaskWindow:
 class CommWindow:
     """
     Satellite-ground station communication window.
+
+    window_id is a positive 1-based Loader ordinal across retained communication
+    windows in one unchanged Scenario; it is not an observation-window ID.
 
     This is independent of tasks and only describes that a
     satellite-ground station pair can perform data transmission
@@ -205,6 +211,13 @@ def _infer_maneuverability_type(sat: dict) -> str:
     return "agile"
 
 
+def _parse_time_step(value) -> float:
+    """A resolved step is numeric; bool and unresolved null are not grid sizes."""
+    if value is None or isinstance(value, bool):
+        raise ValueError("time_step must be numeric, not null or boolean")
+    return float(value)
+
+
 def load_scheduling_problem_from_json(json_path: str | Path) -> SchedulingProblem:
 
     import json
@@ -229,7 +242,8 @@ def load_scheduling_problem_from_json(json_path: str | Path) -> SchedulingProble
     end_time = start_time + timedelta(seconds=duration_s)
 
     # Global time_step, used as fallback if missing at the window level
-    global_time_step = float(meta.get("time_step", 1.0) or 1.0)
+    configured_step = meta.get("time_step")
+    global_time_step = _parse_time_step(1.0 if configured_step is None else configured_step)
 
     # Satellite list
     satellites: Dict[str, SchedulingSatellite] = {}
@@ -321,7 +335,7 @@ def load_scheduling_problem_from_json(json_path: str | Path) -> SchedulingProble
                 orbit_number=int(tw.get("orbit_number", ow.get("orbit_number", 0)) or 0),
                 start_time=start,
                 end_time=end,
-                time_step=float(tw.get("time_step", ow.get("time_step", global_time_step))),
+                time_step=_parse_time_step(tw.get("time_step", ow.get("time_step", global_time_step))),
                 agile_data=tw.get("agile_data", ow.get("agile_data")),
                 non_agile_data=tw.get("non_agile_data", ow.get("non_agile_data")),
                 planning_evidence=lineage,

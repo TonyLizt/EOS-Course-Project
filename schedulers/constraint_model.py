@@ -12,11 +12,13 @@ objective evaluation.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from schedulers.transition_utils import compute_transition_time_agile, delta_g_between
 from utils.continuous_exposure import planning_exposure, ExposureStatus
 from schedulers.preview_exposure import candidate_exposure
+from utils.time_parsing import parse_orbit_epoch
+from .source_windows import communication_source_matches, observation_source_matches
 from typing import List, Dict, Optional, Protocol
 from datetime import datetime, timedelta
 
@@ -287,15 +289,51 @@ class ConstraintModel:
             return False
         return True
 
+    @staticmethod
+    def _normalize_assignment_times(assignment: Assignment) -> Assignment:
+        """Use Loader's naive UTC on a copy; leave caller-owned plans unchanged."""
+        updates = {}
+        for name in ("sat_start_time", "sat_end_time", "gs_start_time", "gs_end_time"):
+            value = getattr(assignment, name)
+            if value is not None and value.tzinfo is not None:
+                updates[name] = parse_orbit_epoch(value).replace(tzinfo=None)
+        return replace(assignment, **updates) if updates else assignment
+
     def is_feasible_assignment(self, assignment: Assignment, schedule: Schedule) -> bool:
+        assignment = self._normalize_assignment_times(assignment)
         task = self.problem.tasks.get(assignment.task_id)
-        if task is None:
+        satellite = self.problem.satellites.get(assignment.satellite_id)
+        if (task is None or satellite is None
+                or type(assignment.sat_window_id) is not int or assignment.sat_window_id <= 0
+                or type(assignment.orbit_number) is not int
+                or not self.problem.start_time <= assignment.sat_start_time < assignment.sat_end_time <= self.problem.end_time):
             return False
         windows = [w for w in task.windows if w.window_id == assignment.sat_window_id
+                   and w.mission_id == task.id and w.orbit_number == assignment.orbit_number
                    and w.satellite_id == assignment.satellite_id
                    and w.sensor_id == assignment.sensor_id]
-        if not any(candidate_exposure(self.problem, w, assignment.sat_start_time, assignment.sat_end_time,
-                   task.required_duration).status is ExposureStatus.PLANNING_FEASIBLE for w in windows):
+        if (len(windows) != 1 or candidate_exposure(self.problem, windows[0], assignment.sat_start_time, assignment.sat_end_time,
+                   task.required_duration).status is not ExposureStatus.PLANNING_FEASIBLE):
+            return False
+        # Planning preserves the existing attitude/slew parser contract. The
+        # independent Verifier additionally compares angles to Scenario data.
+        if not observation_source_matches(self.problem, task, windows[0], vars(assignment),
+                assignment.sat_start_time, assignment.sat_end_time, check_angles=False):
+            return False
+        if self.has_ground_stations:
+            if (type(assignment.gs_window_id) is not int or assignment.gs_window_id <= 0
+                    or assignment.ground_station_id not in self.problem.ground_stations
+                    or assignment.gs_start_time is None or assignment.gs_end_time is None
+                    or not self.problem.start_time <= assignment.gs_start_time < assignment.gs_end_time <= self.problem.end_time
+                    or (assignment.gs_end_time - assignment.gs_start_time).total_seconds() + 1e-6
+                        < task.required_duration * self.downlink_duration_ratio):
+                return False
+            comm = [w for w in self.problem.comm_windows if w.window_id == assignment.gs_window_id]
+            if len(comm) != 1 or not communication_source_matches(comm[0], assignment.satellite_id,
+                    assignment.ground_station_id, assignment.gs_start_time, assignment.gs_end_time):
+                return False
+        elif any(value is not None for value in (assignment.ground_station_id, assignment.gs_start_time,
+                                                 assignment.gs_end_time, assignment.gs_window_id)):
             return False
         if getattr(self.problem, 'execution_mode', 'formal') == 'planning_preview':
             from schedulers.observation_geometry import validate_observation_interval
@@ -309,6 +347,7 @@ class ConstraintModel:
         """Legacy discrete diagnostics ONLY; cannot certify or publish a plan."""
         """Check whether adding an assignment to the current schedule is feasible."""
 
+        assignment = self._normalize_assignment_times(assignment)
         task = self.problem.tasks[assignment.task_id]
 
         # 1) A task can only be assigned once
@@ -334,6 +373,7 @@ class ConstraintModel:
         # of other tasks, including observation and transmission
         sat_assigns = schedule.get_assignments_for_satellite(assignment.satellite_id)
         for a in sat_assigns:
+            a = self._normalize_assignment_times(a)
             # Attitude transition time constraint between adjacent tasks,
             # applied only to satellite observation segments
             if assignment.sat_start_time >= a.sat_start_time:
@@ -376,6 +416,7 @@ class ConstraintModel:
         if self.has_ground_stations and assignment.ground_station_id is not None:
             gs_assigns = schedule.get_assignments_for_ground_station(assignment.ground_station_id)
             for a in gs_assigns:
+                a = self._normalize_assignment_times(a)
                 if a.gs_start_time is None or a.gs_end_time is None:
                     continue
                 if self._intervals_overlap(

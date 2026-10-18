@@ -183,7 +183,7 @@ class HttpFailureE2ETests(unittest.TestCase):
 
     def submit(self, budget=3):
         status, created = self.request("POST", "/api/runs", {
-            "scenario_id": "fixture", "algorithm_id": "completion_first",
+            "scenario_id": "fixture", "algorithm_id": "profit_first",
             "time_budget_s": budget,
         })
         self.assertEqual(status, 202)

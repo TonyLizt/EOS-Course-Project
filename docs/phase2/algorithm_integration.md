@@ -1,6 +1,6 @@
 # 第二阶段个人算法接入说明（v0.2）
 
-> 2026-10-18：Web 比较列表改为现有九算法，完成率优先/自适应修复作为初始排程模型独立选择；MIP/PPO 的依赖及可信接入限制、各算法是否使用初始解见[九算法交接](nine_algorithm_console_handoff.md)。不改变独立核验契约。
+> 2026-10-18：集成 main PR #19 / 22299b4 后 Web 比较列表为原九算法加 CAABS（十种），完成率优先/自适应修复作为初始排程模型独立选择；`get_algorithm` 仍保留两个模型的历史 ID。共用 SolveContext 在原取消回调之后增加有默认值的 schedule_model，保留中立契约和 Registry 同一类型重导出。MIP/PPO 及初始解限制见[九算法历史交接](nine_algorithm_console_handoff.md)，CAABS 保持上游真实实现与参数，I2 来源身份和正式认证门禁不放宽。
 
 本接口只固定**实验边界**：算法 ID、参数、输入场景、预算、候选计划和独立核验。算法可采用构造、修复、搜索、整数规划、监督学习或强化学习等机制；无需继承旧启发式步骤，也无需先得到初始计划。
 
@@ -27,6 +27,8 @@
 共用 `AlgorithmParams`、`SolveContext`、`Solver` 定义在 `algorithms/solver_contracts.py`，不导入 Registry 或工厂。算法实现依赖这一契约层，Registry 再显式导入已审核的算法，避免登记时形成反向导入。`eos_system.algorithm_registry` 继续导出同一组类型，已有 Runner/Worker 调用方无需改导入路径。
 
 ## 3. 接入形状
+
+2026-10-18 I2工作树待审核补充：Assignment保留实际 `sat_window_id`，有下传时保留实际 `gs_window_id`。公共输出传递并独立核对来源；历史缺失字段仅在完整语义下唯一确定时兼容。字段已有于dataclass，solve签名和算法策略不改。详见 [来源契约审查稿](assignment_source_window_contract_v1.md)。
 
 ```python
 from pydantic import Field

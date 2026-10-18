@@ -386,7 +386,7 @@ class ControllerCancelTests(unittest.TestCase):
         async def scenario():
             async with app.router.lifespan_context(app):
                 status, submitted = await request("POST", "/api/runs", {
-                    "scenario_id": "fixture", "algorithm_id": "completion_first",
+                    "scenario_id": "fixture", "algorithm_id": "profit_first",
                     "time_budget_s": 8,
                 })
                 self.assertEqual(status, 202)

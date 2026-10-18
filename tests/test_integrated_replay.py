@@ -208,7 +208,7 @@ class ProvenanceTests(unittest.TestCase):
             sidecar.parent.mkdir()
             sidecar.write_text(json.dumps({"scenario_sha256":f.sha,"completion_status":"complete",
                 "publication_status":"candidate_only","formal_release_eligible":False}))
-            response=f.client.post("/api/runs",json={"scenario_id":"fixture","algorithm_id":"completion_first"})
+            response=f.client.post("/api/runs",json={"scenario_id":"fixture","algorithm_id":"profit_first"})
             self.assertEqual(response.status_code,422)
             self.assertIn("待验收候选",response.json()["error"]["message"])
 

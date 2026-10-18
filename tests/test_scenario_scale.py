@@ -172,7 +172,7 @@ class CatalogTests(unittest.TestCase):
                 self.assertEqual(registry["target_samples"],100000)
                 scene.write_text("{}")
                 response=_DirectClient(app).post("/api/runs",json={
-                    "source_id":"bundled-small","scenario_id":"fixture","algorithm_id":"completion_first"})
+                    "source_id":"bundled-small","scenario_id":"fixture","algorithm_id":"profit_first"})
                 self.assertEqual(response.status_code,422)
                 self.assertIn("SHA",response.json()["error"]["message"])
             finally:

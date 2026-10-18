@@ -1,4 +1,4 @@
-> 当前实验契约（2026-10-18）：`POST /api/experiments` 原子创建父实验和多个算法 Run；新增 `/control` 单变量对照、分页/详情、受限比较和成员管理。原 Run/Worker/认证接口保留，原 Cesium 页面只增加实验上下文。见[最新实验 API](experiment_management_handoff.md)及[当前 UI 行为](unified_interactions_handoff.md)。
+> 当前实验契约（2026-10-18，集成 main PR #19 / 22299b4）：`POST /api/experiments` 原子创建父实验和多个算法 Run；首页使用 `/temporary-control` 创建内存对照，临时 Gantt 走独立通道，不落库或进入 Cesium。`/control` 仅保留兼容的持久化 API。公开算法为原九种加 main 的 CAABS（十种），两个初始模型单列；I2 来源窗口显式身份、唯一恢复与姿态/资源核验保留，formal 的曝光认证不变。见[实验 API](experiment_management_handoff.md)及[临时 Gantt](temporary_gantt_handoff.md)。
 
 > 历史 2026-10-17：逐项提交与条件组实现见[原控制台契约](console_gantt_handoff.md)，不代表当前实验组织方式。
 
@@ -11,6 +11,8 @@
 > **2026-10-16 当前实现入口：**[v0.3.1 修复集成交接](restore_integration_handoff.md)。本文的 v0.2/v0.3 段落保留目标设计与历史背景；默认配置、READY 读取方式与已实现范围以该交接及当前代码为准。
 
 # 第二阶段接口设计文档（审核稿）
+
+> 2026-10-18 I2工作树待审核变更：计划JSON保留sat_window_id及适用的gs_window_id，CSV增加两类来源ID及orbit_number；无新增HTTP请求字段或路由。旧格式唯一来源才兼容，显式错误/歧义拒绝。编号作用域、跨模块影响及发布边界见 [Assignment来源契约](assignment_source_window_contract_v1.md)。本说明不代表已合并的公共承诺。
 
 > **文档状态：第二阶段目标设计，尚非全部已实现接口。** v0.3 框架当前可调用的路径、字段和限制以 [`framework_handoff.md`](framework_handoff.md)、[`replay_backend_handoff.md`](replay_backend_handoff.md)、`eos_system/contracts.py`、`eos_system/api.py` 及启动后的 `/docs` 为准。本文保留完整目标契约，供四人讨论后逐项落地；其中 A/B/C/D 算法、Daemon 与部分 Worker 可靠性接口仍待实现。已落地的卫星本体/固定载荷回放见 [`satellite_replay_commits_1_3.md`](satellite_replay_commits_1_3.md)及后续 commit 4–6 交接记录。
 

@@ -1,4 +1,4 @@
-> 当前（2026-10-18）：一个持久实验包含多个算法 Run；新增原子创建、模型对照复制及安全成员管理。schema v4 备份迁移，原 Worker/认证协议不变，Cesium 保持原页面。见[实验管理边界与验证](experiment_management_handoff.md)及[统一交互与浏览器验证](unified_interactions_handoff.md)。
+> 当前（2026-10-18，集成 main PR #19 / 22299b4）：一个持久实验包含多个算法 Run；schema v4 备份迁移，原 Worker 协议保留，Controller 共享单执行槽处理内存临时对照。临时 Gantt 不落库，Cesium 比较在右侧且仅含持久实验。保留 main 的 CAABS、共享 Solver 契约和 I2 来源核验；初始模型作为共享上下文的可选字段（不改变既有取消参数的位置）。见[实验管理](experiment_management_handoff.md)及[当前临时 Gantt](temporary_gantt_handoff.md)。
 
 > 历史 2026-10-17 页面整合：当时的独立 Run 与条件组实现见[控制台与 Gantt 交接](console_gantt_handoff.md)，其批次/比较描述已被以上工作区替代。
 
@@ -13,6 +13,8 @@
 本文件记录 v0.2.1 框架、`feat/hmt-worker-ipc` 与卫星回放 commit 1–6 及其真实页面后续修正的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。卫星回放的 commit 6 交付证据见 [`../replay/final-validation.md`](../replay/final-validation.md)，commit 6 后的兼容、视锥和交互修正见 [`satellite_replay_post_commit_6.md`](satellite_replay_post_commit_6.md)。
 
 ## 1. 当前闭环
+
+2026-10-18 I2工作树待审核补充：公共计划输出保留观测/通信来源编号，两个Verifier按可信Scenario独立验证；历史歧义拒绝，不默认取首项。Worker/Controller信封、SQLite模式及认证门禁不改，详见 [来源契约](assignment_source_window_contract_v1.md)。本条不代表已合并或连续认证通过。
 
 浏览器或 HTTP 客户端选择数据源、场景、算法和输出配置，提交实验。FastAPI 将配置写入 SQLite，Controller 启动独立参考 Worker，读取算法返回的计划，经共享约束模型复核后，把状态、计划、指标和事件持久化。结果可从数据库下载 JSON/CSV；若选文件输出，还会在指定目录下以运行 ID 为子目录保存相同内容。甘特图和 Cesium 页面按运行 ID 读取正式结果；轨道 CZML 按场景哈希缓存，卫星本体/固定载荷数据则每次从已提交结果只读派生。
 
