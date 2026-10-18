@@ -99,6 +99,27 @@ class RealDevelopmentSourceTests(unittest.TestCase):
         self.sidecar.unlink()  # Owned negative-test copy only.
         self.assert_untrusted()
 
+    def test_wrong_generator_version_is_not_trusted(self):
+        record = json.loads(self.sidecar.read_bytes())
+        record['generator_version'] = 'unrecognized-generator-999'
+        self.sidecar.write_text(json.dumps(record))
+        self.assert_untrusted()
+
+    def test_non_object_sidecar_fails_closed_without_loader_crash(self):
+        self.sidecar.write_text('[]')
+        self.assert_untrusted()
+
+    def test_truncated_sidecar_is_not_trusted(self):
+        self.sidecar.write_text('{')
+        self.assert_untrusted()
+
+    def test_symlink_sidecar_is_not_trusted(self):
+        saved = self.directory / 'owned-sidecar-copy.json'
+        saved.write_bytes(self.sidecar.read_bytes())
+        self.sidecar.unlink()
+        self.sidecar.symlink_to(saved)
+        self.assert_untrusted()
+
     def test_window_and_attitude_byte_tampering_rejected(self):
         scene = json.loads(self.path.read_bytes())
         scene["observation_windows"][0]["time_windows"][0]["agile_data"]["roll_angles"][0] += .5

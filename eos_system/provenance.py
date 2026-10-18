@@ -89,11 +89,17 @@ def capture_development_provenance(scene: Path, scenario_sha: str) -> dict:
     payload = scene.read_bytes()
     raw = sidecar.read_bytes()
     data, model = json.loads(raw), json.loads(payload)
+    if not isinstance(data, dict) or not isinstance(model, dict):
+        raise ValueError("development scene and sidecar must be JSON objects")
     record = model.get("metadata", {}).get("extra", {}).get("window_generation")
+    if not isinstance(record, dict):
+        raise ValueError("development window generation record must be an object")
     source = Path(data.get("raw_satellite_path", ""))
     tasks = (json.dumps(model.get("missions"), sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n").encode()
     if (hashlib.sha256(payload).hexdigest() != scenario_sha
             or data.get("schema_version") != "gen02.development.v1"
+            or data.get("generator_version") != "gen02-dev-1.0.0"
+            or model.get("metadata", {}).get("extra", {}).get("generator_version") != "gen02-dev-1.0.0"
             or data.get("scenario_sha256") != scenario_sha
             or data.get("completion_status") != "complete"
             or data.get("calculator_kind") != "orekit"
@@ -116,8 +122,16 @@ def capture_development_provenance(scene: Path, scenario_sha: str) -> dict:
 
 
 def capture_execution_provenance(scene: Path, scenario_sha: str, execution_mode: str) -> dict:
-    if execution_mode == "planning_preview" and sidecar_path(scene).is_file():
+    if sidecar_path(scene).is_file():
         data = json.loads(sidecar_path(scene).read_bytes())
+        if not isinstance(data, dict):
+            raise ValueError("scenario sidecar must be a JSON object")
         if data.get("schema_version") == "gen02.development.v1":
+            if execution_mode != "planning_preview":
+                raise ValueError("development source is only eligible for planning_preview")
             return capture_development_provenance(scene, scenario_sha)
+    model = json.loads(scene.read_bytes())
+    if (isinstance(model, dict) and model.get("metadata", {}).get("extra", {}).get(
+            "development_generation_contract") == "gen02.development.v1"):
+        raise ValueError("development scene requires its matching development sidecar")
     return capture_provenance(scene, scenario_sha)

@@ -307,8 +307,8 @@ GRID_V2_SOURCE_SHA256 = "401cf0ae4989af5ac088de9ac9f74dfb58f279018d44b506fa9e61b
 
 
 
-WINDOW_PHYSICS_FILES = ('utils/visibility.py', 'utils/time_parsing.py')
-WINDOW_PHYSICS_SCHEMA = 'orekit-window-physics-lf-v1'
+WINDOW_PHYSICS_FILES = ('utils/visibility.py', 'utils/time_parsing.py', 'utils/attitude_frames.py')
+WINDOW_PHYSICS_SCHEMA = 'orekit-window-physics-lf-v2'
 
 
 def window_physics_sources(root=None):
