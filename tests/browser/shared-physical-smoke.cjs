@@ -49,6 +49,18 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   const formal=await wait((await formalResponse.json()).run_id);
   assert.equal(formal.status,'FAILED',JSON.stringify(formal.error));assert.equal(formal.plan,null);
   assert.match(JSON.stringify(formal.error),/CONTINUOUS|CONTINUITY|INCONCLUSIVE/);
+  const listing=await(await page.request.get(info.url+'/api/experiments')).json();
+  let formalExperiment;
+  for(const item of listing.items){
+   const detail=await(await page.request.get(info.url+'/api/experiments/'+item.experiment_id)).json();
+   if(detail.runs.some(r=>r.run_id===formal.run_id)){formalExperiment=item.experiment_id;break;}
+  }
+  assert.ok(formalExperiment);
+  await page.goto(info.url+'/?experiment_id='+encodeURIComponent(formalExperiment)+'#experiments');
+  await page.waitForFunction(()=>document.querySelector('#detail-status').textContent.includes('FAILED'));
+  assert.match(await page.locator('#detail-error').innerText(),/NO_CONTINUITY_CERTIFICATE/);
+  assert.equal(await page.locator('#export-json').isVisible(),false);
+  await page.screenshot({path:info.output+'/formal-rejection-console.png',fullPage:true});
   assert.deepEqual(errors,[]);
   fs.writeFileSync(info.output+'/browser-results.json',JSON.stringify({run,formal,page_errors:errors},null,2),{flag:'wx'});
   console.log('SHARED_REAL_BROWSER_PASS '+JSON.stringify({run_id:id,completed:run.metrics.completed_tasks,total:run.metrics.total_tasks,formal:formal.status}));
