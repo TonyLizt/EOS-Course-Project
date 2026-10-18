@@ -20,12 +20,14 @@ def canonical(value):
     return (json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n").encode()
 
 
-def generate(output, satellites, satellite_id, data_path, *, tasks_per_target=1):
+def generate(output, satellites, satellite_id, data_path, *, tasks_per_target=1, with_ground_station=False):
     if type(tasks_per_target) is not int or not 1 <= tasks_per_target <= 8:
         raise ValueError("tasks_per_target must be an integer in [1,8]")
+    if type(with_ground_station) is not bool:raise ValueError('with_ground_station must be bool')
     from core.models import (Satellite, SatelliteSpecs, OrbitalParameters, OrbitalType, ObservationCapability,
         ObservationSensor, SensorResolution, SensorMode, ManeuverabilityCapability, ManeuverabilityType,
-        Mission, TargetLocation, ObservationRequirement, MissionInfo)
+        Mission, TargetLocation, ObservationRequirement, MissionInfo,GroundStation,GroundStationLocation,
+        CommunicationCapability,CommunicationAntenna)
     from core.scenario import Scenario, ScenarioMetadata
     from utils.time_parsing import parse_orbit_epoch
     from utils import visibility as v
@@ -66,6 +68,16 @@ def generate(output, satellites, satellite_id, data_path, *, tasks_per_target=1)
         for repeat in range(tasks_per_target):
             missions.append(Mission(f"DEV{index:02d}-{repeat:02d}", TargetLocation(math.degrees(geo.getLatitude()),
                             math.degrees(geo.getLongitude()), 0.), index, ObservationRequirement(10.)))
+    stations=[]
+    if with_ground_station:
+        # Freeze station BEFORE scanning, from the genuine orbit subpoint at
+        # t=330s. Explicit simplified antenna geometry, not real RF calibration.
+        station_date=datetime_to_absolutedate(start+timedelta(seconds=330))
+        position=prop.propagateOrbit(station_date).getPVCoordinates(ctx.inertial).getPosition()
+        geo=ctx.earth.transform(position,ctx.inertial,station_date)
+        stations=[GroundStation('DEV_GS_01',GroundStationLocation(math.degrees(geo.getLatitude()),
+            math.degrees(geo.getLongitude()),0.))]
+        sat.communication_capability=CommunicationCapability([CommunicationAntenna(satellite_id+'_dev_antenna',10.)])
     metadata = ScenarioMetadata("CAABS real orbit development", start, 360., 1.,
         description="REAL_OREKIT_DEVELOPMENT_ONLY: orbit-derived targets, not a random/final dataset",
         extra={"development_generation_contract": "gen02.development.v1", "initial_attitudes": initial,
@@ -73,8 +85,9 @@ def generate(output, satellites, satellite_id, data_path, *, tasks_per_target=1)
                "task_source": "deterministic_orbit_subpoints_at_80_180_280_seconds",
                "generator_version": "gen02-dev-1.0.0", "raw_satellite_sha256": satellite_sha,
                "tasks_per_target": tasks_per_target,
-               "stress_repeats_are_independent_dataset_roots": False})
-    scene = Scenario("caabs-real-dev", [sat], missions, [], MissionInfo(0, [[-80, 80]], [[-180, 180]]), metadata)
+               "stress_repeats_are_independent_dataset_roots": False,
+               "ground_link_contract": 'ideal_ground_link_geometry_v1' if with_ground_station else None})
+    scene = Scenario("caabs-real-dev", [sat], missions, stations, MissionInfo(0, [[-80, 80]], [[-180, 180]]), metadata)
     tasks_before = canonical([m.to_dict() for m in missions])
     calculation_start = time.monotonic()
     scene.calculate_visibility_windows(ensure_each_mission_has_window=False, data_path=data_path,
@@ -123,6 +136,7 @@ def generate(output, satellites, satellite_id, data_path, *, tasks_per_target=1)
     return {"scenario": str(target), "scenario_sha256": scenario_sha,
             "raw_satellite_sha256": satellite_sha, "tasks": len(problem.tasks), "windows": len(windows),
             "planning_windows": sum(planning_window(w).status.value == "PLANNING_FEASIBLE" for w in windows),
+            "ground_stations":len(problem.ground_stations),"communication_windows":len(problem.comm_windows),
             "window_runtime_s": runtime, "formal_release_eligible": False}
 
 
@@ -137,11 +151,12 @@ def main(argv=None):
     parser.add_argument("--orekit-data", type=Path, required=True)
     parser.add_argument("--tasks-per-target", type=int, default=1, choices=range(1, 9),
                         help="Optional co-located real tasks for cancellation stress, not independent dataset roots")
+    parser.add_argument('--with-ground-station',action='store_true',help='Real geometric GS pass, development only')
     args = parser.parse_args(argv)
     from utils.visibility import ensure_orekit
     ensure_orekit(str(args.orekit_data))  # Main thread, before importing Java classes.
     print(json.dumps(generate(args.output, args.satellites, args.satellite_id, str(args.orekit_data),
-                              tasks_per_target=args.tasks_per_target), indent=2))
+                              tasks_per_target=args.tasks_per_target,with_ground_station=args.with_ground_station), indent=2))
 
 
 if __name__ == "__main__":

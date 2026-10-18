@@ -524,6 +524,34 @@ def create_visibility_evaluator(
 # -----------------------------------------------------------------------------
 
 
+def create_communication_evaluator(*, a_m,e,i_deg,raan_deg,argp_deg,m_deg,epoch_dt,
+        target_lat_deg,target_lon_deg,target_alt_m,min_elevation_deg=5.):
+    """Existing ideal-antenna ground-link contract: true geometry, no camera.
+
+    No optical TargetPointing/Euler chart may create or split an RF visibility
+    window. This is not a link-budget, antenna-mask or slew-trajectory proof.
+    """
+    if _CONTEXT is None:ensure_orekit(None)
+    ctx=_CONTEXT
+    from org.orekit.frames import TopocentricFrame
+    from org.orekit.bodies import GeodeticPoint
+    from org.orekit.propagation.analytical import KeplerianPropagator
+    from orekit_jpype.pyhelpers import datetime_to_absolutedate
+    minimum=effective_minimum_elevation(min_elevation_deg)
+    point=GeodeticPoint(math.radians(float(target_lat_deg)),math.radians(float(target_lon_deg)),float(target_alt_m))
+    station=TopocentricFrame(ctx.earth,point,'GROUND_LINK')
+    prop=KeplerianPropagator(_build_keplerian_orbit(ctx,a_m,e,i_deg,raan_deg,argp_deg,m_deg,epoch_dt))
+    def evaluate(moment):
+        date=datetime_to_absolutedate(moment)
+        position=prop.propagateOrbit(date).getPVCoordinates(ctx.inertial).getPosition()
+        elevation=math.degrees(float(station.getElevation(position,ctx.inertial,date)))
+        clear=float(target_alt_m)>=0 and elevation>0
+        return dict(time=moment,visible=bool(clear and elevation>minimum),elevation_deg=elevation,
+            earth_unoccluded=clear,off_nadir_deg=None,yaw_deg=None,pitch_deg=None,roll_deg=None,
+            predicate_version='ideal_ground_link_geometry_v1')
+    return evaluate
+
+
 def _extract_orbit_params(sat: Satellite) -> Dict[str, object]:
     """Uniformly extract Satellite.orbital_params into the six elements and epoch required by Orekit."""
     op = sat.orbital_params
@@ -838,7 +866,7 @@ def calculate_windows_orekit(
                 if lat is None or lon is None:
                     continue
 
-                vis_windows, _samples, _visible_attitudes = compute_visibility_and_attitude(
+                evaluator = create_communication_evaluator(
                     a_m=float(orbit_map[sat_id]["a_m"]),
                     e=float(orbit_map[sat_id]["e"]),
                     i_deg=float(orbit_map[sat_id]["i_deg"]),
@@ -846,20 +874,13 @@ def calculate_windows_orekit(
                     argp_deg=float(orbit_map[sat_id]["argp_deg"]),
                     m_deg=float(orbit_map[sat_id]["m_deg"]),
                     epoch_dt=orbit_map[sat_id]["epoch_dt"],  # type: ignore
-                    start_dt=start_time,
-                    end_dt=end_time,
-                    step_s=float(step),
                     target_lat_deg=float(lat),
                     target_lon_deg=float(lon),
                     target_alt_m=float(alt_km) * 1000.0,
-                    # Communication windows are not subject to attitude constraints,
-                    # so the limits are relaxed to 180 degrees
-                    max_yaw_deg=180.0,
-                    max_pitch_deg=180.0,
-                    max_roll_deg=180.0,
                     min_elevation_deg=float(min_elevation_deg),
-                    coarse_step_min=float(coarse_step_min),
                 )
+                vis_windows, _samples, _visible_attitudes = _scan_visibility_grid(
+                    start_time,end_time,float(step),evaluator)
 
                 if not vis_windows:
                     continue

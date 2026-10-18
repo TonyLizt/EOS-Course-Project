@@ -183,6 +183,33 @@ class PlanExposureAuditor:
             old.cache_clear()
         return value
 
+    def ground_evaluator(self,satellite,station):
+        """Independent real communication geometry, no optical attitude proxy."""
+        from utils.visibility import create_communication_evaluator
+        n=self.number;op=satellite['orbital_params'];loc=station['location']
+        params=dict(a_m=n(op,'semi_major_axis_km')*1000,e=n(op,'eccentricity'),
+            i_deg=n(op,'inclination_deg'),raan_deg=n(op,'right_ascension_of_ascending_node_deg'),
+            argp_deg=n(op,'argument_of_perigee_deg'),m_deg=n(op,'mean_anomaly_deg'),
+            epoch_dt=parse_orbit_epoch(op['epoch']),target_lat_deg=n(loc,'latitude'),
+            target_lon_deg=n(loc,'longitude'),target_alt_m=n(loc,'altitude_km')*1000,
+            min_elevation_deg=self.minimum)
+        key=json.dumps(['ground_link',self.scene_digest,self.data_sha,params],sort_keys=True,default=str)
+        if key in self.pairs:
+            self.cache_hits+=1;self.pairs.move_to_end(key)
+            return self.pairs[key][0]
+        raw=create_communication_evaluator(**params)
+        self.pair_builds+=1
+        @lru_cache(maxsize=256)
+        def evaluate(moment):
+            if time.monotonic()>self.deadline or self.propagations>=self.budget:
+                raise RuntimeError('communication audit deadline/evaluation budget exceeded')
+            self.propagations+=1
+            return raw(moment)
+        self.pairs[key]=(evaluate,None)
+        if len(self.pairs)>self.max_pairs:
+            _,(old,_)=self.pairs.popitem(last=False);old.cache_clear()
+        return evaluate
+
     def audit(self, plan):
         begin = time.perf_counter()
         rows = []
@@ -191,6 +218,7 @@ class PlanExposureAuditor:
                         counts={"PASS":0,"FAIL":0,"INCONCLUSIVE":0},task_count=0)
         satellites = {s["id"]:s for s in self.scene.get("satellites",[])}
         missions = {m["id"]:m for m in self.scene.get("missions",[])}
+        stations = {g['id']:g for g in self.scene.get('ground_stations',[])}
         seen = set()
         for index,a in enumerate(plan.get("assignments",[])):
             row = dict(index=index,task_id=a.get("task_id") if isinstance(a,dict) else None,
@@ -218,12 +246,25 @@ class PlanExposureAuditor:
                 evaluate,certificate=self.evaluator(satellite,mission)
                 row.update(audit_interval(evaluate,start,end,required,step_s=self.step_s,certificate=certificate))
                 row.update(start_utc=start.isoformat(),end_utc=end.isoformat(),required_s=required)
+                if stations:
+                    station=stations[a['ground_station_id']]
+                    gs_start=parse_orbit_epoch(a['gs_start_time']);gs_end=parse_orbit_epoch(a['gs_end_time'])
+                    if not end<gs_start<gs_end<=horizon+timedelta(seconds=duration):
+                        raise ValueError('invalid physical downlink interval')
+                    ground=self.ground_evaluator(satellite,station)
+                    link=audit_interval(ground,gs_start,gs_end,(gs_end-gs_start).total_seconds(),step_s=self.step_s)
+                    row['downlink_audit']=link
+                    if link['sampled_boundaries_status']!='PASS':
+                        row.update(status='FAIL',reason='DOWNLINK_'+link['reason'],sampled_boundaries_status='FAIL')
+                    elif row['status']=='PASS':
+                        # Ground geometry currently has no interval provider.
+                        row.update(status='INCONCLUSIVE',reason='NO_GROUND_LINK_CONTINUITY_CERTIFICATE')
             except KeyError as exc:
-                row.update(status="INCONCLUSIVE",reason="MISSING_PHYSICAL_INPUT",detail=str(exc))
+                row.update(status="INCONCLUSIVE",reason="MISSING_PHYSICAL_INPUT",detail=str(exc),sampled_boundaries_status='UNAVAILABLE')
             except (OSError,ImportError,RuntimeError) as exc:
-                row.update(status="INCONCLUSIVE",reason="PHYSICS_UNAVAILABLE",detail=str(exc))
+                row.update(status="INCONCLUSIVE",reason="PHYSICS_UNAVAILABLE",detail=str(exc),sampled_boundaries_status='UNAVAILABLE')
             except (ValueError,TypeError,OverflowError) as exc:
-                row.update(status="FAIL",reason="INVALID_INPUT",detail=str(exc))
+                row.update(status="FAIL",reason="INVALID_INPUT",detail=str(exc),sampled_boundaries_status='FAIL')
             rows.append(row)
         counts={k:sum(r["status"]==k for r in rows) for k in ("PASS","FAIL","INCONCLUSIVE")}
         if not isinstance(plan.get("assignments"),list) or not rows:

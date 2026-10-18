@@ -28,3 +28,13 @@
 设计和7项验证测试先提交于78d07c4，再于11de4ce实现Fraction精确条件区间内核（11项测试通过）。内核只证明给定可信包络假设下的margin，不注册生产provider或发行正式回执。详见[数学设计和阻断前提](continuous_interval_certification_design.md)。真实Orekit的全链误差包络和执行slew轨迹仍缺失，正式认证保持BLOCKED；后续真实readiness审计另存证据。
 
 审查新增实际缺陷：地下1km的目标曾可见；生成和独立曝光审计只用全局5°，忽略传感器85°/任务80°显式要求。先加真实负例，3项全部失败（退出1/6.305秒），再修复：opaque WGS84地表模型拒绝内部目标、要求正地表法向仰角；最低角取全局/传感器/任务声明最大值，拒绝非法数字。模型身份predicate升为v2，旧证书不沿用。没有改任务/FOV/硬件轴限幅。实际修复后3项、GEN02物理13、真实来源/HTTP10、曝光16、E3/E4 4项，合计46通过/0跳过，各退出0；日志`physical-negatives-before`与`physical-negatives-fixed`。
+
+## 独立完成的真实地面站开发链路
+
+生成入口新增`--with-ground-station`：沿原真实轨道330秒的WGS84垂足预先冻结GS坐标，明确10Mbps理想天线配置，再逐时传播求真实通信窗口。不是复制观测窗口或放宽光学角限。原通信生成曾借用光学TargetPointing/宽松180°Euler，改为独立真实地面链路elevation/opaque WGS84几何，不虚构光学姿态，消除光学奇异性对RF窗口的误影响。当前无RF链路预算、天线安装标定、天气或传播损耗证明，只验收公开的理想天线几何模型。
+
+独立Verifier的PlanExposureAuditor新增实际下传全时段重传播（此前仅核验通信来源ID/离散区间），不会以ID存在代替物理检查。真实几何不符、缺物理字段或超预算不能保留sample PASS；即使观测有区间证明，下传没有也不能CONTINUOUS_PASS。源码/模型身份显式记录通信模型和interval provider unavailable，开发来源/正式来源门禁未改。
+
+实际命令：`PYTHONHASHSEED=0 MPLBACKEND=Agg python -B scripts/validate_ground_link_development.py --output /tmp/caabs-p6-20261018-2y6h8qpd/ground-final --orekit-data /tmp/eos-gen02-itrf-eVCxbe/orekit-data.zip`。外层240秒，28.311秒退出0。场景SHA **`0e2210cc56dc0d3a6f9cba93c04d50ff93d9ce7cf81a35b3dcd8f3a0f7cee278`**，3任务/3可信规划窗/1个GS/1个真实通信窗口，CAABS完成2/3、TP4，真实Spawn Worker→Controller为planning_preview SUCCEEDED。完整配置、场景及Sidecar、源码/数据身份、独立Verifier、201点下传、Controller记录保存于`ground-final/`。正式JSON/CSV导出拒绝；连续认证仍INCONCLUSIVE。
+
+`ground-final-tests`真实专项8项77.094秒、真实曝光16项8.504秒、真实重计算45项11.798秒，合计69通过/0跳过/三个进程退出0。负例包括GS ID/归属/严格观测后边界/短下传、真实公共模型存储及功率上限、两个各自可行请求争用同GS、地面站移到地球对面后的实际下传拒绝。没有用mock替代物理结果。新只读`audit_continuous_proof_readiness.py`实际检查三组卫星-目标，生产interval provider均不存在，记录五项明确证明缺口；不会消费JSON声明或将数学内核结果提升为正式资格。
