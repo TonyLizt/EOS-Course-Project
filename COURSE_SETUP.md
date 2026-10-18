@@ -1,3 +1,8 @@
+## 算法参数与简介公共展示修复（2026-10-18）
+
+- 从 main `3e9413d`（已合并PR #22）开 `fix/algorithm-parameter-ui`；移除普通配置区的原始Schema，11种比较算法与2种初始模型统一元数据检查，补齐参数中文标题/说明。首页使用共享类型化表单，实验详情/Cesium复用只读参数与分段说明，保留三角展开及新增算法简洁勾选约束。
+- 不改算法核心、参数契约、Controller/Worker、数据库、指标或物理约束。JavaScript 6项、Python定向28项通过；一次隔离Chromium验证全部11种卡片及多种Schema绑定、双算法单实验、Gantt/Cesium/窄侧栏通过（合成UNIT_TEST_ONLY，不是物理认证）。见 [实现及验证说明](docs/phase2/algorithm_parameter_ui.md)。本轮仅本地提交，不Push/PR。
+
 ## 算法 B：RABAS 资源感知任务包竞价（2026-10-18）
 
 - PR #22 提交前同步 main `702f46e`（PR #21），merge提交 `68c630a`，无需rebase。完整Python发现565项：首次因未展开LFS输入出现1失败/7子项错误、8项跳过；从本地缓存展开原版及epoch-fixed场景（内容不变）后，仅重跑受影响两模块13项全部通过，未再次重跑全套。合并后真实Chromium验证双算法单实验、RABAS参数/比较、3任务Gantt、Cesium自动回放及高亮通过（合成UNIT_TEST_ONLY认证）。PR邀请TonyLizt/Mint221018审核，尚未合并。

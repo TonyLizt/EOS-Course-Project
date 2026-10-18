@@ -22,7 +22,7 @@
   box.innerHTML=exp.runs.map(run=>{
    const aid=run.config.algorithm_id,a=UI.getCatalog().find(a=>a.algorithm_id===aid)||{description:'历史算法'};
    const heading=`<button type="button" class="algorithm-choice choose-replay ${run.run_id===rid?'active':''}" data-replay="${UI.E(run.run_id)}" ${run.run_id===rid?'aria-current="true" aria-label="'+UI.E(UI.name(aid))+'，当前回放"':''} ${UI.usable(run)?'':'disabled'}>${UI.E(UI.name(aid))}${UI.usable(run)?'':' · '+UI.E(run.status==='SUCCEEDED'?'计划不可用':run.status)}</button>`;
-   return UI.card(box.id,aid,heading,UI.description(a)+`<label>本次参数 JSON<textarea readonly rows="3">${UI.E(JSON.stringify(run.config.algorithm_params,null,2))}</textarea></label><button type="button" data-remove="${UI.E(aid)}">移除此算法（保留历史）</button>`);
+   return UI.card(box.id,aid,heading,UI.description(a)+AlgorithmParameters.render({...a,algorithm_id:aid},run.config.algorithm_params||{},true)+`<button type="button" data-remove="${UI.E(aid)}">移除此算法（保留历史）</button>`);
   }).join('');UI.bindCards(box);
  }
  async function refresh(){
