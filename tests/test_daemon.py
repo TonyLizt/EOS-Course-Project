@@ -33,6 +33,19 @@ def wait_for(predicate, timeout=20):
 
 
 class IdentityTests(unittest.TestCase):
+    def test_event_elapsed_evidence_survives_backward_utc_step(self):
+        with tempfile.TemporaryDirectory() as directory:
+            dog = Watchdog(Path(directory), 19000, Policy())
+            with patch('eos_system.daemon.utc', side_effect=[
+                    '2026-10-18T16:00:01+00:00', '2026-10-18T16:00:00+00:00']), \
+                    patch('eos_system.daemon.time.monotonic_ns', side_effect=[10**9, 16*10**8]):
+                dog.event('RECOVERY_ATTEMPT', attempt=1, delay_s=.6)
+                before = dog.state['last_event']
+                dog.event('CONTROLLER_STARTED', pid=123)
+                after = read_json(dog.status_path)['last_event']
+            self.assertLess(after['time'], before['time'])
+            self.assertEqual(after['monotonic_ns'] - before['monotonic_ns'], 600_000_000)
+
     def test_pid_reuse_identity_never_signalled(self):
         saved = identity(os.getpid())
         saved['starttime'] += 1
@@ -261,12 +274,15 @@ class DaemonProcessTests(unittest.TestCase):
         attempts = [event for event in events if event['event'] == 'RECOVERY_ATTEMPT']
         self.assertEqual([event['delay_s'] for event in attempts], [.3, .6])
         self.assertEqual(sum(event['event'] == 'CONTROLLER_STARTED' for event in events), 3)
-        from datetime import datetime
-        for attempt in attempts:
-            launch = next(event for event in events if event['event'] == 'CONTROLLER_STARTED'
-                          and event['time'] > attempt['time'])
-            delta = (datetime.fromisoformat(launch['time']) - datetime.fromisoformat(attempt['time'])).total_seconds()
-            self.assertGreaterEqual(delta, attempt['delay_s'] - .02)
+        # Pair by log order, not sortable UTC. Assert the actual monotonic
+        # elapsed interval, without weakening the required backoff duration.
+        for index, attempt in enumerate(events):
+            if attempt['event'] != 'RECOVERY_ATTEMPT':
+                continue
+            launch = next(event for event in events[index + 1:]
+                          if event['event'] == 'CONTROLLER_STARTED')
+            delta_ns = launch['monotonic_ns'] - attempt['monotonic_ns']
+            self.assertGreaterEqual(delta_ns, round(attempt['delay_s'] * 1_000_000_000))
 
     def test_normal_controller_stop_is_not_restarted(self):
         self.env['EOS_DAEMON_SLOW_STOP'] = '1'
