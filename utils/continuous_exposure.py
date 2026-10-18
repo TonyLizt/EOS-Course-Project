@@ -305,6 +305,13 @@ def planning_evidence(scene, path, scene_sha):
     sidecar = Path(path).parent/'provenance'/(Path(path).name+'.provenance.json')
     record = scene.get("metadata",{}).get("extra",{}).get("window_generation",{})
     fresh = False
+    development = scene.get("metadata", {}).get("extra", {}).get("development_generation_contract")
+    if development == "gen02.development.v1":
+        try:
+            from eos_system.provenance import capture_development_provenance
+            capture_development_provenance(Path(path), scene_sha)
+        except (OSError, ValueError, TypeError):
+            return None
     if sidecar.exists() or sidecar.is_symlink():
         if sidecar.is_symlink() or not sidecar.is_file() or sidecar.stat().st_size > 1024*1024:
             return None

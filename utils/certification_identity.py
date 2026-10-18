@@ -16,6 +16,7 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_NAMES = (
+    "scripts/generate_caabs_development_scene.py",
     "utils/attitude_frames.py",
     "utils/certification_identity.py", "utils/continuous_exposure.py",
     "utils/visibility.py", "utils/time_parsing.py", "core/models.py",

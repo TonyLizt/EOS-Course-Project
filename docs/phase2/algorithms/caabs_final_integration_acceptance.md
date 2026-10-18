@@ -22,6 +22,18 @@
 
 P1命令：`EOS_RUN_GEN02_PHYSICS=1 EOS_OREKIT_DATA=/tmp/eos-gen02-itrf-eVCxbe/orekit-data.zip python -B -m unittest discover -s tests -p MODULE.py -v`。模块 gen02_attitude(11)、algorithm_conflict_beam(50)、source_window_identity(31)、window_recompute(44)、e3_e4_time_semantics(17)、continuous_exposure(15)，共168项166通过/2个既有真实Orekit opt-in跳过/0失败错误，六进程均退出0，外层各240秒无超时。日志及逐模块命令/墙钟为 `/tmp/caabs-final-20261018/p1/`。尚未用该阶段替代全量回归。
 
+## P2：真实新生窗口与开发来源合同
+
+新增 `scripts/generate_caabs_development_scene.py`：Raw10的ALOS-2真实轨道/真实历元，预先选择80/180/280秒处WGS84垂足作为3个地面开发目标，完整要求各10秒、1秒网格、5°仰角、45°机动/FOV、1°/秒/10秒稳定，无GS，360秒时域。目标是受控物理开发几何，不是随机共享数据集，不计100份来源或私有final，未为成功临时降低曝光或放大硬限。保存实际初始Nadir姿态，显式ensure=false并比较计算前后任务字节。
+
+P2实际命令：`python -B scripts/generate_caabs_development_scene.py --output /tmp/caabs-final-20261018/p2-verified-scene --orekit-data /tmp/eos-gen02-itrf-eVCxbe/orekit-data.zip`；退出0/9.916秒，窗口计算0.557秒。新场景SHA `c1bb391a87977dbca43add990cae75cfd364552b5aa6a22f83c3a85b5eb4a053`，Raw10 SHA `c707ee30417d7e1a0448b644f90d6595235ae4cc8262fa2645f5f85d1fadc241`，3任务/3窗口/3个PLANNING_FEASIBLE。后续公共代码变化会使此中间产物失效，必须新目录重生，不能改这个SHA或追认旧C6。命令/原始输出在 `p2-generation.log/.receipt.json`。
+
+新侧车合同 `gen02.development.v1` 绑定真实Scene字节、原始卫星文件SHA、冻结任务摘要、真实计算器/源码/数据SHA、生成器SHA、完整窗口生成记录。原子不替换发布，完成标记在场景后；新根parent=null，标记development_only/formal_release_eligible=false/NOT_CERTIFIED。没有套用Legacy父SHA，也没有放宽 `capture_provenance` 正式门禁。只有明确planning_preview配置可以使用 `capture_development_provenance`；正式模式拒绝这个来源快照。新合同要求侧车，删除侧车不能回退到内嵌声明。
+
+没有缩小原source_identity依赖闭包以迁就旧数据，反而把新物理工具和生成器加入实际文件身份；旧C6/Legacy仍拒绝。威胁模型延续可信本地部署/受控生产者：防误配、部署漂移和场景/窗口/记录篡改，不冒称对恶意同用户文件所有者的数字签名。跨版本认证仍须重生/复验，不能将相同物理源文件以外的不同SHA强行视同。
+
+8项真实来源测试全通过：实际非空求解、开发来源不得正式消费、删侧车、改窗口/姿态、改源码哈希、改Raw身份、伪造Source ID、独立Verifier真实预览。该Verifier重建公共模型和来源再传播采样，得到SAMPLED_PREVIEW，audit仍INCONCLUSIVE/NO_CONTINUITY_CERTIFICATE。另Registry17、旧算法7及continuous_exposure15（1跳过）通过；本阶段47项46通过/1跳过、4进程退出0，无超时。详见 `/tmp/caabs-final-20261018/p2/`。
+
 ## 后续阶段状态
 
-P2/P3/P4/P5尚在执行，以下任何最终结论必须等待实际场景及独立验证。当前不宣称正式连续认证通过，不宣称完整系统成功集成，不以空计划代替非空验收。
+P3/P4/P5尚在执行。正式连续认证没有通过，不能据P2非空规划声称正式系统成功。
