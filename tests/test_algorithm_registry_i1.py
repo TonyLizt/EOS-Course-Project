@@ -198,7 +198,7 @@ class RegistryParameterTests(unittest.TestCase):
             payload = b"".join(m.get("body", b"") for m in messages if m["type"] == "http.response.body")
             rows = json.loads(payload)["items"]
             self.assertEqual([x["algorithm_id"] for x in rows], list(registry.COMPARISON_ALGORITHMS))
-            self.assertEqual(rows[-1], self.spec.public_info())
+            self.assertEqual(next(row for row in rows if row['algorithm_id']=='caabs'), self.spec.public_info())
 
         with tempfile.TemporaryDirectory(prefix="i1-api-metadata-") as folder:
             root = Path(folder)
