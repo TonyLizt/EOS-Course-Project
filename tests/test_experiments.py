@@ -170,21 +170,27 @@ class ExperimentTests(unittest.TestCase):
         app=create_app(Settings(runtime_dir=root/'add-runtime',scenario_dir=scenes))
         self.addCleanup(app.state.replay.close)
         route=lambda path,method:next(r.endpoint for r in app.routes if r.path==path and method in r.methods)
-        # Current revision restores the exact pre-UI execution identity; a future
-        # core revision must deliberately revisit this migration regression test.
+        # 核验语义发生真实变化后，新源码不能套用历史“仅展示层变化”例外。
+        # 当前身份可继续追加；历史pair仅在实际当前仍属于该pair时互认。
+        from fastapi import HTTPException
         current=algorithm_source_sha256()
-        self.assertIn(current,PRESENTATION_ONLY_SOURCE_PAIR)
-        historical=next(item for item in PRESENTATION_ONLY_SOURCE_PAIR if item!=current)
-        for source_sha in (current,historical):
+        sources=list(dict.fromkeys([current,*sorted(PRESENTATION_ONLY_SOURCE_PAIR)]))
+        for source_sha in sources:
             with patch('eos_system.api.algorithm_source_sha256',return_value=source_sha):
                 created=route('/api/experiments','POST')(ExperimentRequest(runs=[
                     RunRequest(scenario_id='scene',algorithm_id='profit_first',execution_mode='planning_preview')]),None)
-            added=route('/api/experiments/{experiment_id}/algorithms','POST')(
-                created['experiment_id'],ExperimentAlgorithm(algorithm_id='timeliness_first'))
-            self.assertEqual(added['experiment_id'],created['experiment_id'])
-            self.assertEqual([r['config']['algorithm_id'] for r in added['runs']],['profit_first','timeliness_first'])
-            self.assertEqual(added['runs'][-1]['config']['algorithm_code_sha'],current)
-        self.assertEqual(app.state.experiments.listing()['total'],2)
+            add=route('/api/experiments/{experiment_id}/algorithms','POST')
+            if source_sha != current and current not in PRESENTATION_ONLY_SOURCE_PAIR:
+                with self.assertRaises(HTTPException) as caught:
+                    add(created['experiment_id'],ExperimentAlgorithm(algorithm_id='timeliness_first'))
+                self.assertEqual(caught.exception.status_code,409)
+                self.assertEqual(len(app.state.experiments.detail(created['experiment_id'])['runs']),1)
+            else:
+                added=add(created['experiment_id'],ExperimentAlgorithm(algorithm_id='timeliness_first'))
+                self.assertEqual(added['experiment_id'],created['experiment_id'])
+                self.assertEqual([r['config']['algorithm_id'] for r in added['runs']],['profit_first','timeliness_first'])
+                self.assertEqual(added['runs'][-1]['config']['algorithm_code_sha'],current)
+        self.assertEqual(app.state.experiments.listing()['total'],len(sources))
         catalog=route('/api/algorithms','GET')()['items']
         self.assertTrue(all(prop.get('description') for a in catalog for prop in a['parameters']['properties'].values()))
 

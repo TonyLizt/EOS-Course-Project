@@ -26,6 +26,25 @@ def capture_provenance(scene: Path, scenario_sha: str) -> dict:
         raise ValueError("场景来源记录结构无效")
     if evidence.get("scenario_sha256") != scenario_sha or evidence.get("completion_status") != "complete":
         raise ValueError("场景来源记录的哈希或完成标记不匹配")
+    if evidence.get('artifact_kind') == 'fresh_generated_shared_v1':
+        # 新任务来源没有父场景；生成可信度与连续认证分开，不伪造正式发布PASS。
+        from utils.continuous_exposure import planning_evidence
+        lineage = planning_evidence({'metadata': {}}, scene, scenario_sha)
+        physical = evidence.get('physical_validation', {})
+        if (lineage is None or evidence.get('provenance_status') != 'verified_generation'
+                or physical.get('status') != 'SAMPLED_PASS'
+                or physical.get('continuous_status') != 'INCONCLUSIVE'
+                or evidence.get('publication_status') != 'development'
+                or evidence.get('formal_release_eligible') is not False
+                or not evidence.get('lineage_group_id')):
+            raise ValueError('新场景缺少匹配的生成来源/采样检查记录')
+        return {key: evidence.get(key) for key in (
+            'scenario_physics_version','epoch_parser_version','propagation_version',
+            'parent_scenario_sha256','scenario_sha256','provenance_status','lineage_group_id')} | {
+            'sidecar_sha256': hashlib.sha256(raw).hexdigest(),
+            'physical_validation_status': 'SAMPLED_PASS',
+            'continuous_certification_status': 'INCONCLUSIVE',
+            'publication_status': 'development'}
     if (evidence.get("publication_status") == "candidate_only"
             or evidence.get("formal_release_eligible") is not True
             or evidence.get("physical_validation", {}).get("status") != "PASS"):

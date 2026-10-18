@@ -1,5 +1,15 @@
 # EOS-Course-Project：地球观测卫星任务调度课程系统
 
+## 统一实验流程与全组数据（2026-10-18）
+
+首页统一使用工程物理核验：场景来源、资源、转向约束与真实 Orekit 全曝光 0.05 秒采样通过后，保存计划和指标，支持 JSON/CSV、目录输出、比较及 Gantt/Cesium。页面不再要求选择“预览/正式”；导出明确写入 `physical_validation` 与核验范围，不能声称获得严格连续区间证明。旧 `formal` 接口保持原门禁，旧记录不改写；新增请求应显式传 `execution_mode=physical_validation`（旧 API 默认值保留兼容）。
+
+全组统一数据按四档各25份，共100个新任务来源，60训练/开发、20验证、20冻结测试；数据和压缩包放运行目录，不进入Git。日常后端只登记公开80份场景目录。使用及交付清单见[数据接入说明](docs/phase2/shared_scenario_data_delivery_report.md)，U盘分发及组员接入步骤见[U盘交付说明](docs/phase2/scenario_usb_handoff.md)。
+
+规划预览的 Orekit 核验已隔离到可限时回收的子进程，并使用校验后的 Linux 临时数据副本，避免 Windows 挂载盘读取卡住后连带阻塞后续实验。已有 FAILED 记录保留；请重新创建预览实验。预览成功仍未经正式连续认证；正式模式可能因物理证据不足被拒绝。详见[故障与验证记录](docs/phase2/preview_verifier_timeout_fix.md)。
+
+控制台分为「新建实验、实验管理、结果比较」三个工作区；新建实验按「选择场景 → 选择算法 → 确认并运行」三步配置。桌面列表与详情并排、正文独立滚动，窄屏上下排列；切页保留输入和选中实验，支持浏览器后退。原有算法参数、目录登记、实验管理、比较、导出与回放入口保留。高级信息可按需展开，切换步骤不重置配置。使用位置及验证范围见[界面整理交接](docs/phase2/console_layout_polish_handoff.md)。
+
 算法参数现按类型显示表单：点击算法右侧三角查看简介、默认值与范围，可选择默认配置、显式 null 或自定义值；高级 JSON 入口只编辑参数值，不再打印内部 Schema。实验详情与 Cesium 显示实际运行参数；“新增算法”仍按原设计仅勾选并使用默认参数。见 [参数展示与验证说明](docs/phase2/algorithm_parameter_ui.md)。
 
 算法 B **RABAS · 资源感知任务包竞价调度**已接入现有注册驱动控制台：支持真实多任务 Bundle、资源/机会成本和中标后全量重报价；当前比较清单为原九种 + CAABS + RABAS，共11种。展开 RABAS 卡片右侧三角即可编辑参数，和其他算法同实验运行、比较及查看 Gantt/Cesium，无需新页面。机制、真实消融及正式认证限制见 [RABAS说明](docs/phase2/algorithms/auction_bundle.md)；下文10种为历史集成快照。

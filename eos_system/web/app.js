@@ -81,9 +81,10 @@ function updateHints() {
     for (const option of $("output-profile").options) option.disabled = outputProfiles.find(p => p.profile_id === option.value)?.kind === 'directory';
     $("output-profile").value = outputProfiles.find(p => p.kind === 'download')?.profile_id || '';
   }
+  for (const option of $("output-profile").options) option.disabled = $("execution-mode").value === 'planning_preview' && outputProfiles.find(p => p.profile_id === option.value)?.kind === 'directory';
   const profile = outputProfiles.find((p) => p.profile_id === $("output-profile").value);
   $("output-hint").textContent = profile?.kind === "directory"
-    ? `正式 JSON/CSV 将保存到 ${profile.root_path}/<run_id>/；浏览器仍可下载。`
+    ? `结果 JSON/CSV 将保存到 ${profile.root_path}/<run_id>/；浏览器仍可下载。`
     : "只提供浏览器下载；数据库与运行状态仍保存在 WSL 运行目录。";
   if ($("execution-mode").value === 'planning_preview') $("output-hint").textContent = '规划预览保存数据库记录并支持比较和回放；不生成正式认证 JSON/CSV 文件。';
 }
@@ -181,7 +182,7 @@ function clearDetail() {
 function showDetail(run) {
   if (window.ConsoleUI) window.ConsoleUI.detail(run);
   $("selected-run").textContent = run.run_id;
-  $("detail-status").textContent = run.status + (run.result_kind === 'planning_preview' ? ' · 规划预览' : '');
+  $("detail-status").textContent = run.status + (run.result_kind === 'physical_validation' ? ' · 工程物理核验' : run.result_kind === 'planning_preview' ? ' · 历史规划预览' : '');
   $("detail-status").className = `badge ${["FAILED","CANCELLED","TIMED_OUT"].includes(run.status) ? "failed" : ["RUNNING","QUEUED","VERIFYING"].includes(run.status) ? "running" : ""}`;
   $("actions").hidden = false;
   $("cancel").disabled = ["SUCCEEDED","FAILED","CANCELLED","TIMED_OUT"].includes(run.status) || run.cancel_requested;
@@ -205,7 +206,7 @@ function showDetail(run) {
   $("files").innerHTML = files.length ? files.map((item) => `<li>${escapeHtml(item.format.toUpperCase())} · ${escapeHtml(item.artifact_path || item.error_message)}</li>`).join("")
     : run.result_kind === 'planning_preview' ? '<li>规划预览不生成正式输出文件；请使用 Gantt / Cesium 分析结果。</li>'
       : run.status === 'SUCCEEDED' && run.plan ? '<li>此实验没有服务器目录文件；可使用上方浏览器下载。</li>'
-      : '<li>此实验没有可下载的正式结果。</li>';
+      : '<li>此实验没有可下载的核验结果。</li>';
   const m = run.metrics;
   $("metrics").innerHTML = m ? [
     ["完成任务", `${m.completed_tasks} / ${m.total_tasks}`], ["TCR", `${(m.TCR * 100).toFixed(1)}%`],

@@ -19,8 +19,10 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     if(reuse){experiment=await(await page.request.get(base+'/api/experiments/'+encodeURIComponent(reuse))).json();}
     else {
     await page.selectOption('#scenario','small/Scenario_S2_Sats10_M20_T1.0d_dist0_epoch_fixed_v1');
+    await require('./workspace-navigation.cjs').step(page,2);
     await page.selectOption('#schedule-model', 'adaptive_repair');
     await page.locator('[name="batch-algorithm"][value="timeliness_first"]').check();
+    await require('./workspace-navigation.cjs').step(page,3);
     await page.fill('#budget','5');
     const submitted=page.waitForResponse(r=>r.url()===base+'/api/experiments'&&r.request().method()==='POST');
     await page.click('#submit');

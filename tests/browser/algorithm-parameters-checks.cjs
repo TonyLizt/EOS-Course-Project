@@ -1,6 +1,7 @@
 /* Run once in the isolated RABAS fixture, not one scheduling run per algorithm. */
 const assert=require('node:assert/strict');
 module.exports=async function checkParameters(page){
+ await require('./workspace-navigation.cjs').step(page,2);
  const catalog=await page.evaluate(async()=> (await(await fetch('/api/algorithms')).json()).items);
  for(const a of catalog){
   const toggle=page.locator(`[data-toggle="algo-create-${a.algorithm_id}"]`),box=page.locator(`#algo-create-${a.algorithm_id}`);

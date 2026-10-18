@@ -160,7 +160,8 @@
       if(!schedule.temporary)throw Error('临时数据来源不符');
       $('sourceLabel').textContent='临时对照 · '+(schedule.algorithm_name||schedule.algorithm_id)+' · '+(schedule.result_kind==='planning_preview'?'规划预览，未认证':'核验通过')+' · 删除对照后失效';
       leaseTimer=setInterval(checkTemporary,5000);
-    }else if (schedule.result_kind === 'planning_preview') $('sourceLabel').textContent = '规划预览 · 未取得正式连续认证 · ' + scheduleUrl;
+    }else if (schedule.result_kind === 'physical_validation') $('sourceLabel').textContent = '工程物理核验通过 · 全曝光采样 · 非严格连续证明 · ' + scheduleUrl;
+    else if (schedule.result_kind === 'planning_preview') $('sourceLabel').textContent = '规划预览 · 未取得正式连续认证 · ' + scheduleUrl;
     data = T.normalize(schedule.assignments || []);
     if (!data.length) throw new Error('此排程没有有效观测记录。');
     const first = Math.min(...data.map(a => a.start)), last = Math.max(...data.map(a => a.end));

@@ -335,7 +335,7 @@ class ConstraintModel:
         elif any(value is not None for value in (assignment.ground_station_id, assignment.gs_start_time,
                                                  assignment.gs_end_time, assignment.gs_window_id)):
             return False
-        if getattr(self.problem, 'execution_mode', 'formal') == 'planning_preview':
+        if getattr(self.problem, 'execution_mode', 'formal') in ('planning_preview', 'physical_validation'):
             from schedulers.observation_geometry import validate_observation_interval
             result = validate_observation_interval(self.problem, assignment.satellite_id,
                 assignment.task_id, assignment.sat_start_time, assignment.sat_end_time)

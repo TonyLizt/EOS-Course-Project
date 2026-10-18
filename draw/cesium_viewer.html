@@ -548,10 +548,10 @@
           return null;
         }
         const schedule = await r.json();
-        if (schedule.result_kind === 'planning_preview') {
+        if (['planning_preview','physical_validation'].includes(schedule.result_kind)) {
           const status = document.getElementById('previewModeStatus');
           status.hidden = false;
-          status.textContent = '规划预览：曝光采样检查通过；未取得正式连续认证，回放仅供分析。';
+          status.textContent = schedule.result_kind === 'physical_validation' ? '工程物理核验通过：曝光采样检查通过；不等同于严格连续区间证明。' : '历史规划预览：曝光采样检查通过；未取得正式连续认证。';
         }
         return schedule;
       } catch (error) {

@@ -188,7 +188,7 @@ class Controller:
             if not ok:
                 raise value
             plan, metrics, receipt = value
-            if config.execution_mode == 'planning_preview':
+            if config.execution_mode in ('planning_preview', 'physical_validation'):
                 if not isinstance(receipt, PreviewReceipt):
                     raise ValueError('missing Controller preview receipt')
                 validate_preview(receipt.evidence(), config.model_dump(), plan)
@@ -469,7 +469,8 @@ class Controller:
                 else:
                     plan, metrics, receipt, certification_deadline = self._verify_with_deadline(config, candidate, reported_runtime, store)
             except ContinuousCertificationError as exc:
-                prefix = 'PREVIEW_' if config.execution_mode == 'planning_preview' else 'CONTINUOUS_'
+                prefix = ('PHYSICS_' if config.execution_mode == 'physical_validation' else
+                          'PREVIEW_' if config.execution_mode == 'planning_preview' else 'CONTINUOUS_')
                 code = "CONTROLLER_STOP" if self._stop.is_set() else prefix + exc.status.value
                 store.finish_failure(config.run_id, attempt, "FAILED", code, str(exc))
                 return
@@ -479,7 +480,7 @@ class Controller:
                     return
                 try:
                     check_deadline(certification_deadline)
-                    if config.execution_mode == 'planning_preview':
+                    if config.execution_mode in ('planning_preview', 'physical_validation'):
                         succeeded = store.finish_preview(config.run_id, attempt, plan, metrics,
                             time.perf_counter()-verify_started, receipt=receipt, deadline=certification_deadline)
                     else:
@@ -493,7 +494,7 @@ class Controller:
                     store.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED_DURING_VERIFY", "核验期间已取消")
                 else:
                     try:
-                        if config.execution_mode == 'formal' and store is self.database:
+                        if config.execution_mode in ('formal', 'physical_validation') and store is self.database:
                             persist_directory_exports(self.database, config)
                     except (OSError, ValueError) as exc:
                         # 正式计划已在库中提交，外部目录故障只记诊断事件，不篡改成功状态。
