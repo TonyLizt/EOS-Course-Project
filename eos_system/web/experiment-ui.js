@@ -79,7 +79,10 @@
   if(box.dataset.disclosuresBound)return;box.dataset.disclosuresBound='true';
   box.addEventListener('click',event=>{const b=event.target.closest('[data-toggle]');if(!b)return;const content=document.getElementById(b.dataset.toggle);if(!content)return;const open=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',String(open));content.hidden=!open;});
  }
- function description(a){return `<p>${E(a.strategy||a.description||'')}</p><p>${E(a.objectives||'')}</p><p>${E(a.availability_message||a.limitations||'')}</p>`;}
+ function description(a){
+  const sections=[['简介',a.description],['调度机制',a.strategy!==a.description?a.strategy:''],['目标',a.objectives],['限制',a.limitations],['可用性',a.availability_message]].filter(([,text])=>text);
+  return '<div class="algorithm-description">'+sections.map(([title,text])=>`<p><strong>${E(title)}</strong><span>${E(text)}</span></p>`).join('')+'</div>';
+ }
  function available(box,experiment,add,{hideIncluded=false}={}){
   if(box.dataset.adding==='true')return;
   const ids=new Set(experiment.runs.map(r=>r.config.algorithm_id)),key=experiment.experiment_id+JSON.stringify([...ids]);

@@ -175,7 +175,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/algorithms")
     def algorithms():
-        return {"items": list_algorithms(), "models": list_schedule_models()}
+        from .algorithm_presentation import list_presented_algorithms
+        return {"items": list_presented_algorithms(), "models": list_schedule_models()}
 
     def build_run_config(request: RunRequest):
         try:

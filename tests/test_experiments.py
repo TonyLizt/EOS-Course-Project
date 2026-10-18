@@ -137,6 +137,57 @@ class ExperimentTests(unittest.TestCase):
         self.assertEqual(raised.exception.status_code,409)
         self.assertEqual(len(app.state.experiments.detail(result['experiment_id'])['runs']),2)
 
+    def test_inline_metadata_regression_can_add_without_rewriting_history(self):
+        from eos_system.experiment_compatibility import PRESENTATION_ONLY_SOURCE_PAIR
+        first_sha, other_sha = sorted(PRESENTATION_ONLY_SOURCE_PAIR)
+        original=self.config().model_copy(update={'algorithm_code_sha':first_sha})
+        eid=self.store.create([original],8)
+        child=self.config('sa').model_copy(update={'algorithm_code_sha':other_sha})
+        self.store.add(eid,child,8)
+        result=self.store.detail(eid)
+        self.assertEqual(len(result['runs']),2)
+        self.assertEqual(result['config']['algorithm_code_sha'],first_sha)
+        self.assertEqual(self.db.get_run(child.run_id)['config']['algorithm_code_sha'],other_sha)
+        with self.db.connect() as connection:
+            row=connection.execute("SELECT payload_json FROM run_events WHERE run_id=? AND event_type='EXPERIMENT_PRESENTATION_ONLY_COMPATIBILITY'",(child.run_id,)).fetchone()
+        self.assertEqual(json.loads(row[0])['experiment_source_sha'],first_sha)
+        # The exception is exact and never permits actual source/scene changes.
+        for changes in ({'algorithm_code_sha':'c'*64},
+                        {'algorithm_code_sha':other_sha,'seed':99},
+                        {'algorithm_code_sha':other_sha,'scenario_sha256':'d'*64}):
+            invalid=self.config('ga').model_copy(update=changes)
+            with self.assertRaises(ValueError):self.store.add(eid,invalid,8)
+        self.assertEqual(len(self.store.detail(eid)['runs']),2)
+
+    def test_http_add_to_pre_ui_and_inline_metadata_experiments(self):
+        from unittest.mock import patch
+        from eos_system.config import algorithm_source_sha256
+        from eos_system.experiment_compatibility import PRESENTATION_ONLY_SOURCE_PAIR
+        root=Path(self.temp.name);scenes=root/'add-scenes';scenes.mkdir()
+        (scenes/'scene.json').write_text(json.dumps({
+            'scenario_id':'scene','metadata':{'creation_time':'2026-01-01T00:00:00Z','duration':60},
+            'missions':[],'satellites':[],'observation_windows':[]}))
+        app=create_app(Settings(runtime_dir=root/'add-runtime',scenario_dir=scenes))
+        self.addCleanup(app.state.replay.close)
+        route=lambda path,method:next(r.endpoint for r in app.routes if r.path==path and method in r.methods)
+        # Current revision restores the exact pre-UI execution identity; a future
+        # core revision must deliberately revisit this migration regression test.
+        current=algorithm_source_sha256()
+        self.assertIn(current,PRESENTATION_ONLY_SOURCE_PAIR)
+        historical=next(item for item in PRESENTATION_ONLY_SOURCE_PAIR if item!=current)
+        for source_sha in (current,historical):
+            with patch('eos_system.api.algorithm_source_sha256',return_value=source_sha):
+                created=route('/api/experiments','POST')(ExperimentRequest(runs=[
+                    RunRequest(scenario_id='scene',algorithm_id='profit_first',execution_mode='planning_preview')]),None)
+            added=route('/api/experiments/{experiment_id}/algorithms','POST')(
+                created['experiment_id'],ExperimentAlgorithm(algorithm_id='timeliness_first'))
+            self.assertEqual(added['experiment_id'],created['experiment_id'])
+            self.assertEqual([r['config']['algorithm_id'] for r in added['runs']],['profit_first','timeliness_first'])
+            self.assertEqual(added['runs'][-1]['config']['algorithm_code_sha'],current)
+        self.assertEqual(app.state.experiments.listing()['total'],2)
+        catalog=route('/api/algorithms','GET')()['items']
+        self.assertTrue(all(prop.get('description') for a in catalog for prop in a['parameters']['properties'].values()))
+
     def test_cesium_retains_original_page_and_run_context(self):
         # Explicit synthetic certification fixture: tests URL ownership, not physics.
         from test_integrated_replay import fixture

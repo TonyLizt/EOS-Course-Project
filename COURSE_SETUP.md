@@ -1,3 +1,10 @@
+## 算法参数与简介公共展示修复（2026-10-18）
+
+- PR #23 已提交，base main `3e9413d`，无需rebase/merge，请TonyLizt独立审核。提交前完整Python运行569项：1个旧展示API断言失败、8项跳过，其余通过；将断言改为独立展示层预期后，受影响Registry/参数/实验接口31项全部通过（未再次全量运行）。JavaScript6项及Chromium复验通过，新增“已有实验添加1种算法返回202且列表仍1个实验”验证；无用户服务变更。审核前不自行合并。
+- 从 main `3e9413d`（已合并PR #22）开 `fix/algorithm-parameter-ui`；移除普通配置区的原始Schema，11种比较算法与2种初始模型统一元数据检查，补齐参数中文标题/说明。首页使用共享类型化表单，实验详情/Cesium复用只读参数与分段说明，保留三角展开及新增算法简洁勾选约束。
+- 不改算法核心、参数契约、Controller/Worker、数据库模式、指标或物理约束。JavaScript 6项、Python定向28项通过；一次隔离Chromium验证全部11种卡片及多种Schema绑定、双算法单实验、Gantt/Cesium/窄侧栏通过（合成UNIT_TEST_ONLY，不是物理认证）。见 [实现及验证说明](docs/phase2/algorithm_parameter_ui.md)。后续按用户授权准备推送并提交PR；fetch确认main仍为`3e9413d`，无需rebase/merge，独立审核通过后才能合并。
+- 追加修复旧实验新增算法回归：展示元数据移出执行Registry，恢复原执行指纹；仅兼容已核实的两份展示差异完整源码摘要，记录原/新真实指纹审计事件，不改写历史、不放宽真实场景或源码变化门禁。直接API/数据库定向14项、前端6项通过，本次未重跑浏览器/正式用户服务。
+
 ## 算法 B：RABAS 资源感知任务包竞价（2026-10-18）
 
 - PR #22 提交前同步 main `702f46e`（PR #21），merge提交 `68c630a`，无需rebase。完整Python发现565项：首次因未展开LFS输入出现1失败/7子项错误、8项跳过；从本地缓存展开原版及epoch-fixed场景（内容不变）后，仅重跑受影响两模块13项全部通过，未再次重跑全套。合并后真实Chromium验证双算法单实验、RABAS参数/比较、3任务Gantt、Cesium自动回放及高亮通过（合成UNIT_TEST_ONLY认证）。PR邀请TonyLizt/Mint221018审核，尚未合并。

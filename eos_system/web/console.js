@@ -13,7 +13,8 @@
     const first=algorithms.find(a=>a.availability==='ready')?.algorithm_id;
     $('algorithm-choices').innerHTML=algorithms.map(a=>UI.card('create',a.algorithm_id,
       `<label class="check-label algorithm-choice"><input type="checkbox" name="batch-algorithm" value="${E(a.algorithm_id)}" ${a.algorithm_id===first?'checked':''} ${a.availability!=='ready'?'disabled':''}>${E(a.name)}</label>`,
-      UI.description(a)+`<label>算法参数 JSON<textarea aria-label="${E(a.name)}参数" data-params="${E(a.algorithm_id)}" rows="2" ${a.availability!=='ready'?'disabled':''}>{}</textarea></label><pre>${E(JSON.stringify(a.parameters,null,2))}</pre>`)).join('');
+      UI.description(a)+AlgorithmParameters.render(a))).join('');
+    for(const a of algorithms)AlgorithmParameters.bind($('algorithm-choices').querySelector(`[data-algorithm="${CSS.escape(a.algorithm_id)}"]`),a);
     UI.bindCards($('algorithm-choices'));
   }
   async function submit() {
@@ -21,8 +22,7 @@
     try {
       const common=buildRequest();
       const runs=[...document.querySelectorAll('[name="batch-algorithm"]:checked')].map(input=>{
-        const params=JSON.parse($('algorithm-choices').querySelector(`[data-params="${CSS.escape(input.value)}"]`).value);
-        if(!params||Array.isArray(params)||typeof params!=='object')throw Error('算法参数必须是 JSON 对象');
+        const params=$('algorithm-choices').querySelector(`[data-algorithm="${CSS.escape(input.value)}"]`).parameterValues();
         return {...common,algorithm_id:input.value,algorithm_params:params};
       });
       if(!runs.length)throw Error('请至少选择一种算法');
@@ -133,7 +133,7 @@
     const run=experiment?.runs.find(r=>r.run_id===selectedId);if(!run)return;
     const spec=currentAlgorithms.find(a=>a.algorithm_id===run.config.algorithm_id);
     $('algorithm-dialog-title').textContent=UI.name(run.config.algorithm_id);
-    $('algorithm-description').textContent=(spec?.strategy||'历史算法')+'\n'+(spec?.limitations||'')+'\n'+JSON.stringify(run.config,null,2);
+    $('algorithm-description').innerHTML=UI.description(spec||{description:'历史算法'})+AlgorithmParameters.render(spec||{algorithm_id:run.config.algorithm_id},run.config.algorithm_params||{},true);
     $('algorithm-dialog').showModal();
   });
   $('close-algorithm-dialog').addEventListener('click',()=>$('algorithm-dialog').close());

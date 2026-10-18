@@ -12,6 +12,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   context.on('page',p=>p.on('pageerror',e=>errors.push(String(e))));
   const page=await context.newPage();await page.goto(info.url);
   await page.waitForSelector('[name="batch-algorithm"][value="rabas"]');
+  await require('./algorithm-parameters-checks.cjs')(page);
   await page.selectOption('#execution-mode','formal');await page.waitForSelector('#scenario option[value="synthetic"]',{state:'attached'});
   await page.selectOption('#scenario','synthetic');
   for(const box of await page.locator('[name="batch-algorithm"]:checked').all())await box.uncheck();
@@ -19,7 +20,11 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   await page.locator('[name="batch-algorithm"][value="profit_first"]').check();
   const disclosure=page.locator('[data-toggle="algo-create-rabas"]');
   await disclosure.click();assert.equal(await disclosure.getAttribute('aria-expanded'),'true');
-  await page.locator('[data-params="rabas"]').fill(JSON.stringify({max_bundle_size:2,opportunity_cost_weight:.5}));
+  const parameters=page.locator('[data-algorithm="rabas"]');
+  await parameters.locator('[data-key="max_bundle_size"] .parameter-mode').selectOption('value');
+  await parameters.locator('[data-key="max_bundle_size"] .parameter-value').fill('2');
+  await parameters.locator('[data-key="opportunity_cost_weight"] .parameter-mode').selectOption('value');
+  await parameters.locator('[data-key="opportunity_cost_weight"] .parameter-value').fill('0.5');
   await page.fill('#budget','5');
   const accepted=page.waitForResponse(r=>r.url().endsWith('/api/experiments')&&r.request().method()==='POST');
   await page.click('#submit');const response=await accepted;assert.equal(response.status(),202);
@@ -45,12 +50,32 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   await view.waitForFunction(id=>document.querySelector(`#cesium-comparison tr[data-run="${id}"]`)
     ?.getAttribute('aria-current')==='true',rid);
   assert.equal(new URL(view.url()).searchParams.get('run_id'),rid);
+  const toggle=view.locator('[data-toggle="algo-cesium-current-algorithms-rabas"]');await toggle.click();
+  const sidebar=view.locator('#algo-cesium-current-algorithms-rabas');
+  assert.ok(await sidebar.locator('[data-readonly="true"]').isVisible());
+  assert.equal(await sidebar.locator('textarea').count(),0);
+  assert.ok(!(await sidebar.innerText()).includes('additionalProperties'));
+  const narrow=await sidebar.evaluate(box=>{const host=box.closest('.experiment-ui');const old=host.style.width;host.style.width='245px';const valid=[...box.querySelectorAll('input,select,textarea,.algorithm-description,.algorithm-parameters')].every(n=>n.getBoundingClientRect().right<=box.getBoundingClientRect().right+1);host.style.width=old;return valid;});
+  assert.equal(narrow,true,'narrow sidebar parameters overflow');
+  await page.click('#run-algorithm-info');
+  assert.ok(await page.locator('#algorithm-dialog [data-readonly="true"]').isVisible());
+  assert.equal(await page.locator('#algorithm-dialog textarea').count(),0);await page.click('#close-algorithm-dialog');
   const state=await view.evaluate(()=>({asset:document.querySelector('#assetStatus').textContent,
    replay:document.querySelector('#replayBuildStatus').textContent,
    intervals:document.querySelectorAll('#assignmentList .assignment-row').length}));
   assert.match(state.asset,/2 body model/);assert.equal(errors.length,0,errors.join('\n'));
+  // Regression: adding algorithms to an existing experiment must retain its ID.
+  const additions=page.locator('#experiment-algorithm-add');
+  await additions.locator('[data-add-choice="timeliness_first"]').check();
+  const addedResponse=page.waitForResponse(r=>r.url().endsWith('/api/experiments/'+experiment.experiment_id+'/algorithms')&&r.request().method()==='POST');
+  await additions.locator('.confirm-algorithms').click();
+  assert.equal((await addedResponse).status(),202);
+  await page.waitForFunction(async eid=>{const e=await(await fetch('/api/experiments/'+eid)).json();return e.runs.length===3&&e.runs.every(r=>r.status==='SUCCEEDED');},experiment.experiment_id,{timeout:30000});
+  const afterAdd=await(await context.request.get(info.url+'/api/experiments')).json();assert.equal(afterAdd.total,1);
+  assert.equal(afterAdd.items[0].experiment_id,experiment.experiment_id);
+  assert.equal(errors.length,0,errors.join('\n'));
   console.log('RABAS_BROWSER_PASS '+JSON.stringify({experiment:experiment.experiment_id,run_id:rid,
-   algorithms:2,experiments:1,completed:3,gantt_tasks:await gantt.locator('#ganttContainer button').count(),...state,
+   algorithms:2,added_algorithms:1,experiments:1,completed:3,gantt_tasks:await gantt.locator('#ganttContainer button').count(),...state,
    physical_certification:'SYNTHETIC_UNIT_TEST_ONLY'}));
  }finally{await browser.close();fs.writeFileSync(coord,JSON.stringify({...info,stop:true}));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -80,3 +80,9 @@ python scripts/check_visualization.py <已成功的运行ID>
 `DELETE /api/runs/{run_id}` 只接受终态实验，按外键依赖顺序在一笔 SQLite 事务内删除导出、指标、assignment、计划、事件、尝试和运行记录。Controller 完成成功状态与目录文件输出时持有同一进程锁，避免刚成功就被删除导致导出写入悬空。删除后执行 `VACUUM` 和 WAL 截断；若压缩被其他连接占用，删除仍有效，接口返回警告。
 
 默认保留服务器目录文件；显式传 `delete_files=true` 时仅按登记路径、文件名和原始哈希删除本实验的正式 JSON/CSV，不递归删除目录中的其他内容。原始场景与按场景哈希共享的轨道缓存始终保留。浏览器提供确认步骤及列表翻页；此功能是永久删除，组员批量清理前应先导出需要保存的实验。
+
+## 算法参数展示补充（2026-10-18）
+
+首页、实验详情弹窗及 Cesium 已添加算法使用共享 `algorithm-parameters.js/.css` 和 `ExperimentUI.description()`。API仍返回既有Schema，客户端仅用于类型化表单，不作为简介打印；后端参数校验不变。新增算法区域保留默认参数勾选，不扩展其产品行为。实现、全注册表检查、定向浏览器验证及限制见 [算法参数展示说明](algorithm_parameter_ui.md)。
+
+展示元数据位于 `algorithm_presentation.py`，不再更改执行Registry指纹。仅对已核实的前后两份展示差异源码摘要允许在原实验新增算法，且记录 `EXPERIMENT_PRESENTATION_ONLY_COMPATIBILITY` 事件（原实验指纹、新Run真实指纹及原因）；不改历史，不改数据库模式，其他源码/场景/实验条件变化仍拒绝。完整指纹与回归证据见上述专题追加修复。
