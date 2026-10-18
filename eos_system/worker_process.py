@@ -237,13 +237,15 @@ class WorkerGroup:
 
 
 def reap_worker(process, group: WorkerGroup, initial_grace_s: float,
-                term_grace_s: float, kill_grace_s: float = 2.0) -> dict:
+                term_grace_s: float, kill_grace_s: float = 2.0, *, on_progress=None) -> dict:
     """直接进程与已固定身份的同 session 成员均按固定时限回收。"""
     action = "exited"
 
     def wait(duration: float) -> None:
         deadline = time.monotonic() + max(0.0, duration)
         while True:
+            if on_progress is not None:
+                on_progress()  # real bounded wait progress, not a separate heartbeat thread
             group.refresh()
             if not process.is_alive() and not group.live_members():
                 break

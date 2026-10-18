@@ -2,7 +2,12 @@
 
 - 从已合并 main 7a1875f 独立分支实现 RABAS 1.0.0；真正的2/3任务包、真实转向/资源成本、有界独占任务机会损失、完成数优先全局中标和全量版本化重报价。只追加注册与一条 Web 权重提示，不修改公共约束/指标、DARTIS/CAABS核心、Worker/Controller、SQLite或IPC。
 - B-1至B-5等22项算法单元、4项真实Worker/Controller集成及Registry兼容定向验证完成；真实Chromium验证合成双算法单实验、参数、比较、Gantt及Cesium模型。真实10星20任务四组预览消融均20/20，h=2中标10轮，h=1为20轮；并非正式认证或统计优势结论。
-- 当前场景formal非空认证仍缺可信窗口谱系/物理设置；实际formal请求保持失败而非伪造成功。真实预览、合成UNIT_TEST_ONLY认证及实测指标严格区分。见 [RABAS实现/实验说明](docs/phase2/algorithms/auction_bundle.md)。仅本地Commit，不Push、不建PR，保留根目录既有修改。
+- 当前场景formal非空认证仍缺可信窗口谱系/物理设置；实际formal请求保持失败而非伪造成功。真实预览、合成UNIT_TEST_ONLY认证及实测指标严格区分。见 [RABAS实现/实验说明](docs/phase2/algorithms/auction_bundle.md)。按后续授权准备推送与PR；已按协作规范合并最新main `702f46e`（PR #21），保留Daemon与RABAS双方记录，等待独立组员审核后合并，保留根目录既有修改。
+
+## 独立 Daemon 与 Controller 故障恢复（2026-10-18）
+
+- 从 main `7a1875f`（PR #20）建立独立分支；新增 Linux/WSL2 Daemon start/run/status/stop、真实调度心跳、身份校验、双层 flock、有界指数退避和正常停机意图，不操作正式服务。
+- Controller 持锁恢复自己的 Worker 身份日志，真实 Worker 增加父进程死亡保护；IPC、算法、指标和 SQLite schema v4 不变。初次覆盖 80 个不同定向用例；本次 PR 前另行复验 Daemon 13 项全通过、完整默认 Python 539 项（531通过、8个opt-in跳过，0失败/错误），不运行大型 Benchmark。测试文档已纳入 [L_readme](L_readme/Daemon守护进程_测试与故障演示说明.md)。fetch 确认 main 仍为 7a1875f，无需 rebase/merge；按用户后续要求推送并建 PR，等待独立审核，不自行合并。未知孤儿 fail closed，不宣称任意逃逸后代可恢复。详见 [Daemon 实现与验证](docs/phase2/daemon_implementation_and_validation.md)；需总体及 Worker 负责人复核接入。
 
 ## 统一控制台 PR 集成与最新 main 同步（2026-10-18）
 
