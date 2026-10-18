@@ -191,6 +191,22 @@ class ExperimentTests(unittest.TestCase):
                 self.assertEqual([r['config']['algorithm_id'] for r in added['runs']],['profit_first','timeliness_first'])
                 self.assertEqual(added['runs'][-1]['config']['algorithm_code_sha'],current)
         self.assertEqual(app.state.experiments.listing()['total'],len(sources))
+        # Keep the old presentation-only pair's positive compatibility case,
+        # then prove the actual new physics deployment cannot reuse that pair.
+        self.assertNotIn(current, PRESENTATION_ONLY_SOURCE_PAIR)
+        historical, legacy_ui = sorted(PRESENTATION_ONLY_SOURCE_PAIR)
+        with patch('eos_system.api.algorithm_source_sha256', return_value=historical):
+            created=route('/api/experiments','POST')(ExperimentRequest(runs=[
+                RunRequest(scenario_id='scene',algorithm_id='profit_first',execution_mode='planning_preview')]),None)
+        with patch('eos_system.api.algorithm_source_sha256', return_value=legacy_ui):
+            added=add(created['experiment_id'],ExperimentAlgorithm(algorithm_id='timeliness_first'))
+        self.assertEqual(len(added['runs']),2)
+        self.assertEqual(added['runs'][-1]['config']['algorithm_code_sha'],legacy_ui)
+        with self.assertRaises(HTTPException) as rejected:
+            add(created['experiment_id'],ExperimentAlgorithm(algorithm_id='balance_first'))
+        self.assertEqual(rejected.exception.status_code,409)
+        self.assertEqual(len(app.state.experiments.detail(created['experiment_id'])['runs']),2)
+        self.assertEqual(app.state.experiments.listing()['total'],len(sources)+1)
         catalog=route('/api/algorithms','GET')()['items']
         self.assertTrue(all(prop.get('description') for a in catalog for prop in a['parameters']['properties'].values()))
 

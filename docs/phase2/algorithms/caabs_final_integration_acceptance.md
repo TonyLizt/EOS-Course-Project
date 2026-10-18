@@ -69,4 +69,16 @@ HTTP/API和场景目录现在只在显式planning_preview时消费新开发合�
 
 ## 后续阶段状态
 
-P5全量回归正在执行。正式连续认证没有通过，不能据非空预览声称正式系统成功。
+P5首次完整发现已完成（见下），最终版本复测正在执行。正式连续认证没有通过，不能据非空预览声称正式系统成功。
+
+## P5发现的适配缺陷与历史边界
+
+额外开启`EOS_RUN_OREKIT_TESTS=1`后，真实recompute的SimpleNamespace传递了JSON的`field_of_view_deg`，新物理计算器读取core模型的`field_of_view`，导致AttributeError。硬件slew_rate也需相同显式投影；已在`calculator_inputs`映射原值、严格拒绝缺失/非法值，无默认替换，新增纯测试并完成真实Orekit重计算45项全通过（10.160秒/退出0）。重计算工具加入source_identity闭包，因为它是物理参数/窗口序列化/来源发布实际依赖。此变更使P4中间场景按设计失效，最终在新目录再生成，不能改侧车SHA。
+
+完整发现首次：`full-native.log/.receipt.json`，原生目录`/tmp/caabs-final-native-dg56qucu`，373个实际文件逐字节SHA核对、无LFS指针，同Python/依赖/随机种子，1200秒上限，171.722秒完成，597项/587通过/2失败/8跳过/0错误/退出1。实际命令 `python -B -c "import faulthandler,runpy;faulthandler.dump_traceback_later(120,repeat=True);runpy.run_module('unittest',run_name='__main__')" discover -s tests -p 'test_*.py' -v`。启用GEN02真实物理和CAABS真实E2E，其他原有opt-in在首次命令中未开，不能把它们算通过。复制时全部一致；运行期间仅在原目录继续写报告，完成后的全文件一致标记false，实际运行副本未改，后续最终快照另行记录。
+
+- `test_experiments.test_http_add_to_pre_ui_and_inline_metadata_experiments`硬编码当前执行SHA须等于两个历史UI-only版本之一，真实物理源码变化必然不满足。已迁移测试：保持历史两SHA兼容正例，当前同版正例，新增历史→新物理版本HTTP409负例；**生产兼容白名单未改**，12项通过/退出0/25.495秒。不把新物理版本谎称仅UI变化。
+- `test_rabas_integration.test_unchanged_real_scene_preview_and_formal_gate`要求旧epoch-fixed场景在预览中20/20，但新真实固定镜头/整星姿态核验在CARTOSAT-2C/M008曝光开始即不可见，正确给出PREVIEW_REJECTED而不是放行。未改RABAS实现、旧场景或期望，保留失败供公共历史fixture迁移审查；新场景的CAABS/Completion真实正例单独通过。
+- 显式开启旧`EOS_RUN_EXPOSURE_OREKIT_TESTS=1`时，历史冻结曝光案例两子项原期待NONVISIBLE_EXPOSURE_POINT及旧绝对姿态的出口，现在曝光起点已NONVISIBLE_EXPOSURE_START。仍是拒绝，未改期望或追认历史角。新增当前物理模型真实正起点→中途超限负例，验证NONVISIBLE_EXPOSURE_POINT、真实可见/不可见夹逼及≤1μs边界，13项物理测试通过。旧物理基准必须重新生成并独立冻结，不能仅把断言改成实际错误码。
+
+这些历史fixture失配和未具备连续区间证书分别记录，不能以分组通过掩盖完整回归未绿。

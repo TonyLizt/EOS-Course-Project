@@ -327,6 +327,17 @@ class RecomputeTests(unittest.TestCase):
             return fake_calculator(**kwargs)
         tool.recompute_file(self.source, self.target, calculator=inspect)
 
+    def test_explicit_fixed_fov_and_tracking_rate_forwarded_without_defaults(self):
+        inputs = tool.calculator_inputs(self.scene)
+        satellite = inputs["satellites"][0]
+        self.assertEqual(satellite.observation_capability.sensors[0].field_of_view, 17)
+        self.assertEqual(satellite.maneuverability_capability.slew_rate, .5)
+        self.assertEqual(satellite.observation_capability.sensors[0].field_of_view_deg, 17)
+        self.assertEqual(satellite.maneuverability_capability.slew_rate_deg_per_s, .5)
+        del self.scene["satellites"][0]["maneuverability_capability"]["slew_rate_deg_per_s"]
+        with self.assertRaises(AttributeError):
+            tool.calculator_inputs(self.scene)
+
     def test_missing_required_orbit_field_rejected_without_defaults(self):
         del self.scene["satellites"][0]["orbital_params"]["mean_anomaly_deg"]
         self.write_source()

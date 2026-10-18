@@ -146,6 +146,20 @@ class RealFixedCameraTests(unittest.TestCase):
         self.assertEqual((result["status"], result["reason"]), ("INCONCLUSIVE", "NO_CONTINUITY_CERTIFICATE"))
         self.assertEqual(result["evaluations"], 101)
 
+    def test_real_visible_start_does_not_hide_later_pointing_exit(self):
+        from utils.continuous_exposure import audit_interval
+        evaluate = self.evaluator()
+        self.assertTrue(evaluate(self.start)["visible"])
+        self.assertFalse(evaluate(self.start + timedelta(seconds=200))["visible"])
+        result = audit_interval(evaluate, self.start, self.start + timedelta(seconds=200), 200)
+        self.assertEqual((result["status"], result["reason"]), ("FAIL", "NONVISIBLE_EXPOSURE_POINT"))
+        from utils.time_parsing import parse_orbit_epoch
+        lower = parse_orbit_epoch(result["safe_exit_lower"])
+        upper = parse_orbit_epoch(result["exit_upper"])
+        self.assertLessEqual((upper - lower).total_seconds(), .000001)
+        self.assertTrue(evaluate(lower)["visible"])
+        self.assertFalse(evaluate(upper)["visible"])
+
 
 if __name__ == "__main__":
     unittest.main()
