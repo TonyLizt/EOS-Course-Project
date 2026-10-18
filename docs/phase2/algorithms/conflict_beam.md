@@ -371,3 +371,7 @@ PYTHONHASHSEED=0 MPLBACKEND=Agg /home/meteor/eos-course-runtime/.venv/bin/python
 基于R1核心复核与本次M1反例、分支去重和饱和测试，建议将独立核心结论升级为 **CORE REVIEW PASS**。
 这不改变 **REGRESSION INCOMPLETE / INTEGRATION NOT VERIFIED**：本轮未重跑全量、未登记 Registry、
 未完成正式连续认证。I1未来循环导入、I2公共来源窗口歧义及全量时序/超时仍由独立任务处理。
+
+## 2026-10-19 系统复验附录
+
+前述R1.1结论按历史保留；当前合并版本已接通Registry/Runner/真实Worker/Controller及I2独立来源重建。P5/P6未改Beam核心，新非GS开发场景CAABS/Completion各3/3，真实GS场景CAABS2/3；全部六组物理opt-in的完整回归632/632通过、0跳过。开发预览的SUCCEEDED不是正式认证成功。数学区间内核只证明可信包络假设下的margin，生产Orekit连续证书仍缺误差/实际slew轨迹合同，正式来源/导出继续阻断。详见[P5/P6收口记录](caabs_p5_p6_closeout.md)，不能以此附录追认历史证书或数据哈希。
