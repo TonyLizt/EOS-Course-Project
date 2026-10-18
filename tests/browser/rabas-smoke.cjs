@@ -64,8 +64,18 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
    replay:document.querySelector('#replayBuildStatus').textContent,
    intervals:document.querySelectorAll('#assignmentList .assignment-row').length}));
   assert.match(state.asset,/2 body model/);assert.equal(errors.length,0,errors.join('\n'));
+  // Regression: adding algorithms to an existing experiment must retain its ID.
+  const additions=page.locator('#experiment-algorithm-add');
+  await additions.locator('[data-add-choice="timeliness_first"]').check();
+  const addedResponse=page.waitForResponse(r=>r.url().endsWith('/api/experiments/'+experiment.experiment_id+'/algorithms')&&r.request().method()==='POST');
+  await additions.locator('.confirm-algorithms').click();
+  assert.equal((await addedResponse).status(),202);
+  await page.waitForFunction(async eid=>{const e=await(await fetch('/api/experiments/'+eid)).json();return e.runs.length===3&&e.runs.every(r=>r.status==='SUCCEEDED');},experiment.experiment_id,{timeout:30000});
+  const afterAdd=await(await context.request.get(info.url+'/api/experiments')).json();assert.equal(afterAdd.total,1);
+  assert.equal(afterAdd.items[0].experiment_id,experiment.experiment_id);
+  assert.equal(errors.length,0,errors.join('\n'));
   console.log('RABAS_BROWSER_PASS '+JSON.stringify({experiment:experiment.experiment_id,run_id:rid,
-   algorithms:2,experiments:1,completed:3,gantt_tasks:await gantt.locator('#ganttContainer button').count(),...state,
+   algorithms:2,added_algorithms:1,experiments:1,completed:3,gantt_tasks:await gantt.locator('#ganttContainer button').count(),...state,
    physical_certification:'SYNTHETIC_UNIT_TEST_ONLY'}));
  }finally{await browser.close();fs.writeFileSync(coord,JSON.stringify({...info,stop:true}));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

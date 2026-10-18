@@ -25,7 +25,7 @@ Registry 共 13 条，其中 11 条进入算法比较，另 2 条用于初始模
 
 ## 公共实现
 
-- `algorithm_registry.parameter_schema()` 只补公共 Schema 的中文 title/description；算法已有专属 description 优先。原 Pydantic 模型、默认值、数值限制、参数 ID 与额外字段禁令不变。
+- `algorithm_presentation.parameter_schema()` 在算法列表 API 输出层补中文 title/description；算法已有专属 description 优先。展示元数据与执行 Registry 分离，原 Pydantic 模型、默认值、数值限制、参数 ID 与额外字段禁令不变。
 - `algorithm-parameters.js` 为共享组件，渲染整数/浮点输入、布尔复选框、enum/const 下拉、字符串、闭合嵌套对象分组；数组及开放字典使用局部结构化 JSON 输入，保留其内容。支持本地 `$ref`、Nullable、`anyOf`/`oneOf` 与类型数组。
 - 每个参数明确区分“不提交字段”“显式 null”“自定义值”。默认配置保持 `{}`，不会把 null 强行替换为 0，不会把字符串 `"false"` 转成布尔值，不会悄悄填充必填值。Schema 的 null 默认值如实显示；旧适配器如何解释 null 仍由后端既有契约决定。
 - 可选高级入口只编辑参数值，不展示 Schema；点击应用后校验并同步回表单。未应用的修改会阻止提交并提示，不会静默丢弃。额外字段、非法类型、范围与必填错误定位到字段；后端仍是最终权威。
@@ -75,3 +75,29 @@ EOS_RABAS_COORD=/tmp/algorithm-params-ui-test.json node tests/browser/rabas-smok
 ## 限制
 
 组件不是通用 JSON Schema 完整解释器：不支持远程引用、递归表单、条件 Schema 等当前注册表未使用的扩展。当前全部实际模型已覆盖；将来引入新结构时须补测试，不能把前端预检当成后端校验。数组/开放字典仍采用局部 JSON，而非无限动态列表编辑。新增算法区按既有要求仍使用默认参数；本次不改变它的产品行为。真实场景正式认证门禁不受本次 UI 修复影响。
+
+## 追加修复：旧实验新增算法被展示变更错误阻挡
+
+用户反馈新增失败、删除正常。检查发现 `algorithm_source_sha256()` 对算法、共享约束及整个 Registry 文件取摘要；UI 提交 `63b35a1` 在 Registry 内加入中文参数元数据，使指纹变化。`Experiments.add()` 对完整公共配置严格比较，因此旧实验会被409拒绝；删除无需新增配置，不触发这项比较。
+
+已将展示元数据移到独立 `algorithm_presentation.py`，`/api/algorithms` 仍返回相同的增强数据。执行 Registry 恢复到 main `3e9413d` 的逐字节内容，今后这类展示说明修改不再扰动算法执行摘要；未把 Registry 整体排除出摘要，真实 builder/校验变化仍能被检测。
+
+为了兼容在短暂回归版本创建的实验，`experiment_compatibility.py` 只允许以下完整源码指纹对的展示兼容，不接受任意版本差异：
+
+- 展示修复前及本次分离后：`382612be7cac60c70c16272fcf34a9289d1365c0e336ab775e7322c76a8967f4`
+- `63b35a1` 内联展示元数据版：`149dd9bb3e87cb227cc1bb72d3356cd73d76c30376ad3f01f81dffc064cdc602`
+
+验证方式：`git diff 3e9413d 63b35a1 -- algorithms schedulers core utils eos_system/verification.py eos_system/algorithm_registry.py` 在指纹覆盖的文件中仅 Registry 有展示元数据差异；测试中仅将 Registry 读取字节替换为该提交原字节重新计算全摘要，得到上述第二个值，其他源文件不变。
+
+兼容只在差异字段恰好为 `algorithm_code_sha` 且恰好命中这对完整摘要时生效。原实验/历史Run不改写，新Run记录其真实当前指纹，同一事务写 `EXPERIMENT_PRESENTATION_ONLY_COMPATIBILITY` 事件，包含原实验及新Run指纹。场景/路径/预算/种子变化或其他源码摘要仍被拒绝，错误现在指明差异字段。无数据库迁移，不扩大其他跨实验比较规则。
+
+新增直接API端点和数据库定向回归：旧版实验添加、回归版本实验添加、实验总数不增加、保留历史、新增审计事件、真实源码/场景/种子变化拒绝，以及原有删除/取消/重新添加均通过。
+
+```bash
+MPLCONFIGDIR=/tmp/eos-params-mpl PYTHONPATH=tests \
+  /home/asus/eos-course-runtime/.venv/bin/python -m unittest \
+  test_algorithm_parameter_metadata test_experiments -v
+node tests/algorithm_parameters.test.cjs
+```
+
+追加验证结果：Python 14项、JavaScript 6项全部通过。本次未执行真实浏览器或Worker调度重跑；无法连接用户8765服务、默认运行数据库亦未能只读打开，因而没有声称已确认用户具体实验的响应。修复后须由用户重启现有服务加载。本轮暂停Push/PR。

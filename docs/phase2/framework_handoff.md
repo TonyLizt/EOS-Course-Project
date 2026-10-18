@@ -84,3 +84,5 @@ python scripts/check_visualization.py <已成功的运行ID>
 ## 算法参数展示补充（2026-10-18）
 
 首页、实验详情弹窗及 Cesium 已添加算法使用共享 `algorithm-parameters.js/.css` 和 `ExperimentUI.description()`。API仍返回既有Schema，客户端仅用于类型化表单，不作为简介打印；后端参数校验不变。新增算法区域保留默认参数勾选，不扩展其产品行为。实现、全注册表检查、定向浏览器验证及限制见 [算法参数展示说明](algorithm_parameter_ui.md)。
+
+展示元数据位于 `algorithm_presentation.py`，不再更改执行Registry指纹。仅对已核实的前后两份展示差异源码摘要允许在原实验新增算法，且记录 `EXPERIMENT_PRESENTATION_ONLY_COMPATIBILITY` 事件（原实验指纹、新Run真实指纹及原因）；不改历史，不改数据库模式，其他源码/场景/实验条件变化仍拒绝。完整指纹与回归证据见上述专题追加修复。

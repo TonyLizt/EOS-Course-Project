@@ -5,6 +5,7 @@ import subprocess
 import unittest
 
 from eos_system import algorithm_registry as registry
+from eos_system.algorithm_presentation import algorithm_info
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,7 +26,7 @@ class ParameterMetadataTests(unittest.TestCase):
                          | {item['model_id'] for item in registry.list_schedule_models()})
         for aid, spec in registry._SPECS.items():
             with self.subTest(algorithm=aid):
-                info = spec.public_info()
+                info = algorithm_info(spec)
                 self.assertTrue(all(info[k] for k in ('name', 'description', 'strategy', 'objectives', 'limitations')))
                 schema = info['parameters']
                 self.assertEqual(without_presentation(schema), without_presentation(spec.params_model.model_json_schema()))
@@ -37,7 +38,7 @@ class ParameterMetadataTests(unittest.TestCase):
                     spec.parse_params({'unknown_parameter': 1})
 
     def test_actual_registry_schemas_render_and_validate_in_javascript(self):
-        catalog = [spec.public_info() for spec in registry._SPECS.values()]
+        catalog = [algorithm_info(spec) for spec in registry._SPECS.values()]
         script = r'''
 const assert=require('node:assert/strict');
 const P=require('./eos_system/web/algorithm-parameters.js');

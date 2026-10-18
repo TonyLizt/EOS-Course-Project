@@ -340,3 +340,6 @@ NOT_REQUESTED 返回 `replay_id=null`、`build_attempt=0`、`manifest=null`；FA
 - attitude_samples 资源为含 manifest/satellites/missions/assignments/segments/samples 的对象。样本采用 UTC、ECEF 米、body_to_ecef xyzw；segments 只存活动的半开区间，空隙为 IDLE。
 - 正式 schedule 的 plan_sha256 必须与 manifest 相同；API 场景文件 ID 与 JSON 内部 ID 分别保留。模型 URL 带实际 SHA 校验。
 - 本次实现双 Viewer 同钟、固定安装、统一样本、失败重试和有界回收；消息型 replay_protocol_version=1、W3 与 Daemon 仍是目标，不得写成已完成。
+## 参数展示与旧实验新增算法兼容补充（2026-10-18，已实现）
+
+`GET /api/algorithms` 的字段不变，中文title/description在展示模块生成，不改变执行Registry字节或默认参数。`POST /api/experiments/{experiment_id}/algorithms` 仍校验完整实验条件；仅允许专题文档中已核实的两份纯展示差异完整源码指纹兼容，保留原实验及新Run各自真实指纹，事务内记录 `EXPERIMENT_PRESENTATION_ONLY_COMPATIBILITY` 事件。其他源码或场景/条件变化仍拒绝，错误列出差异字段。无数据库迁移，不扩大跨实验比较规则。指纹、证明及测试见 [算法参数展示说明](algorithm_parameter_ui.md)。

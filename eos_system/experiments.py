@@ -99,8 +99,15 @@ class Experiments:
         return json.loads(row['common_json'])
 
     def add(self, eid, config: RunConfig, max_queued):
-        if common_config(config.model_dump()) != self.common(eid):
-            raise ValueError('场景、代码或实验条件已变化，不能混入此实验；请建立新实验')
+        from .experiment_compatibility import presentation_only_source_change
+        incoming, previous = common_config(config.model_dump()), self.common(eid)
+        changed = {key for key in incoming.keys() | previous.keys()
+                   if incoming.get(key) != previous.get(key)}
+        metadata_only = changed == {'algorithm_code_sha'} and presentation_only_source_change(
+            previous.get('algorithm_code_sha'), incoming.get('algorithm_code_sha'))
+        if changed and not metadata_only:
+            raise ValueError('实验条件已变化（' + ', '.join(sorted(changed))
+                             + '），不能混入此实验；请使用相同版本或建立新实验')
         with self.db.write() as conn:
             if conn.execute('SELECT 1 FROM experiment_runs WHERE experiment_id=? AND algorithm_id=? AND removed_at IS NULL',
                             (eid, config.algorithm_id)).fetchone():
@@ -110,6 +117,14 @@ class Experiments:
             self._enqueue(conn, config)
             conn.execute('INSERT INTO experiment_runs(experiment_id,run_id,algorithm_id) VALUES (?,?,?)',
                          (eid, config.run_id, config.algorithm_id))
+            if metadata_only:
+                self.db._event(conn, config.run_id, None, 'api', None,
+                               'EXPERIMENT_PRESENTATION_ONLY_COMPATIBILITY', {
+                                   'experiment_id': eid,
+                                   'experiment_source_sha': previous['algorithm_code_sha'],
+                                   'run_source_sha': incoming['algorithm_code_sha'],
+                                   'reason': 'parameter presentation metadata only; no solver or constraint change',
+                               })
 
     def remove(self, eid, algorithm_id):
         with self.db.write() as conn:
