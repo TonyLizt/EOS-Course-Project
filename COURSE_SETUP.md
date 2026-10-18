@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## LAVIS rebase到main PR #25与集成审核（2026-10-19）
 
 - 按本次明确授权，保存前轮LAVIS工作后rebase到origin/main的7fcc77d；原提交50660f3保留在本地backup/lavis-before-pr25-rebase，重放功能提交ab1fc4d。
@@ -90,10 +91,17 @@
 ## DARTIS 与 LAVIS 注册表合流（2026-10-19，rebase 冲突处理）
 
 - 保留当前 main 的 LAVIS 及本分支 DARTIS，比较算法清单合流后为 13 种；下列两算法的 12 种记录分别是各自完成时的历史快照。仅处理登记、清单和文档兼容性；此时 rebase 尚未继续，未做全量测试。
+=======
+## 算法 A：DARTIS G3 最小离线对照收尾（2026-10-18）
+
+- 同一只读 EOS-Bench 母文件临时派生 1 星/30 任务，固定 `PYTHONHASHSEED=0`、拆分 seed 20260927、搜索 seed 42 和每算法 5 秒请求预算。DARTIS-LLF、DARTIS-EDF、Greedy `completion_first`、RABAS 各返回 24/30，来源与公共离散回放 PASS；派生 SHA `3c3b777271ebfff8a820f2c56875ed4412832dd2ae929a0de1bf9ac05b43d962`，脚本两次复跑的候选/指标一致，RT 有墙钟波动。
+- CAABS 的 37/37 窗口均未通过可信来源验证，候选构造器调用 0；其空计划不参与算法排名。当前真实 3 星原始场景 5,508/5,508 窗口也缺匹配证据。Orekit planning preview 与正式连续认证未运行；五算法有效对照待团队提供同物理版本可信场景，不属于 DARTIS 求解器失败。
+- 可执行探针和完整参数、SHA、四层结果、失败原因见 [DARTIS G3 实验记录](docs/phase2/algorithms/deadline_insertion_g3.md)。相关 10 模块 173 项测试：171 通过、2 环境跳过；脚本只使用临时派生输入，未写正式数据库或 EOS-Bench 母数据。
+>>>>>>> 742258c (test(algorithm): add reproducible DARTIS G3 experiment)
 
 ## 算法 A：DARTIS G1-A / G1-B + G2 隔离集成（2026-10-18）
 
-- 分支 `feat/hmt-algorithm-a`；G1-A 两份文件已由何明涛提交于 `588dbd2`，本地 `origin/main` 仍为基线 `3e9413d`（本轮未 fetch），G1-B/G2 改动保留工作区。新增 `dartis` Registry 元数据、严格参数及比较清单，更新原清单长度测试；不改 Solver、Worker/Controller、HTTP 路径、SQLite 模式或物理核验器。
+- 分支 `feat/hmt-algorithm-a`；G1-A 两份文件已由何明涛提交于 `588dbd2`，本地 `origin/main` 仍为基线 `3e9413d`（本轮未 fetch），G1-B/G2 已提交于 `036317f`。新增 `dartis` Registry 元数据、严格参数及比较清单，更新原清单长度测试；不改 Solver、Worker/Controller、HTTP 路径、SQLite 模式或物理核验器。
 - G1-A DARTIS 专项 **20/20**，G2 注册与隔离真实回环 HTTP/spawn/SQLite 专项 **7/7**。合成 3 任务经真实 Worker、公共来源/离散约束核验与正式 SQLite 事务完成 3/3，TCR=1.0、TP=6.0、BD=0.5、TM=0.2777777778，Worker exit_code=0；连续认证收据是测试服务进程限定的 `UNIT_TEST_ONLY` 注入，**不代表真实场景正式物理认证**。测试时钟触发正常预算返回并提交 1 项完整部分计划；DARTIS 运行中取消为 CANCELLED、故障求解器为 FAILED，均无正式计划且 Worker 被回收。
 - 只读 EOS-Bench 母文件 `output_s1/Sats1_M100_T7d_dist0.json` SHA-256 `b61f4de708894f0bc30b6e0614aafc2ac9340880306ed0617fdc50cf492d198a` 派生临时 1 星/30 任务/24 h 场景，真实 HTTP/Worker 产出候选；生产预览认证因本环境缺 `orekit_jpype` 拒绝（`FAILED/PREVIEW_REJECTED/PHYSICS_UNAVAILABLE`），无正式计划/指标，母文件前后 SHA 一致。
 - G1-B/G2 收尾：`algorithm_integration.md` 已列出当前 12 种比较算法并保留旧 10/11 种历史记录；定向复跑 DARTIS、注册表、RABAS/CAABS 相关模块 **125 项，124 通过、1 项因 LFS 实体缺失跳过**，无新增代码失败。G3 首组临时真实派生场景 SHA `c405f7f23a8c34cd4c76ac3ceac79b90dec75610fb45d671dec59df9115c2da9`：同 seed 42、同 5 秒预算、同预览模式与公共离散回放，LLF/EDF/Greedy/RABAS 均为候选 24/30、离散 PASS；CAABS 因 37/37 窗口无可信来源而只返回空候选，不能作性能排名。本组 Orekit preview 与正式连续认证均未运行，不作为 SQLite 正式成绩；细节见 [算法 A 专题](docs/phase2/algorithms/deadline_insertion.md)。
