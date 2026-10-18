@@ -90,12 +90,45 @@ class FoundationTests(Fixture):
         self.assertLessEqual(stats["candidate_builder_calls"], 8)
         self.assertEqual(candidates, adapter.build(task))
 
-    def test_agile_only_earliest_and_center(self):
+    def test_agile_earliest_center_latest(self):
         self.problem.satellites["S1"].maneuverability_type = "agile"
         task = self.task("T1", [("S1", 0)], width=30)
         candidates = BoundedCandidateAdapter(self.cm, CAABSParams()).build(task)
-        self.assertEqual([(a.sat_start_time-self.start).total_seconds() for a in candidates], [0, 10])
-        self.assertEqual([len(a.sat_angles["roll_angles"]) for a in candidates], [10, 10])
+        self.assertEqual([(a.sat_start_time-self.start).total_seconds() for a in candidates], [0, 10, 20])
+        self.assertEqual([len(a.sat_angles["roll_angles"]) for a in candidates], [10, 10, 10])
+
+    def test_late_candidate_recovers_third_public_feasible_task(self):
+        # Synthetic-only fixture: each task has one 120-second source window.
+        # Earliest/center alone offer 0s and 55s; the native public latest
+        # constructor offers 110s. Source IDs and attitude slices are retained.
+        self.problem.satellites["S1"].maneuverability_type = "agile"
+        tasks = [self.task(tid, [("S1", 0)], duration=10, width=120)
+                 for tid in ("T1", "T2", "T3")]
+        params = CAABSParams(beam_width=32, branch_limit=16,
+                             max_candidates_per_task=16, max_windows_per_task=32)
+        adapter = BoundedCandidateAdapter(self.cm, params)
+        for task in tasks:
+            candidates = adapter.build(task)
+            self.assertEqual([(a.sat_start_time - self.start).total_seconds()
+                              for a in candidates], [0, 55, 110])
+            for candidate in candidates:
+                self.assertTrue(self.cm.is_feasible_assignment(candidate, Schedule()))
+                self.assertEqual(candidate.sat_window_id, task.windows[0].window_id)
+                self.assertEqual(len(candidate.sat_angles["roll_angles"]), 10)
+        result = ConflictBeamScheduler().solve(
+            self.problem, self.cm, SolveContext(42, 60, ObjectiveWeights(), params))
+        self.assertEqual(len(result.assignments), 3)
+        self.assertEqual(result.metadata["caabs"]["stop_reason"], "completed")
+        self.assert_shared_feasible(result)
+
+    def test_late_candidates_remain_bounded(self):
+        self.problem.satellites["S1"].maneuverability_type = "agile"
+        task = self.task("T1", [("S1", 0)], duration=10, width=120)
+        params = CAABSParams(max_candidates_per_task=2)
+        adapter = BoundedCandidateAdapter(self.cm, params)
+        starts = [(a.sat_start_time - self.start).total_seconds()
+                  for a in adapter.build(task)]
+        self.assertEqual(starts, [0, 55])
 
     def test_non_agile_center_and_missing_evidence(self):
         task = self.task("T1", [("S1", 0)], width=30)
@@ -118,7 +151,7 @@ class FoundationTests(Fixture):
         stats = {}
         candidates = BoundedCandidateAdapter(cm, CAABSParams(max_candidates_per_task=3), stats=stats).build(task)
         self.assertEqual(candidates, [])
-        self.assertEqual(stats["candidate_builder_calls"], 6)
+        self.assertEqual(stats["candidate_builder_calls"], 9)
 
     def test_schedule_branch_deep_isolation(self):
         a = self.candidate(self.task("T1", [("S1", 0)]))

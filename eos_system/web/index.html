@@ -36,8 +36,8 @@
         </div>
         <section class="workflow-panel" id="workspace-step-1" aria-labelledby="workspace-heading-1">
         <div class="panel-heading"><div><h3 id="workspace-heading-1" tabindex="-1">先选择本次实验的场景</h3><p>从已登记的数据源中选择；需要新目录时，展开下方「目录管理」。</p></div><span class="step-count">步骤 1 / 3</span></div>
-        <!-- 统一常规流程；保留字段ID供已有提交逻辑使用，不再要求用户选认证模式。 -->
-        <select id="execution-mode" hidden aria-label="核验流程"><option value="physical_validation" selected>工程物理核验</option></select>
+        <!-- 常规场景保持统一工程流程；仅开发来源显示明确的预览选择。 -->
+        <label id="execution-mode-control" hidden>核验流程<select id="execution-mode" aria-label="核验流程"><option value="physical_validation" selected>工程物理核验</option><option value="planning_preview">开发规划预览（不提供正式认证导出）</option></select></label>
         <p id="mode-hint" class="hint">统一执行来源、资源、转向及 Orekit 全曝光物理采样检查；通过后可导出与回放。采样核验不等同于严格连续区间证明。</p>
         <div class="workspace-fields"><label>数据源<select id="source" required></select></label>
         <label>场景<select id="scenario" required></select></label>

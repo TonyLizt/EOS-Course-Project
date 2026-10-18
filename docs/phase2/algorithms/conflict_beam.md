@@ -1,3 +1,17 @@
+# CAABS 当前状态增补 — v0.2.0 候选放置覆盖修复（2026-10-18）
+
+> 以下是针对 Git `ba114dd` 的修复提议，**只有将补丁应用、回归通过并提交新 Git SHA 后，才可以声称 v0.2.0 已实现**。原有 v0.1 / I1 / I2 描述继续保留作为历史资料。
+>
+> 动机：在独立合成三任务反例中，公共 ConstraintModel 接受 0/55/90 秒的三任务见证计划，而原 CAABS 只返回两任务；旧候选均为 `earliest` / `center` (0/55 秒)。
+>
+> 最小改动：复用公共 `ConstraintModel.build_feasible_assignment_for_task()` 已支持的 `latest` 放置策略，不复制仰角、来源身份、姿态切片、下传与资源约束。每选定窗口最多从两个变为三个构造调用；最大候选数和 `branch_limit` 不变，仍保留协作取消与时间预算检查。
+>
+> 限制：这只增加一个确定性晚放置锚点，不保证覆盖全部起点或所有下传组合；窗口数达到候选上限时，晚放置仍可能由于容量限制而未进入前沿。P3 物理模型和严格连续认证另行审核，不能据此认证正式场景。
+>
+> 验收：新增原始三任务反例回归、候选上限回归，原有四组测试均通过（原基线 103 项，补丁后应超过 103 项）；记录实际输出、测试数量、退出码和提交 SHA。
+
+---
+
 # CAABS v0.1 — Conflict-Aware Anytime Beam Search
 
 > 2026-10-18 R2-B/I1 后续：本工作树已补充 `caabs` Registry 登记及无环共用契约，待人工审核；搜索版本仍为0.1.0。以下核心交付/R1历史记录保留。I2来源窗口、连续认证和正式发布未在I1处理，详见 [I1修复报告](caabs_i1_registry_fix_20261018.md)。
@@ -357,3 +371,7 @@ PYTHONHASHSEED=0 MPLBACKEND=Agg /home/meteor/eos-course-runtime/.venv/bin/python
 基于R1核心复核与本次M1反例、分支去重和饱和测试，建议将独立核心结论升级为 **CORE REVIEW PASS**。
 这不改变 **REGRESSION INCOMPLETE / INTEGRATION NOT VERIFIED**：本轮未重跑全量、未登记 Registry、
 未完成正式连续认证。I1未来循环导入、I2公共来源窗口歧义及全量时序/超时仍由独立任务处理。
+
+## 2026-10-19 系统复验附录
+
+前述R1.1结论按历史保留；当前合并版本已接通Registry/Runner/真实Worker/Controller及I2独立来源重建。P5/P6未改Beam核心，新非GS开发场景CAABS/Completion各3/3，真实GS场景CAABS2/3；全部六组物理opt-in的完整回归632/632通过、0跳过。开发预览的SUCCEEDED不是正式认证成功。数学区间内核只证明可信包络假设下的margin，生产Orekit连续证书仍缺误差/实际slew轨迹合同，正式来源/导出继续阻断。详见[P5/P6收口记录](caabs_p5_p6_closeout.md)，不能以此附录追认历史证书或数据哈希。

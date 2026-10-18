@@ -91,14 +91,17 @@ class ScenarioCatalog:
             if row.get("availability", "ready") != "ready":
                 continue
             try:
-                from .provenance import capture_provenance
+                from .provenance import capture_execution_provenance
                 scene = root / (row["scenario_id"] + ".json")
                 if not row.get("catalog_id"):
                     row.update(_summary(str(scene), row["sha256"]))
-                evidence = capture_provenance(scene, row["sha256"])
+                evidence = capture_execution_provenance(scene, row["sha256"],
+                    "planning_preview" if planning_preview else "formal")
                 row.update({key: evidence.get(key, "UNKNOWN") for key in (
                     "scenario_physics_version", "provenance_status", "physical_validation_status")})
                 row["availability"] = "ready"
+                if evidence.get("provenance_status") == "development_planning_only":
+                    row.update(formal_release_eligible=False, execution_modes=["planning_preview"])
             except (OSError, ValueError, TypeError) as exc:
                 row.update(availability="invalid", validation_message=str(exc))
         return sorted(result, key=lambda row: row["scenario_id"])

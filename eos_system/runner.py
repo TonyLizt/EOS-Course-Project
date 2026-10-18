@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from copy import deepcopy
 from pathlib import Path
 
 from schedulers.constraint_model import ConstraintModel
@@ -49,7 +50,12 @@ def run_prepared(solver: Solver, problem: SchedulingProblem, constraints: Constr
     started = time.perf_counter()
     schedule = solver.solve(problem, constraints, context)
     runtime = time.perf_counter() - started
-    return schedule_to_dict(schedule, problem), runtime
+    candidate = schedule_to_dict(schedule, problem)
+    # Diagnostics are untrusted Worker telemetry, never feasibility evidence.
+    # Independent verification rebuilds the plan and deliberately drops these.
+    if schedule.metadata:
+        candidate["solver_diagnostics"] = deepcopy(schedule.metadata)
+    return candidate, runtime
 
 
 def calculate(config: RunConfig) -> tuple[dict, float]:

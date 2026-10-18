@@ -130,8 +130,8 @@ def _plain(value):
 def calculator_inputs(scene):
     """Project only legacy API aliases; retain every supplied static attribute.
 
-    This API reads orbit elements, attitude limits and target positions. It does
-    not consume FOV/resources. Unsupported sensor identity is rejected, not
+    This API reads orbit elements, attitude limits, fixed FOV, hardware tracking
+    rate and target positions. Unsupported sensor identity is rejected, not
     renamed. No constructor may reset a supplied capability to its defaults.
     """
     meta = scene["metadata"]
@@ -158,6 +158,10 @@ def calculator_inputs(scene):
         for field in ("resolution", "sensor_mode", "field_of_view_deg", "observation_swath_width_km",
                       "data_rate_Mbps", "power_consumption_W", "min_elevation_angle_deg"):
             sensors[0][field]
+        sat.observation_capability.sensors[0].field_of_view = _number(
+            sensors[0]["field_of_view_deg"], f"{sat.id}.field_of_view_deg", positive=True)
+        sat.maneuverability_capability.slew_rate = _number(
+            sat.maneuverability_capability.slew_rate_deg_per_s, f"{sat.id}.slew_rate_deg_per_s")
         op = sat.orbital_params
         parse_orbit_epoch(op.epoch, satellite_id=sat.id)
         op.initial_representation_Epoch = op.epoch
@@ -223,6 +227,9 @@ def serialize_windows(observations, communications):
         if window.agile_data is not None:
             result["agile_data"] = {f"{axis}_angles": getattr(window.agile_data, f"{axis}_angles")
                                     for axis in ("pitch", "yaw", "roll")}
+            quaternions = getattr(window.agile_data, "boundary_quaternions_xyzw", None)
+            if quaternions is not None:
+                result["agile_data"]["boundary_quaternions_xyzw"] = quaternions
         if window.non_agile_data is not None:
             result["non_agile_data"] = {f"{axis}_angle": getattr(window.non_agile_data, f"{axis}_angle")
                                         for axis in ("pitch", "yaw", "roll")}

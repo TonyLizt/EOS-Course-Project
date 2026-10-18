@@ -82,7 +82,10 @@ class Watchdog:
         self.logger.propagate = False
 
     def event(self, kind: str, **detail) -> None:
-        self.state['last_event'] = {'time': utc(), 'event': kind, **detail}
+        # UTC is for display; it may jump under NTP/WSL clock corrections.
+        # Same-process elapsed-time evidence must use this monotonic clock.
+        self.state['last_event'] = {'time': utc(), 'monotonic_ns': time.monotonic_ns(),
+                                    'event': kind, **detail}
         self.logger.info(json.dumps(self.state['last_event'], ensure_ascii=False))
         self.publish()
 

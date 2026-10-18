@@ -656,3 +656,24 @@ cd /Users/tonylizt/Projects/EOS-Course-Project
 - 新建场景记录窗口版本、已检测退出括区精度、扫描配置及连续认证 NOT_RUN；窗口精度与连续证明分别记录。
 - `tests/certification_fixtures.py` 仅用于临时单元测试注入，所有模拟凭证标记 UNIT_TEST_INJECTION_ONLY；没有 HTTP/JSON/环境变量开关可启用模拟认证。
 - 本轮完整命令、最终结果与 31 文件清单见连续曝光审计报告第 11 节起；正式发布仍受连续区间证明缺失阻断。
+## CAABS 全链路修复与实际物理验收（2026-10-18）
+
+- 独立工作树`EOS-Course-Project-caabs-latest`保留`8cf282b`算法核心，新增相对Nadir刚体姿态/固定相机/FOV及速率检查、真实边界四元数/转向核验、当前真实Orekit开发场景及严格开发来源合同。未追认Legacy/C6旧哈希，不改变正式认证门禁。
+- 本地P0至P5修复提交：`7025151`、`ee7d0e2`、`be92f1d`、`3f2cff0`、`aa7a9b7`、`0b9f48d`；实际3/3非空CAABS与Completion同预算对照、独立Verifier及真实Worker取消/崩溃/Controller重启通过。105项原回归通过，生命周期50项连续两轮通过。
+- 最终代码完整发现599项，592成功、2个失败测试（含3条failure）、5个opt-in跳过，退出1；另行启用剩余几何测试后微秒CZML/插值通过，旧绝对姿态GPM窗口基准失败。历史物理fixture迁移与连续区间证书仍阻断合并/正式发布，不宣称全绿。真实场景SHA `a2ec9d89b2610eba6633a2b637b6d391eda95fde9baa20ad6859d359d177d10a`，仅开发预览；未push/PR/merge。详见[最终验收与Draft PR材料](docs/phase2/algorithms/caabs_final_integration_acceptance.md)。
+
+## CAABS P5/P6 复验（2026-10-19）
+
+- 从`c5090ba`继续，保留上述历史结论和原240项证据，不改CAABS v0.2.0核心。历史曝光/RABAS/GPM改用有源身份的独立相对Nadir正负例；修复真实地下目标/显式最低仰角缺陷，新增真实GS通信几何与独立下传审计。
+- 先提交连续认证设计和反例，再实现Fraction精确条件区间内核。当前Orekit误差包络与实际slew轨迹合同不满足正式证明前提，仍`INCONCLUSIVE / NO_CONTINUITY_CERTIFICATE`；内核没有注册成生产证书provider。
+- 最终`37cbaf6`代码完整发现632项，632通过/0失败/0错误/0跳过，全部六组真实物理opt-in启用，退出0、194.085秒（外层195.552秒/1200秒上限）；385文件原生Linux副本SHA一致。首轮631项中的Daemon UTC计时断言失败仍保留日志，改为严格单调计时证据后复验，未放宽退避策略。
+- 新非GS场景SHA`55243347e49c07856edab6dac0f71b051c567acaef3e962952289dd37ee56f1b`：CAABS/Completion各3/3。新GS场景SHA`0e2210cc56dc0d3a6f9cba93c04d50ff93d9ce7cf81a35b3dcd8f3a0f7cee278`：真实3观测窗/1通信窗，CAABS2/3。均为来源合规开发预览，独立Verifier重建通过；正式来源与正式导出拒绝，未伪造证书。
+- 新证据独立归档`D:/VC/caabs-p6-evidence-20261018`，完整命令、提交/根因与有效性边界见[P5/P6收口记录](docs/phase2/algorithms/caabs_p5_p6_closeout.md)及[连续证明设计](docs/phase2/algorithms/continuous_interval_certification_design.md)。回归PASS、连续认证/正式发布BLOCKED；未push/PR/merge。
+
+## CAABS P7 最新main集成（2026-10-19）
+
+- 从已暂停的Rebase继续，将原15提交完整重放到`2d8a808`，只语义解决三处冲突；备份4f6cd37保留。没有skip/abort/reset/重新发起rebase，CAABS核心不变。
+- 修复开发侧车版本/类型/缺失降级与物理源码闭包；独立Preview入口纳入部署身份。冻结物理fixture固定LF，保留原SHA。Console常规工程默认及三工作区保留，开发限定来源须明确选择规划预览。
+- 两轮最新main完整discover均651/651、0失败/错误/跳过、六组真实物理opt-in全部开启；最终259.422秒、退出0。Node32/32；真实Chromium下无GS3/3、GS2/3、共享公开根pilot20/20，正式失败与未认证标识可见。DrvFS的停机测试阶段等待先采栈复现，测试修复后重复及整组通过，生产期限不改。
+- 新原始证据`D:/VC/caabs-p7-evidence-20261019`，旧240/P6的115项逐SHA未变；不复制私有最终测试规格、不修改旧数据。旧物理指纹的冻结数据不能自动升级当前模型；连续证明/正式发布仍BLOCKED。
+- 完整场景SHA、冲突映射、实际命令与Draft PR内容见[P7验收报告](docs/phase2/algorithms/caabs_p7_integration_acceptance.md)、[Rebase记录](docs/phase2/algorithms/caabs_p7_rebase_resolution.md)、[Draft PR正文](docs/phase2/algorithms/caabs_p7_draft_pr.md)。本轮只建议Draft独立审查，不push、建PR或merge，不提供正式合并批准。

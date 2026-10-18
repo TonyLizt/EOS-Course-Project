@@ -131,6 +131,7 @@ class SchedulingProblem:
     ground_stations: Dict[str, SchedulingGroundStation]
     tasks: Dict[str, SchedulingTask]
     comm_windows: List[CommWindow]
+    initial_attitudes: Dict[str, dict] = field(default_factory=dict)
 
 
 # ==============================
@@ -376,4 +377,5 @@ def load_scheduling_problem_from_json(json_path: str | Path) -> SchedulingProble
         ground_stations=ground_stations,
         tasks=tasks,
         comm_windows=comm_windows,
+        initial_attitudes=dict((meta.get("extra") or {}).get("initial_attitudes") or {}),
     )

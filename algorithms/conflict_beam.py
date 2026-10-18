@@ -21,7 +21,7 @@ from schedulers.constraint_model import Assignment, ConstraintModel, Schedule
 from schedulers.scenario_loader import SchedulingProblem, SchedulingTask, TaskWindow
 from utils.continuous_exposure import ExposureStatus, planning_window
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 Checkpoint = Callable[[], None]
 
 
@@ -151,10 +151,10 @@ class _CandidateConstructor(ConstraintModel):
 
 
 class BoundedCandidateAdapter:
-    """At most two public constructor calls per selected observation window.
+    """At most three public constructor calls per selected observation window.
 
     Selection balances satellites, then spreads each satellite's window quota
-    over the horizon. One placement per selected window precedes extra centers.
+    over the horizon. One placement per selected window precedes extra centers and latest positions.
     Public constructors choose only their first feasible downlink combination.
     """
 
@@ -165,7 +165,7 @@ class BoundedCandidateAdapter:
         self.checkpoint = checkpoint
         self.stats = stats if stats is not None else {}
         self.models = {mode: _CandidateConstructor(constraints, mode, checkpoint, self.stats)
-                       for mode in ("earliest", "center")}
+                       for mode in ("earliest", "center", "latest")}
 
     def _windows(self, task: SchedulingTask) -> list[TaskWindow]:
         groups: dict[str, list[TaskWindow]] = {}
@@ -206,7 +206,7 @@ class BoundedCandidateAdapter:
         windows = self._windows(task)
         candidates = []
         seen = set()
-        for mode in ("earliest", "center"):
+        for mode in ("earliest", "center", "latest"):
             for window in windows:
                 self.checkpoint()
                 if len(candidates) >= self.params.max_candidates_per_task:

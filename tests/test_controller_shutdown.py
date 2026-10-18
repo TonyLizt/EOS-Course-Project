@@ -24,6 +24,7 @@ from eos_system.storage import Database
 from eos_system import worker_reference as worker
 from eos_system.worker_reference import receive_message, send_message
 from eos_system.worker_process import read_proc
+from spawn_support import ProcessGate, SPAWN_STARTUP_S
 
 
 def _shutdown_worker(run_id, attempt, event_pipe, control_pipe):
@@ -171,16 +172,26 @@ class ControllerShutdownTests(unittest.TestCase):
         self.scene = scenarios / "fixture.json"
         self.scene.write_bytes(raw)
         self.digest = hashlib.sha256(raw).hexdigest()
-        self.settings = Settings(root, scenarios, startup_timeout_s=2,
+        self.settings = Settings(root, scenarios, startup_timeout_s=SPAWN_STARTUP_S,
                                  transfer_timeout_s=0.3, stop_grace_s=0.2)
         self.database = Database(self.settings.database_path)
         self.run_id = str(uuid.uuid4())
         self.controller = None
         self.patch_worker = None
+        self._release_gates = []
 
     def tearDown(self):
+        for gate in self._release_gates:
+            gate.set()
         if self.controller is not None and self.controller._lock_file is not None:
-            self.controller.stop()
+            try:
+                self.controller.stop()
+            except RuntimeError:
+                # A deliberately tiny stop watchdog is part of one negative
+                # test. Release the fixture and wait for actual completion;
+                # never delete its SQLite directory beneath a live thread.
+                self.controller._thread.join(timeout=SPAWN_STARTUP_S)
+                self.controller.stop()
         if self.patch_worker is not None:
             self.patch_worker.stop()
         self.assertFalse([child for child in mp.active_children()
@@ -196,12 +207,23 @@ class ControllerShutdownTests(unittest.TestCase):
         self.database.enqueue(config, max_queued=8)
 
     def wait_for(self, predicate, timeout=4):
-        deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
+        bootstrap_deadline = time.monotonic() + SPAWN_STARTUP_S + 4 * timeout
+        deadline = None
+        milestones = set()
+        while time.monotonic() < (deadline or bootstrap_deadline):
             if predicate():
                 return
+            record = self.database.get_run(self.run_id)
+            observed = {e["payload"].get("phase") for e in record["events"]
+                        if e["event_type"] in {"started", "heartbeat"}}
+            observed &= {None, "STARTING", "LOADING", "SEARCHING", "SERIALIZING"}
+            if record["status"] == "VERIFYING":
+                observed.add("VERIFYING")
+            if observed - milestones:
+                milestones |= observed
+                deadline = min(bootstrap_deadline, time.monotonic() + timeout)
             time.sleep(0.02)
-        self.fail("等待条件超时")
+        self.fail("等待条件超时: " + str(self.database.get_run(self.run_id)))
 
     def test_stop_active_worker_marks_internal_interruption_and_releases_lock(self):
         self.enqueue()
@@ -226,6 +248,7 @@ class ControllerShutdownTests(unittest.TestCase):
     def test_stop_and_start_attempt_are_serialized(self):
         self.enqueue()
         entered, release = threading.Event(), threading.Event()
+        self._release_gates.append(release)
         original = self.database.start_attempt
 
         def blocked_start(run_id):
@@ -345,7 +368,12 @@ class ControllerShutdownTests(unittest.TestCase):
         self.controller = controller_module.Controller(self.settings, self.database)
         self.controller.start()
         self.wait_for(lambda: self.database.get_run(self.run_id)["status"] in
-                      {"SUCCEEDED", "FAILED"})
+                      {"VERIFYING", "SUCCEEDED", "FAILED"})
+        # The worker is already reaped. Independent verification and Storage's
+        # deployment SHA guard have the Controller's 30s budget, not the 4s
+        # worker milestone bound. DrvFS file hashing can exceed the latter.
+        self.wait_for(lambda: self.database.get_run(self.run_id)["status"] in
+                      {"SUCCEEDED", "FAILED"}, timeout=controller_module.VERIFICATION_TIMEOUT_S + 1)
         self.controller.stop()
         record = self.database.get_run(self.run_id)
         self.assertEqual(record["status"], "SUCCEEDED")
@@ -353,10 +381,12 @@ class ControllerShutdownTests(unittest.TestCase):
         reap = next(event for event in record["events"] if event["event_type"] == "WORKER_REAP")
         self.assertTrue(reap["payload"]["identity_confirmed"])
         self.assertFalse(reap["payload"]["scan_limited"])
+        verifying = next(event for event in record["events"] if event["event_type"] == "VERIFYING")
+        self.assertLess(reap["event_id"], verifying["event_id"])
 
     def test_unconfirmed_session_cannot_commit_legal_candidate(self):
         self.enqueue()
-        start_received = mp.get_context("spawn").Event()
+        start_received = ProcessGate(self.settings.runtime_dir / "start-received")
         self.patch_worker = patch.object(controller_module, "worker_main",
                                          partial(_unconfirmed_candidate_worker, start_received))
         self.patch_worker.start()
@@ -394,8 +424,9 @@ class ControllerShutdownTests(unittest.TestCase):
     def test_cancel_before_delayed_started_never_sends_start(self):
         self.enqueue()
         context = mp.get_context("spawn")
-        ready, release = context.Event(), context.Event()
-        start_received, algorithm_entered = context.Event(), context.Event()
+        ready, release = (ProcessGate(self.settings.runtime_dir / name) for name in ("ready", "release"))
+        start_received, algorithm_entered = (ProcessGate(self.settings.runtime_dir / name)
+                                             for name in ("start-received", "algorithm-entered"))
         self.addCleanup(release.set)
         self.patch_worker = patch.object(
             controller_module, "worker_main",
@@ -414,7 +445,7 @@ class ControllerShutdownTests(unittest.TestCase):
         with patch.object(self.database, "get_status", side_effect=observed_status):
             self.controller = controller_module.Controller(self.settings, self.database)
             self.controller.start()
-            self.assertTrue(ready.wait(3), "Worker 未到达 setsid 后的 started 发送点")
+            self.assertTrue(ready.wait(SPAWN_STARTUP_S), "Worker 未到达 setsid 后的 started 发送点")
             self.database.request_cancel(self.run_id)
             self.assertTrue(cancel_observed.wait(2), "Controller 未读取已持久化的取消")
             release.set()
@@ -431,8 +462,9 @@ class ControllerShutdownTests(unittest.TestCase):
     def test_stop_before_delayed_started_never_sends_start(self):
         self.enqueue()
         context = mp.get_context("spawn")
-        ready, release = context.Event(), context.Event()
-        start_received, algorithm_entered = context.Event(), context.Event()
+        ready, release = (ProcessGate(self.settings.runtime_dir / name) for name in ("ready", "release"))
+        start_received, algorithm_entered = (ProcessGate(self.settings.runtime_dir / name)
+                                             for name in ("start-received", "algorithm-entered"))
         self.addCleanup(release.set)
         self.patch_worker = patch.object(
             controller_module, "worker_main",
@@ -440,7 +472,7 @@ class ControllerShutdownTests(unittest.TestCase):
         self.patch_worker.start()
         self.controller = controller_module.Controller(self.settings, self.database)
         self.controller.start()
-        self.assertTrue(ready.wait(3), "Worker 未到达 setsid 后的 started 发送点")
+        self.assertTrue(ready.wait(SPAWN_STARTUP_S), "Worker 未到达 setsid 后的 started 发送点")
         errors = []
         stopper = threading.Thread(target=lambda: self._stop_capture(errors))
         stopper.start()
@@ -461,6 +493,7 @@ class ControllerShutdownTests(unittest.TestCase):
     def test_blocked_verification_keeps_flock_until_thread_finishes(self):
         self.enqueue()
         entered, release = threading.Event(), threading.Event()
+        self._release_gates.append(release)
         original = controller_module.verify_candidate
 
         def blocked_verify(*args):
@@ -472,7 +505,7 @@ class ControllerShutdownTests(unittest.TestCase):
         self.controller._shutdown_timeout_s = 0.2
         with patch.object(controller_module, "verify_candidate", side_effect=blocked_verify):
             self.controller.start()
-            self.assertTrue(entered.wait(4))
+            self.assertTrue(entered.wait(SPAWN_STARTUP_S + 4))
             with self.assertRaisesRegex(RuntimeError, "实例锁仍保留"):
                 self.controller.stop()
             self.assertIsNotNone(self.controller._lock_file)
@@ -481,6 +514,7 @@ class ControllerShutdownTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 other.start()
             release.set()
+            self.wait_for(lambda: not self.controller._thread.is_alive(), SPAWN_STARTUP_S)
             self.controller.stop()
         self.assertFalse(self.controller._thread.is_alive())
         self.assertEqual(self.database.get_run(self.run_id)["error"]["code"],

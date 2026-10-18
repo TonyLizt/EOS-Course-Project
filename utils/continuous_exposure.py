@@ -126,7 +126,7 @@ class PlanExposureAuditor:
         return float(value)
 
     def evaluator(self, satellite, mission):
-        from utils.visibility import create_visibility_evaluator, ensure_orekit
+        from utils.visibility import create_visibility_evaluator, ensure_orekit, effective_minimum_elevation
         op = satellite["orbital_params"]
         location = mission["target_location"]
         limits = satellite["maneuverability_capability"]
@@ -139,6 +139,15 @@ class PlanExposureAuditor:
             target_alt_m=n(location,"altitude_km")*1000,
             max_yaw_deg=n(limits,"max_yaw_angle_deg"),max_pitch_deg=n(limits,"max_pitch_angle_deg"),
             max_roll_deg=n(limits,"max_roll_angle_deg"),min_elevation_deg=self.minimum)
+        sensors = satellite.get("observation_capability", {}).get("sensors", [])
+        if len(sensors) != 1 and self.factory is None:
+            raise ValueError("physical audit requires one explicit fixed camera")
+        params.update(field_of_view_deg=(sensors[0].get("field_of_view_deg", 45.0) if sensors else 45.0),
+                      maneuverability_type=limits.get("maneuverability_type", "agile"),
+                      max_tracking_rate_deg_s=limits.get("slew_rate_deg_per_s"))
+        params['min_elevation_deg']=effective_minimum_elevation(self.minimum,
+            sensors[0].get('min_elevation_angle_deg') if sensors else None,
+            mission.get('observation_requirement',{}).get('min_elevation_angle_deg'))
         if (params["a_m"]<=0 or not 0<=params["e"]<1 or not -90<=params["target_lat_deg"]<=90
                 or any(params[k]<0 for k in ("max_yaw_deg","max_pitch_deg","max_roll_deg"))):
             raise ValueError("physical inputs outside supported Keplerian/target/attitude domain")
@@ -174,6 +183,33 @@ class PlanExposureAuditor:
             old.cache_clear()
         return value
 
+    def ground_evaluator(self,satellite,station):
+        """Independent real communication geometry, no optical attitude proxy."""
+        from utils.visibility import create_communication_evaluator
+        n=self.number;op=satellite['orbital_params'];loc=station['location']
+        params=dict(a_m=n(op,'semi_major_axis_km')*1000,e=n(op,'eccentricity'),
+            i_deg=n(op,'inclination_deg'),raan_deg=n(op,'right_ascension_of_ascending_node_deg'),
+            argp_deg=n(op,'argument_of_perigee_deg'),m_deg=n(op,'mean_anomaly_deg'),
+            epoch_dt=parse_orbit_epoch(op['epoch']),target_lat_deg=n(loc,'latitude'),
+            target_lon_deg=n(loc,'longitude'),target_alt_m=n(loc,'altitude_km')*1000,
+            min_elevation_deg=self.minimum)
+        key=json.dumps(['ground_link',self.scene_digest,self.data_sha,params],sort_keys=True,default=str)
+        if key in self.pairs:
+            self.cache_hits+=1;self.pairs.move_to_end(key)
+            return self.pairs[key][0]
+        raw=create_communication_evaluator(**params)
+        self.pair_builds+=1
+        @lru_cache(maxsize=256)
+        def evaluate(moment):
+            if time.monotonic()>self.deadline or self.propagations>=self.budget:
+                raise RuntimeError('communication audit deadline/evaluation budget exceeded')
+            self.propagations+=1
+            return raw(moment)
+        self.pairs[key]=(evaluate,None)
+        if len(self.pairs)>self.max_pairs:
+            _,(old,_)=self.pairs.popitem(last=False);old.cache_clear()
+        return evaluate
+
     def audit(self, plan):
         begin = time.perf_counter()
         rows = []
@@ -182,6 +218,7 @@ class PlanExposureAuditor:
                         counts={"PASS":0,"FAIL":0,"INCONCLUSIVE":0},task_count=0)
         satellites = {s["id"]:s for s in self.scene.get("satellites",[])}
         missions = {m["id"]:m for m in self.scene.get("missions",[])}
+        stations = {g['id']:g for g in self.scene.get('ground_stations',[])}
         seen = set()
         for index,a in enumerate(plan.get("assignments",[])):
             row = dict(index=index,task_id=a.get("task_id") if isinstance(a,dict) else None,
@@ -209,12 +246,25 @@ class PlanExposureAuditor:
                 evaluate,certificate=self.evaluator(satellite,mission)
                 row.update(audit_interval(evaluate,start,end,required,step_s=self.step_s,certificate=certificate))
                 row.update(start_utc=start.isoformat(),end_utc=end.isoformat(),required_s=required)
+                if stations:
+                    station=stations[a['ground_station_id']]
+                    gs_start=parse_orbit_epoch(a['gs_start_time']);gs_end=parse_orbit_epoch(a['gs_end_time'])
+                    if not end<gs_start<gs_end<=horizon+timedelta(seconds=duration):
+                        raise ValueError('invalid physical downlink interval')
+                    ground=self.ground_evaluator(satellite,station)
+                    link=audit_interval(ground,gs_start,gs_end,(gs_end-gs_start).total_seconds(),step_s=self.step_s)
+                    row['downlink_audit']=link
+                    if link['sampled_boundaries_status']!='PASS':
+                        row.update(status='FAIL',reason='DOWNLINK_'+link['reason'],sampled_boundaries_status='FAIL')
+                    elif row['status']=='PASS':
+                        # Ground geometry currently has no interval provider.
+                        row.update(status='INCONCLUSIVE',reason='NO_GROUND_LINK_CONTINUITY_CERTIFICATE')
             except KeyError as exc:
-                row.update(status="INCONCLUSIVE",reason="MISSING_PHYSICAL_INPUT",detail=str(exc))
+                row.update(status="INCONCLUSIVE",reason="MISSING_PHYSICAL_INPUT",detail=str(exc),sampled_boundaries_status='UNAVAILABLE')
             except (OSError,ImportError,RuntimeError) as exc:
-                row.update(status="INCONCLUSIVE",reason="PHYSICS_UNAVAILABLE",detail=str(exc))
+                row.update(status="INCONCLUSIVE",reason="PHYSICS_UNAVAILABLE",detail=str(exc),sampled_boundaries_status='UNAVAILABLE')
             except (ValueError,TypeError,OverflowError) as exc:
-                row.update(status="FAIL",reason="INVALID_INPUT",detail=str(exc))
+                row.update(status="FAIL",reason="INVALID_INPUT",detail=str(exc),sampled_boundaries_status='FAIL')
             rows.append(row)
         counts={k:sum(r["status"]==k for r in rows) for k in ("PASS","FAIL","INCONCLUSIVE")}
         if not isinstance(plan.get("assignments"),list) or not rows:
@@ -257,8 +307,8 @@ GRID_V2_SOURCE_SHA256 = "401cf0ae4989af5ac088de9ac9f74dfb58f279018d44b506fa9e61b
 
 
 
-WINDOW_PHYSICS_FILES = ('utils/visibility.py', 'utils/time_parsing.py')
-WINDOW_PHYSICS_SCHEMA = 'orekit-window-physics-lf-v1'
+WINDOW_PHYSICS_FILES = ('utils/visibility.py', 'utils/time_parsing.py', 'utils/attitude_frames.py')
+WINDOW_PHYSICS_SCHEMA = 'orekit-window-physics-lf-v2'
 
 
 def window_physics_sources(root=None):
@@ -270,7 +320,12 @@ def window_physics_sources(root=None):
 
 def window_generation_record(step_s, min_elevation_deg, coarse_step_min):
     from utils.visibility import VISIBILITY_ALGORITHM_VERSION, EXIT_BOUNDARY_PRECISION_US
+    from utils.attitude_frames import ATTITUDE_MODEL_VERSION, CAMERA_TO_BODY_XYZW
     return dict(window_algorithm_version=VISIBILITY_ALGORITHM_VERSION,
+                attitude_model_version=ATTITUDE_MODEL_VERSION,
+                attitude_reference="nominal_nadir", body_optical_axis="+Z",
+                camera_to_body_quaternion_xyzw=list(CAMERA_TO_BODY_XYZW),
+                field_of_view_semantics="square_full_angle",
                 boundary_refinement_version="visible_side_bisection_v1",
                 exit_precision_us=EXIT_BOUNDARY_PRECISION_US,
                 endpoint_semantics="visible_side_exit_or_evaluated_horizon",
@@ -294,6 +349,13 @@ def planning_evidence(scene, path, scene_sha):
     sidecar = Path(path).parent/'provenance'/(Path(path).name+'.provenance.json')
     record = scene.get("metadata",{}).get("extra",{}).get("window_generation",{})
     fresh = False
+    development = scene.get("metadata", {}).get("extra", {}).get("development_generation_contract")
+    if development == "gen02.development.v1":
+        try:
+            from eos_system.provenance import capture_development_provenance
+            capture_development_provenance(Path(path), scene_sha)
+        except (OSError, ValueError, TypeError):
+            return None
     if sidecar.exists() or sidecar.is_symlink():
         if sidecar.is_symlink() or not sidecar.is_file() or sidecar.stat().st_size > 1024*1024:
             return None

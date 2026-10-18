@@ -16,10 +16,12 @@ import os
 import hashlib
 import math
 import random
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 from utils.time_parsing import parse_orbit_epoch
+from utils.attitude_frames import fixed_camera_in_fov, relative_body_rotation, ATTITUDE_MODEL_VERSION
 
 # ====== Domain models (from core/models.py) ======
 from core.models import (
@@ -44,6 +46,14 @@ _LOADED_DATA_SHA256: str | None = None
 _CONTEXT: "_OrekitContext | None" = None
 VISIBILITY_ALGORITHM_VERSION = "visibility_exit_refined_v3"
 EXIT_BOUNDARY_PRECISION_US = 1
+
+
+def effective_minimum_elevation(base, *declared):
+    """All explicit global/sensor/task limits apply; missing optional is None."""
+    values=[base]+[v for v in declared if v is not None]
+    if any(type(v) not in (int,float) or not math.isfinite(v) or not -90<=v<=90 for v in values):
+        raise ValueError('invalid declared minimum elevation')
+    return max(values)
 
 
 def _to_utc(dt: datetime) -> datetime:
@@ -101,6 +111,8 @@ def _find_orekit_data_zip(data_path: Optional[str] = None) -> str:
 def ensure_orekit(data_path: Optional[str] = None) -> None:
     """Ensure the JVM is started and Orekit data is loaded, only once per process."""
     global _VM_STARTED, _DATA_LOADED, _CONTEXT, _LOADED_DATA_SHA256
+    if not _VM_STARTED and threading.current_thread() is not threading.main_thread():
+        raise RuntimeError("OREKIT_MAIN_THREAD_INITIALIZATION_REQUIRED: preinitialize before Controller threads")
 
     # A JVM data context cannot silently change beneath an audit/cache.
     zip_path = _find_orekit_data_zip(data_path)
@@ -296,6 +308,8 @@ def _scan_visibility_grid(
             visible_attitudes.append({key: sample[key] for key in (
                 "time", "elevation_deg", "off_nadir_deg", "yaw_deg", "pitch_deg", "roll_deg")})
             last_visible = t
+            if sample.get("inertial_to_body_quaternion_xyzw") is not None:
+                visible_attitudes[-1]["inertial_to_body_quaternion_xyzw"] = sample["inertial_to_body_quaternion_xyzw"]
             if window_start is None:
                 window_start = t
         elif window_start is not None:
@@ -331,6 +345,9 @@ def compute_visibility_and_attitude(
     max_roll_deg: float,
     min_elevation_deg: float = 5.0,
     coarse_step_min: float = 60.0,
+    field_of_view_deg: float = 45.0,
+    maneuverability_type: str = "agile",
+    max_tracking_rate_deg_s: float | None = None,
 ) -> Tuple[List[Tuple[datetime, datetime]], List[dict], List[dict]]:
     """Return windows and synchronized samples on the complete fine UTC grid.
 
@@ -345,8 +362,18 @@ def compute_visibility_and_attitude(
         m_deg=m_deg, epoch_dt=epoch_dt, target_lat_deg=target_lat_deg,
         target_lon_deg=target_lon_deg, target_alt_m=target_alt_m,
         max_yaw_deg=max_yaw_deg, max_pitch_deg=max_pitch_deg,
-        max_roll_deg=max_roll_deg, min_elevation_deg=min_elevation_deg)
-    return _scan_visibility_grid(start_dt, end_dt, float(step_s), eval_full)
+        max_roll_deg=max_roll_deg, min_elevation_deg=min_elevation_deg,
+        field_of_view_deg=field_of_view_deg, maneuverability_type=maneuverability_type,
+        max_tracking_rate_deg_s=max_tracking_rate_deg_s)
+    windows, samples, attitudes = _scan_visibility_grid(start_dt, end_dt, float(step_s), eval_full)
+    for ws, we in windows:
+        members = [a for a in attitudes if ws <= a["time"] < we]
+        if members and members[0].get("inertial_to_body_quaternion_xyzw") is not None:
+            endpoint = eval_full(we)
+            if not endpoint["visible"]:
+                raise ValueError("stored visible-side boundary is not physically visible")
+            members[-1]["window_end_quaternion_xyzw"] = endpoint["inertial_to_body_quaternion_xyzw"]
+    return windows, samples, attitudes
 
 
 
@@ -354,6 +381,7 @@ def create_visibility_evaluator(
     *, a_m, e, i_deg, raan_deg, argp_deg, m_deg, epoch_dt,
     target_lat_deg, target_lon_deg, target_alt_m,
     max_yaw_deg, max_pitch_deg, max_roll_deg, min_elevation_deg=5.0,
+    field_of_view_deg=45.0, maneuverability_type="agile", max_tracking_rate_deg_s=None,
 ):
     """Build the SAME Orekit predicate used by generation, without scanning.
 
@@ -371,7 +399,7 @@ def create_visibility_evaluator(
     from org.orekit.frames import TopocentricFrame
     from org.orekit.bodies import GeodeticPoint
     from org.orekit.propagation.analytical import KeplerianPropagator
-    from org.orekit.attitudes import TargetPointing
+    from org.orekit.attitudes import TargetPointing, NadirPointing
     from org.hipparchus.geometry.euclidean.threed import Vector3D, RotationOrder, RotationConvention
     from orekit_jpype.pyhelpers import datetime_to_absolutedate
 
@@ -387,6 +415,13 @@ def create_visibility_evaluator(
     target_frame = TopocentricFrame(ctx.earth, target_geo, "TARGET")
 
     attitude_provider = TargetPointing(ctx.inertial, target_geo, ctx.earth)
+    nominal_provider = NadirPointing(ctx.inertial, ctx.earth)
+    if maneuverability_type not in ("agile", "super_agile", "non_agile"):
+        raise ValueError("unsupported maneuverability type")
+    fixed_camera_in_fov((0, 0, 1), field_of_view_deg)  # validate before any scan
+    if max_tracking_rate_deg_s is not None and (
+            not math.isfinite(max_tracking_rate_deg_s) or max_tracking_rate_deg_s <= 0):
+        raise ValueError("tracking rate must be positive and finite")
 
     # Orbit and propagator (orbit can be cached)
     orbit = _build_keplerian_orbit(ctx, a_m, e, i_deg, raan_deg, argp_deg, m_deg, epoch_dt)
@@ -414,8 +449,15 @@ def create_visibility_evaluator(
         evaluation_error = None
         off_nadir_deg = None
         yaw_deg = pitch_deg = roll_deg = None
+        body_quaternion = None
+        camera_visible = False
+        tracking_rate_deg_s = None
 
-        if elevation_rad > min_el_rad:
+        # Opaque convex WGS84 ground-target model. Underground targets are
+        # interior to the opaque body; positive ground-normal elevation is a
+        # sufficient unobstructed-ray condition. No terrain certificate claim.
+        earth_unoccluded = float(target_alt_m)>=0 and elevation_rad>0
+        if elevation_rad > min_el_rad and earth_unoccluded:
             # target -> inertial
             transform = ctx.itrf.getTransformTo(ctx.inertial, date)
             target_in_inertial = transform.transformPosition(target_in_itrf)
@@ -428,16 +470,29 @@ def create_visibility_evaluator(
             off_nadir_deg = math.degrees(float(off_nadir_rad))
 
             try:
-                rotation = attitude_provider.getAttitude(propagator, date, ctx.inertial).getRotation()
-                angles = rotation.getAngles(RotationOrder.ZYX, RotationConvention.FRAME_TRANSFORM)
+                nominal = nominal_provider.getAttitude(propagator, date, ctx.inertial)
+                attitude = (nominal if maneuverability_type == "non_agile" else
+                            attitude_provider.getAttitude(propagator, date, ctx.inertial))
+                rotation = attitude.getRotation()
+                relative = relative_body_rotation(rotation, nominal.getRotation())
+                angles = relative.getAngles(RotationOrder.ZYX, RotationConvention.FRAME_TRANSFORM)
                 yaw_deg = math.degrees(float(angles[0]))
                 pitch_deg = math.degrees(float(angles[1]))
                 roll_deg = math.degrees(float(angles[2]))
+                body_quaternion = [float(rotation.getQ1()), float(rotation.getQ2()),
+                                   float(rotation.getQ3()), float(rotation.getQ0())]
+                body_los = rotation.applyTo(los_unit)
+                camera_visible = fixed_camera_in_fov(
+                    (body_los.getX(), body_los.getY(), body_los.getZ()), field_of_view_deg)
+                tracking_rate_deg_s = math.degrees(float(attitude.getSpin().getNorm()))
 
                 if (
                     abs(yaw_deg) <= float(max_yaw_deg)
                     and abs(pitch_deg) <= float(max_pitch_deg)
                     and abs(roll_deg) <= float(max_roll_deg)
+                    and camera_visible
+                    and (max_tracking_rate_deg_s is None or
+                         tracking_rate_deg_s <= max_tracking_rate_deg_s)
                 ):
                     visible = True
             except Exception as exc:
@@ -454,6 +509,11 @@ def create_visibility_evaluator(
             "yaw_deg": yaw_deg,
             "pitch_deg": pitch_deg,
             "roll_deg": roll_deg,
+            "inertial_to_body_quaternion_xyzw": body_quaternion,
+            "attitude_model_version": ATTITUDE_MODEL_VERSION,
+            "camera_visible": camera_visible,
+            "tracking_rate_deg_s": tracking_rate_deg_s,
+            "earth_unoccluded": bool(earth_unoccluded),
         }
 
     return eval_full
@@ -462,6 +522,34 @@ def create_visibility_evaluator(
 # -----------------------------------------------------------------------------
 # 3) Mission and satellite object to orbit parameter and constraint mapping
 # -----------------------------------------------------------------------------
+
+
+def create_communication_evaluator(*, a_m,e,i_deg,raan_deg,argp_deg,m_deg,epoch_dt,
+        target_lat_deg,target_lon_deg,target_alt_m,min_elevation_deg=5.):
+    """Existing ideal-antenna ground-link contract: true geometry, no camera.
+
+    No optical TargetPointing/Euler chart may create or split an RF visibility
+    window. This is not a link-budget, antenna-mask or slew-trajectory proof.
+    """
+    if _CONTEXT is None:ensure_orekit(None)
+    ctx=_CONTEXT
+    from org.orekit.frames import TopocentricFrame
+    from org.orekit.bodies import GeodeticPoint
+    from org.orekit.propagation.analytical import KeplerianPropagator
+    from orekit_jpype.pyhelpers import datetime_to_absolutedate
+    minimum=effective_minimum_elevation(min_elevation_deg)
+    point=GeodeticPoint(math.radians(float(target_lat_deg)),math.radians(float(target_lon_deg)),float(target_alt_m))
+    station=TopocentricFrame(ctx.earth,point,'GROUND_LINK')
+    prop=KeplerianPropagator(_build_keplerian_orbit(ctx,a_m,e,i_deg,raan_deg,argp_deg,m_deg,epoch_dt))
+    def evaluate(moment):
+        date=datetime_to_absolutedate(moment)
+        position=prop.propagateOrbit(date).getPVCoordinates(ctx.inertial).getPosition()
+        elevation=math.degrees(float(station.getElevation(position,ctx.inertial,date)))
+        clear=float(target_alt_m)>=0 and elevation>0
+        return dict(time=moment,visible=bool(clear and elevation>minimum),elevation_deg=elevation,
+            earth_unoccluded=clear,off_nadir_deg=None,yaw_deg=None,pitch_deg=None,roll_deg=None,
+            predicate_version='ideal_ground_link_geometry_v1')
+    return evaluate
 
 
 def _extract_orbit_params(sat: Satellite) -> Dict[str, object]:
@@ -542,6 +630,12 @@ def _build_time_windows_from_visible_attitudes(
         roll_list = [float(visible_attitudes[i]["roll_deg"]) for i in idxs]
 
         agile = AgileData(pitch_angles=pitch_list, yaw_angles=yaw_list, roll_angles=roll_list)
+        if all(visible_attitudes[i].get("inertial_to_body_quaternion_xyzw") is not None for i in idxs):
+            last = visible_attitudes[idxs[-1]].get("window_end_quaternion_xyzw")
+            if last is None:
+                raise ValueError("missing exact window endpoint attitude")
+            agile.boundary_quaternions_xyzw = [visible_attitudes[i]["inertial_to_body_quaternion_xyzw"]
+                                               for i in idxs] + [last]
         non_agile = NonAgileData(
             pitch_angle=_middle_value(pitch_list),
             yaw_angle=_middle_value(yaw_list),
@@ -672,6 +766,16 @@ def calculate_windows_orekit(
                     continue
 
                 yaw_lim, pitch_lim, roll_lim = att_limit_map.get(sat_id, DEFAULT_ATT_LIMITS)
+                capability = getattr(sat, "maneuverability_capability", None)
+                maneuverability = getattr(capability, "maneuverability_type", "agile")
+                maneuverability = getattr(maneuverability, "value", maneuverability)
+                sensors = getattr(getattr(sat, "observation_capability", None), "sensors", [])
+                if len(sensors) != 1:
+                    raise ValueError("physical generation requires one explicit fixed camera per satellite")
+                requirement=getattr(mission,'observation_requirement',None)
+                sensor_min=getattr(sensors[0],'min_elevation_angle',getattr(sensors[0],'min_elevation_angle_deg',None))
+                task_min=getattr(requirement,'min_elevation_angle',getattr(requirement,'min_elevation_angle_deg',None))
+                effective_min=effective_minimum_elevation(min_elevation_deg,sensor_min,task_min)
 
                 vis_windows, _samples, visible_attitudes = compute_visibility_and_attitude(
                     a_m=float(orbit_map[sat_id]["a_m"]),
@@ -690,8 +794,11 @@ def calculate_windows_orekit(
                     max_yaw_deg=yaw_lim,
                     max_pitch_deg=pitch_lim,
                     max_roll_deg=roll_lim,
-                    min_elevation_deg=float(min_elevation_deg),
+                    min_elevation_deg=effective_min,
                     coarse_step_min=float(coarse_step_min),
+                    field_of_view_deg=float(sensors[0].field_of_view),
+                    maneuverability_type=maneuverability,
+                    max_tracking_rate_deg_s=getattr(capability, "slew_rate", None),
                 )
 
                 if not vis_windows:
@@ -759,7 +866,7 @@ def calculate_windows_orekit(
                 if lat is None or lon is None:
                     continue
 
-                vis_windows, _samples, _visible_attitudes = compute_visibility_and_attitude(
+                evaluator = create_communication_evaluator(
                     a_m=float(orbit_map[sat_id]["a_m"]),
                     e=float(orbit_map[sat_id]["e"]),
                     i_deg=float(orbit_map[sat_id]["i_deg"]),
@@ -767,20 +874,13 @@ def calculate_windows_orekit(
                     argp_deg=float(orbit_map[sat_id]["argp_deg"]),
                     m_deg=float(orbit_map[sat_id]["m_deg"]),
                     epoch_dt=orbit_map[sat_id]["epoch_dt"],  # type: ignore
-                    start_dt=start_time,
-                    end_dt=end_time,
-                    step_s=float(step),
                     target_lat_deg=float(lat),
                     target_lon_deg=float(lon),
                     target_alt_m=float(alt_km) * 1000.0,
-                    # Communication windows are not subject to attitude constraints,
-                    # so the limits are relaxed to 180 degrees
-                    max_yaw_deg=180.0,
-                    max_pitch_deg=180.0,
-                    max_roll_deg=180.0,
                     min_elevation_deg=float(min_elevation_deg),
-                    coarse_step_min=float(coarse_step_min),
                 )
+                vis_windows, _samples, _visible_attitudes = _scan_visibility_grid(
+                    start_time,end_time,float(step),evaluator)
 
                 if not vis_windows:
                     continue

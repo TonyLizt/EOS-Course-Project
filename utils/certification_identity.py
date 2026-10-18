@@ -16,6 +16,11 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_NAMES = (
+    "eos_system/preview_audit_process.py",
+    "scripts/recompute_scenario_windows.py",
+    "eos_system/planning_preview.py",
+    "scripts/generate_caabs_development_scene.py",
+    "utils/attitude_frames.py",
     "utils/certification_identity.py", "utils/continuous_exposure.py",
     "utils/visibility.py", "utils/time_parsing.py", "core/models.py",
     "schedulers/scenario_loader.py", "schedulers/constraint_model.py",
@@ -28,8 +33,10 @@ SOURCE_NAMES = (
 )
 MODEL = {"propagation": "Orekit-Keplerian", "inertial_frame": "EME2000",
          "terrestrial_frame": "ITRF-IERS2010-simpleEOP", "ellipsoid": "WGS84",
-         "attitude": "TargetPointing", "time_scale": "UTC",
-         "predicate": "elevation_and_stored_axis_limits_v1"}
+         "attitude": "NadirRelative-TargetPointing-fixedBodyZ-v1", "time_scale": "UTC",
+         "predicate": "opaque_wgs84_declared_elevation_fixed_camera_axis_rate_v2",
+         "communication": "ideal_ground_link_geometry_v1",
+         "interval_provider": "unavailable_no_validated_error_contract"}
 
 
 def _digest(value):
