@@ -368,7 +368,12 @@ class ControllerShutdownTests(unittest.TestCase):
         self.controller = controller_module.Controller(self.settings, self.database)
         self.controller.start()
         self.wait_for(lambda: self.database.get_run(self.run_id)["status"] in
-                      {"SUCCEEDED", "FAILED"})
+                      {"VERIFYING", "SUCCEEDED", "FAILED"})
+        # The worker is already reaped. Independent verification and Storage's
+        # deployment SHA guard have the Controller's 30s budget, not the 4s
+        # worker milestone bound. DrvFS file hashing can exceed the latter.
+        self.wait_for(lambda: self.database.get_run(self.run_id)["status"] in
+                      {"SUCCEEDED", "FAILED"}, timeout=controller_module.VERIFICATION_TIMEOUT_S + 1)
         self.controller.stop()
         record = self.database.get_run(self.run_id)
         self.assertEqual(record["status"], "SUCCEEDED")
@@ -376,6 +381,8 @@ class ControllerShutdownTests(unittest.TestCase):
         reap = next(event for event in record["events"] if event["event_type"] == "WORKER_REAP")
         self.assertTrue(reap["payload"]["identity_confirmed"])
         self.assertFalse(reap["payload"]["scan_limited"])
+        verifying = next(event for event in record["events"] if event["event_type"] == "VERIFYING")
+        self.assertLess(reap["event_id"], verifying["event_id"])
 
     def test_unconfirmed_session_cannot_commit_legal_candidate(self):
         self.enqueue()
