@@ -28,6 +28,8 @@ from .verification import verify_candidate
 from .worker_reference import CANCEL_GRACE_S, PROTOCOL_VERSION, worker_main
 from .worker_process import WorkerGroup, reap_worker
 from .planning_preview import PreviewReceipt, validate_preview
+from .process_state import atomic_json, identity
+from .worker_recovery import WorkerJournal
 
 
 VERIFICATION_TIMEOUT_S = 30.0
@@ -48,6 +50,13 @@ class Controller:
         self._lock_file = None
         self._shutdown_timeout_s = max(10.0, CANCEL_GRACE_S + 3 * settings.stop_grace_s + 3)
         self.instance_id = f"{os.getpid()}-{int(time.time())}"
+        self._progress_at = time.monotonic()
+        self.worker_journal = WorkerJournal(settings.runtime_dir)
+
+    def heartbeat(self) -> dict:
+        return {"process": identity(os.getpid()), "stopping": self._stop.is_set(),
+                "dispatch_alive": bool(self._thread and self._thread.is_alive()),
+                "progress_age_s": max(0., time.monotonic() - self._progress_at)}
 
     def start(self) -> None:
         """单实例文件锁与数据库恢复由 Controller 在启动时完成。"""
@@ -60,7 +69,10 @@ class Controller:
         self._lock_file = self.settings.lock_path.open("a+")
         try:
             fcntl.flock(self._lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            # Only the lock-owning Controller coordinates old Workers. No task replay.
+            self.worker_journal.recover(self.settings.stop_grace_s)
             self.database.recover_interrupted()
+            self._progress_at = time.monotonic()
             self._thread = threading.Thread(target=self._loop, name="eos-controller", daemon=True)
             self._thread.start()
         except BaseException as exc:
@@ -77,8 +89,15 @@ class Controller:
                 raise RuntimeError("已有 Controller 正在使用此运行目录") from exc
             raise
 
-    def stop(self) -> None:
+    def announce_stopping(self) -> None:
+        """Durable operator shutdown intent; independent of HTTP availability."""
         self._stop.set()
+        if token := os.environ.get('EOS_SUPERVISION_TOKEN'):
+            atomic_json(self.settings.runtime_dir / 'controller-stopping.json',
+                        {'token': token, 'process': identity(os.getpid())})
+
+    def stop(self) -> None:
+        self.announce_stopping()
         # 与 start_attempt 串行：一旦取得锁，后续不会再领取新 attempt。
         if not self._dispatch_lock.acquire(timeout=max(1.0, self.settings.stop_grace_s)):
             raise RuntimeError("Controller 停机未能等待任务领取结束；实例锁仍保留")
@@ -92,12 +111,19 @@ class Controller:
         if self._verification_thread is not None and self._verification_thread.is_alive():
             raise RuntimeError("认证线程尚未退出；实例锁仍保留")
         if self._lock_file:
+            # Do not certify a clean shutdown while a failed reap left a lease.
+            self.worker_journal.recover(self.settings.stop_grace_s)
+            if token := os.environ.get('EOS_SUPERVISION_TOKEN'):
+                atomic_json(self.settings.runtime_dir / 'controller-stopped.json',
+                            {'token': token, 'instance_id': self.instance_id,
+                             'process': identity(os.getpid())})
             fcntl.flock(self._lock_file, fcntl.LOCK_UN)
             self._lock_file.close()
             self._lock_file = None
 
     def _loop(self) -> None:
         while not self._stop.is_set():
+            self._progress_at = time.monotonic()
             store = self.database
             queued = self.database.next_queued()
             if queued is None and self.transient is not None:
@@ -124,7 +150,10 @@ class Controller:
 
     def _reap_worker(self, process: mp.Process, group: WorkerGroup,
                      initial_grace_s: float) -> dict:
-        return reap_worker(process, group, initial_grace_s, self.settings.stop_grace_s)
+        def progress():
+            self._progress_at = time.monotonic()
+        return reap_worker(process, group, initial_grace_s, self.settings.stop_grace_s,
+                           on_progress=progress)
 
     def _verify_with_deadline(self, config, candidate, runtime, store=None):
         # Background Controller only; never executed in an HTTP request thread.
@@ -147,6 +176,7 @@ class Controller:
         self._verification_thread = thread
         thread.start()
         while not self._stop.is_set():
+            self._progress_at = time.monotonic()
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise ContinuousCertificationError(ExposureStatus.ERROR, "CERTIFICATION_TIMEOUT")
@@ -209,7 +239,10 @@ class Controller:
             # W1 最多等待 2 秒；Controller 额外留出一次 IPC/调度宽限。
             cancel_grace_s = CANCEL_GRACE_S + self.settings.stop_grace_s
             while True:
+                self._progress_at = time.monotonic()
                 group.refresh()
+                if start_queued:
+                    self.worker_journal.capture(group, config.run_id, attempt)
                 state = store.get_status(config.run_id)
                 if not state or state["current_attempt"] != attempt:
                     failure = ("FAILED", "WORKER_STATE", "运行记录或 attempt 已变化")
@@ -252,6 +285,7 @@ class Controller:
                         and group.confirmed and group.leader_fd is not None
                         and leader is not None and leader.live
                         and leader.pgrp == process.pid and leader.sid == process.pid):
+                    self.worker_journal.capture(group, config.run_id, attempt)
                     try:
                         writer.enqueue({"kind": "start", "run_id": config.run_id,
                                         "attempt": attempt, "config": config.model_dump()},
@@ -389,8 +423,10 @@ class Controller:
                                                    "message": "本次 Worker 独立 Session 未经内核身份核验",
                                                    "direct_worker_exited": not reap["alive"]})
             if reap["alive"] or reap["live_members"] or reap["scan_limited"]:
+                self._stop.set()  # do not dispatch more work with unowned survivors
                 store.finish_failure(config.run_id, attempt, "FAILED", "WORKER_CLEANUP_INCOMPLETE", "Worker 或已识别后代未能确认退出")
                 return
+            self.worker_journal.clear()
             if stop_reason == "USER_CANCEL":
                 message = "用户取消运行" if cancel_ack_received else "用户取消运行；未收到 Worker 确认"
                 store.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED", message)
@@ -464,7 +500,11 @@ class Controller:
                         store.record_system_event(config.run_id, attempt, "EXPORT_FAILED", {"message": str(exc)[:300]})
         finally:
             if process.pid is not None and not reaped and group is not None:
-                self._reap_worker(process, group, 0)
+                cleanup = self._reap_worker(process, group, 0)
+                if not cleanup['alive'] and not cleanup['live_members'] and not cleanup['scan_limited']:
+                    self.worker_journal.clear()
+                else:
+                    self._stop.set()
             elif process.pid is not None and not reaped and process.is_alive():
                 process.terminate()
                 process.join(timeout=self.settings.stop_grace_s)

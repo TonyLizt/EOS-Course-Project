@@ -59,6 +59,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             replay.recover()
             yield
         finally:
+            controller.announce_stopping()
             temporary.close()
             try:
                 replay.close()
@@ -116,7 +117,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def health():
         with database.connect() as connection:
             connection.execute("SELECT 1").fetchone()
+        heartbeat = controller.heartbeat()
+        # The watchdog applies its configurable monotonic progress timeout.
         return {"status": "ok", "version": VERSION, "controller_instance_id": controller.instance_id, "time": now(),
+                "controller": heartbeat,
                 "ui": {"name": "统一调度控制台", "build_id": ui_build_id}}
 
     @app.get("/api/scenarios")

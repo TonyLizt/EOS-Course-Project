@@ -9,6 +9,20 @@ import sys
 import uvicorn
 
 from .config import Settings
+from .process_state import atomic_json, identity
+
+
+class SupervisedServer(uvicorn.Server):
+    """Record user shutdown before Uvicorn drains requests/closes HTTP."""
+
+    def handle_exit(self, sig, frame):
+        settings = Settings.from_env()
+        try:
+            atomic_json(settings.runtime_dir / 'controller-stopping.json',
+                        {'token': os.environ['EOS_SUPERVISION_TOKEN'],
+                         'process': identity(os.getpid())})
+        finally:
+            super().handle_exit(sig, frame)
 
 
 def controller_is_running(lock_path: Path) -> bool:
@@ -51,7 +65,12 @@ def main() -> int:
         )
         return 1
     # 不启用 reload/workers：否则每个 Web 进程都会尝试创建自己的 Controller。
-    uvicorn.run("eos_system.api:create_app", host="127.0.0.1", port=8765, factory=True, workers=1, access_log=False)
+    options = dict(host="127.0.0.1", port=int(os.environ.get('EOS_PORT', '8765')),
+                   factory=True, workers=1, access_log=False)
+    if os.environ.get('EOS_SUPERVISION_TOKEN'):
+        SupervisedServer(uvicorn.Config("eos_system.api:create_app", **options)).run()
+    else:
+        uvicorn.run("eos_system.api:create_app", **options)
     return 0
 
 

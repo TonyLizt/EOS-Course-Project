@@ -6,11 +6,15 @@ Controller 仍负责发送取消、决定终态和强制回收；这些属于 W2
 from __future__ import annotations
 
 import json
+import ctypes
+import multiprocessing as mp
 import os
 import queue
 import threading
 import time
 import uuid
+import sys
+import signal
 from dataclasses import replace
 from datetime import datetime, timezone
 from multiprocessing.connection import Connection
@@ -114,6 +118,16 @@ def worker_main(run_id: str, attempt: int, event_pipe: Connection, control_pipe:
         })
 
     try:
+        if sys.platform == 'linux':
+            # Direct Worker cannot outlive its Controller, including after SIGKILL.
+            # Descendants are still the Controller's journal/reap responsibility.
+            parent = mp.parent_process()
+            expected_parent = parent.pid if parent is not None else os.getppid()
+            libc = ctypes.CDLL(None, use_errno=True)
+            if libc.prctl(1, signal.SIGKILL, 0, 0, 0) != 0:
+                raise OSError(ctypes.get_errno(), 'PR_SET_PDEATHSIG failed')
+            if os.getppid() != expected_parent:
+                os.kill(os.getpid(), signal.SIGKILL)
         if os.name == "posix":
             os.setsid()
         report("started", {"worker_pid": os.getpid(), "worker_start_token": str(uuid.uuid4()), "pgid": os.getpgrp(), "phase": "STARTING"})

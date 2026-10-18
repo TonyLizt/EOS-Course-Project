@@ -8,6 +8,10 @@
 
 > 历史专题记录：当前 v0.3.1 的实现、接口过渡与剩余分工见[修复集成交接](restore_integration_handoff.md)。下文保留当时的版本与验收语境。
 
+## 独立 Daemon 当前增量（2026-10-18）
+
+基于 main `7a1875f`（PR #20），现新增独立 Linux 监护进程 CLI、调度循环进度心跳及有界重启；恢复单位为整个 FastAPI/Controller 服务。Controller 持锁处理 worker-lease，再按原逻辑失败中断状态、保留 QUEUED；Daemon 不写业务库或直接重启 Worker。Worker 仅增 Linux 父死亡保护，回收函数追加可选进度回调，IPC/schema/算法契约不变。身份未知时阻止恢复。运行命令、实测及剩余风险见 [Daemon 专题](daemon_implementation_and_validation.md)。下文“独立 Daemon 留待后续”保留历史语境，不再代表本分支现状。需李泽同/何明涛复核跨模块接入，本轮不 Push/PR。
+
 # 第二阶段框架交接说明（v0.2.1 框架 + W1/W2 + 卫星回放 commit 1–6 及后续整合）
 
 本文件记录 v0.2.1 框架、`feat/hmt-worker-ipc` 与卫星回放 commit 1–6 及其真实页面后续修正的系统边界，作为四位成员在同一框架上开发的入口。目标设计稿位于同目录的 `interface_design_target.md` 和 `database_design_target.md`；尚未实现的目标不能视为当前接口承诺。卫星回放的 commit 6 交付证据见 [`../replay/final-validation.md`](../replay/final-validation.md)，commit 6 后的兼容、视锥和交互修正见 [`satellite_replay_post_commit_6.md`](satellite_replay_post_commit_6.md)。

@@ -1,3 +1,8 @@
+## 独立 Daemon 与 Controller 故障恢复（2026-10-18）
+
+- 从 main `7a1875f`（PR #20）建立独立分支；新增 Linux/WSL2 Daemon start/run/status/stop、真实调度心跳、身份校验、双层 flock、有界指数退避和正常停机意图，不操作正式服务。
+- Controller 持锁恢复自己的 Worker 身份日志，真实 Worker 增加父进程死亡保护；IPC、算法、指标和 SQLite schema v4 不变。80 个不同定向用例已覆盖并通过（含 WSL2 真实独立进程故障注入，多次复验不重复计数），未做全量测试。未知孤儿 fail closed，不宣称任意逃逸后代可恢复。详见 [Daemon 实现与验证](docs/phase2/daemon_implementation_and_validation.md)。本轮仅本地 Commit，不 Push/PR；需总体及 Worker 负责人复核接入。
+
 ## 统一控制台 PR 集成与最新 main 同步（2026-10-18）
 
 - 按团队规范 merge origin/main（最新 22299b4 / PR #19，非停留于 #18），保留 CAABS、来源索引及 I2 来源窗口恢复/核验，不重写历史。Solver 公共契约复用队友的新模块，初始模型作为兼容默认字段保留；新增 CAABS 进入注册驱动的控制台清单（原九种加一），模型仍单独选择。
