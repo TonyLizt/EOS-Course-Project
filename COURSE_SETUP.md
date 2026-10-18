@@ -1,5 +1,6 @@
 ## 算法 B：RABAS 资源感知任务包竞价（2026-10-18）
 
+- PR #22 提交前同步 main `702f46e`（PR #21），merge提交 `68c630a`，无需rebase。完整Python发现565项：首次因未展开LFS输入出现1失败/7子项错误、8项跳过；从本地缓存展开原版及epoch-fixed场景（内容不变）后，仅重跑受影响两模块13项全部通过，未再次重跑全套。合并后真实Chromium验证双算法单实验、RABAS参数/比较、3任务Gantt、Cesium自动回放及高亮通过（合成UNIT_TEST_ONLY认证）。PR邀请TonyLizt/Mint221018审核，尚未合并。
 - 从已合并 main 7a1875f 独立分支实现 RABAS 1.0.0；真正的2/3任务包、真实转向/资源成本、有界独占任务机会损失、完成数优先全局中标和全量版本化重报价。只追加注册与一条 Web 权重提示，不修改公共约束/指标、DARTIS/CAABS核心、Worker/Controller、SQLite或IPC。
 - B-1至B-5等22项算法单元、4项真实Worker/Controller集成及Registry兼容定向验证完成；真实Chromium验证合成双算法单实验、参数、比较、Gantt及Cesium模型。真实10星20任务四组预览消融均20/20，h=2中标10轮，h=1为20轮；并非正式认证或统计优势结论。
 - 当前场景formal非空认证仍缺可信窗口谱系/物理设置；实际formal请求保持失败而非伪造成功。真实预览、合成UNIT_TEST_ONLY认证及实测指标严格区分。见 [RABAS实现/实验说明](docs/phase2/algorithms/auction_bundle.md)。按后续授权准备推送与PR；已按协作规范合并最新main `702f46e`（PR #21），保留Daemon与RABAS双方记录，等待独立组员审核后合并，保留根目录既有修改。
