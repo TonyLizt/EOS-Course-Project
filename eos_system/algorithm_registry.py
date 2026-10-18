@@ -14,6 +14,7 @@ from typing import Callable
 from pydantic import Field, ValidationError
 
 from algorithms.conflict_beam import CAABSParams, ConflictBeamScheduler, VERSION as CAABS_VERSION
+from algorithms.auction_bundle import RABASParams, ResourceAwareBundleAuctionScheduler, VERSION as RABAS_VERSION
 from algorithms.factory import create_algorithm
 from algorithms.objectives import ObjectiveWeights
 # Re-export the existing public names for HTTP/Worker and third-party callers.
@@ -176,11 +177,20 @@ _SPECS: dict[str, AlgorithmSpec] = {
         objectives="完成任务数优先，再按共享 ObjectiveModel 得分与规范键确定次序。",
         limitations="Beam 宽度、分支及候选上限限制覆盖；不保证全局最优，候选仍须来源与连续曝光核验。",
     ),
+    "rabas": AlgorithmSpec(
+        algorithm_id="rabas", name="RABAS · 资源感知任务包竞价调度", category="traditional",
+        owner="梁兆榮", version=RABAS_VERSION, params_model=RABASParams,
+        build=lambda context: ResourceAwareBundleAuctionScheduler(),
+        description="单 Worker 内中心化多卫星任务包竞价；不是分布式 CBBA。",
+        strategy="每星增量构建真实多任务 Bundle，资源/转向/机会成本报价，全局核验中标后全量重新竞价。",
+        objectives="新增完成任务数优先，同数量按公共加权效用增量减归一化成本报价，再按稳定 ID 裁决。",
+        limitations="有界窗口、放置、任务包和竞价轮数；不保证全局最优，不使用初始模型解，仍须 Controller 独立认证。",
+    ),
 }
 
 
 COMPARISON_ALGORITHMS = ('mip', 'profit_first', 'timeliness_first', 'balance_first',
-                         'pressure_repair', 'sa', 'ga', 'aco', 'ppo', 'caabs')
+                         'pressure_repair', 'sa', 'ga', 'aco', 'ppo', 'caabs', 'rabas')
 
 _DEFINITIONS = [
     ('mip', '混合整数规划 MIP', 'exact', MIPParams, '离散候选与冲突约束构建 MILP，由 CBC 求解。', '候选集上的加权目标优化，含实现中的主目标增强。', '候选集有限；独立建模，不使用初始模型解。'),

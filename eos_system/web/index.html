@@ -36,7 +36,7 @@
         </div>
         <label>任务放置模式<select id="placement"><option value="earliest">最早可行时间</option><option value="center">窗口中心</option></select></label>
         <details><summary>实验参数</summary>
-          <p class="hint">SA／GA／ACO 使用目标权重；固定策略启发式保持原策略，不因权重变化成为另一种算法。</p>
+          <p class="hint">SA／GA／ACO、CAABS／RABAS 使用目标权重；CAABS／RABAS 仍以完成任务数优先。固定策略启发式保持原策略。</p>
           <div class="two-cols">
             <label>收益权重<input id="weight-profit" type="number" min="0" step="any" value="0"></label>
             <label>完成率权重<input id="weight-completion" type="number" min="0" step="any" value="1"></label>
