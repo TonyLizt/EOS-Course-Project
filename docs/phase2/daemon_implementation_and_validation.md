@@ -1,6 +1,6 @@
 # 独立 Daemon：实现与故障恢复验证
 
-2026-10-18；基线 `7a1875f`（main / PR #20）。本轮仅本地提交，不 Push、不建 PR。
+2026-10-18；基线 `7a1875f`（main / PR #20）。初次交付仅本地提交；现按用户后续要求准备推送并创建 PR，等待独立审核，不自行合并。
 
 ## 1. 实际架构及职责
 
@@ -171,3 +171,11 @@ Controller 186608 被 SIGKILL 后，Daemon 186586 保持存活，新 Controller 
 最后补充关闭信号入口后，又实际验证了 Daemon **191379** → Controller **191402** → Worker **191428**（端口 **45995**）；Controller SIGKILL 后恢复为 **191479**，Daemon PID 不变，原 Worker/后代退出，随后 Worker 单独故障不增加恢复次数。
 
 开发中发现的两个错误断言（无计划应为 null；Worker 故障可能先发现 Pipe 断开）已按现有契约纠正。额外发现严格心跳下有界后代回收等待被误判，已增加实际回收循环进度回调，复验后没有 Daemon/Controller 争夺 Worker 恢复权。测试实例均已正常停止；没有向正式实例故障注入。
+
+### PR 准备补验（2026-10-18）
+
+- `python -m unittest discover -s tests -p test_daemon.py -v`：13 项全通过，39.988s。
+- `python -m unittest discover -s tests -v`：539 项，531 通过、8 项 opt-in Orekit 跳过，0 失败/错误，166.981s。未执行大型场景或浏览器 Benchmark。
+- 单独工作树仅 checkout 本地已有的原始 LFS 对象，未修改场景字节或重新生成数据；原根目录其他未提交修改不进入 PR。
+- fetch 后 origin/main 仍为 7a1875f（PR #20），已是分支祖先，无需 rebase/merge。按用户后续请求创建 PR；等待独立审核及 Controller/Worker 负责人确认，不自行合并。
+- 简体中文逐项命令、预期结果、常见错误和演示说明已纳入 [测试文档](../../L_readme/Daemon守护进程_测试与故障演示说明.md)。
