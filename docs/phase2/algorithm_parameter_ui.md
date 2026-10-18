@@ -101,3 +101,13 @@ node tests/algorithm_parameters.test.cjs
 ```
 
 追加验证结果：Python 14项、JavaScript 6项全部通过。本次未执行真实浏览器或Worker调度重跑；无法连接用户8765服务、默认运行数据库亦未能只读打开，因而没有声称已确认用户具体实验的响应。修复后须由用户重启现有服务加载。本轮暂停Push/PR。
+
+## 后续授权提交 PR #23（2026-10-18）
+
+用户恢复Push/PR授权后，fetch确认main仍是`3e9413d`，不需rebase/merge。推送`fix/algorithm-parameter-ui`并创建 [PR #23](https://github.com/TonyLizt/EOS-Course-Project/pull/23)，邀请TonyLizt审核；按协作指引不绕过独立审核合并。
+
+- 完整 `python -m unittest discover -s tests -v` 运行569项，191.173秒，初次1项失败、8项opt-in跳过，其余通过。唯一失败为旧测试将展示API直接与原执行Registry元数据作全等比较；更新为`algorithm_presentation.algorithm_info()`的预期，同时保留参数契约不变的独立验证。
+- 复验 `test_algorithm_registry_i1 test_algorithm_parameter_metadata test_experiments`：31项全部通过，2.503秒。没有再次全量运行，不能把首次全量执行描述为全通过。
+- JavaScript6项通过；真实Chromium复验11个参数卡片、类型/高级JSON绑定、详情与窄侧栏、双算法单实验比较、Gantt和Cesium均通过。
+- 新增浏览器回归在同一现有实验勾选时效优先并点击添加：POST返回202，新增算法成功，仍只有1个实验。测试实验`d32132e4-3d8a-40b4-b78d-aa92f9d3216b`，RABAS Run `e2c5cf62-2c17-4568-beb4-bf21775704c1`；均为已清理隔离实例、合成UNIT_TEST_ONLY认证，不是正式用户数据。
+- 无pageerror，测试服务器和临时数据库已回收，不停止或重启用户正式服务。
