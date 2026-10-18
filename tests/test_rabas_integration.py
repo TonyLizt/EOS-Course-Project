@@ -112,10 +112,19 @@ class RABASIntegrationTests(unittest.TestCase):
                     app.state.replay.close()
                     app.state.controller.stop()
 
-    def test_unchanged_real_scene_preview_and_formal_gate(self):
+    def test_legacy_absolute_v1_scene_is_preserved_and_rejected_by_relative_v2(self):
         scene=ROOT/'experiments/scenarios/small/Scenario_S1_Sats10_M20_T1.0d_dist1_epoch_fixed_v1.json'
         if not scene.exists() or scene.stat().st_size<1024:
             self.skipTest('small scene LFS payload not available; do not fake physical input')
+        from utils.visibility import ensure_orekit
+        from physical_reference_v2 import reference
+        ensure_orekit(os.environ.get('EOS_OREKIT_DATA',str(ROOT/'utils/orekit-data.zip')))
+        raw=scene.read_bytes();model=json.loads(raw)
+        satellite=next(s for s in model['satellites'] if s['id']=='CARTOSAT-2C_41599')
+        target=next(m for m in model['missions'] if m['id']=='M008')['target_location']
+        witness=reference(satellite,target)('2025-11-18T12:46:43Z')
+        self.assertFalse(witness['visible'])  # Independent physical cause BEFORE Controller result.
+        self.assertFalse(witness['axis_ok'] and witness['rate_ok'] and witness['camera_visible'])
         with tempfile.TemporaryDirectory(prefix='rabas-real-') as directory:
             settings=Settings(Path(directory)/'runtime',scene.parent)
             app=create_app(settings)
@@ -133,15 +142,54 @@ class RABASIntegrationTests(unittest.TestCase):
                             return row if row['status'] in {'SUCCEEDED','FAILED','TIMED_OUT'} else None
                         row=wait_for(done)
                         if mode=='planning_preview':
-                            self.assertEqual(row['status'],'SUCCEEDED',row.get('error'))
-                            self.assertEqual(row['metrics']['completed_tasks'],20)
-                            self.assertEqual(row['continuous_certification']['status'],'NOT_CERTIFIED')
+                            self.assertEqual(row['status'],'FAILED')
+                            self.assertEqual(row['error']['code'],'PREVIEW_REJECTED')
+                            self.assertIn('NONVISIBLE_EXPOSURE_START',row['error']['message'])
+                            self.assertIsNone(row['plan'])
+                            self.assertIsNone(row['metrics'])
                         else:
                             self.assertEqual(row['status'],'FAILED')
                             self.assertIn('UNTRUSTED_PHYSICAL_SETTINGS',row['error']['message'])
                             self.assertIsNone(row['plan'])
                             self.assertIsNone(row['metrics'])
                     self.assertEqual(sha256_file(scene),digest)
+            finally:
+                app.state.temporary_controls.close();app.state.replay.close();app.state.controller.stop()
+
+    def test_relative_v2_real_generated_nonempty_preview_and_formal_source_isolation(self):
+        from utils.visibility import ensure_orekit
+        from scripts.generate_caabs_development_scene import generate
+        from physical_reference_v2 import reference
+        data=os.environ.get('EOS_OREKIT_DATA',str(ROOT/'utils/orekit-data.zip'))
+        ensure_orekit(data)
+        with tempfile.TemporaryDirectory(prefix='rabas-relative-v2-') as directory:
+            root=Path(directory);scene=root/'scenes'
+            generated=generate(scene,ROOT/'input/10_satellites.json','ALOS-2_39766',data)
+            self.assertEqual(generated['planning_windows'],3)
+            model=json.loads((scene/'scene.json').read_bytes())
+            app=create_app(Settings(root/'runtime',scene))
+            app.state.controller.start()
+            try:
+                with _DirectClient(app) as client:
+                    request=dict(scenario_id='scene',algorithm_id='rabas',execution_mode='planning_preview',
+                                 placement_mode='center',time_budget_s=5)
+                    self.assertEqual(client.post('/api/runs',json=request|dict(execution_mode='formal')).status_code,422)
+                    response=client.post('/api/runs',json=request)
+                    self.assertEqual(response.status_code,202,response.text)
+                    rid=response.json()['run_id']
+                    row=wait_for(lambda: (r if (r:=app.state.database.get_run(rid))['status'] in
+                        {'SUCCEEDED','FAILED','TIMED_OUT'} else None),timeout=60)
+                    self.assertEqual(row['status'],'SUCCEEDED',row.get('error'))
+                    self.assertGreater(row['metrics']['completed_tasks'],0)
+                    self.assertEqual(row['continuous_certification']['status'],'NOT_CERTIFIED')
+                    missions={m['id']:m for m in model['missions']}
+                    from utils.time_parsing import parse_orbit_epoch
+                    from datetime import timedelta
+                    for a in row['plan']['assignments']:
+                        oracle=reference(model['satellites'][0],missions[a['task_id']]['target_location'])
+                        first=parse_orbit_epoch(a['sat_start_time'])
+                        self.assertTrue(all(oracle(first+timedelta(seconds=i/20))['visible'] for i in range(201)))
+                    self.assertEqual(sha256_file(scene/'scene.json'),generated['scenario_sha256'])
             finally:
                 app.state.temporary_controls.close();app.state.replay.close();app.state.controller.stop()
 

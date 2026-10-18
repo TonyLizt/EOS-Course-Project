@@ -199,15 +199,41 @@ class ExposureTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get('EOS_RUN_EXPOSURE_OREKIT_TESTS')=='1','opt-in real Orekit exposure cases')
 class RealExposureTests(unittest.TestCase):
-    def test_frozen_public_verifier_probes_against_rebuilt_orekit(self):
+    def test_absolute_v1_probe_history_is_hash_frozen_and_independently_reclassified(self):
+        from physical_reference_v2 import frozen, reference, assert_point_close
+        from utils.visibility import ensure_orekit
+        ensure_orekit(os.environ['EOS_OREKIT_DATA'])
+        import hashlib
         base=Path('/home/meteor/eos-course-runtime/epoch-acceptance/s2-20s20m-grid-v2-lazy-20261016')
         folder=base/'independent-e3-20261016'
         config=json.loads((folder/'scheduling/config.json').read_bytes())
-        for i,case in enumerate(CASES,1):
+        for i,history in enumerate(frozen()['exposure_history'],1):
             with self.subTest(case=i):
-                result=verify_continuous(config['scenario_path'],folder/f'continuous_duration_probes/{i}_public_verified_plan.json',
-                    data_path=os.environ['EOS_OREKIT_DATA'],min_elevation_deg=5)
-                self.assertEqual(result['status'],'FAIL');row=result['rows'][0]
-                self.assertEqual(row['reason'],'NONVISIBLE_EXPOSURE_POINT')
-                self.assertLessEqual(abs((utc(row['safe_exit_lower'])-utc(case[4])).total_seconds()),.000002)
-                self.assertLessEqual((utc(row['exit_upper'])-utc(row['safe_exit_lower'])).total_seconds(),.000001)
+                scene=Path(config['scenario_path']);plan=folder/f'continuous_duration_probes/{i}_public_verified_plan.json'
+                self.assertEqual(hashlib.sha256(scene.read_bytes()).hexdigest(),history['source_sha256'])
+                self.assertEqual(hashlib.sha256(plan.read_bytes()).hexdigest(),history['plan_sha256'])
+                point=reference(history['satellite'],history['location'])(history['time'])
+                assert_point_close(self,point,history['point']);self.assertFalse(point['visible'])
+                self.assertFalse(point['axis_ok'] and point['rate_ok'] and point['camera_visible'])
+                result=verify_continuous(scene,plan,data_path=os.environ['EOS_OREKIT_DATA'],min_elevation_deg=5)
+                self.assertEqual(result['status'],'FAIL')
+                self.assertEqual(result['rows'][0]['witness_utc'],utc(history['time']).isoformat())
+                self.assertEqual(result['rows'][0]['reason'],'NONVISIBLE_EXPOSURE_START')
+
+    def test_relative_v2_real_exit_brackets_and_positive_uncertified_exposure(self):
+        from physical_reference_v2 import frozen, reference, production_params, exit_bracket
+        from utils.visibility import ensure_orekit,create_visibility_evaluator
+        ensure_orekit(os.environ['EOS_OREKIT_DATA'])
+        for case in frozen()['cases']:
+            oracle=reference(case['satellite'],case['location'])
+            actual=create_visibility_evaluator(**production_params(case['satellite'],case['location']))
+            w=case['windows'][0];safe=utc(w['safe_exit']);upper=utc(w['exit_upper'])
+            self.assertEqual(exit_bracket(oracle,safe-timedelta(seconds=1),upper+timedelta(seconds=1)),(safe,upper))
+            start=utc(case['nadir_time'])
+            positive=audit_interval(actual,start,start+timedelta(seconds=10),10)
+            self.assertEqual(positive['sampled_boundaries_status'],'PASS')
+            self.assertEqual(positive['status'],'INCONCLUSIVE')
+            first=safe-timedelta(seconds=1);end=first+timedelta(seconds=2)
+            negative=audit_interval(actual,first,end,2)
+            self.assertEqual(negative['reason'],'NONVISIBLE_EXPOSURE_POINT')
+            self.assertEqual((utc(negative['safe_exit_lower']),utc(negative['exit_upper'])),(safe,upper))

@@ -1,0 +1,652 @@
+{
+  "schema": "physics-regression-relative-nadir-v2",
+  "scope": "NUMERICAL_TEST_REFERENCE_ONLY_NOT_PROVENANCE_OR_CERTIFICATION",
+  "original_scene_sha256": "5e7a7702d60d194f403c30b157089243135b4287bef48b4114af5c83899addda",
+  "data_sha256": "1c104cba89468a817d4d32ca8a12df7cab56f8d06a978ee736c841af123b7985",
+  "reference_sha256": "b7e9cf060e9591d60d99a109eb4214c926e46ae6420512b32ee23246e9a46686",
+  "baseline": "c5090ba72819493c5f91ce8c1aa0a6a26e8cf58d",
+  "cases": [
+    {
+      "satellite": {
+        "id": "ALOS-2_39766",
+        "maneuverability_capability": {
+          "maneuverability_type": "agile",
+          "max_pitch_angle_deg": 45.0,
+          "max_roll_angle_deg": 45.0,
+          "max_yaw_angle_deg": 45.0,
+          "slew_rate_deg_per_s": 1.0,
+          "stabilization_time_s": 10.0
+        },
+        "observation_capability": {
+          "sensors": [
+            {
+              "data_rate_Mbps": 0.1,
+              "field_of_view_deg": 45.0,
+              "min_elevation_angle_deg": 0.0,
+              "observation_swath_width_km": 50.0,
+              "power_consumption_W": 50.0,
+              "resolution": "medium",
+              "sensor_id": "ALOS-2_39766_sensor",
+              "sensor_mode": "visible"
+            }
+          ]
+        },
+        "orbital_params": {
+          "argument_of_perigee_deg": 101.516,
+          "eccentricity": 0.000898,
+          "epoch": "18 Nov 2025 12:00:00.000",
+          "inclination_deg": 98.04,
+          "mean_anomaly_deg": 96.356,
+          "right_ascension_of_ascending_node_deg": 57.345,
+          "semi_major_axis_km": 7013.62362
+        },
+        "orbital_type": "LEO",
+        "satellite_specs": {
+          "max_battery_capacity_Wh": 2000.0,
+          "max_data_storage_GB": 1000.0,
+          "max_fuel_kg": 100.0,
+          "max_operation_time_s": 4500.0,
+          "max_power_W": 500.0
+        }
+      },
+      "location": {
+        "latitude": -24.095938225330304,
+        "longitude": -4.06071994991031,
+        "altitude_km": 0.0
+      },
+      "start": "2025-11-18T12:00:00+00:00",
+      "duration_s": 600,
+      "windows": [
+        {
+          "start": "2025-11-18T12:00:02+00:00",
+          "safe_exit": "2025-11-18T12:03:19.173844+00:00",
+          "exit_upper": "2025-11-18T12:03:19.173845+00:00"
+        }
+      ],
+      "nadir_time": "2025-11-18T12:01:40+00:00",
+      "nadir_point": {
+        "visible": true,
+        "elevation_deg": 90.0,
+        "yaw_deg": 1.2722218725854064e-14,
+        "pitch_deg": -5.349692974221635e-12,
+        "roll_deg": -6.23388717566849e-12,
+        "absolute_zyx_deg": [
+          74.5868419837574,
+          64.51956083010967,
+          18.952926551896024
+        ],
+        "body_los": [
+          1.1102230246251565e-16,
+          3.469446951953614e-16,
+          1.0000000000000004
+        ],
+        "camera_visible": true,
+        "tracking_rate_deg_s": 0.6811146969168782,
+        "axis_ok": true,
+        "rate_ok": true,
+        "unoccluded": true,
+        "relative_matrix": [
+          [
+            1.0000000000000002,
+            2.220446049250313e-16,
+            9.336975637097567e-14
+          ],
+          [
+            -1.3877787807814457e-16,
+            1.0000000000000004,
+            -1.0880185641326534e-13
+          ],
+          [
+            -9.386935673205699e-14,
+            1.0928757898653885e-13,
+            1.0000000000000004
+          ]
+        ]
+      }
+    },
+    {
+      "satellite": {
+        "id": "GPM-CORE_39574",
+        "maneuverability_capability": {
+          "maneuverability_type": "agile",
+          "max_pitch_angle_deg": 45.0,
+          "max_roll_angle_deg": 45.0,
+          "max_yaw_angle_deg": 45.0,
+          "slew_rate_deg_per_s": 1.0,
+          "stabilization_time_s": 10.0
+        },
+        "observation_capability": {
+          "sensors": [
+            {
+              "data_rate_Mbps": 0.1,
+              "field_of_view_deg": 45.0,
+              "min_elevation_angle_deg": 0.0,
+              "observation_swath_width_km": 50.0,
+              "power_consumption_W": 50.0,
+              "resolution": "medium",
+              "sensor_id": "GPM-CORE_39574_sensor",
+              "sensor_mode": "visible"
+            }
+          ]
+        },
+        "orbital_params": {
+          "argument_of_perigee_deg": 284.823,
+          "eccentricity": 0.001294,
+          "epoch": "18 Nov 2025 12:00:00.000",
+          "inclination_deg": 64.827,
+          "mean_anomaly_deg": 176.987,
+          "right_ascension_of_ascending_node_deg": 293.591,
+          "semi_major_axis_km": 6801.857205
+        },
+        "orbital_type": "LEO",
+        "satellite_specs": {
+          "max_battery_capacity_Wh": 2000.0,
+          "max_data_storage_GB": 1000.0,
+          "max_fuel_kg": 100.0,
+          "max_operation_time_s": 4500.0,
+          "max_power_W": 500.0
+        }
+      },
+      "location": {
+        "latitude": 59.48942906214316,
+        "longitude": -176.285022298902,
+        "altitude_km": 0.0
+      },
+      "start": "2025-11-18T12:00:00+00:00",
+      "duration_s": 600,
+      "windows": [
+        {
+          "start": "2025-11-18T12:00:33+00:00",
+          "safe_exit": "2025-11-18T12:02:46.923712+00:00",
+          "exit_upper": "2025-11-18T12:02:46.923713+00:00"
+        }
+      ],
+      "nadir_time": "2025-11-18T12:01:40+00:00",
+      "nadir_point": {
+        "visible": true,
+        "elevation_deg": 90.0,
+        "yaw_deg": -3.975693351829397e-15,
+        "pitch_deg": -1.1764871766733548e-11,
+        "roll_deg": -1.2467774351336986e-12,
+        "absolute_zyx_deg": [
+          121.53456908036429,
+          16.385217357937346,
+          -153.8122271493395
+        ],
+        "body_los": [
+          5.551115123125783e-17,
+          5.551115123125783e-17,
+          1.0
+        ],
+        "camera_visible": true,
+        "tracking_rate_deg_s": 0.9520660161891848,
+        "axis_ok": true,
+        "rate_ok": true,
+        "unoccluded": true,
+        "relative_matrix": [
+          [
+            0.9999999999999998,
+            -6.938893903907228e-17,
+            2.053357484044227e-13
+          ],
+          [
+            -1.3877787807814457e-16,
+            0.9999999999999998,
+            -2.1760371282653068e-14
+          ],
+          [
+            -2.0522472610196019e-13,
+            2.1926904736346842e-14,
+            1.0
+          ]
+        ]
+      }
+    }
+  ],
+  "historical": [
+    {
+      "task_id": "M009",
+      "time": "2025-11-18T13:13:33Z",
+      "satellite": {
+        "id": "GPM-CORE_39574",
+        "maneuverability_capability": {
+          "maneuverability_type": "agile",
+          "max_pitch_angle_deg": 45.0,
+          "max_roll_angle_deg": 45.0,
+          "max_yaw_angle_deg": 45.0,
+          "slew_rate_deg_per_s": 1.0,
+          "stabilization_time_s": 10.0
+        },
+        "observation_capability": {
+          "sensors": [
+            {
+              "data_rate_Mbps": 0.1,
+              "field_of_view_deg": 45.0,
+              "min_elevation_angle_deg": 0.0,
+              "observation_swath_width_km": 50.0,
+              "power_consumption_W": 50.0,
+              "resolution": "medium",
+              "sensor_id": "GPM-CORE_39574_sensor",
+              "sensor_mode": "visible"
+            }
+          ]
+        },
+        "orbital_params": {
+          "argument_of_perigee_deg": 284.823,
+          "eccentricity": 0.001294,
+          "epoch": "18 Nov 2025 12:00:00.000",
+          "inclination_deg": 64.827,
+          "mean_anomaly_deg": 176.987,
+          "right_ascension_of_ascending_node_deg": 293.591,
+          "semi_major_axis_km": 6801.857205
+        },
+        "orbital_type": "LEO",
+        "satellite_specs": {
+          "max_battery_capacity_Wh": 2000.0,
+          "max_data_storage_GB": 1000.0,
+          "max_fuel_kg": 100.0,
+          "max_operation_time_s": 4500.0,
+          "max_power_W": 500.0
+        }
+      },
+      "location": {
+        "altitude_km": 0.0,
+        "latitude": 39.840578,
+        "longitude": 46.276756
+      },
+      "relative": {
+        "visible": false,
+        "elevation_deg": 5.033849451415945,
+        "yaw_deg": 43.16898548241672,
+        "pitch_deg": 23.9225344930631,
+        "roll_deg": 66.83767653848739,
+        "absolute_zyx_deg": [
+          19.500170159040294,
+          -25.996708306678656,
+          -39.312158907588525
+        ],
+        "body_los": [
+          5.551115123125783e-17,
+          -1.1102230246251565e-16,
+          1.0
+        ],
+        "camera_visible": true,
+        "tracking_rate_deg_s": 0.1646597700263283,
+        "axis_ok": false,
+        "rate_ok": true,
+        "unoccluded": true,
+        "relative_matrix": [
+          [
+            0.6666848627885595,
+            0.6253799846913191,
+            -0.4055011325213355
+          ],
+          [
+            0.002806081817284367,
+            0.5419388921292534,
+            0.840413209738253
+          ],
+          [
+            0.7453344347562607,
+            -0.5614286347748962,
+            0.3595475885350391
+          ]
+        ]
+      },
+      "absolute": {
+        "visible": true,
+        "elevation_deg": 5.033849451415945,
+        "yaw_deg": 43.16898548241672,
+        "pitch_deg": 23.9225344930631,
+        "roll_deg": 66.83767653848739,
+        "absolute_zyx_deg": [
+          19.500170159040294,
+          -25.996708306678656,
+          -39.312158907588525
+        ],
+        "body_los": [
+          5.551115123125783e-17,
+          -1.1102230246251565e-16,
+          1.0
+        ],
+        "camera_visible": true,
+        "tracking_rate_deg_s": 0.1646597700263283,
+        "axis_ok": true,
+        "rate_ok": true,
+        "unoccluded": true,
+        "relative_matrix": [
+          [
+            0.6666848627885595,
+            0.6253799846913191,
+            -0.4055011325213355
+          ],
+          [
+            0.002806081817284367,
+            0.5419388921292534,
+            0.840413209738253
+          ],
+          [
+            0.7453344347562607,
+            -0.5614286347748962,
+            0.3595475885350391
+          ]
+        ]
+      }
+    },
+    {
+      "task_id": "M020",
+      "time": "2025-11-19T09:23:10Z",
+      "satellite": {
+        "id": "GPM-CORE_39574",
+        "maneuverability_capability": {
+          "maneuverability_type": "agile",
+          "max_pitch_angle_deg": 45.0,
+          "max_roll_angle_deg": 45.0,
+          "max_yaw_angle_deg": 45.0,
+          "slew_rate_deg_per_s": 1.0,
+          "stabilization_time_s": 10.0
+        },
+        "observation_capability": {
+          "sensors": [
+            {
+              "data_rate_Mbps": 0.1,
+              "field_of_view_deg": 45.0,
+              "min_elevation_angle_deg": 0.0,
+              "observation_swath_width_km": 50.0,
+              "power_consumption_W": 50.0,
+              "resolution": "medium",
+              "sensor_id": "GPM-CORE_39574_sensor",
+              "sensor_mode": "visible"
+            }
+          ]
+        },
+        "orbital_params": {
+          "argument_of_perigee_deg": 284.823,
+          "eccentricity": 0.001294,
+          "epoch": "18 Nov 2025 12:00:00.000",
+          "inclination_deg": 64.827,
+          "mean_anomaly_deg": 176.987,
+          "right_ascension_of_ascending_node_deg": 293.591,
+          "semi_major_axis_km": 6801.857205
+        },
+        "orbital_type": "LEO",
+        "satellite_specs": {
+          "max_battery_capacity_Wh": 2000.0,
+          "max_data_storage_GB": 1000.0,
+          "max_fuel_kg": 100.0,
+          "max_operation_time_s": 4500.0,
+          "max_power_W": 500.0
+        }
+      },
+      "location": {
+        "altitude_km": 0.0,
+        "latitude": 39.83204,
+        "longitude": 109.990869
+      },
+      "relative": {
+        "visible": false,
+        "elevation_deg": 5.0433458686145025,
+        "yaw_deg": 50.032688079255735,
+        "pitch_deg": 44.68970744497369,
+        "roll_deg": 59.61567602770849,
+        "absolute_zyx_deg": [
+          -4.315087627562588,
+          -25.078423284237,
+          -40.10357897017253
+        ],
+        "body_los": [
+          -5.551115123125783e-17,
+          1.6653345369377348e-16,
+          1.0
+        ],
+        "camera_visible": true,
+        "tracking_rate_deg_s": 0.12262276236332999,
+        "axis_ok": false,
+        "rate_ok": true,
+        "unoccluded": true,
+        "relative_matrix": [
+          [
+            0.45666353113453173,
+            0.5448613953768486,
+            -0.7032670041739018
+          ],
+          [
+            0.0020488187614619013,
+            0.7898616525309566,
+            0.6132816418275944
+          ],
+          [
+            0.8896371292124805,
+            -0.2815042267694406,
+            0.3595846891032986
+          ]
+        ]
+      },
+      "absolute": {
+        "visible": true,
+        "elevation_deg": 5.0433458686145025,
+        "yaw_deg": 50.032688079255735,
+        "pitch_deg": 44.68970744497369,
+        "roll_deg": 59.61567602770849,
+        "absolute_zyx_deg": [
+          -4.315087627562588,
+          -25.078423284237,
+          -40.10357897017253
+        ],
+        "body_los": [
+          -5.551115123125783e-17,
+          1.6653345369377348e-16,
+          1.0
+        ],
+        "camera_visible": true,
+        "tracking_rate_deg_s": 0.12262276236332999,
+        "axis_ok": true,
+        "rate_ok": true,
+        "unoccluded": true,
+        "relative_matrix": [
+          [
+            0.45666353113453173,
+            0.5448613953768486,
+            -0.7032670041739018
+          ],
+          [
+            0.0020488187614619013,
+            0.7898616525309566,
+            0.6132816418275944
+          ],
+          [
+            0.8896371292124805,
+            -0.2815042267694406,
+            0.3595846891032986
+          ]
+        ]
+      }
+    }
+  ],
+  "exposure_history": [
+    {
+      "task_id": "M001",
+      "time": "2025-11-18T15:06:44Z",
+      "satellite": {
+        "id": "SKYSAT-C2_41773",
+        "maneuverability_capability": {
+          "maneuverability_type": "agile",
+          "max_pitch_angle_deg": 45.0,
+          "max_roll_angle_deg": 45.0,
+          "max_yaw_angle_deg": 45.0,
+          "slew_rate_deg_per_s": 1.0,
+          "stabilization_time_s": 10.0
+        },
+        "observation_capability": {
+          "sensors": [
+            {
+              "data_rate_Mbps": 0.1,
+              "field_of_view_deg": 45.0,
+              "min_elevation_angle_deg": 0.0,
+              "observation_swath_width_km": 50.0,
+              "power_consumption_W": 50.0,
+              "resolution": "medium",
+              "sensor_id": "SKYSAT-C2_41773_sensor",
+              "sensor_mode": "visible"
+            }
+          ]
+        },
+        "orbital_params": {
+          "argument_of_perigee_deg": 69.009,
+          "eccentricity": 0.00167,
+          "epoch": "18 Nov 2025 12:00:00.000",
+          "inclination_deg": 97.006,
+          "mean_anomaly_deg": 149.618,
+          "right_ascension_of_ascending_node_deg": 347.712,
+          "semi_major_axis_km": 6833.433187
+        },
+        "orbital_type": "LEO",
+        "satellite_specs": {
+          "max_battery_capacity_Wh": 2000.0,
+          "max_data_storage_GB": 1000.0,
+          "max_fuel_kg": 100.0,
+          "max_operation_time_s": 4500.0,
+          "max_power_W": 500.0
+        }
+      },
+      "location": {
+        "altitude_km": 0.0,
+        "latitude": -27.583358,
+        "longitude": -105.880971
+      },
+      "source_sha256": "ae4d75699239b250aa064db099a8619e50678bd9ee821a812d0fef5330edd575",
+      "plan_sha256": "5721860099d2c73cd7ad79e6b9ccb5c88deded4eac5fcd2176fee255b62fcfc5",
+      "point": {
+        "visible": false,
+        "elevation_deg": 6.373953809007862,
+        "yaw_deg": -30.825631633654318,
+        "pitch_deg": -14.45952667108007,
+        "roll_deg": 66.93974386698223,
+        "absolute_zyx_deg": [
+          -43.98466030501631,
+          35.30472415764634,
+          44.99413975665514
+        ],
+        "body_los": [
+          0.0,
+          1.6653345369377348e-16,
+          1.0
+        ],
+        "camera_visible": true,
+        "tracking_rate_deg_s": 0.1968171512616115,
+        "axis_ok": false,
+        "rate_ok": true,
+        "unoccluded": true,
+        "relative_matrix": [
+          [
+            0.8315298182037075,
+            -0.49619557083425825,
+            0.24969604907281556
+          ],
+          [
+            0.00342918858682989,
+            0.454090843606004,
+            0.890948790009181
+          ],
+          [
+            -0.5554695330112581,
+            -0.7399942305434906,
+            0.37929162482000905
+          ]
+        ]
+      }
+    },
+    {
+      "task_id": "M007",
+      "time": "2025-11-19T04:46:29Z",
+      "satellite": {
+        "id": "SCD_1_22490",
+        "maneuverability_capability": {
+          "maneuverability_type": "agile",
+          "max_pitch_angle_deg": 45.0,
+          "max_roll_angle_deg": 45.0,
+          "max_yaw_angle_deg": 45.0,
+          "slew_rate_deg_per_s": 1.0,
+          "stabilization_time_s": 10.0
+        },
+        "observation_capability": {
+          "sensors": [
+            {
+              "data_rate_Mbps": 0.1,
+              "field_of_view_deg": 45.0,
+              "min_elevation_angle_deg": 0.0,
+              "observation_swath_width_km": 50.0,
+              "power_consumption_W": 50.0,
+              "resolution": "medium",
+              "sensor_id": "SCD_1_22490_sensor",
+              "sensor_mode": "visible"
+            }
+          ]
+        },
+        "orbital_params": {
+          "argument_of_perigee_deg": 73.8,
+          "eccentricity": 0.003755,
+          "epoch": "18 Nov 2025 12:00:00.000",
+          "inclination_deg": 25.1,
+          "mean_anomaly_deg": 156.998,
+          "right_ascension_of_ascending_node_deg": 68.138,
+          "semi_major_axis_km": 7121.14563
+        },
+        "orbital_type": "LEO",
+        "satellite_specs": {
+          "max_battery_capacity_Wh": 2000.0,
+          "max_data_storage_GB": 1000.0,
+          "max_fuel_kg": 100.0,
+          "max_operation_time_s": 4500.0,
+          "max_power_W": 500.0
+        }
+      },
+      "location": {
+        "altitude_km": 0.0,
+        "latitude": -15.314702,
+        "longitude": -140.791694
+      },
+      "source_sha256": "ae4d75699239b250aa064db099a8619e50678bd9ee821a812d0fef5330edd575",
+      "plan_sha256": "d69cf2d19c2f68ff97461a238fab7a8bb841b771e0ac7e7ba5cfdfc979115f1b",
+      "point": {
+        "visible": false,
+        "elevation_deg": 11.86317215580025,
+        "yaw_deg": 36.924875574022074,
+        "pitch_deg": 31.745122457371934,
+        "roll_deg": 54.964455154543835,
+        "absolute_zyx_deg": [
+          42.95033853697302,
+          44.95657167599285,
+          -29.94262281335639
+        ],
+        "body_los": [
+          -1.6653345369377348e-16,
+          -1.3877787807814457e-16,
+          1.0000000000000002
+        ],
+        "camera_visible": true,
+        "tracking_rate_deg_s": 0.1395123031133572,
+        "axis_ok": false,
+        "rate_ok": true,
+        "unoccluded": true,
+        "relative_matrix": [
+          [
+            0.6798277043756997,
+            0.5108907718006104,
+            -0.5261415319590762
+          ],
+          [
+            -0.0004973291082201493,
+            0.7177490251247566,
+            0.6963017231030098
+          ],
+          [
+            0.733371696363464,
+            -0.473103536471076,
+            0.48819975292039686
+          ]
+        ]
+      }
+    }
+  ]
+}
