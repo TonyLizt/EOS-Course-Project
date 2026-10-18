@@ -1,3 +1,52 @@
+## 统一控制台 PR 集成与最新 main 同步（2026-10-18）
+
+- 按团队规范 merge origin/main（最新 22299b4 / PR #19，非停留于 #18），保留 CAABS、来源索引及 I2 来源窗口恢复/核验，不重写历史。Solver 公共契约复用队友的新模块，初始模型作为兼容默认字段保留；新增 CAABS 进入注册驱动的控制台清单（原九种加一），模型仍单独选择。
+- 本次 PR 汇总持久实验/多算法、规划预览、轻量比较、Cesium 增量管理、交互 Gantt 和非持久临时 Gantt；schema v4 备份迁移，正式认证门禁不放宽。原目录脏工作区不纳入 PR。
+- #19 整合后完整默认 Python 525 项（517通过、8 opt-in跳过、0失败/错误），Node 12 个测试文件通过。LFS 仅展开本地已有原对象，旧 HTTP fixture 改用注册算法，不修改场景字节或认证门禁。见[PR 集成交接](docs/phase2/console_pr19_integration_handoff.md)。须独立组员审核，并请李泽同确认公共接口、Controller 和数据库影响，不自行合并。
+
+## 临时模型对照与右侧比较区（2026-10-18）
+
+- 删除比较排序箭头、序号及手动排序状态，两种模式按稳定成员顺序筛选。Cesium 比较区整体移到右侧 Observation Intervals 后，仍只加载当前持久实验。
+- 首页对照改为内存队列，与原 Controller 共享 Worker/超时/取消/独立核验，不写数据库或导出，删除/页面离开/租约到期清理。旧持久化 API 仅留兼容，页面不调用。
+- 17 项 Python、12 项 Node、一次真实 Chromium/Cesium 两星定向回归通过；正式记录计数与数据库写入禁用断言通过，无 schema 迁移。需自行重启旧后端加载新 API，不操作用户 8765、不 Push/PR。见[交接](docs/phase2/temporary_comparison_handoff.md)。
+
+## 紧凑比较控件与载荷宫格开关（2026-10-18）
+
+- 比较收敛为按算法/按实验，两种均可勾选和组内排序；对照创建位于右上角。详情新增算法改为复选确认，Cesium 完成项只显示名称，待添加区去重并取消内部滚动。
+- 修复 display:grid 覆盖 hidden 导致 Hide Grid 无效；隐藏清理子视图队列，恢复以当前时间重新提交完整画面，保留卫星选中。11 项 Node 及载荷队列检查、一次真实 Chromium/Cesium 两星定向回归通过；无大型重测，不操作用户 8765，不 Push/PR。见 [交接](docs/phase2/ui_polish_handoff.md)。
+
+## 统一交互、原 Cesium 侧栏与 Gantt 吸附（2026-10-18）
+
+- 单一算法卡片配置入口、右侧三角、实验单行列表、模型对照复制，以及按算法/按实验/混合排序共用比较视图；用户界面统一简体中文。
+- 原 Cesium Metrics 下增量添加算法管理与当前结果高亮，不重构地球/载荷视图；切换完整 Run 页面避免数据混用。Gantt 同轨道 12px 吸附，真实条宽与时间不变。
+- 27 项 Python、11 项 Node 通过；真实 Chromium/Cesium 两星夹具验证完整交互，真实十星二十任务的两算法及模型对照共四 Run 均 20/20（规划预览，正式门禁未放宽）。未做大型 Benchmark，不自动操作用户 8765 服务，不 Push/PR。见[当前交互交接](docs/phase2/unified_interactions_handoff.md)。
+
+## 实验父子关系与一键模型对照（2026-10-18）
+
+- 从回退后的 92f34d2 恢复可审查的 Experiment→算法 Run 数据层，支持原子多算法提交、严格模型对照、一键复制以及保留历史的移除/取消；不恢复外层 Cesium iframe。
+- schema v4 显式增加父子表，升级在线备份且不覆盖旧备份，保留历史，Controller/Worker/正式认证不变。27 项 Python 定向通过；不运行正式 8765、不 Push/PR。见[实验管理交接](docs/phase2/experiment_management_handoff.md)。
+
+## 九算法比较与 Gantt 实验入口（2026-10-18）
+
+- 将两种初始模型与九种比较算法分离，保留旧历史；新增 schedule_model、算法可用性与模型分组，补上 `/visualization/gantt` 实验选择页。MIP 缺依赖、PPO 尚缺可信推理接入，明确禁用，不冒充可用。
+- Python 14 项、Node 7 项、一次 UI/Gantt Chromium 回归及一次真实两算法小场景提交通过；真实两项均 20/20，无大型仿真。无数据库迁移，正式门禁不变。详见[九算法交接](docs/phase2/nine_algorithm_console_handoff.md)。
+
+## 重复启动提示与控制台回归补齐（2026-10-18）
+
+- CLI 在加载 API 前探测现有 Controller 锁，重复启动直接提示使用网址与 Ctrl+C 重启，不删除锁或接管任务；最终互斥仍由 Controller 保证。修正浏览器回归显式使用正式模式，补充预览比较隔离测试。
+- 5 项 Python、6 项 Node 通过；一次隔离 Chromium 验证提交、正式拒绝、历史比较及 Gantt Hover/键盘/触控/缩放，无页面异常。详见[预览交接](docs/phase2/planning_preview_handoff.md)。
+
+## 控制台启动及规划预览修复（2026-10-17）
+
+- 增加明确未认证的规划预览，保留正式门禁与导出隔离；修复旧目录启动及缓存识别。10 项 Python、5 项 Node 测试与两个真实算法浏览器提交通过，均完成 20/20，回放 READY。无数据库迁移；未做大型回放。详见[预览交接](docs/phase2/planning_preview_handoff.md)。
+
+## 统一调度控制台与 Gantt 交互升级（2026-10-17）
+
+- 首页整合注册算法多选提交、独立 Run 监控、历史分组比较、算法详情和完整指标；新增元数据来自现有实现，运行/核验/取消仍走原 Controller 和 Worker。
+- Gantt 使用显式 Hover/焦点提示及点击/触屏详情，增加 UTC 秒级缩放、平移、范围输入、导航和任务定位；任务宽度保留真实时间。
+- Node 5 项、Python 5 项定向检查通过，并使用隔离数据库完成 Chromium 交互验证；成功历史为明示的测试 receipt，新运行保留真实认证失败状态，不冒充物理认证通过。未做大型仿真或全量 WCAG 审计。详见 [交接说明](docs/phase2/console_gantt_handoff.md)。
+
+---
 ## R2-C7：I2 文档收口（2026-10-18）
 
 - 保留C6报告及I1/I2原有记录，更新[PR草稿](docs/phase2/algorithms/caabs_i2_source_window_pr_draft_20261018.md)、[I2报告第7节](docs/phase2/algorithms/caabs_i2_source_window_fix_20261018.md#7-正式-rebase-后集成验收与文档收口r2-c6--r2-c7)和[来源契约](docs/phase2/assignment_source_window_contract_v1.md)：正式核心HEAD为0b8dbd4，main基线5e37ba7；C6结论 INTEGRATION REVIEW PASS WITH CONDITIONS，489 PASS、8 SKIP、0 FAIL/ERROR，退出0。

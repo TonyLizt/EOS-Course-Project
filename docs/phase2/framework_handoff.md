@@ -1,3 +1,11 @@
+> 当前（2026-10-18，集成 main PR #19 / 22299b4）：一个持久实验包含多个算法 Run；schema v4 备份迁移，原 Worker 协议保留，Controller 共享单执行槽处理内存临时对照。临时 Gantt 不落库，Cesium 比较在右侧且仅含持久实验。保留 main 的 CAABS、共享 Solver 契约和 I2 来源核验；初始模型作为共享上下文的可选字段（不改变既有取消参数的位置）。见[实验管理](experiment_management_handoff.md)及[当前临时 Gantt](temporary_gantt_handoff.md)。
+
+> 历史 2026-10-17 页面整合：当时的独立 Run 与条件组实现见[控制台与 Gantt 交接](console_gantt_handoff.md)，其批次/比较描述已被以上工作区替代。
+
+> 九算法整合（2026-10-18）：比较算法与两个初始模型分离，Worker 适配器生成模型初始解后调用原 search；PPO 可信接入未完成，保持禁用。Gantt 增加实验选择页。见[当前九算法边界与验证](nine_algorithm_console_handoff.md)。
+
+> 规划预览增量：Run 可显式选择 planning_preview；正式认证和导出仍严格隔离，无数据库迁移。启动桥接、Controller/存储边界和实测记录见[预览交接](planning_preview_handoff.md)。
+
 > 历史专题记录：当前 v0.3.1 的实现、接口过渡与剩余分工见[修复集成交接](restore_integration_handoff.md)。下文保留当时的版本与验收语境。
 
 # 第二阶段框架交接说明（v0.2.1 框架 + W1/W2 + 卫星回放 commit 1–6 及后续整合）

@@ -1,5 +1,13 @@
 # EOS-Course-Project：地球观测卫星任务调度课程系统
 
+首页统一控制台默认使用「规划预览」：选择场景、初始排程模型（完成率优先／自适应修复），再从注册算法中选择一项或多项提交，在「算法比较」查看结果。同步最新 main 后共十种（原九种加 CAABS），MIP/PPO 缺依赖或可信模型接入时明确禁用；部分算法不使用初始解，详见[原九算法交接](docs/phase2/nine_algorithm_console_handoff.md)及[CAABS](docs/phase2/algorithms/conflict_beam.md)。预览不代表正式连续认证，正式门禁不变。
+
+一次提交只新增一个实验，内含多个算法。算法卡片右侧三角独立展开参数及说明；选中实验后只比较其算法，也可一键创建同场景、仅初始模型不同的对照实验。Cesium 在原 Metrics 下增加算法管理和比较，不增加外层 iframe。见[统一交互说明](docs/phase2/unified_interactions_handoff.md)及[实验 API](docs/phase2/experiment_management_handoff.md)。
+
+Gantt 实验入口：<http://127.0.0.1:8765/visualization/gantt>，展开实验后选择算法；Cesium 从实验内算法详情打开。升级前先在原服务终端 Ctrl+C，重新启动后自动备份并迁移到 schema v4。旧 Run 无批次证据，不按相近时间自动合并。
+
+若启动命令提示「已有 Controller」，请直接访问 http://127.0.0.1:8765/；重启时先在原服务终端按 Ctrl+C 并等待退出，不要删除 `controller.lock`。
+
 本仓库是**操作系统原理课程设计**项目。我们在 [EOS-Bench](https://github.com/Ethan19YQ/EOS-Bench) 的场景、约束、算法基线和可视化代码之上，构建可以由浏览器操作的调度实验系统。项目重点是把一次实验从配置、独立进程执行、进程间通信、结果核验，到持久化和回放连接起来，并让不同组员实现的算法在同一输入与约束下比较。
 
 本项目不是 EOS-Bench 官方仓库。上游研究平台、论文和数据的出处见[来源与致谢](#来源与致谢)；课程系统的新增实现主要位于 `eos_system/`。
@@ -160,5 +168,14 @@ node tests/satellite_follow.test.cjs
 
 正式独立审查需要服务端配置 `EOS_OREKIT_DATA`；没有数据、可信窗口来源或连续性证据都会关闭门禁。普通 `verify_schedules.py` 的离散模式仅供诊断，`PASS_DISCRETE_ONLY` 不代表连续认证。完整契约、测试和风险见 [连续曝光审计报告](docs/phase2/continuous_exposure_boundary_fix_2026-10-17.md) 第 11 节起。
 
+## 统一调度控制台与 Gantt
+
+当前比较区采用轻量来源分区筛选，详细指标在下方表格。临时结果可通过独立的“临时 Gantt”查看任务时间轴，数据仅存内存，删除或过期后图表清空；仍不进入数据库、正式列表或 Cesium。见[临时 Gantt 与定向验证](docs/phase2/temporary_gantt_handoff.md)。
+
+首页可勾选一个或多个**实际已注册**算法，一次原子创建一个 Experiment 和多个独立 Run；共用场景、种子、预算和约束，算法参数分别保存。算法名称来自注册元数据，列表每个实验仅一行，日期为次要信息。算法卡片的三角展开策略、限制及参数；支持取消及原 Run 的 Cesium/Gantt/导出入口。
+
+比较限当前实验及条件核验通过的临时模型对照；按算法、按实验稳定分组，仅勾选结果，不提供手动排序、序号或混合模式。首页对照仅驻留内存，可创建/移除，不新增正式 Experiment/Run，不进入历史列表或 Cesium。Cesium 的算法比较完整移至右侧 Observation Intervals 下方，仅显示当前持久实验。TP/TCR/BD 越大越好，TM/RT/RV 越小越好，未提供 RV 保持空值，不生成综合排名。新增算法采用勾选确认，载荷 Hide/Show Grid 保持正常。见[当前临时对照与验证](docs/phase2/temporary_comparison_handoff.md)。
+
+Gantt 支持任务/卫星搜索、任务定位后秒级放大、缩放、平移、UTC 时间范围与导航滑块。任务条附近 12px 内提供吸附反馈；Hover 或键盘焦点显示精确任务提示，点击/触摸固定详情，Escape 关闭提示；真实观测时间及条宽不因吸附改变。详见[当前交接和验证记录](docs/phase2/unified_interactions_handoff.md)。
 
 场景来源与只读身份核验见 [R1-02 Artifact / Provenance 索引](docs/phase2/scenario_artifact_index_r1_02.md)；Raw 独立清点，六 Legacy 与四 Candidate 保持原位，索引不批准发布。

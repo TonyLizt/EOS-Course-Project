@@ -53,7 +53,8 @@ assert type(solver).__name__ == "ConflictBeamScheduler"
 assert callable(solver.solve)
 print(json.dumps({"pid":os.getpid(),"ids":[x["algorithm_id"] for x in list_algorithms()],"version":spec.version,"solver":type(solver).__name__}))
 ''')
-        self.assertEqual(data["ids"], ["completion_first", "adaptive_repair", "caabs"])
+        self.assertEqual(data["ids"], list(registry.COMPARISON_ALGORITHMS))
+        self.assertIn('caabs',data['ids'])
         self.assertEqual(data["version"], VERSION)
 
     def test_algorithm_then_registry_in_fresh_process(self):
@@ -139,7 +140,7 @@ class RegistryParameterTests(unittest.TestCase):
                 registry.make_context(19, budget, WEIGHTS, self.spec, {})
 
     def test_existing_algorithms_keep_metadata_and_validation(self):
-        self.assertEqual([x["algorithm_id"] for x in registry.list_algorithms()][:2],
+        self.assertEqual([x["model_id"] for x in registry.list_schedule_models()],
                          ["completion_first", "adaptive_repair"])
         for name in ("completion_first", "adaptive_repair"):
             spec = registry.get_algorithm(name)
@@ -196,7 +197,7 @@ class RegistryParameterTests(unittest.TestCase):
             self.assertEqual([m["status"] for m in messages if m["type"] == "http.response.start"], [200])
             payload = b"".join(m.get("body", b"") for m in messages if m["type"] == "http.response.body")
             rows = json.loads(payload)["items"]
-            self.assertEqual([x["algorithm_id"] for x in rows], ["completion_first", "adaptive_repair", "caabs"])
+            self.assertEqual([x["algorithm_id"] for x in rows], list(registry.COMPARISON_ALGORITHMS))
             self.assertEqual(rows[-1], self.spec.public_info())
 
         with tempfile.TemporaryDirectory(prefix="i1-api-metadata-") as folder:

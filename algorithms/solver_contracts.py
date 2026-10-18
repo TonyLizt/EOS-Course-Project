@@ -27,6 +27,8 @@ class SolveContext:
     params: AlgorithmParams
     # 正式 Worker 接入协作取消后可替换此回调；硬超时仍由 Controller 负责。
     is_cancelled: Callable[[], bool] = field(default=lambda: False, repr=False)
+    # Initial-plan model is optional; keep the existing positional cancel argument.
+    schedule_model: str = 'completion_first'
 
 
 class Solver(Protocol):

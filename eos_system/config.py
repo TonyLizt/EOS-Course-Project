@@ -105,7 +105,7 @@ def _listing_sha(path: Path) -> str:
     return digest
 
 
-def _released_epoch_scenario(path: Path) -> bool:
+def _released_epoch_scenario(path: Path, *, planning_preview: bool = False) -> bool:
     """Return whether an epoch-fixed file can actually be submitted.
 
     A candidate file without its matching release evidence must not hide the
@@ -120,6 +120,8 @@ def _released_epoch_scenario(path: Path) -> bool:
         from utils.continuous_exposure import planning_evidence
         scenario_sha = _listing_sha(path)
         capture_provenance(path, scenario_sha)
+        if planning_preview:
+            return True  # Published lineage is retained; no continuous proof is asserted.
         # The earlier release sidecar proves lineage and sampled checks only.
         # It must not make a scenario selectable unless its window-generation
         # evidence also satisfies the current conservative planning contract.
@@ -129,7 +131,7 @@ def _released_epoch_scenario(path: Path) -> bool:
         return False
 
 
-def list_scenarios_in(root: Path, source_id: str) -> list[dict]:
+def list_scenarios_in(root: Path, source_id: str, *, planning_preview: bool = False) -> list[dict]:
     """递归列出已登记目录中的 JSON；ID 是不含扩展名的安全相对路径。"""
     if not root.is_dir():
         return []
@@ -142,13 +144,13 @@ def list_scenarios_in(root: Path, source_id: str) -> list[dict]:
                 or "provenance" in relative_path.parts):
             continue
         is_epoch_fixed = path.stem.endswith("_epoch_fixed_v1")
-        if is_epoch_fixed and not _released_epoch_scenario(path):
+        if is_epoch_fixed and not _released_epoch_scenario(path, planning_preview=planning_preview):
             continue
         # Only a formally released corrected sibling may replace the legacy
         # picker entry.  Candidate-only or incomplete output stays invisible.
         if (not is_epoch_fixed
                 and _released_epoch_scenario(
-                    path.with_name(path.stem + "_epoch_fixed_v1.json")
+                    path.with_name(path.stem + "_epoch_fixed_v1.json"), planning_preview=planning_preview
                 )):
             continue
         relative = relative_path.with_suffix("")
@@ -167,7 +169,7 @@ def resolve_scenario_in(root: Path, scenario_id: str) -> tuple[Path, str]:
                            and all(ch.isalnum() or ch in "_.-" for ch in part)
                            for part in relative.parts))
     if not valid_parts:
-        raise ValueError("場景 ID 只能是由字母、數字、底線、短橫線和小數點組成的安全相對路徑")
+        raise ValueError("场景 ID 只能是由字母、数字、下划线、短横线和小数点组成的安全相对路径")
     path = root / f"{scenario_id}.json"
     if (path.is_symlink() or not path.is_file()
             or not path.resolve().is_relative_to(root.resolve())):

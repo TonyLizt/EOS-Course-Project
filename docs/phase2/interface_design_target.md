@@ -1,3 +1,11 @@
+> 当前实验契约（2026-10-18，集成 main PR #19 / 22299b4）：`POST /api/experiments` 原子创建父实验和多个算法 Run；首页使用 `/temporary-control` 创建内存对照，临时 Gantt 走独立通道，不落库或进入 Cesium。`/control` 仅保留兼容的持久化 API。公开算法为原九种加 main 的 CAABS（十种），两个初始模型单列；I2 来源窗口显式身份、唯一恢复与姿态/资源核验保留，formal 的曝光认证不变。见[实验 API](experiment_management_handoff.md)及[临时 Gantt](temporary_gantt_handoff.md)。
+
+> 历史 2026-10-17：逐项提交与条件组实现见[原控制台契约](console_gantt_handoff.md)，不代表当前实验组织方式。
+
+> 九算法增量（2026-10-18）：新增 RunRequest.schedule_model、算法列表 models 与可用性说明，旧模型 ID 不再用于新 HTTP 算法提交；增加无 Run ID 的 Gantt 选择入口。见[九算法公共契约](nine_algorithm_console_handoff.md)。
+
+> 规划预览接口：RunRequest.execution_mode 默认 formal，UI 显式提交 planning_preview。预览结果、比较隔离及正式导出 409 见[预览契约](planning_preview_handoff.md)。
+
 > v0.3.2 已实现补充：场景元数据/可用性、自动登记与自适应预算见[六场景交接](six_scenario_scale_handoff.md)。配置 ID 保持，实际步长读 manifest，不写死 5 秒。
 
 > **2026-10-16 当前实现入口：**[v0.3.1 修复集成交接](restore_integration_handoff.md)。本文的 v0.2/v0.3 段落保留目标设计与历史背景；默认配置、READY 读取方式与已实现范围以该交接及当前代码为准。

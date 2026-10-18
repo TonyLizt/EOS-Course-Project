@@ -27,6 +27,7 @@ from .storage import Database
 from .verification import verify_candidate
 from .worker_reference import CANCEL_GRACE_S, PROTOCOL_VERSION, worker_main
 from .worker_process import WorkerGroup, reap_worker
+from .planning_preview import PreviewReceipt, validate_preview
 
 
 VERIFICATION_TIMEOUT_S = 30.0
@@ -36,6 +37,7 @@ class Controller:
     def __init__(self, settings: Settings, database: Database):
         self.settings = settings
         self.database = database
+        self.transient = None  # Optional volatile queue; never a SQLite store.
         self._stop = threading.Event()
         self._verification_slot = threading.BoundedSemaphore(1)
         self._verification_thread = None
@@ -96,32 +98,39 @@ class Controller:
 
     def _loop(self) -> None:
         while not self._stop.is_set():
+            store = self.database
             queued = self.database.next_queued()
+            if queued is None and self.transient is not None:
+                store = self.transient
+                queued = store.next_queued()
             if queued is None:
                 self._stop.wait(0.2)
                 continue
             with self._dispatch_lock:
                 if self._stop.is_set():
                     break
-                started = self.database.start_attempt(queued["run_id"])
+                started = store.start_attempt(queued["run_id"])
             if started is None:
                 continue
             attempt, config_data = started
             try:
-                self._execute(RunConfig.model_validate(config_data), attempt)
+                if store is self.database:
+                    self._execute(RunConfig.model_validate(config_data), attempt)
+                else:
+                    self._execute(RunConfig.model_validate(config_data), attempt, store)
             except BaseException as exc:
                 # 队列线程不能因单次实验故障而退出，否则后续 QUEUED 将无人处理。
-                self.database.finish_failure(queued["run_id"], attempt, "FAILED", type(exc).__name__, str(exc))
+                store.finish_failure(queued["run_id"], attempt, "FAILED", type(exc).__name__, str(exc))
 
     def _reap_worker(self, process: mp.Process, group: WorkerGroup,
                      initial_grace_s: float) -> dict:
         return reap_worker(process, group, initial_grace_s, self.settings.stop_grace_s)
 
-    def _verify_with_deadline(self, config, candidate, runtime):
+    def _verify_with_deadline(self, config, candidate, runtime, store=None):
         # Background Controller only; never executed in an HTTP request thread.
         # A late verifier cannot persist anything: only this owner finalizes.
         deadline = time.monotonic() + VERIFICATION_TIMEOUT_S
-        context = self.database.expected_certification_context()
+        context = (store or self.database).expected_certification_context()
         check_deadline(deadline)
         if not self._verification_slot.acquire(blocking=False):
             raise ContinuousCertificationError(ExposureStatus.ERROR, "PREVIOUS_VERIFIER_STILL_RUNNING")
@@ -149,6 +158,11 @@ class Controller:
             if not ok:
                 raise value
             plan, metrics, receipt = value
+            if config.execution_mode == 'planning_preview':
+                if not isinstance(receipt, PreviewReceipt):
+                    raise ValueError('missing Controller preview receipt')
+                validate_preview(receipt.evidence(), config.model_dump(), plan)
+                return plan, metrics, receipt, deadline
             if not isinstance(receipt, CertificationReceipt):
                 raise ContinuousCertificationError(ExposureStatus.ERROR, "MISSING_CONTROLLER_RECEIPT")
             validate_certification(receipt.evidence(), run_id=config.run_id,
@@ -158,7 +172,8 @@ class Controller:
         thread.join(timeout=max(0.0, deadline-time.monotonic()))
         raise ContinuousCertificationError(ExposureStatus.ERROR, "CONTROLLER_STOP_DURING_CERTIFICATION")
 
-    def _execute(self, config: RunConfig, attempt: int) -> None:
+    def _execute(self, config: RunConfig, attempt: int, store=None) -> None:
+        store = store or self.database
         context = mp.get_context("spawn")
         event_recv, event_send = context.Pipe(duplex=False)
         control_recv, control_send = context.Pipe(duplex=False)
@@ -195,7 +210,7 @@ class Controller:
             cancel_grace_s = CANCEL_GRACE_S + self.settings.stop_grace_s
             while True:
                 group.refresh()
-                state = self.database.get_status(config.run_id)
+                state = store.get_status(config.run_id)
                 if not state or state["current_attempt"] != attempt:
                     failure = ("FAILED", "WORKER_STATE", "运行记录或 attempt 已变化")
                     break
@@ -324,7 +339,7 @@ class Controller:
                         if not math.isfinite(runtime):
                             failure = ("FAILED", "IPC_PROTOCOL_ERROR", "候选 runtime 非有限数")
                             break
-                    if not self.database.record_worker_event(message):
+                    if not store.record_worker_event(message):
                         continue
                     if kind == "started":
                         started_seen = True
@@ -353,12 +368,12 @@ class Controller:
                 time.sleep(0.01)
 
             if ipc_diagnostic is not None:
-                self.database.record_system_event(config.run_id, attempt, "IPC_ERROR",
+                store.record_system_event(config.run_id, attempt, "IPC_ERROR",
                                                   {"code": ipc_diagnostic[0], "message": ipc_diagnostic[1][:300]})
             grace = 0.0 if stop_reason is not None or candidate_exit_deadline is not None else self.settings.stop_grace_s
             reap = self._reap_worker(process, group, grace)
             reaped = True
-            self.database.record_attempt_exit(config.run_id, attempt, reap["exit_code"],
+            store.record_attempt_exit(config.run_id, attempt, reap["exit_code"],
                                               {"action": reap["action"], "alive": reap["alive"],
                                                "live_members": reap["live_members"],
                                                "identity_confirmed": reap["identity_confirmed"],
@@ -369,75 +384,84 @@ class Controller:
                                                "signal_errors": reap["signal_errors"],
                                                "reason": stop_reason or (failure[1] if failure else "NORMAL")})
             if not reap["identity_confirmed"]:
-                self.database.record_system_event(config.run_id, attempt, "WORKER_IDENTITY",
+                store.record_system_event(config.run_id, attempt, "WORKER_IDENTITY",
                                                   {"code": "WORKER_IDENTITY_UNCONFIRMED",
                                                    "message": "本次 Worker 独立 Session 未经内核身份核验",
                                                    "direct_worker_exited": not reap["alive"]})
             if reap["alive"] or reap["live_members"] or reap["scan_limited"]:
-                self.database.finish_failure(config.run_id, attempt, "FAILED", "WORKER_CLEANUP_INCOMPLETE", "Worker 或已识别后代未能确认退出")
+                store.finish_failure(config.run_id, attempt, "FAILED", "WORKER_CLEANUP_INCOMPLETE", "Worker 或已识别后代未能确认退出")
                 return
             if stop_reason == "USER_CANCEL":
                 message = "用户取消运行" if cancel_ack_received else "用户取消运行；未收到 Worker 确认"
-                self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED", message)
+                store.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED", message)
                 return
             if stop_reason == "ALGORITHM_TIMEOUT":
-                self.database.finish_failure(config.run_id, attempt, "TIMED_OUT", "ALGORITHM_TIMEOUT", "算法运行或结果传输超过墙钟期限")
+                store.finish_failure(config.run_id, attempt, "TIMED_OUT", "ALGORITHM_TIMEOUT", "算法运行或结果传输超过墙钟期限")
                 return
             if stop_reason == "CONTROLLER_STOP" or self._stop.is_set():
-                self.database.finish_failure(config.run_id, attempt, "FAILED", "CONTROLLER_STOP", "Controller 主动停机中断运行")
+                store.finish_failure(config.run_id, attempt, "FAILED", "CONTROLLER_STOP", "Controller 主动停机中断运行")
                 return
             if failure:
-                self.database.finish_failure(config.run_id, attempt, *failure)
+                store.finish_failure(config.run_id, attempt, *failure)
                 return
             if not reap["identity_confirmed"] or not start_queued:
-                self.database.finish_failure(config.run_id, attempt, "FAILED",
+                store.finish_failure(config.run_id, attempt, "FAILED",
                                              "WORKER_IDENTITY_UNCONFIRMED",
                                              "Worker 独立 Session 或 start 放行未能确认")
                 return
             if candidate is None or reported_runtime is None:
-                self.database.finish_failure(config.run_id, attempt, "FAILED", "WORKER_EXIT", f"Worker 未返回候选计划，退出码 {process.exitcode}")
+                store.finish_failure(config.run_id, attempt, "FAILED", "WORKER_EXIT", f"Worker 未返回候选计划，退出码 {process.exitcode}")
                 return
             if process.exitcode != 0:
-                self.database.finish_failure(config.run_id, attempt, "FAILED", "WORKER_EXIT", f"Worker 返回计划后异常退出，退出码 {process.exitcode}")
+                store.finish_failure(config.run_id, attempt, "FAILED", "WORKER_EXIT", f"Worker 返回计划后异常退出，退出码 {process.exitcode}")
                 return
             if reported_runtime < 0 or reported_runtime > config.time_budget_s:
-                self.database.finish_failure(config.run_id, attempt, "TIMED_OUT", "SEARCH_BUDGET", "算法搜索超过预算")
+                store.finish_failure(config.run_id, attempt, "TIMED_OUT", "SEARCH_BUDGET", "算法搜索超过预算")
                 return
             # 候选到达和 join 期间可能收到取消；事务检查仍负责最终裁决。
-            state = self.database.get_status(config.run_id)
+            state = store.get_status(config.run_id)
             if state and state["current_attempt"] == attempt and state["cancel_requested_at"]:
-                self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED", "用户取消运行")
+                store.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED", "用户取消运行")
                 return
-            if not self.database.set_verifying(config.run_id, attempt):
-                self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED_DURING_VERIFY", "核验前已取消")
+            if not store.set_verifying(config.run_id, attempt):
+                store.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED_DURING_VERIFY", "核验前已取消")
                 return
             verify_started = time.perf_counter()
             try:
-                plan, metrics, receipt, certification_deadline = self._verify_with_deadline(config, candidate, reported_runtime)
+                if store is self.database:
+                    plan, metrics, receipt, certification_deadline = self._verify_with_deadline(config, candidate, reported_runtime)
+                else:
+                    plan, metrics, receipt, certification_deadline = self._verify_with_deadline(config, candidate, reported_runtime, store)
             except ContinuousCertificationError as exc:
-                code = "CONTROLLER_STOP" if self._stop.is_set() else "CONTINUOUS_" + exc.status.value
-                self.database.finish_failure(config.run_id, attempt, "FAILED", code, str(exc))
+                prefix = 'PREVIEW_' if config.execution_mode == 'planning_preview' else 'CONTINUOUS_'
+                code = "CONTROLLER_STOP" if self._stop.is_set() else prefix + exc.status.value
+                store.finish_failure(config.run_id, attempt, "FAILED", code, str(exc))
                 return
             with self.finalization_lock:
                 if self._stop.is_set():
-                    self.database.finish_failure(config.run_id, attempt, "FAILED", "CONTROLLER_STOP", "Controller 停机中断核验")
+                    store.finish_failure(config.run_id, attempt, "FAILED", "CONTROLLER_STOP", "Controller 停机中断核验")
                     return
                 try:
                     check_deadline(certification_deadline)
-                    succeeded = self.database.finish_success(config.run_id, attempt, plan, metrics,
-                        time.perf_counter() - verify_started, certification=receipt, deadline=certification_deadline)
+                    if config.execution_mode == 'planning_preview':
+                        succeeded = store.finish_preview(config.run_id, attempt, plan, metrics,
+                            time.perf_counter()-verify_started, receipt=receipt, deadline=certification_deadline)
+                    else:
+                        succeeded = store.finish_success(config.run_id, attempt, plan, metrics,
+                            time.perf_counter() - verify_started, certification=receipt, deadline=certification_deadline)
                 except ContinuousCertificationError as exc:
-                    self.database.finish_failure(config.run_id, attempt, "FAILED", "CONTINUOUS_" + exc.status.value, str(exc))
+                    store.finish_failure(config.run_id, attempt, "FAILED", "CONTINUOUS_" + exc.status.value, str(exc))
                     return
                 if not succeeded:
                     # 核验期间可能收到取消请求；成功事务会拒绝提交，此处补上明确终态。
-                    self.database.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED_DURING_VERIFY", "核验期间已取消")
+                    store.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED_DURING_VERIFY", "核验期间已取消")
                 else:
                     try:
-                        persist_directory_exports(self.database, config)
+                        if config.execution_mode == 'formal' and store is self.database:
+                            persist_directory_exports(self.database, config)
                     except (OSError, ValueError) as exc:
                         # 正式计划已在库中提交，外部目录故障只记诊断事件，不篡改成功状态。
-                        self.database.record_system_event(config.run_id, attempt, "EXPORT_FAILED", {"message": str(exc)[:300]})
+                        store.record_system_event(config.run_id, attempt, "EXPORT_FAILED", {"message": str(exc)[:300]})
         finally:
             if process.pid is not None and not reaped and group is not None:
                 self._reap_worker(process, group, 0)

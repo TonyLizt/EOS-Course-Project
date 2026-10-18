@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import sqlite3
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
-from urllib.parse import urlencode
+from typing import Literal
+from urllib.parse import urlencode, urlsplit, unquote
 
 from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
@@ -15,10 +17,12 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 
 from . import VERSION
-from .algorithm_registry import get_algorithm, list_algorithms
+from .algorithm_registry import get_algorithm, list_algorithms, list_schedule_models, COMPARISON_ALGORITHMS, availability
 from .config import Settings, algorithm_source_sha256, list_scenarios_in, normalise_user_path, require_writable_directory, resolve_scenario_in
-from .contracts import DirectoryRegistration, ReplayRequest, RunConfig, RunRequest
+from .contracts import DirectoryRegistration, ReplayRequest, RunConfig, RunRequest, ExperimentRequest, ExperimentAlgorithm, ControlExperimentRequest
+from .experiments import Experiments
 from .controller import Controller
+from .temporary_controls import TemporaryControls
 from .deletion import remove_exported_files
 from .exporting import render_csv, render_json, require_certified_record
 from .storage import Database, now
@@ -27,6 +31,7 @@ from .visualization import OrbitUnavailable, orbit_cache_path
 from .provenance import capture_provenance
 from .scenario_catalog import ScenarioCatalog
 from .config import sha256_file
+from .planning_preview import require_preview_record, preview_schedule
 
 
 def _public_run(record: dict) -> dict:
@@ -39,9 +44,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
     database = Database(settings.database_path)
     database.ensure_defaults(settings.scenario_dir, settings.runtime_dir)
+    experiments = Experiments(database)
     catalog = ScenarioCatalog(Path(__file__).resolve().parent.parent)
     catalog_warnings = catalog.register_sources(database)
     controller = Controller(settings, database)
+    temporary = TemporaryControls(database.expected_certification_context, settings.max_queued)
+    controller.transient = temporary
     replay = ReplayService(settings, database)
 
     @asynccontextmanager
@@ -51,6 +59,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             replay.recover()
             yield
         finally:
+            temporary.close()
             try:
                 replay.close()
             finally:
@@ -60,8 +69,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.replay = replay
     app.state.controller = controller
     app.state.database = database
+    app.state.experiments = experiments
+    app.state.temporary_controls = temporary
     web_dir = Path(__file__).parent / "web"
+    web_digest = hashlib.sha256()
+    for asset in sorted(web_dir.iterdir()):
+        if asset.suffix in {".html", ".js", ".css"}:
+            web_digest.update(asset.name.encode())
+            web_digest.update(asset.read_bytes())
+    ui_build_id = web_digest.hexdigest()[:12]
     app.mount("/static", StaticFiles(directory=web_dir), name="static")
+
+    @app.middleware("http")
+    async def current_ui(request: Request, call_next):
+        response = await call_next(request)
+        if request.url.path == "/" or request.url.path.startswith(("/static/", "/visualization/experiments/", "/api/temporary-controls/", "/visualization/temporary-gantt/")) or request.url.path in {"/visualization/gantt-page", "/visualization/gantt", "/visualization/cesium-page"}:
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["X-EOS-UI-Build"] = ui_build_id
+        return response
 
     @app.exception_handler(HTTPException)
     async def http_error(_: Request, exc: HTTPException):
@@ -90,14 +116,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def health():
         with database.connect() as connection:
             connection.execute("SELECT 1").fetchone()
-        return {"status": "ok", "version": VERSION, "controller_instance_id": controller.instance_id, "time": now()}
+        return {"status": "ok", "version": VERSION, "controller_instance_id": controller.instance_id, "time": now(),
+                "ui": {"name": "统一调度控制台", "build_id": ui_build_id}}
 
     @app.get("/api/scenarios")
-    def scenarios(source_id: str = "runtime"):
+    def scenarios(source_id: str = "runtime", execution_mode: Literal['formal','planning_preview'] = 'formal'):
         source = database.get_data_source(source_id)
         if source is None:
             raise HTTPException(status_code=404, detail="数据源未登记")
-        return {"source_id": source_id, "items": catalog.list_scenarios(Path(source["root_path"]), source_id)}
+        return {"source_id": source_id, "items": catalog.list_scenarios(Path(source["root_path"]), source_id,
+            planning_preview=execution_mode == 'planning_preview')}
 
     @app.get("/api/data-sources")
     def data_sources():
@@ -143,12 +171,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/algorithms")
     def algorithms():
-        return {"items": list_algorithms()}
+        return {"items": list_algorithms(), "models": list_schedule_models()}
 
-    @app.post("/api/runs", status_code=202)
-    def submit_run(request: RunRequest, idempotency_key: str | None = Header(default=None)):
+    def build_run_config(request: RunRequest):
         try:
             spec = get_algorithm(request.algorithm_id)
+            if request.algorithm_id not in COMPARISON_ALGORITHMS:
+                raise ValueError('请选择已注册的比较算法；完成率优先和自适应修复请在初始排程模型中选择。')
+            state, message = availability(request.algorithm_id)
+            if state != 'ready':
+                raise ValueError(message)
             spec.parse_params(request.algorithm_params)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -156,6 +188,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         profile = database.get_output_profile(request.output_profile_id)
         if source is None or profile is None:
             raise HTTPException(status_code=404, detail="数据源或输出方案未登记")
+        if request.execution_mode == 'planning_preview' and profile['kind'] != 'download':
+            raise HTTPException(status_code=422, detail='规划预览不能写入正式输出目录，请选择仅浏览器下载。')
         try:
             scene, digest = resolve_scenario_in(Path(source["root_path"]), request.scenario_id)
             catalog.verify_identity(scene, digest)
@@ -170,13 +204,149 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             algorithm_version=spec.version,
             algorithm_code_sha=algorithm_source_sha256(), scenario_provenance=provenance, created_at=now(),
         )
+        return config
+
+    @app.post("/api/runs", status_code=202)
+    def submit_run(request: RunRequest, idempotency_key: str | None = Header(default=None)):
+        config = build_run_config(request)
         try:
             run_id, _ = database.enqueue(config, settings.max_queued, idempotency_key)
         except OverflowError as exc:
             raise HTTPException(status_code=429, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
+        experiments.adopt_legacy()
         return {"run_id": run_id, "status": database.get_status(run_id)["status"], "url": f"/api/runs/{run_id}"}
+
+    def experiment_call(func, *args):
+        try:
+            return func(*args)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except (ValueError, sqlite3.IntegrityError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except OverflowError as exc:
+            raise HTTPException(status_code=429, detail=str(exc)) from exc
+
+    def public_experiment(record):
+        record['config'].pop('scenario_path', None)
+        record['config'].pop('output_root', None)
+        for run in record.get('runs', []):
+            _public_run(run)
+        return record
+
+    @app.post('/api/experiments', status_code=202)
+    def create_experiment(request: ExperimentRequest, idempotency_key: str | None = Header(default=None)):
+        configs = [build_run_config(item) for item in request.runs]
+        eid = experiment_call(experiments.create, configs, settings.max_queued, idempotency_key)
+        return public_experiment(experiments.detail(eid))
+
+    @app.get('/api/experiments')
+    def list_experiments(limit: int = Query(default=30, ge=1, le=100), offset: int = Query(default=0, ge=0)):
+        result = experiments.listing(limit, offset)
+        result['items'] = [public_experiment(item) for item in result['items']]
+        return result
+
+    @app.get('/api/experiments/{experiment_id}')
+    def experiment_detail(experiment_id: str):
+        return public_experiment(experiment_call(experiments.detail, experiment_id))
+
+    @app.get('/api/experiments/{experiment_id}/compare/{other_id}')
+    def compare_experiments(experiment_id: str, other_id: str):
+        records = experiment_call(experiments.compare, experiment_id, other_id)
+        return {'items': [public_experiment(r) for r in records]}
+
+    def control_configs(experiment_id, request):
+        original=experiment_call(experiments.detail,experiment_id)
+        if original['legacy'] or not original['runs']:
+            raise HTTPException(status_code=409,detail='旧记录无完整实验身份或实验没有算法，请新建实验')
+        shared=experiment_call(experiments.common,experiment_id)
+        if shared.get('schedule_model')==request.schedule_model:
+            raise HTTPException(status_code=422,detail='请选择不同的初始排程模型')
+        configs=[]
+        for run in original['runs']:
+            raw={k:v for k,v in run['config'].items() if k in RunRequest.model_fields}
+            raw['schedule_model']=request.schedule_model
+            config=build_run_config(RunRequest.model_validate(raw))
+            expected=dict(shared);expected['schedule_model']=request.schedule_model
+            from .experiments import common_config
+            if common_config(config.model_dump())!=expected:
+                raise HTTPException(status_code=409,detail='场景、代码或来源配置已变化，不能创建单变量对照实验')
+            configs.append(config)
+        current = experiment_call(experiments.detail, experiment_id)
+        if [(r['run_id'],r['config']) for r in original['runs']] != [(r['run_id'],r['config']) for r in current['runs']]:
+            raise HTTPException(status_code=409,detail='原实验算法已变化，请刷新后重试')
+        return configs
+
+    @app.post('/api/experiments/{experiment_id}/temporary-control',status_code=202)
+    def create_temporary_control(experiment_id: str, request: ControlExperimentRequest,
+                                 idempotency_key: str | None = Header(default=None)):
+        configs = control_configs(experiment_id, request)
+        return experiment_call(temporary.create, experiment_id, configs, idempotency_key)
+
+    @app.get('/api/temporary-controls/{control_id}')
+    def temporary_control_detail(control_id: str):
+        return experiment_call(temporary.detail, control_id)
+
+    @app.delete('/api/temporary-controls/{control_id}',status_code=202)
+    def delete_temporary_control(control_id: str):
+        temporary.delete(control_id)
+        return {'removed':True, 'temporary':True}
+
+    @app.get('/api/temporary-controls/{control_id}/runs/{run_id}/schedule')
+    def temporary_gantt_schedule(control_id: str, run_id: str):
+        schedule = experiment_call(temporary.schedule, control_id, run_id)
+        schedule['algorithm_name'] = get_algorithm(schedule['algorithm_id']).name
+        return schedule
+
+    @app.get('/visualization/temporary-gantt/{control_id}/{run_id}')
+    def temporary_gantt_page(control_id: str, run_id: str):
+        experiment_call(temporary.schedule, control_id, run_id)
+        url = f'/api/temporary-controls/{control_id}/runs/{run_id}/schedule'
+        return RedirectResponse('/visualization/gantt-page?' + urlencode({'schedule':url}),status_code=303)
+
+    # Compatibility API for explicit persistent model-only experiments; no UI uses it.
+    @app.post('/api/experiments/{experiment_id}/control',status_code=202)
+    def create_control_experiment(experiment_id: str, request: ControlExperimentRequest,
+                                  idempotency_key: str | None = Header(default=None)):
+        configs = control_configs(experiment_id, request)
+        eid=experiment_call(experiments.create,configs,settings.max_queued,idempotency_key,experiment_id)
+        return public_experiment(experiments.detail(eid))
+
+    @app.get('/api/experiments/{experiment_id}/peers')
+    def experiment_peers(experiment_id: str):
+        base = experiment_call(experiments.common, experiment_id)
+        base_model = base.pop('schedule_model', None)
+        items = []
+        # Only explicit compatible model-only pairs, never arbitrary condition groups.
+        with database.connect() as conn:
+            ids = conn.execute('SELECT experiment_id,created_at,common_json FROM experiments WHERE legacy=0 ORDER BY created_at DESC').fetchall()
+        for row in ids:
+            try:
+                candidate = json.loads(row['common_json'])
+                candidate_model = candidate.pop('schedule_model', None)
+                if candidate_model == base_model or candidate != base:
+                    continue
+                experiments.assert_comparable(experiment_id, row['experiment_id'])
+                common = experiments.common(row['experiment_id'])
+                items.append({'experiment_id': row['experiment_id'], 'schedule_model': common['schedule_model'], 'created_at':row['created_at']})
+            except ValueError:
+                pass
+        return {'items': items}
+
+    @app.post('/api/experiments/{experiment_id}/algorithms', status_code=202)
+    def add_experiment_algorithm(experiment_id: str, request: ExperimentAlgorithm):
+        shared = experiment_call(experiments.common, experiment_id)
+        raw = {k: v for k, v in shared.items() if k in RunRequest.model_fields}
+        raw.update(request.model_dump())
+        config = build_run_config(RunRequest.model_validate(raw))
+        experiment_call(experiments.add, experiment_id, config, settings.max_queued)
+        return public_experiment(experiments.detail(experiment_id))
+
+    @app.delete('/api/experiments/{experiment_id}/algorithms/{algorithm_id}')
+    def remove_experiment_algorithm(experiment_id: str, algorithm_id: str):
+        rid = experiment_call(experiments.remove, experiment_id, algorithm_id)
+        return {'removed': True, 'run_id': rid, 'retained_history': True}
 
     @app.get("/api/runs")
     def runs(limit: int = Query(default=20, ge=1, le=100), offset: int = Query(default=0, ge=0)):
@@ -240,14 +410,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         media = "application/json" if format == "json" else "text/csv"
         return Response(content, media_type=media, headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
-    def successful_run(run_id: str) -> dict:
+    def successful_run(run_id: str, *, allow_preview: bool = True) -> dict:
         record = database.get_run(run_id)
         if record is None:
             raise HTTPException(status_code=404, detail="实验不存在")
         if record["status"] != "SUCCEEDED" or record["plan"] is None or record["metrics"] is None:
             raise HTTPException(status_code=409, detail="实验尚无正式成功结果")
         try:
-            require_certified_record(record)
+            if allow_preview and record['config'].get('execution_mode') == 'planning_preview':
+                require_preview_record(record)
+            else:
+                require_certified_record(record)
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return record
@@ -257,7 +430,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """保持旧页面使用的顶层计划结构，只附加正式计划的身份摘要。"""
         record = successful_run(run_id)
         source = database.get_replay_source(run_id)
-        schedule = json.loads(render_json(record))
+        schedule = (preview_schedule(record) if record.get('result_kind') == 'planning_preview'
+                    else json.loads(render_json(record)))
         schedule["plan_sha256"] = source["plan_sha256"]
         schedule["provenance"]["plan_sha256"] = source["plan_sha256"]
         return Response(json.dumps(schedule, ensure_ascii=False), media_type="application/json")
@@ -322,7 +496,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "gantt_viewer.html")
 
     @app.get("/visualization/cesium-page")
-    def cesium_page():
+    def cesium_page(schedule: str | None = None):
+        if schedule and urlsplit(unquote(schedule)).path.startswith('/api/temporary-controls/'):
+            raise HTTPException(status_code=409, detail='临时比较结果仅支持 Gantt，不支持 Cesium 回放')
         return FileResponse(Path(__file__).resolve().parent.parent / "draw" / "cesium_viewer.html")
 
     @app.get("/visualization/fixed-payload-state.js")
@@ -379,14 +555,38 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         schedule = f"/api/runs/{run_id}/visualization/schedule"
         return RedirectResponse("/visualization/gantt-page?" + urlencode({"schedule": schedule}))
 
+    @app.get("/visualization/gantt")
+    def gantt_entry(run_id: str | None = None):
+        if run_id:
+            return open_gantt(run_id)
+        return FileResponse(Path(__file__).resolve().parent / "web" / "gantt-runs.html")
+
     @app.get("/visualization/cesium/{run_id}")
     def open_cesium(run_id: str):
         successful_run(run_id)
+        eid = experiments.for_run(run_id)
         schedule = f"/api/runs/{run_id}/visualization/schedule"
         # 页面先读取构建状态，只有显式点击构建/重试才 POST；保留独立旧 orbit GET。
         status_url = f"/api/runs/{run_id}/replay"
         gantt = f"/visualization/gantt/{run_id}"
         return RedirectResponse("/visualization/cesium-page?" + urlencode({
-            "run_id":run_id, "schedule":schedule, "replay_status":status_url, "gantt":gantt}))
+            "run_id":run_id, "schedule":schedule, "replay_status":status_url, "gantt":gantt,
+            "experiment_id":eid or ''}))
+
+    @app.get('/visualization/experiments/{experiment_id}/cesium')
+    def experiment_cesium(experiment_id: str, run_id: str | None = None):
+        record=experiment_call(experiments.detail, experiment_id)
+        selected=next((r for r in record['runs'] if r['run_id']==run_id),None)
+        selected=selected or next((r for r in record['runs'] if r['status']=='SUCCEEDED' and r['plan']),None)
+        if selected and selected['status']=='SUCCEEDED' and selected['plan']:
+            return open_cesium(selected['run_id'])
+        return RedirectResponse('/?' + urlencode({'experiment_id':experiment_id}) + '#detail-heading')
+
+    @app.get('/api/runs/{run_id}/experiment')
+    def run_experiment(run_id: str):
+        eid=experiments.for_run(run_id)
+        if not eid:
+            raise HTTPException(status_code=404,detail='此运行不属于活动实验算法')
+        return public_experiment(experiments.detail(eid))
 
     return app

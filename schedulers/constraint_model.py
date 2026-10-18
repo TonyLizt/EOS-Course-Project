@@ -16,6 +16,7 @@ from dataclasses import dataclass, field, replace
 
 from schedulers.transition_utils import compute_transition_time_agile, delta_g_between
 from utils.continuous_exposure import planning_exposure, ExposureStatus
+from schedulers.preview_exposure import candidate_exposure
 from utils.time_parsing import parse_orbit_epoch
 from .source_windows import communication_source_matches, observation_source_matches
 from typing import List, Dict, Optional, Protocol
@@ -311,7 +312,7 @@ class ConstraintModel:
                    and w.mission_id == task.id and w.orbit_number == assignment.orbit_number
                    and w.satellite_id == assignment.satellite_id
                    and w.sensor_id == assignment.sensor_id]
-        if (len(windows) != 1 or planning_exposure(windows[0], assignment.sat_start_time, assignment.sat_end_time,
+        if (len(windows) != 1 or candidate_exposure(self.problem, windows[0], assignment.sat_start_time, assignment.sat_end_time,
                    task.required_duration).status is not ExposureStatus.PLANNING_FEASIBLE):
             return False
         # Planning preserves the existing attitude/slew parser contract. The
@@ -334,6 +335,12 @@ class ConstraintModel:
         elif any(value is not None for value in (assignment.ground_station_id, assignment.gs_start_time,
                                                  assignment.gs_end_time, assignment.gs_window_id)):
             return False
+        if getattr(self.problem, 'execution_mode', 'formal') == 'planning_preview':
+            from schedulers.observation_geometry import validate_observation_interval
+            result = validate_observation_interval(self.problem, assignment.satellite_id,
+                assignment.task_id, assignment.sat_start_time, assignment.sat_end_time)
+            if not result.checked or not result.feasible:
+                return False
         return self.check_discrete_assignment(assignment, schedule)
 
     def check_discrete_assignment(self, assignment: Assignment, schedule: Schedule) -> bool:

@@ -2,10 +2,21 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from pathlib import Path
 
 from replay.sampling import sampling_policy
 from .config import list_scenarios_in
+
+
+@lru_cache(maxsize=64)
+def _summary(path: str, sha: str) -> dict:
+    """Cache only small summaries, keyed by the identity already checked by listing."""
+    from replay.scene import load_display_scene
+    data = load_display_scene(Path(path))
+    return dict(satellite_count=len(data.get("satellites", [])),
+                mission_count=len(data.get("missions", [])),
+                duration_s=data.get("metadata", {}).get("duration"))
 
 
 class ScenarioCatalog:
@@ -45,12 +56,14 @@ class ScenarioCatalog:
             database.ensure_catalog_source(group["source_id"], group["name"], root)
         return warnings
 
-    def list_scenarios(self, root: Path, source_id: str) -> list[dict]:
+    def list_scenarios(self, root: Path, source_id: str, *, planning_preview: bool = False) -> list[dict]:
         """目录列表附带可信的规模信息；SHA 不符/未下载时仍可看见原因。"""
-        result = list_scenarios_in(root, source_id)
+        result = list_scenarios_in(root, source_id, planning_preview=planning_preview)
         by_name = {row["scenario_id"]: row for row in result}
         for path, entry in self.entries.items():
             if path.parent != root.resolve():
+                continue
+            if entry['scenario_id'] + '_epoch_fixed_v1' in by_name:
                 continue
             row = by_name.get(entry["scenario_id"])
             if row is None:
@@ -74,6 +87,20 @@ class ScenarioCatalog:
                 replay_preview=sampling_policy(entry["duration_s"], entry["satellite_count"],
                                                entry["mission_count"]),
             )
+        for row in result:
+            if row.get("availability", "ready") != "ready":
+                continue
+            try:
+                from .provenance import capture_provenance
+                scene = root / (row["scenario_id"] + ".json")
+                if not row.get("catalog_id"):
+                    row.update(_summary(str(scene), row["sha256"]))
+                evidence = capture_provenance(scene, row["sha256"])
+                row.update({key: evidence.get(key, "UNKNOWN") for key in (
+                    "scenario_physics_version", "provenance_status", "physical_validation_status")})
+                row["availability"] = "ready"
+            except (OSError, ValueError, TypeError) as exc:
+                row.update(availability="invalid", validation_message=str(exc))
         return sorted(result, key=lambda row: row["scenario_id"])
 
     def verify_identity(self, path: Path, actual_sha256: str) -> None:

@@ -8,8 +8,8 @@ let replayConfigId = null;
 let replayPendingId = null;
 const pageSize = 30;
 let pageOffset = 0;
-let deletingRunId = null;
 let autoRefresh = true;
+let scenarioGeneration = 0;
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
@@ -27,13 +27,14 @@ async function bootstrap() {
     const [health, sources, profiles, algorithms, replayConfigs] = await Promise.all([
       api("/api/health"), api("/api/data-sources"), api("/api/output-profiles"), api("/api/algorithms"), api("/api/replay-configs")
     ]);
-    $("health").textContent = `服务已连接 · ${health.version}`;
+    $("health").textContent = `服务已连接 · ${health.version} · 控制台 ${health.ui?.build_id || '版本未提供'}`;
     $("source").innerHTML = sources.items.map((s) => `<option value="${escapeHtml(s.source_id)}">${escapeHtml(s.name)}</option>`).join("");
     outputProfiles = profiles.items;
     $("output-profile").innerHTML = profiles.items.map((p) => `<option value="${escapeHtml(p.profile_id)}">${escapeHtml(p.name)}</option>`).join("");
     replayConfigId = replayConfigs.default_id;
     currentAlgorithms = algorithms.items;
-    $("algorithm").innerHTML = currentAlgorithms.map((a) => `<option value="${escapeHtml(a.algorithm_id)}">${escapeHtml(a.name)}</option>`).join("");
+    $("schedule-model").innerHTML = algorithms.models.map(m => `<option value="${escapeHtml(m.model_id)}">${escapeHtml(m.name)}</option>`).join('');
+    window.ConsoleUI?.catalog(currentAlgorithms);
     await loadScenarios();
     if(sources.catalog_warnings?.length) $("register-message").textContent=sources.catalog_warnings.join("；");
     updateHints();
@@ -45,9 +46,12 @@ async function bootstrap() {
 }
 
 async function loadScenarios() {
+  const generation = ++scenarioGeneration;
   const sourceId = $("source").value;
+  const previous = $("scenario").value;
   if (!sourceId) return;
-  const scenarios = await api(`/api/scenarios?source_id=${encodeURIComponent(sourceId)}`);
+  const scenarios = await api(`/api/scenarios?source_id=${encodeURIComponent(sourceId)}&execution_mode=${encodeURIComponent($("execution-mode").value)}`);
+  if (generation !== scenarioGeneration) return;
   currentScenarios=scenarios.items;
   $("scenario").innerHTML = currentScenarios.map(s => {
     const unavailable=s.availability && s.availability!=='ready';
@@ -55,7 +59,10 @@ async function loadScenarios() {
     return '<option value="'+escapeHtml(s.scenario_id)+'"'+(unavailable ? ' disabled' : '')+'>'
       +escapeHtml(s.name+suffix+(unavailable ? "（文件未就绪）" : ""))+'</option>';
   }).join("");
-  const ready=currentScenarios.find(s => !s.availability || s.availability==='ready');
+  const available = currentScenarios.filter(s => !s.availability || s.availability === 'ready');
+  const ready = available.find(s => s.scenario_id === previous || s.scenario_id === previous + '_epoch_fixed_v1')
+    || [...available].sort((a,b) => (a.satellite_count ?? Infinity) - (b.satellite_count ?? Infinity)
+      || (a.mission_count ?? Infinity) - (b.mission_count ?? Infinity))[0];
   if(ready) $("scenario").value=ready.scenario_id;
   $("submit").disabled=!ready;
   updateScenarioHint();
@@ -65,29 +72,34 @@ async function loadScenarios() {
 function updateScenarioHint() {
   const scene=currentScenarios.find(s => s.scenario_id===$("scenario").value);
   if(!scene) { $("scenario-hint").textContent="";return; }
-  if(!scene.catalog_id) {
-    $("scenario-hint").textContent="自定义数据源；提交时重新核对场景与来源 SHA。";return;
-  }
-  const policy=scene.replay_preview;
-  $("scenario-hint").textContent=scene.satellite_count+" 颗卫星 · "+scene.mission_count
-    +" 个任务 · "+(scene.duration_s/86400)+" 天 · "+(scene.size_bytes/1048576).toFixed(1)
-    +" MiB；物理版本 legacy_unknown（用于流程与基线测试，尚未完成 E3/E4）。"
-    +"回放预计 "+policy.attitude_step_s+" 秒采样，保留任务/转向端点，实际以计划快照为准。";
+  $("scenario-hint").textContent=`${scene.satellite_count ?? '未知'} 颗卫星 · ${scene.mission_count ?? '未知'} 个任务 · ${scene.duration_s == null ? '未知时长' : (scene.duration_s/3600).toFixed(2)+' 小时'} · ${scene.scenario_physics_version || 'legacy_unknown'} · 来源 ${scene.provenance_status || 'unknown'} · 物理验证 ${scene.physical_validation_status || 'UNKNOWN'} · ${scene.availability || 'ready'}。${scene.validation_message || ''} 提交时重新核对场景 SHA：${scene.sha256 || '未知'}`;
 }
 $("scenario").addEventListener("change",updateScenarioHint);
 
 function updateHints() {
-  const algorithm = currentAlgorithms.find((a) => a.algorithm_id === $("algorithm").value);
-  const properties = Object.keys(algorithm?.parameters?.properties || {});
-  $("algorithm-hint").textContent = algorithm ? `${algorithm.description || ""} 参数：${properties.length ? properties.join("、") : "无"}` : "";
+  if ($("execution-mode").value === 'planning_preview') {
+    for (const option of $("output-profile").options) option.disabled = outputProfiles.find(p => p.profile_id === option.value)?.kind === 'directory';
+    $("output-profile").value = outputProfiles.find(p => p.kind === 'download')?.profile_id || '';
+  }
   const profile = outputProfiles.find((p) => p.profile_id === $("output-profile").value);
   $("output-hint").textContent = profile?.kind === "directory"
     ? `正式 JSON/CSV 将保存到 ${profile.root_path}/<run_id>/；浏览器仍可下载。`
     : "只提供浏览器下载；数据库与运行状态仍保存在 WSL 运行目录。";
+  if ($("execution-mode").value === 'planning_preview') $("output-hint").textContent = '规划预览保存数据库记录并支持比较和回放；不生成正式认证 JSON/CSV 文件。';
 }
 
 $("source").addEventListener("change", () => loadScenarios().catch((error) => { $("form-message").textContent = error.message; }));
-$("algorithm").addEventListener("change", updateHints);
+$("execution-mode").addEventListener("change", () => {
+  const preview = $("execution-mode").value === 'planning_preview';
+  $("mode-hint").textContent = preview
+    ? '规划预览：可比较和回放；曝光采样检查不构成连续区间证明，不得作为正式认证计划导出。'
+    : '正式认证：保留严格连续认证门禁；缺少可信物理来源或连续区间证明时不会发布成功计划。';
+  for (const option of $("output-profile").options) {
+    option.disabled = preview && outputProfiles.find(p => p.profile_id === option.value)?.kind === 'directory';
+  }
+  if (preview) $("output-profile").value = outputProfiles.find(p => p.kind === 'download')?.profile_id || '';
+  loadScenarios().catch(error => { $("form-message").textContent = error.message; });
+});
 $("output-profile").addEventListener("change", updateHints);
 
 $("register-location").addEventListener("click", async () => {
@@ -116,14 +128,14 @@ $("register-location").addEventListener("click", async () => {
 });
 
 function buildRequest() {
-  const params = JSON.parse($("params").value || "{}");
-  if (params === null || Array.isArray(params) || typeof params !== "object") throw new Error("算法参数必须是 JSON 对象");
   return {
+    execution_mode: $("execution-mode").value,
     source_id: $("source").value,
     scenario_id: $("scenario").value,
-    algorithm_id: $("algorithm").value,
+    algorithm_id: currentAlgorithms.find(a=>a.availability==='ready')?.algorithm_id,
+    schedule_model: $("schedule-model").value,
     output_profile_id: $("output-profile").value,
-    algorithm_params: params,
+    algorithm_params: {},
     seed: Number($("seed").value),
     placement_mode: $("placement").value,
     constraints: {
@@ -132,51 +144,23 @@ function buildRequest() {
       agility_profile: $("agility").value,
       non_agile_transition_s: Number($("transition").value)
     },
-    objective_weights: {w_profit: 0, w_completion: 1, w_timeliness: 0, w_balance: 0},
+    objective_weights: {w_profit: Number($("weight-profit").value), w_completion: Number($("weight-completion").value), w_timeliness: Number($("weight-timeliness").value), w_balance: Number($("weight-balance").value)},
     time_budget_s: Number($("budget").value)
   };
 }
 
 $("run-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  $("submit").disabled = true;
-  $("form-message").textContent = "正在提交…";
-  try {
-    const result = await api("/api/runs", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(buildRequest())});
-    selectedId = result.run_id;
-    $("form-message").textContent = `已创建实验 ${result.run_id}`;
-    await refresh();
-  } catch (error) { $("form-message").textContent = error.message; }
-  finally { $("submit").disabled = false; }
+  if (window.ConsoleUI) return window.ConsoleUI.submit();
+  $("form-message").textContent = '实验控制台组件未加载，请刷新页面；没有创建运行。';
 });
 
 async function refresh() {
-  try {
-    let list = await api(`/api/runs?limit=${pageSize}&offset=${pageOffset}`);
-    if (pageOffset > 0 && pageOffset >= list.total) {
-      pageOffset = Math.max(0, Math.floor((list.total - 1) / pageSize) * pageSize);
-      list = await api(`/api/runs?limit=${pageSize}&offset=${pageOffset}`);
-    }
-    $("run-count").textContent = `共 ${list.total} 条实验 · 状态每两秒刷新`;
-    $("page-label").textContent = list.total ? `${pageOffset + 1}–${Math.min(pageOffset + pageSize, list.total)} / ${list.total}` : "0 / 0";
-    $("previous-page").disabled = pageOffset === 0;
-    $("next-page").disabled = pageOffset + pageSize >= list.total;
-    $("runs").innerHTML = list.items.map((r) => `<tr data-id="${escapeHtml(r.run_id)}" class="${r.run_id === selectedId ? "selected" : ""}">
-      <td><button type="button" class="run-select" data-id="${escapeHtml(r.run_id)}"${r.run_id === selectedId ? ' aria-current="true"' : ''}>${escapeHtml(new Date(r.created_at).toLocaleString())}</button></td><td>${escapeHtml(r.scenario_id)}</td>
-      <td>${escapeHtml(r.algorithm_id)}</td><td>${escapeHtml(r.status)}</td>
-      <td>${r.TCR == null ? "—" : (Number(r.TCR) * 100).toFixed(1) + "%"}</td></tr>`).join("");
-    document.querySelectorAll("#runs tr[data-id]").forEach((row) => row.addEventListener("click", () => {
-      if (selectedId !== row.dataset.id) $("delete-files").checked = false;
-      selectedId = row.dataset.id; refresh();
-    }));
-    if (selectedId) {
-      try { showDetail(await api(`/api/runs/${encodeURIComponent(selectedId)}`)); }
-      catch (error) { selectedId = null; clearDetail(); }
-    }
-  } catch (error) { $("form-message").textContent = error.message; }
+  if (window.ConsoleUI?.refreshExperiments) return window.ConsoleUI.refreshExperiments();
 }
 
 function clearDetail() {
+  if (window.ConsoleUI) window.ConsoleUI.detail(null);
   $("replay-status").textContent = "";
   $("scenario-provenance").textContent = "";
   $("build-replay").hidden = true;
@@ -195,34 +179,37 @@ function clearDetail() {
 }
 
 function showDetail(run) {
+  if (window.ConsoleUI) window.ConsoleUI.detail(run);
   $("selected-run").textContent = run.run_id;
-  $("detail-status").textContent = run.status;
+  $("detail-status").textContent = run.status + (run.result_kind === 'planning_preview' ? ' · 规划预览' : '');
   $("detail-status").className = `badge ${["FAILED","CANCELLED","TIMED_OUT"].includes(run.status) ? "failed" : ["RUNNING","QUEUED","VERIFYING"].includes(run.status) ? "running" : ""}`;
   $("actions").hidden = false;
   $("cancel").disabled = ["SUCCEEDED","FAILED","CANCELLED","TIMED_OUT"].includes(run.status) || run.cancel_requested;
-  $("delete-run").disabled = deletingRunId === run.run_id || !["SUCCEEDED","FAILED","CANCELLED","TIMED_OUT"].includes(run.status);
+  $("delete-run").disabled = false;
   $("delete-option").hidden = !(run.exports || []).some((item) => item.artifact_path);
   if ($("delete-option").hidden) $("delete-files").checked = false;
-  $("export-json").hidden = run.status !== "SUCCEEDED";
-  $("export-csv").hidden = run.status !== "SUCCEEDED";
-  $("open-gantt").hidden = run.status !== "SUCCEEDED";
-  $("open-cesium").hidden = run.status !== "SUCCEEDED";
+  $("export-json").hidden = run.status !== "SUCCEEDED" || !run.plan || run.result_kind === 'planning_preview';
+  $("export-csv").hidden = run.status !== "SUCCEEDED" || !run.plan || run.result_kind === 'planning_preview';
+  $("open-gantt").hidden = run.status !== "SUCCEEDED" || !run.plan;
+  $("open-cesium").hidden = run.status !== "SUCCEEDED" || !run.plan;
   $("export-json").href = `/api/runs/${encodeURIComponent(run.run_id)}/export?format=json`;
   $("export-csv").href = `/api/runs/${encodeURIComponent(run.run_id)}/export?format=csv`;
   $("open-gantt").href = `/visualization/gantt/${encodeURIComponent(run.run_id)}`;
   $("open-cesium").href = `/visualization/cesium/${encodeURIComponent(run.run_id)}`;
   $("scenario-provenance").textContent = "场景物理版本："+(run.config.scenario_provenance?.scenario_physics_version || "legacy_unknown")+"；来源："+(run.config.scenario_provenance?.provenance_status || "unknown");
-  $("build-replay").hidden = run.status !== "SUCCEEDED";
-  if (run.status === "SUCCEEDED") refreshReplay(run.run_id);
+  $("build-replay").hidden = run.status !== "SUCCEEDED" || !run.plan;
+  if (run.status === "SUCCEEDED" && run.plan) refreshReplay(run.run_id);
   else $("replay-status").textContent = "";
   $("detail-error").textContent = run.error ? `${run.error.code}: ${run.error.message}` : "";
   const files = (run.exports || []).filter((item) => item.artifact_path || item.error_message);
   $("files").innerHTML = files.length ? files.map((item) => `<li>${escapeHtml(item.format.toUpperCase())} · ${escapeHtml(item.artifact_path || item.error_message)}</li>`).join("")
-    : "<li>此实验没有服务器目录文件；可使用上方浏览器下载。</li>";
+    : run.result_kind === 'planning_preview' ? '<li>规划预览不生成正式输出文件；请使用 Gantt / Cesium 分析结果。</li>'
+      : run.status === 'SUCCEEDED' && run.plan ? '<li>此实验没有服务器目录文件；可使用上方浏览器下载。</li>'
+      : '<li>此实验没有可下载的正式结果。</li>';
   const m = run.metrics;
   $("metrics").innerHTML = m ? [
     ["完成任务", `${m.completed_tasks} / ${m.total_tasks}`], ["TCR", `${(m.TCR * 100).toFixed(1)}%`],
-    ["TP", Number(m.TP).toFixed(2)], ["算法耗时", `${Number(m.RT).toFixed(3)} s`]
+    ["TP ↑", Number(m.TP).toFixed(2)], ["BD ↑", Number(m.BD).toFixed(3)], ["TM ↓", Number(m.TM).toFixed(3)], ["RV ↓", m.RV == null ? '未提供' : Number(m.RV).toFixed(3)], ["算法耗时 RT ↓", `${Number(m.RT).toFixed(3)} s`]
   ].map(([label, value]) => `<div class="metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></div>`).join("") : "";
   $("events").innerHTML = run.events.map((e) => `<li>${escapeHtml(e.recorded_at)} · ${escapeHtml(e.event_type)}</li>`).join("");
   const assignments = run.plan?.assignments || [];
@@ -273,28 +260,14 @@ $("cancel").addEventListener("click", async () => {
   catch (error) { $("detail-error").textContent = error.message; }
 });
 $("delete-run").addEventListener("click", async () => {
-  if (!selectedId) return;
-  const runId = selectedId;
-  const deleteFiles = $("delete-files").checked;
-  const filesNote = deleteFiles ? "同时删除未被修改的正式 JSON/CSV 文件。" : "服务器导出文件将保留。";
-  if (!window.confirm(`确定永久删除实验 ${runId} 的数据库记录吗？此操作无法撤销。${filesNote}`)) return;
-  deletingRunId = runId;
-  $("delete-run").disabled = true;
-  try {
-    const result = await api(`/api/runs/${encodeURIComponent(runId)}?delete_files=${deleteFiles}`, {method:"DELETE"});
-    selectedId = null;
-    clearDetail();
-    $("list-message").textContent = `已删除实验 ${runId}；${result.database_compacted ? "数据库已压缩" : "数据库空闲页可复用"}。${result.files_removed ? `已删除 ${result.files_removed} 个导出文件。` : ""}${result.warnings.join("；")}`;
-    await refresh();
-  } catch (error) { $("detail-error").textContent = error.message; }
-  finally { deletingRunId = null; if (selectedId) $("delete-run").disabled = false; }
+  if (window.ConsoleUI?.removeSelectedAlgorithm) return window.ConsoleUI.removeSelectedAlgorithm();
 });
 $("refresh").addEventListener("click", refresh);
 $("toggle-refresh").addEventListener("click", () => {
   autoRefresh = !autoRefresh;
   $("toggle-refresh").setAttribute("aria-pressed", autoRefresh ? "false" : "true");
-  $("toggle-refresh").textContent = autoRefresh ? "暫停自動更新" : "繼續自動更新";
-  $("run-count").textContent = autoRefresh ? "狀態每兩秒刷新一次。" : "自動更新已暫停。";
+  $("toggle-refresh").textContent = autoRefresh ? "暂停自动更新" : "继续自动更新";
+  $("run-count").textContent = autoRefresh ? "状态每两秒刷新一次。" : "自动更新已暂停。";
 });
 $("previous-page").addEventListener("click", () => { pageOffset = Math.max(0, pageOffset - pageSize); refresh(); });
 $("next-page").addEventListener("click", () => { pageOffset += pageSize; refresh(); });

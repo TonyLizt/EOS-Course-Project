@@ -34,6 +34,8 @@ class ObjectiveOptions(StrictModel):
 
 
 class RunRequest(StrictModel):
+    schedule_model: Literal["completion_first", "adaptive_repair"] = "completion_first"
+    execution_mode: Literal["formal", "planning_preview"] = "formal"
     source_id: str = Field(default="runtime", min_length=1, max_length=80)
     scenario_id: str = Field(min_length=1, max_length=200)
     algorithm_id: str = Field(min_length=1, max_length=100)
@@ -63,6 +65,19 @@ class ReplayRequest(StrictModel):
     """网页只选择已登记的展示配置，不提交服务器文件路径。"""
 
     replay_config_id: str = Field(min_length=1, max_length=100)
+
+
+class ExperimentRequest(StrictModel):
+    runs: list[RunRequest] = Field(min_length=1, max_length=10)
+
+
+class ExperimentAlgorithm(StrictModel):
+    algorithm_id: str = Field(min_length=1, max_length=100)
+    algorithm_params: dict[str, Any] = Field(default_factory=dict)
+
+
+class ControlExperimentRequest(StrictModel):
+    schedule_model: Literal['completion_first', 'adaptive_repair']
 
 
 class DirectoryRegistration(StrictModel):

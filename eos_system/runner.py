@@ -16,6 +16,7 @@ from .provenance import verify_provenance
 
 def build_constraint_model(problem, config: RunConfig) -> ConstraintModel:
     """运行和复核必须调用同一个构造函数，防止约束参数漂移。"""
+    problem.execution_mode = config.execution_mode
     return ConstraintModel(
         problem=problem,
         placement_mode=config.placement_mode,
@@ -32,8 +33,15 @@ def prepare(config: RunConfig) -> tuple[Solver, SchedulingProblem, ConstraintMod
     spec = get_algorithm(config.algorithm_id)
     problem = load_scheduling_problem_from_json(Path(config.scenario_path))
     constraint_model = build_constraint_model(problem, config)
-    context = make_context(config.seed, config.time_budget_s, config.objective_weights.model_dump(), spec, config.algorithm_params)
-    return spec.build(context), problem, constraint_model, context
+    context = make_context(config.seed, config.time_budget_s, config.objective_weights.model_dump(), spec, config.algorithm_params,
+                           schedule_model=config.schedule_model)
+    solver = spec.build(context)
+    internal = getattr(getattr(solver, 'algorithm', None), 'cfg', None)
+    if internal is not None:
+        for key in ('agility_profile', 'non_agile_transition_s'):
+            if hasattr(internal, key):
+                setattr(internal, key, getattr(config.constraints, key))
+    return solver, problem, constraint_model, context
 
 
 def run_prepared(solver: Solver, problem: SchedulingProblem, constraints: ConstraintModel, context: SolveContext) -> tuple[dict, float]:

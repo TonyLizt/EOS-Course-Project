@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -15,6 +15,9 @@
   <script src="trackpad-zoom.js?v=20261016-trackpad-1"></script>
   <script src="satellite-follow.js?v=20261017-auto-follow-1"></script>
   <script src="camera-diagnostics.js?v=20261017-1"></script>
+  <link rel="stylesheet" href="/static/cesium-experiment.css">
+  <script src="/static/experiment-ui.js" defer></script>
+  <script src="/static/cesium-experiment.js" defer></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
 
   <style>
@@ -242,6 +245,7 @@
       gap: 8px;
       align-items: start;
     }
+    #payloadSatelliteGrid[hidden], #payloadGridHint[hidden] { display: none; }
     .payload-tile {
       min-width: 0;
       padding: 0;
@@ -359,6 +363,7 @@
   <a class="skip-link" href="#rightPanel" style="left:190px">Skip to replay panels</a>
   <h1 class="sr-only">EOS satellite schedule Cesium replay</h1>
   <aside id="leftPanel" aria-label="Metrics and display controls">
+    <p id="previewModeStatus" role="status" class="small-text" hidden></p>
     <div class="panel-section">
       <h2>Metrics</h2>
       <div id="metrics">
@@ -366,6 +371,12 @@
       </div>
     </div>
 
+    <section id="experiment-controls" class="panel-section experiment-ui" hidden aria-labelledby="experiment-controls-title">
+      <h2 id="experiment-controls-title">实验算法</h2>
+      <p id="cesium-experiment-status" role="status" class="small-text"></p>
+      <h3>已添加到本实验</h3><div id="cesium-current-algorithms"></div>
+      <div id="cesium-add-algorithms"></div>
+    </section>
     <div class="panel-section">
       <h2>Display Controls</h2>
       <label class="toggle-row">
@@ -427,6 +438,11 @@
         <button id="nextPage" disabled>Next</button>
       </div>
     </section>
+    <section class="panel-section experiment-ui" id="cesium-comparison-section" hidden aria-labelledby="cesium-comparison-heading">
+      <h2 id="cesium-comparison-heading">算法结果比较</h2>
+      <label>查看方式<select id="cesium-comparison-mode"><option value="algorithm">按算法比较</option><option value="experiment">按实验比较</option></select></label>
+      <div id="cesium-comparison-choices"></div><div id="cesium-comparison"></div>
+    </section>
   </aside>
 
   <script>
@@ -446,6 +462,19 @@
       timeline: true,
       shouldAnimate: true
     });
+    window.EOSReplayState = {
+      capture: () => ({time: Cesium.JulianDate.toIso8601(viewer.clock.currentTime),
+        multiplier: viewer.clock.multiplier, shouldAnimate: viewer.clock.shouldAnimate}),
+      restore: state => {
+        const time = Cesium.JulianDate.fromIso8601(state.time);
+        if (Cesium.JulianDate.greaterThanOrEquals(time, viewer.clock.startTime)
+            && Cesium.JulianDate.lessThanOrEquals(time, viewer.clock.stopTime)) {
+          viewer.clock.currentTime = time;
+        }
+        if (Number.isFinite(state.multiplier)) viewer.clock.multiplier = state.multiplier;
+        if (typeof state.shouldAnimate === 'boolean') viewer.clock.shouldAnimate = state.shouldAnimate;
+      }
+    };
     // Cesium widgets inject decorative images without alt attributes. Their
     // surrounding controls provide the accessible name, so an empty alt is
     // the correct text alternative for these images, including lazy inserts.
@@ -516,7 +545,13 @@
           console.warn('Schedule file load failed:', r.status, r.statusText);
           return null;
         }
-        return await r.json();
+        const schedule = await r.json();
+        if (schedule.result_kind === 'planning_preview') {
+          const status = document.getElementById('previewModeStatus');
+          status.hidden = false;
+          status.textContent = '规划预览：曝光采样检查通过；未取得正式连续认证，回放仅供分析。';
+        }
+        return schedule;
       } catch (error) {
         console.warn('Schedule file load failed:', error);
         return null;
@@ -611,7 +646,8 @@
     }
 
     integratedBundle().then(function ([ds,schedule,replay]) {
-      viewer.dataSources.add(ds);
+      if (schedule && schedule.temporary) throw new Error('临时比较结果仅支持 Gantt，不支持 Cesium 回放');
+      const sourceAdded=viewer.dataSources.add(ds);
       viewer.zoomTo(ds).then(flyToEarthCenter);
       setupMetrics(schedule);
       setupAssignmentsPanel(schedule,ds);
@@ -619,6 +655,12 @@
       setupVisibilityControls(ds);
       setupGanttButton(schedule);
       setupBodyModelsAndFixedPayloads(replay,ds);
+      Promise.resolve(sourceAdded).then(() => { try {
+        const key='eos-replay-navigation-state';
+        const raw=sessionStorage.getItem(key);sessionStorage.removeItem(key);
+        if(raw){const state=JSON.parse(raw);const eid=new URLSearchParams(location.search).get('experiment_id');
+          if(eid&&state.experiment_id===eid&&Date.now()-state.saved_at<60000)window.EOSReplayState.restore(state);}
+      } catch (_) { /* Optional state restoration never blocks replay loading. */ } });
     }).catch(function (error) {
       replayLoadError=error;
       document.getElementById('assetStatus').textContent='回放加载失败：'+error.message;
@@ -1152,6 +1194,7 @@
             if (!tile) return;
             const context = tile.canvas.getContext('2d', { alpha: false });
             context.drawImage(secondary.canvas, 0, 0, tile.canvas.width, tile.canvas.height);
+            tile.canvas.style.visibility = '';
             tile.canvas.dataset.satelliteId = job.id;
             tile.canvas.dataset.simulationTime = job.payload.simulationTimeIso;
             tile.canvas.dataset.renderSequence = String(job.sequence);
@@ -1168,6 +1211,7 @@
         return payloadRenderer;
       };
       const renderTile = (satelliteId, time) => {
+        if (!visible) return;
         const tile = tileById.get(satelliteId);
         if (!tile) return;
         const state = stateAt(satelliteId, time);
@@ -1293,9 +1337,19 @@
       toggle.addEventListener('click', () => {
         visible = !visible;
         grid.hidden = !visible;
+        document.getElementById('payloadGridHint').hidden = !visible;
         toggle.textContent = visible ? 'Hide grid' : 'Show grid';
         toggle.setAttribute('aria-expanded', visible ? 'true' : 'false');
-        if (visible) renderTile(selectedId || replay.satellites[0].id, viewer.clock.currentTime);
+        if (!visible && payloadRenderer) {
+          payloadRenderer.destroy();
+          payloadRenderer = null;
+        }
+        if (visible) {
+          // Do not present a pre-hide snapshot while the fresh frames load.
+          tileById.forEach(tile => { tile.canvas.style.visibility = 'hidden'; });
+          replay.satellites.forEach(satellite => renderTile(satellite.id, viewer.clock.currentTime));
+          updateSelectionDom();
+        }
       });
       viewer.selectedEntityChanged.addEventListener((entity) => {
         const id = entity && (entity.id || entity._id);
