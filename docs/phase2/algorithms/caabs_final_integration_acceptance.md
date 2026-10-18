@@ -34,6 +34,16 @@ P2实际命令：`python -B scripts/generate_caabs_development_scene.py --output
 
 8项真实来源测试全通过：实际非空求解、开发来源不得正式消费、删侧车、改窗口/姿态、改源码哈希、改Raw身份、伪造Source ID、独立Verifier真实预览。该Verifier重建公共模型和来源再传播采样，得到SAMPLED_PREVIEW，audit仍INCONCLUSIVE/NO_CONTINUITY_CERTIFICATE。另Registry17、旧算法7及continuous_exposure15（1跳过）通过；本阶段47项46通过/1跳过、4进程退出0，无超时。详见 `/tmp/caabs-final-20261018/p2/`。
 
+## P3：真实启动、取消与停机
+
+原生Linux/DrvFS同字节对照及6次实际Spawn表明，started耗时2.811–4.239秒，固定3秒测试等待和测试Controller的2秒启动预算不足。worker模块此前在身份握手前导入Runner/算法；现在握手前不导入Runner/Registry/JPype，收到身份绑定Start后才加载。生产startup默认30秒未增大；仅测试首次启动使用可配置、有限的8秒，其余IPC消息仍3秒，Controller测试按实际阶段里程碑计时且有总上界。未删除身份、pidfd或进程组检查。
+
+另一个独立根因：后台线程首次启动JPype JVM后，业务线程已经结束，进程却在`jpype._core._JTerminate`卡住；35.044秒诊断超时，见`p3-background-jvm-before.log/.receipt.json`。现在首次ensure_orekit必须主线程调用，未初始化时后台线程明确失败；真实Controller可通过`EOS_PREINITIALIZE_OREKIT=1 EOS_OREKIT_DATA=...`在启动线程前初始化，避免悄悄卡死，后台Verifier使用已初始化的同一数据。Worker无物理计算时不启动JVM。
+
+取消现在对重复有效Cancel序列也只发一个ACK，并保留取消后不提交Candidate。异常在stderr保留traceback。测试中的可被SIGKILL Worker不再持有multiprocessing.Event信号量；改用隔离临时目录中的有界文件门闩，避免进程被杀后测试清理死锁。blocked-verification负例仍断言锁保留及stop失败，但释放门闩后须先等实际线程结束，不能边删除SQLite边让Controller运行。
+
+三轮日志保留于`p3-round1/2/3`：第一轮暴露清理和分阶段测试等待问题（13项shutdown中1失败2错误），针对性修复后连续两轮全部通过，分别runtime2、IPC20、process_group15、shutdown13，共50项/轮、0跳过、4进程退出0。第二轮各模块墙钟1.379/18.728/9.723/41.432秒；第三轮0.884/19.881/8.935/45.905秒。所有结果是/mnt/d真实Spawn运行；没有把分组通过等同全量回归。
+
 ## 后续阶段状态
 
-P3/P4/P5尚在执行。正式连续认证没有通过，不能据P2非空规划声称正式系统成功。
+P4/P5尚在执行。正式连续认证没有通过，不能据非空规划声称正式系统成功。

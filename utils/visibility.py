@@ -16,6 +16,7 @@ import os
 import hashlib
 import math
 import random
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
@@ -102,6 +103,8 @@ def _find_orekit_data_zip(data_path: Optional[str] = None) -> str:
 def ensure_orekit(data_path: Optional[str] = None) -> None:
     """Ensure the JVM is started and Orekit data is loaded, only once per process."""
     global _VM_STARTED, _DATA_LOADED, _CONTEXT, _LOADED_DATA_SHA256
+    if not _VM_STARTED and threading.current_thread() is not threading.main_thread():
+        raise RuntimeError("OREKIT_MAIN_THREAD_INITIALIZATION_REQUIRED: preinitialize before Controller threads")
 
     # A JVM data context cannot silently change beneath an audit/cache.
     zip_path = _find_orekit_data_zip(data_path)

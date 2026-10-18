@@ -18,6 +18,7 @@ from eos_system.contracts import RunConfig
 from eos_system import worker_reference as worker
 from schedulers.constraint_model import Schedule
 from schedulers.scenario_loader import load_scheduling_problem_from_json
+from spawn_support import SPAWN_STARTUP_S
 
 
 RUN_ID = "00000000-0000-4000-8000-000000000101"
@@ -75,6 +76,7 @@ class WorkerIpcTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.scene = Path(self.temp.name) / "fixture.json"
         self.scene.write_text("{}", encoding="utf-8")
+        self._starting_pipes = set()
         self.config = RunConfig(
             run_id=RUN_ID, scenario_id="fixture", scenario_sha256="0" * 64,
             scenario_path=str(self.scene), algorithm_id="completion_first",
@@ -109,9 +111,11 @@ class WorkerIpcTests(unittest.TestCase):
             process.start()
             event_send.close()
             control_recv.close()
+            self._starting_pipes.add(event_recv)
             yield process, event_recv, control_send, entered, observed, config
         finally:
             control_send.close()
+            self._starting_pipes.discard(event_recv)
             event_recv.close()
             if process.pid is not None:
                 process.join(timeout=0.5)
@@ -157,8 +161,11 @@ class WorkerIpcTests(unittest.TestCase):
                 self.assertFalse(thread.is_alive(), "Worker 测试线程未退出")
 
     def read_event(self, event_recv):
-        self.assertTrue(event_recv.poll(3), "未在 3 秒内收到 Worker 事件")
-        return worker.receive_message(event_recv)
+        ceiling = SPAWN_STARTUP_S if event_recv in self._starting_pipes else 3
+        self.assertTrue(event_recv.poll(ceiling), f"未在 {ceiling} 秒内收到 Worker 事件")
+        message = worker.receive_message(event_recv)
+        self._starting_pipes.discard(event_recv)
+        return message
 
     def read_until_terminal(self, event_recv):
         messages = []
@@ -191,6 +198,37 @@ class WorkerIpcTests(unittest.TestCase):
             self.assertEqual(seq, sorted(set(seq)))
             self.assertEqual([item["kind"] for item in messages],
                              ["heartbeat", "heartbeat", "heartbeat", "candidate_result"])
+
+    def test_distinct_cancel_sequences_still_have_one_ack_per_attempt(self):
+        entered, release, second_seen = threading.Event(), threading.Event(), threading.Event()
+        original = worker.receive_message
+
+        def observe(connection):
+            result = original(connection)
+            if result["kind"] == "cancel" and result["seq"] == 2:
+                second_seen.set()
+            return result
+
+        def solve(*args):
+            entered.set()
+            release.wait(1.5)
+            return {"assignments": []}, .01
+
+        with patch.object(worker, "receive_message", side_effect=observe):
+            with self.harness(solve) as (events, control, thread):
+                self.read_event(events)
+                worker.send_message(control, self._start_command())
+                self.assertTrue(entered.wait(1))
+                worker.send_message(control, envelope("cancel", seq=1))
+                first = self.read_until_kind(events, "cancel_ack")
+                worker.send_message(control, envelope("cancel", seq=2))
+                self.assertTrue(second_seen.wait(1))
+                release.set()
+                thread.join(1)
+                self.assertFalse(thread.is_alive())
+                all_events = first + self.drain_after_exit(events)
+                self.assertEqual(sum(m["kind"] == "cancel_ack" for m in all_events), 1)
+                self.assertFalse(any(m["kind"] == "candidate_result" for m in all_events))
 
     def test_full_start_envelope_is_accepted(self):
         with self.harness() as (events, control, _):

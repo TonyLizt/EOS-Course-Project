@@ -24,7 +24,6 @@ from .controller_ipc import (EOF, ControlWriter, EventReader, IpcError,
 from .contracts import RunConfig
 from .exporting import persist_directory_exports
 from .storage import Database
-from .verification import verify_candidate
 from .worker_reference import CANCEL_GRACE_S, PROTOCOL_VERSION, worker_main
 from .worker_process import WorkerGroup, reap_worker
 from .planning_preview import PreviewReceipt, validate_preview
@@ -33,6 +32,13 @@ from .worker_recovery import WorkerJournal
 
 
 VERIFICATION_TIMEOUT_S = 30.0
+
+
+def verify_candidate(config, candidate, runtime_s):
+    # Preserve the patchable public hook; keep algorithm/physics imports out of
+    # spawned fault-worker module initialization and the identity handshake.
+    from .verification import verify_candidate as implementation
+    return implementation(config, candidate, runtime_s)
 
 
 class Controller:
@@ -65,6 +71,9 @@ class Controller:
         self.settings.runtime_dir.mkdir(parents=True, exist_ok=True)
         if self._lock_file is not None:
             raise RuntimeError("Controller 已启动")
+        if os.environ.get("EOS_PREINITIALIZE_OREKIT") == "1":
+            from utils.visibility import ensure_orekit
+            ensure_orekit(os.environ.get("EOS_OREKIT_DATA"))
         self._stop.clear()
         self._lock_file = self.settings.lock_path.open("a+")
         try:

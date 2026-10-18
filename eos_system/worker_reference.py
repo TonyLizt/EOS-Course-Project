@@ -21,8 +21,16 @@ from multiprocessing.connection import Connection
 from pathlib import Path
 
 from .config import sha256_file
-from .contracts import RunConfig
-from .runner import prepare, run_prepared
+
+def prepare(config):
+    """Load algorithms after the session/identity handshake, not during spawn."""
+    from .runner import prepare as implementation
+    return implementation(config)
+
+
+def run_prepared(*args):
+    from .runner import run_prepared as implementation
+    return implementation(*args)
 
 
 PROTOCOL_VERSION = 1
@@ -133,6 +141,7 @@ def worker_main(run_id: str, attempt: int, event_pipe: Connection, control_pipe:
         report("started", {"worker_pid": os.getpid(), "worker_start_token": str(uuid.uuid4()), "pgid": os.getpgrp(), "phase": "STARTING"})
         command = receive_message(control_pipe)
         _check_control(command, run_id, attempt, "start")
+        from .contracts import RunConfig
         raw_config = command.get("config") if "protocol_version" not in command else command["payload"].get("config")
         config = RunConfig.model_validate(raw_config)
         if config.run_id != run_id:
@@ -172,7 +181,7 @@ def worker_main(run_id: str, attempt: int, event_pipe: Connection, control_pipe:
                     cancelled.set()
                     if cancel_deadline is None:
                         cancel_deadline = time.monotonic() + CANCEL_GRACE_S
-                    report("cancel_ack", {"accepted": True})
+                        report("cancel_ack", {"accepted": True})
             try:
                 kind, value = progress.get_nowait()
             except queue.Empty:
@@ -203,6 +212,8 @@ def worker_main(run_id: str, attempt: int, event_pipe: Connection, control_pipe:
                 # solve 不合作时不让 Worker 主流程无限等待；W2 负责后代进程回收。
                 return
     except BaseException as exc:
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         # 只上报受控摘要；详细堆栈可由系统运行日志查看，避免把本机路径送到浏览器。
         try:
             report("failed", {"code": type(exc).__name__, "message": str(exc)[:300]})
