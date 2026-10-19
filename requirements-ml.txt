@@ -1,0 +1,7 @@
+# 安装到与Worker相同的WSL/Python3.10虚拟环境；基线运行不依赖本文件。
+# 与本轮冻结制品清单一致，避免各组员使用不同数值库版本加载同一权重。
+numpy==2.2.6
+scipy==1.15.3
+scikit-learn==1.7.2
+joblib==1.5.2
+threadpoolctl==3.6.0

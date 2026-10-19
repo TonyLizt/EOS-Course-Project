@@ -58,6 +58,8 @@ class RunConfig(RunRequest):
     algorithm_code_sha: str | None = None
     # 来源可未知；新物理候选必须有外部验收，不用当前代码回填历史。
     scenario_provenance: dict[str, Any] = Field(default_factory=dict)
+    # 仅服务端生成；默认空字典兼容历史运行，纳入配置哈希。
+    model_provenance: dict[str, Any] = Field(default_factory=dict)
     created_at: str
 
 

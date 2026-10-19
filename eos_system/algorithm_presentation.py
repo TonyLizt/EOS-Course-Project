@@ -5,6 +5,7 @@ from .algorithm_registry import AlgorithmParams, AlgorithmSpec, list_algorithms,
 # Presentation-only metadata, shared by every page. Defaults/types remain owned
 # by the existing Pydantic models; do not replace nullable defaults with guesses.
 _PARAMETER_HELP = {
+    'model_id': ('冻结模型', '选择管理员登记的训练模型ID；不接受任意文件路径。'),
     'max_candidates_per_task': ('每任务候选上限', '限制每项任务保留的离散候选数；默认配置由对应算法决定。'),
     'alns_iterations': ('破坏重建轮数', '自适应修复的破坏与重建迭代上限。'),
     'max_iterations': ('最大迭代次数', '模拟退火的搜索迭代上限，仍受求解时间预算限制。'),
@@ -51,7 +52,11 @@ def parameter_schema(model: type[AlgorithmParams]) -> dict:
 
 def algorithm_info(spec: AlgorithmSpec) -> dict:
     info = spec.public_info()
-    info["parameters"] = parameter_schema(spec.params_model)
+    decorated = parameter_schema(spec.params_model)
+    # 仅补展示文字，保留注册表实时给出的受控模型选项，不重建覆盖Schema。
+    for key, prop in info['parameters'].get('properties', {}).items():
+        for field in ('title', 'description'):
+            if field in decorated['properties'][key]: prop[field] = decorated['properties'][key][field]
     return info
 
 

@@ -1,0 +1,469 @@
+{
+  "algorithm_id": "lavis",
+  "version": "0.1.0",
+  "model_id": "lavis-v1",
+  "model_sha256": "c0be3fcf9f419f2498ea1cfe26ed842b7123eba3d106915ffa2b0e9ba010af92",
+  "inference_code_sha256_lf": "4b93a1323a8660c8634c45543e4945336fb85d74c7e582f7b74b14233b57adbc",
+  "split_sha256": "1b4f5792785b333f54ae47a98cade8f9f9f465d9161db79ec21be342257f4c1b",
+  "train_sources": 60,
+  "validation_sources": 20,
+  "training_rows": 3240,
+  "labels_including_unused_augmentation": 5117,
+  "base_states": 410,
+  "informative_base_states": 18,
+  "training_pipeline_seconds": 261.713514633,
+  "base_label_generation_seconds": 181.73702685400008,
+  "parameters": {
+    "early_stopping": false,
+    "l2_regularization": 1.0,
+    "learning_rate": 0.05,
+    "max_iter": 100,
+    "max_leaf_nodes": 15,
+    "min_samples_leaf": 10,
+    "random_state": 42
+  },
+  "augmentation_accepted": false,
+  "validation": {
+    "completed": 715,
+    "total": 900,
+    "macro_TCR": 0.79,
+    "physics_passed_sources": 20,
+    "propagation_calls": 145155
+  },
+  "ablations": {
+    "constant": {
+      "completed": 714,
+      "total": 900,
+      "macro_TCR": 0.7887500000000001
+    },
+    "random": {
+      "completed": 715,
+      "total": 900,
+      "macro_TCR": 0.79
+    },
+    "scarcity": {
+      "completed": 715,
+      "total": 900,
+      "macro_TCR": 0.79
+    },
+    "static_features": {
+      "completed": 714,
+      "total": 900,
+      "macro_TCR": 0.7887500000000001
+    }
+  },
+  "seed_repeats": [
+    {
+      "seed": 43,
+      "completed": 715
+    },
+    {
+      "seed": 44,
+      "completed": 715
+    }
+  ],
+  "per_validation_source": [
+    {
+      "artifact_id": "EOS-G0016",
+      "lineage_group_id": "eos-course-task-source-0016",
+      "scenario_sha256": "fa63b80a1197cd1f9a5784e75357d981dbc80059251676673d1cdbd20b7c3526",
+      "completed": 17,
+      "total": 20,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0017",
+      "lineage_group_id": "eos-course-task-source-0017",
+      "scenario_sha256": "6225b418ca8cb2bdc2a2134e11b83dd8405f6b91fe205a24af1e030a2cccc5a3",
+      "completed": 16,
+      "total": 20,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0018",
+      "lineage_group_id": "eos-course-task-source-0018",
+      "scenario_sha256": "fe3e9e2ae69bd5d54816922e9080bf45acd3ac3e4a0c3ee9a8957baadc4e6cdc",
+      "completed": 17,
+      "total": 20,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0019",
+      "lineage_group_id": "eos-course-task-source-0019",
+      "scenario_sha256": "7168fd3036bca2adafb64cbc4a0042271a33aedef43743fd9db381be3a555cf7",
+      "completed": 15,
+      "total": 20,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0020",
+      "lineage_group_id": "eos-course-task-source-0020",
+      "scenario_sha256": "8d364b3e2036686e13135ae6877c650500b37e17499e6cf994c30be9af8f3474",
+      "completed": 19,
+      "total": 20,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0041",
+      "lineage_group_id": "eos-course-task-source-0041",
+      "scenario_sha256": "7db4c5ef94a40efe0aa1eddcd33560858db5396ae7b1d2514eb63747547e7052",
+      "completed": 27,
+      "total": 40,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0042",
+      "lineage_group_id": "eos-course-task-source-0042",
+      "scenario_sha256": "f196fc7c20687bc23c530d794ae437eeb35d409d2401956b2f9404474d3380c0",
+      "completed": 27,
+      "total": 40,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0043",
+      "lineage_group_id": "eos-course-task-source-0043",
+      "scenario_sha256": "ffee8ae6ccd33ddd9b84d46821d6a6037843450480b41a51cf583df5f6065ad4",
+      "completed": 29,
+      "total": 40,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0044",
+      "lineage_group_id": "eos-course-task-source-0044",
+      "scenario_sha256": "101213b0ec51c7d4ec1a4cd8ceabe6bf4292dc318871ea77f26a594b07f62cf4",
+      "completed": 31,
+      "total": 40,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0045",
+      "lineage_group_id": "eos-course-task-source-0045",
+      "scenario_sha256": "c7ca57c591f5867415eb55d81accdf42d26dc7d53421f23fda5e441d7bfeab4b",
+      "completed": 27,
+      "total": 40,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0066",
+      "lineage_group_id": "eos-course-task-source-0066",
+      "scenario_sha256": "5d08e4b8363f7c0d4e15030acb111f931c6db685419f531b69c36cef9fce7ff4",
+      "completed": 34,
+      "total": 40,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0067",
+      "lineage_group_id": "eos-course-task-source-0067",
+      "scenario_sha256": "910622fc9ab76af055f5fbc847083fe7f472f2ca85a3f5c91b366b131bddee21",
+      "completed": 31,
+      "total": 40,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0068",
+      "lineage_group_id": "eos-course-task-source-0068",
+      "scenario_sha256": "529225e527e8992d5001513ab6e654623d53df29e38b957fa4aade1a95828a72",
+      "completed": 34,
+      "total": 40,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0069",
+      "lineage_group_id": "eos-course-task-source-0069",
+      "scenario_sha256": "5c241b272701acf11e9c04794de30afe4770a5a3738e7cee0da43ee0af966d4e",
+      "completed": 26,
+      "total": 40,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0070",
+      "lineage_group_id": "eos-course-task-source-0070",
+      "scenario_sha256": "611e64333de71d9f44b992deffd11048a7db28ddc60998a7a2337d4f0eaae6cb",
+      "completed": 31,
+      "total": 40,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0091",
+      "lineage_group_id": "eos-course-task-source-0091",
+      "scenario_sha256": "b7aa0aec9fa8b20b989769566696dfa7e0b1c13994a07ef882fb0bb982c3cf4d",
+      "completed": 70,
+      "total": 80,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0092",
+      "lineage_group_id": "eos-course-task-source-0092",
+      "scenario_sha256": "59257612395625e5ccc9d5f135e43450de5de0770ef70e15cdad9a9156cbead6",
+      "completed": 63,
+      "total": 80,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0093",
+      "lineage_group_id": "eos-course-task-source-0093",
+      "scenario_sha256": "fed223258ce41f30bf38588a778e61ff464626d416253c47ee7cf40447c33776",
+      "completed": 68,
+      "total": 80,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0094",
+      "lineage_group_id": "eos-course-task-source-0094",
+      "scenario_sha256": "d8502eaffe2fbe1469c5086a7ff3ab6244d432592772ef1b59581e434c2f131c",
+      "completed": 69,
+      "total": 80,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    },
+    {
+      "artifact_id": "EOS-G0095",
+      "lineage_group_id": "eos-course-task-source-0095",
+      "scenario_sha256": "270985a627c4fa7e98886512d4358b77512510fedf1a07121081ea8d06ac90b9",
+      "completed": 64,
+      "total": 80,
+      "status": "SAMPLED_PHYSICAL_PASS"
+    }
+  ],
+  "http_integration": [
+    {
+      "experiment_id": "8ea080d6-9456-44ec-8f32-36dc5caa48e7",
+      "run_id": "03b3824e-aae9-426a-aa16-f4ff64e536a1",
+      "scene": "EOS-G0016",
+      "algorithm": "lavis",
+      "status": "SUCCEEDED",
+      "completed": 17,
+      "total": 20,
+      "RT": 0.0713086089999706,
+      "worker_pid": 1210,
+      "model_sha256": "c0be3fcf9f419f2498ea1cfe26ed842b7123eba3d106915ffa2b0e9ba010af92",
+      "json_csv_schedule_gantt": "PASS",
+      "worker_exit_code": 0,
+      "events": [
+        "QUEUED",
+        "RUNNING",
+        "started",
+        "heartbeat",
+        "heartbeat",
+        "heartbeat",
+        "candidate_result",
+        "WORKER_REAP",
+        "VERIFYING",
+        "PHYSICS_VALIDATED",
+        "SUCCEEDED"
+      ]
+    },
+    {
+      "experiment_id": "8ea080d6-9456-44ec-8f32-36dc5caa48e7",
+      "run_id": "3a724ee6-02e2-4115-b5d7-6678cf8ee0df",
+      "scene": "EOS-G0016",
+      "algorithm": "profit_first",
+      "status": "SUCCEEDED",
+      "completed": 17,
+      "total": 20,
+      "RT": 0.049091213999986394,
+      "worker_pid": 1323,
+      "model_sha256": null,
+      "json_csv_schedule_gantt": "PASS",
+      "worker_exit_code": 0,
+      "events": [
+        "QUEUED",
+        "RUNNING",
+        "started",
+        "heartbeat",
+        "heartbeat",
+        "heartbeat",
+        "candidate_result",
+        "WORKER_REAP",
+        "VERIFYING",
+        "PHYSICS_VALIDATED",
+        "SUCCEEDED"
+      ]
+    },
+    {
+      "experiment_id": "0ab4792c-ad52-4b89-9419-1cfdc30b2a5f",
+      "run_id": "61cc2277-03d2-41aa-a835-9dfb6ca8aa4c",
+      "scene": "EOS-G0041",
+      "algorithm": "lavis",
+      "status": "SUCCEEDED",
+      "completed": 27,
+      "total": 40,
+      "RT": 0.13372932599997966,
+      "worker_pid": 1410,
+      "model_sha256": "c0be3fcf9f419f2498ea1cfe26ed842b7123eba3d106915ffa2b0e9ba010af92",
+      "json_csv_schedule_gantt": "PASS",
+      "worker_exit_code": 0,
+      "events": [
+        "QUEUED",
+        "RUNNING",
+        "started",
+        "heartbeat",
+        "heartbeat",
+        "heartbeat",
+        "candidate_result",
+        "WORKER_REAP",
+        "VERIFYING",
+        "PHYSICS_VALIDATED",
+        "SUCCEEDED"
+      ]
+    },
+    {
+      "experiment_id": "0ab4792c-ad52-4b89-9419-1cfdc30b2a5f",
+      "run_id": "68f998c3-09c7-4850-a7b4-d0bdf7a1dac5",
+      "scene": "EOS-G0041",
+      "algorithm": "profit_first",
+      "status": "SUCCEEDED",
+      "completed": 27,
+      "total": 40,
+      "RT": 0.13796209700001327,
+      "worker_pid": 1518,
+      "model_sha256": null,
+      "json_csv_schedule_gantt": "PASS",
+      "worker_exit_code": 0,
+      "events": [
+        "QUEUED",
+        "RUNNING",
+        "started",
+        "heartbeat",
+        "heartbeat",
+        "heartbeat",
+        "candidate_result",
+        "WORKER_REAP",
+        "VERIFYING",
+        "PHYSICS_VALIDATED",
+        "SUCCEEDED"
+      ]
+    },
+    {
+      "experiment_id": "9ebddec4-0352-494c-b13f-993a92f0395f",
+      "run_id": "268ea824-dc2b-4963-8935-8dc6df7e8068",
+      "scene": "EOS-G0066",
+      "algorithm": "lavis",
+      "status": "SUCCEEDED",
+      "completed": 34,
+      "total": 40,
+      "RT": 0.2772026919999462,
+      "worker_pid": 1602,
+      "model_sha256": "c0be3fcf9f419f2498ea1cfe26ed842b7123eba3d106915ffa2b0e9ba010af92",
+      "json_csv_schedule_gantt": "PASS",
+      "worker_exit_code": 0,
+      "events": [
+        "QUEUED",
+        "RUNNING",
+        "started",
+        "heartbeat",
+        "heartbeat",
+        "heartbeat",
+        "candidate_result",
+        "WORKER_REAP",
+        "VERIFYING",
+        "PHYSICS_VALIDATED",
+        "SUCCEEDED"
+      ]
+    },
+    {
+      "experiment_id": "9ebddec4-0352-494c-b13f-993a92f0395f",
+      "run_id": "4da370ea-a083-428b-8b58-ccc5d2d679c3",
+      "scene": "EOS-G0066",
+      "algorithm": "profit_first",
+      "status": "SUCCEEDED",
+      "completed": 34,
+      "total": 40,
+      "RT": 0.1935701610000251,
+      "worker_pid": 1720,
+      "model_sha256": null,
+      "json_csv_schedule_gantt": "PASS",
+      "worker_exit_code": 0,
+      "events": [
+        "QUEUED",
+        "RUNNING",
+        "started",
+        "heartbeat",
+        "heartbeat",
+        "heartbeat",
+        "candidate_result",
+        "WORKER_REAP",
+        "VERIFYING",
+        "PHYSICS_VALIDATED",
+        "SUCCEEDED"
+      ]
+    },
+    {
+      "experiment_id": "850dec6f-2d5b-46d4-8dc0-301b7cecdd6f",
+      "run_id": "3233ad51-cc66-4728-99d2-26bffaf1c6d8",
+      "scene": "EOS-G0091",
+      "algorithm": "lavis",
+      "status": "SUCCEEDED",
+      "completed": 70,
+      "total": 80,
+      "RT": 1.2634097850000217,
+      "worker_pid": 1810,
+      "model_sha256": "c0be3fcf9f419f2498ea1cfe26ed842b7123eba3d106915ffa2b0e9ba010af92",
+      "json_csv_schedule_gantt": "PASS",
+      "worker_exit_code": 0,
+      "events": [
+        "QUEUED",
+        "RUNNING",
+        "started",
+        "heartbeat",
+        "heartbeat",
+        "heartbeat",
+        "candidate_result",
+        "WORKER_REAP",
+        "VERIFYING",
+        "PHYSICS_VALIDATED",
+        "SUCCEEDED"
+      ]
+    },
+    {
+      "experiment_id": "850dec6f-2d5b-46d4-8dc0-301b7cecdd6f",
+      "run_id": "2d9efbf3-774f-4d28-ac68-6596d1e35204",
+      "scene": "EOS-G0091",
+      "algorithm": "profit_first",
+      "status": "SUCCEEDED",
+      "completed": 70,
+      "total": 80,
+      "RT": 0.5804876729998796,
+      "worker_pid": 1922,
+      "model_sha256": null,
+      "json_csv_schedule_gantt": "PASS",
+      "worker_exit_code": 0,
+      "events": [
+        "QUEUED",
+        "RUNNING",
+        "started",
+        "heartbeat",
+        "heartbeat",
+        "heartbeat",
+        "candidate_result",
+        "WORKER_REAP",
+        "VERIFYING",
+        "PHYSICS_VALIDATED",
+        "SUCCEEDED"
+      ]
+    }
+  ],
+  "negative_requests": "PASS",
+  "replay": {
+    "run_id": "03b3824e-aae9-426a-aa16-f4ff64e536a1",
+    "status": "READY",
+    "replay_id": "d39865d2-30fd-4ab6-aa14-34c103b436ba"
+  },
+  "extra_unseen_discrete_counterexample": {
+    "completed": 1,
+    "finite_pool_optimum": 2,
+    "scores": [
+      0.6663844417772138,
+      0.6549510852150634,
+      0.6632661744437077
+    ],
+    "scope": "out-of-training-distribution mechanism probe; no physical certificate"
+  },
+  "final_test_used": false,
+  "limitations": [
+    "same constellation/epoch",
+    "no demonstrated completion advantage over scarcity/random",
+    "unseen tiny counterexample still fails to choose best action",
+    "sampled physics only, NOT_CERTIFIED",
+    "development timing is not a controlled benchmark"
+  ]
+}

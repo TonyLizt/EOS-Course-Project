@@ -62,6 +62,9 @@ def capture_provenance(scene: Path, scenario_sha: str) -> dict:
 
 def verify_provenance(config) -> None:
     """运行与独立核验都复查提交时的 sidecar，不接受提交后替换来源文件。"""
+    if config.algorithm_id == 'lavis':
+        from algorithms.lavis.model import verify_snapshot
+        verify_snapshot(config.model_provenance)
     snapshot = config.scenario_provenance
     if snapshot.get("provenance_status") == "development_planning_only":
         if config.execution_mode != "planning_preview":

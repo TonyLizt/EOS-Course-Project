@@ -1,5 +1,6 @@
 """All actual registered algorithms, without running any scheduling algorithm."""
 import json
+import shutil
 from pathlib import Path
 import subprocess
 import unittest
@@ -29,7 +30,7 @@ class ParameterMetadataTests(unittest.TestCase):
                 info = algorithm_info(spec)
                 self.assertTrue(all(info[k] for k in ('name', 'description', 'strategy', 'objectives', 'limitations')))
                 schema = info['parameters']
-                self.assertEqual(without_presentation(schema), without_presentation(spec.params_model.model_json_schema()))
+                self.assertEqual(without_presentation(schema), without_presentation(spec.public_info()["parameters"]))
                 for key, prop in schema.get('properties', {}).items():
                     self.assertTrue(prop.get('description'), (aid, key))
                     self.assertNotEqual(prop['title'], key)
@@ -37,6 +38,7 @@ class ParameterMetadataTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     spec.parse_params({'unknown_parameter': 1})
 
+    @unittest.skipUnless(shutil.which('node'), '当前Python环境缺Node；跨环境真实清单另用Windows Node验证')
     def test_actual_registry_schemas_render_and_validate_in_javascript(self):
         catalog = [algorithm_info(spec) for spec in registry._SPECS.values()]
         script = r'''

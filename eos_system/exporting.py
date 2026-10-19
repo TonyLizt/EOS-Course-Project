@@ -60,6 +60,7 @@ def render_json(record: dict) -> bytes:
         "algorithm_version": record["config"]["algorithm_version"],
         "seed": record["config"]["seed"],
         "scenario_provenance": record["config"].get("scenario_provenance", {}),
+        "model_provenance": record["config"].get("model_provenance", {}),
     }
     return (json.dumps(plan, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
 

@@ -29,6 +29,11 @@ def _slice_angles(payload, offset, count):
     return payload
 
 
+def slice_source_angles(payload, offset, count):
+    """供新候选构造器复用的只读角度切片，保留历史核验语义。"""
+    return _slice_angles(payload, offset, count)
+
+
 def observation_source_matches(problem, task, window, item, start, end, *, check_angles=True):
     """Full observable source semantics; deliberately independent of planning trust."""
     if (window.mission_id != task.id or window.satellite_id != item['satellite_id']
