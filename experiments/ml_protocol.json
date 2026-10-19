@@ -1,0 +1,59 @@
+{
+  "algorithm_id": "lavis",
+  "version": "0.1.0",
+  "feature_schema": "lavis-features-v1",
+  "candidate_policy": "configured-placement-v1",
+  "label_protocol": "lavis-rollout-label-v1",
+  "objective": "completion_only",
+  "public_split": {
+    "train_development": 60,
+    "validation": 20
+  },
+  "test": "private_final_test_not_read",
+  "max_states_per_source": 10,
+  "max_labeled_candidates_per_state": 8,
+  "rollouts_per_candidate": 2,
+  "rollout_check_limit": 10000,
+  "learning_seeds": [
+    42,
+    43,
+    44
+  ],
+  "validation_search_budget_s": 15,
+  "parameter_grid": {
+    "max_leaf_nodes": [
+      7,
+      15
+    ],
+    "learning_rate": [
+      0.05,
+      0.1
+    ],
+    "min_samples_leaf": [
+      10,
+      20
+    ],
+    "max_iter": [
+      100
+    ],
+    "l2_regularization": [
+      1.0
+    ],
+    "early_stopping": [
+      false
+    ]
+  },
+  "selection_rule": "highest_validation_completed_count_then_canonical_hyperparameters",
+  "on_policy_augmentation": "one_training_only_pass; accept_only_if_validation_completed_count_improves",
+  "ablation_modes": [
+    "scarcity",
+    "constant",
+    "random",
+    "static_features"
+  ],
+  "limitations": [
+    "shared_constellation_and_one_epoch",
+    "finite_candidate_pool",
+    "finite_physics_sampling_not_continuous_proof"
+  ]
+}

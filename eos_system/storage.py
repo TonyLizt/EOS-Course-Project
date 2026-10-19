@@ -377,6 +377,7 @@ class Database:
                     current = json.loads(previous["config_json"])
                     incoming = config.model_dump()
                     current.setdefault('execution_mode', 'formal')
+                    current.setdefault('model_provenance', {})
                     current.setdefault('schedule_model', 'completion_first')
                     for key in ("run_id", "created_at"):
                         current.pop(key, None)

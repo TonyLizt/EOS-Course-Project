@@ -11,7 +11,15 @@ from .storage import TERMINAL, compact_json, now
 
 def common_config(config: dict) -> dict:
     return {k: v for k, v in config.items()
-            if k not in {'run_id', 'created_at', 'algorithm_id', 'algorithm_version', 'algorithm_params'}}
+            if k not in {'run_id', 'created_at', 'algorithm_id', 'algorithm_version', 'algorithm_params', 'model_provenance'}}
+
+
+
+def algorithm_identity(config):
+    """模型是算法侧身份，不能进入所有算法共享配置，也不能从对照身份中丢失。"""
+    identity = {'params': config.get('algorithm_params', {})}
+    if config.get('model_provenance'): identity['model_provenance'] = config['model_provenance']
+    return identity
 
 
 def digest(value) -> str:
@@ -57,7 +65,7 @@ class Experiments:
         shared = common_config(configs[0].model_dump())
         if any(common_config(c.model_dump()) != shared for c in configs):
             raise ValueError('同一实验的场景、模型、种子、约束和预算必须一致')
-        request_sha = digest({'runs':[{'common': shared, 'algorithm': c.algorithm_id, 'params': c.algorithm_params}
+        request_sha = digest({'runs':[{'common': shared, 'algorithm': c.algorithm_id, 'params': c.algorithm_params, **({'model_provenance': c.model_provenance} if c.model_provenance else {})}
                               for c in sorted(configs, key=lambda c: c.algorithm_id)], 'control_of':control_of})
         eid = str(uuid.uuid4())
         with self.db.write() as conn:
@@ -72,9 +80,9 @@ class Experiments:
                 if not original:raise KeyError('原实验不存在')
                 expected=json.loads(original['common_json']);previous=expected.get('schedule_model')
                 expected['schedule_model']=shared['schedule_model']
-                members={r['algorithm_id']:json.loads(r['config_json'])['algorithm_params'] for r in conn.execute(
+                members={r['algorithm_id']:algorithm_identity(json.loads(r['config_json'])) for r in conn.execute(
                     'SELECT r.algorithm_id,r.config_json FROM experiment_runs e JOIN runs r USING(run_id) WHERE e.experiment_id=? AND e.removed_at IS NULL',(control_of,))}
-                if original['legacy'] or previous==shared['schedule_model'] or expected!=shared or members!={c.algorithm_id:c.algorithm_params for c in configs}:
+                if original['legacy'] or previous==shared['schedule_model'] or expected!=shared or members!={c.algorithm_id:algorithm_identity(c.model_dump()) for c in configs}:
                     raise ValueError('原实验条件或算法已变化，不能创建单变量对照；请刷新后重试')
             queued = conn.execute("SELECT count(*) FROM runs WHERE status='QUEUED'").fetchone()[0]
             if queued + len(configs) > max_queued:
@@ -178,7 +186,7 @@ class Experiments:
             row = conn.execute('SELECT * FROM experiments WHERE experiment_id=?', (eid,)).fetchone()
             if row is None:
                 raise KeyError('实验不存在')
-            selections = {r['algorithm_id']: json.loads(r['config_json'])['algorithm_params'] for r in conn.execute(
+            selections = {r['algorithm_id']: algorithm_identity(json.loads(r['config_json'])) for r in conn.execute(
                 'SELECT r.algorithm_id,r.config_json FROM experiment_runs e JOIN runs r USING(run_id) WHERE e.experiment_id=? AND e.removed_at IS NULL', (eid,))}
         return dict(row), selections
 
@@ -194,7 +202,7 @@ class Experiments:
     def compare(self, eid, other_id):
         self.assert_comparable(eid, other_id)
         pair = [self.detail(eid), self.detail(other_id)]
-        selections = lambda e: {r['config']['algorithm_id']: r['config']['algorithm_params'] for r in e['runs']}
+        selections = lambda e: {r['config']['algorithm_id']: algorithm_identity(r['config']) for r in e['runs']}
         if selections(pair[0]) != selections(pair[1]):
             raise ValueError('比较期间算法成员发生变化，请刷新后重新选择')
         versions={r['metrics'].get('metric_schema_version') for e in pair for r in e['runs'] if r.get('metrics')}

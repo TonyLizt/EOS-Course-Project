@@ -131,6 +131,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"source_id": source_id, "items": catalog.list_scenarios(Path(source["root_path"]), source_id,
             planning_preview=execution_mode in ('planning_preview', 'physical_validation'))}
 
+    @app.get("/api/models")
+    def models():
+        from algorithms.lavis.model import list_models
+        return {"algorithm_id": "lavis", "items": list_models()}
+
     @app.get("/api/data-sources")
     def data_sources():
         return {"items": database.list_data_sources(), "catalog_warnings": catalog_warnings}
@@ -203,8 +208,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        model_provenance = {}
+        if request.algorithm_id == 'lavis':
+            from algorithms.lavis.model import freeze
+            from algorithms.lavis.protocol import DOMAIN, validate_weights
+            try:
+                validate_weights(request.objective_weights)
+                actual = request.constraints.model_dump() | {
+                    'placement_mode': request.placement_mode, 'execution_mode': request.execution_mode}
+                if any(actual[k] != DOMAIN[k] for k in actual):
+                    raise ValueError('LAVIS_V1_DOMAIN_MISMATCH：仅支持earliest、默认约束及工程物理核验')
+                model_provenance = freeze(spec.parse_params(request.algorithm_params).model_id)
+                if provenance.get('scenario_physics_version') != model_provenance.get('scenario_physics_version'):
+                    raise ValueError('LAVIS_SCENARIO_PHYSICS_DOMAIN_MISMATCH')
+            except (ValueError,OSError) as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
         config = RunConfig(
-            **request.model_dump(), run_id=str(uuid.uuid4()), scenario_sha256=digest,
+            **request.model_dump(), model_provenance=model_provenance, run_id=str(uuid.uuid4()), scenario_sha256=digest,
             scenario_path=str(scene), output_kind=profile["kind"], output_root=profile["root_path"],
             algorithm_version=spec.version,
             algorithm_code_sha=algorithm_source_sha256(), scenario_provenance=provenance, created_at=now(),
@@ -273,6 +293,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raw={k:v for k,v in run['config'].items() if k in RunRequest.model_fields}
             raw['schedule_model']=request.schedule_model
             config=build_run_config(RunRequest.model_validate(raw))
+            if config.model_provenance != run['config'].get('model_provenance', {}):
+                raise HTTPException(status_code=409,detail='冻结模型已变化，不能创建单变量对照')
             expected=dict(shared);expected['schedule_model']=request.schedule_model
             from .experiments import common_config
             if common_config(config.model_dump())!=expected:

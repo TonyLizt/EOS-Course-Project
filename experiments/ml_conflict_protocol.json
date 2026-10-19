@@ -1,0 +1,42 @@
+{
+  "dataset_id": "lavis-conflict-v1",
+  "family_count": 48,
+  "variants_per_family": 2,
+  "extra_train_families": 32,
+  "extra_train_scenarios": 64,
+  "challenge_validation_families": 16,
+  "challenge_validation_scenarios": 32,
+  "base_train_scenarios": 60,
+  "base_validation_scenarios": 20,
+  "source_policy": "new synthetic orbital elements, new December epochs, own-orbit target corridors; no scenario cropping",
+  "protected_test_access": "identity fields of frozen index only; no scene targets/windows/labels or private seeds",
+  "group_policy": "siblings share lineage_group_id and cannot cross splits",
+  "sampling": "reachable trace states and paired high/low conflict candidates; no validation label generation",
+  "model_selection": "no loss in original validation completed count, then highest family-macro TCR on challenge validation",
+  "control_comparison": "same hyperparameters and sampler with/without new conflict train families",
+  "model_id": "lavis-v2-conflict",
+  "overwrite_previous_model": false,
+  "final_test_used": false,
+  "scan_step_s": 5,
+  "full_exposure_check_step_s": 0.05,
+  "continuous_certification": "NOT_CERTIFIED",
+  "followup_after_observed_v2_regression": {
+    "script": "scripts/refine_lavis_ranking.py",
+    "model_id": "lavis-v3-ranking",
+    "targets": [
+      "task_advantage",
+      "ordinal_rank"
+    ],
+    "max_leaf_nodes": [
+      15,
+      31
+    ],
+    "max_iter": 180,
+    "learning_rate": 0.05,
+    "min_samples_leaf": 5,
+    "states": "training-only informative states; flat labels supply no ordering information",
+    "promotion": "original completed >= v1; conflict completed >= v1; conflict family-macro TCR strictly > v1",
+    "search_history": "8 absolute-target trials and 1 rejected on-policy augmentation, then 4 relative-target trials; all selected on development validation, no final test",
+    "online_inference_changes": false
+  }
+}

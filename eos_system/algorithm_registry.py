@@ -15,6 +15,8 @@ from pydantic import Field, ValidationError
 
 from algorithms.conflict_beam import CAABSParams, ConflictBeamScheduler, VERSION as CAABS_VERSION
 from algorithms.auction_bundle import RABASParams, ResourceAwareBundleAuctionScheduler, VERSION as RABAS_VERSION
+from algorithms.lavis.protocol import LavisParams
+from algorithms.lavis.solver import build as build_lavis
 from algorithms.factory import create_algorithm
 from algorithms.objectives import ObjectiveWeights
 # Re-export the existing public names for HTTP/Worker and third-party callers.
@@ -65,6 +67,12 @@ class MIPParams(CandidateParams):
 
 
 def availability(algorithm_id: str) -> tuple[str, str]:
+    if algorithm_id == 'lavis':
+        if find_spec('sklearn') is None:
+            return 'unavailable', '请在WSL运行环境安装requirements-ml.txt。'
+        from algorithms.lavis.model import list_models
+        if not list_models():
+            return 'unavailable', '尚无兼容的冻结LAVIS模型；请先完成离线训练并登记。'
     if algorithm_id == 'mip':
         if find_spec('pulp') is None:
             return 'unavailable', '缺少 PuLP / CBC 求解器依赖。'
@@ -100,6 +108,13 @@ class AlgorithmSpec:
             raise ValueError(f"算法参数无效：{details}") from exc
 
     def public_info(self) -> dict:
+        schema = self.params_model.model_json_schema()
+        if self.algorithm_id == 'lavis':
+            from algorithms.lavis.model import list_models
+            models = list_models()
+            if models:
+                schema['properties']['model_id']['enum'] = [item['model_id'] for item in models]
+                schema['properties']['model_id']['default'] = models[0]['model_id']
         return {
             "algorithm_id": self.algorithm_id,
             "name": self.name,
@@ -113,7 +128,7 @@ class AlgorithmSpec:
             "availability": availability(self.algorithm_id)[0],
             "availability_message": availability(self.algorithm_id)[1],
             "uses_initial_schedule": self.algorithm_id in {'sa', 'ga', 'aco'},
-            "parameters": self.params_model.model_json_schema(),
+            "parameters": schema,
         }
 
 
@@ -150,6 +165,14 @@ def _build_legacy(algorithm_id: str, context: SolveContext) -> Solver:
 
 # 显式注册可审查的本仓库算法；组员新增算法时只在这里增加一项元数据。
 _SPECS: dict[str, AlgorithmSpec] = {
+    "lavis": AlgorithmSpec(
+        algorithm_id="lavis", name="LAVIS · 学习型分配价值引导插入调度", category="learning",
+        owner="李泽同（刘懋兴、何明涛配合）", version="0.1.0", params_model=LavisParams,
+        build=build_lavis, description="监督学习预测完整候选分配的后续完成价值，逐轮可行插入。",
+        strategy="24维共享特征、训练后的直方图梯度提升回归、原始预测分数排序；不在线运行教师续排。",
+        objectives="v1仅支持完成率目标：完成率权重大于0，其余目标权重为0。",
+        limitations="v1仅earliest、默认约束、无地面站；使用受控模型ID，有限候选池，不保证优于传统算法或全局最优。",
+    ),
     "completion_first": AlgorithmSpec(
         algorithm_id="completion_first", name="完成率优先（现有基线）", category="baseline",
         owner="EOS-Bench", version="baseline-1", params_model=CompletionParams,
@@ -190,7 +213,7 @@ _SPECS: dict[str, AlgorithmSpec] = {
 
 
 COMPARISON_ALGORITHMS = ('mip', 'profit_first', 'timeliness_first', 'balance_first',
-                         'pressure_repair', 'sa', 'ga', 'aco', 'ppo', 'caabs', 'rabas')
+                         'pressure_repair', 'sa', 'ga', 'aco', 'ppo', 'caabs', 'rabas', 'lavis')
 
 _DEFINITIONS = [
     ('mip', '混合整数规划 MIP', 'exact', MIPParams, '离散候选与冲突约束构建 MILP，由 CBC 求解。', '候选集上的加权目标优化，含实现中的主目标增强。', '候选集有限；独立建模，不使用初始模型解。'),

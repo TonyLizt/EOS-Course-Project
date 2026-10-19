@@ -1,0 +1,54 @@
+{
+  "dataset_id": "lavis-conflict-v1",
+  "scenarios": 96,
+  "families": 48,
+  "physical_sampled_segments": 875,
+  "sampled_segments_per_scene_range": [
+    5,
+    10
+  ],
+  "physical_point_evaluations": 646075,
+  "all_sampled_segments_pass": true,
+  "continuous_certification": "NOT_CERTIFIED",
+  "protected_freeze_index_unchanged": true,
+  "producer_snapshot_verified": true,
+  "profiles": {
+    "long_exposures": {
+      "scenarios": 24,
+      "overlap_mean": 0.18989522198421466,
+      "overlap_min": 0.08974080902288255,
+      "overlap_max": 0.3254122211445199,
+      "executable_tasks": 1591,
+      "total_tasks": 1728
+    },
+    "mixed_load": {
+      "scenarios": 24,
+      "overlap_mean": 0.0845109188881132,
+      "overlap_min": 0.06663747171739288,
+      "overlap_max": 0.12418805067850022,
+      "executable_tasks": 2722,
+      "total_tasks": 2880
+    },
+    "paired_corridors": {
+      "scenarios": 24,
+      "overlap_mean": 0.20003161550823384,
+      "overlap_min": 0.07436661698956781,
+      "overlap_max": 0.3319463707813222,
+      "executable_tasks": 1574,
+      "total_tasks": 1728
+    },
+    "short_exposures": {
+      "scenarios": 24,
+      "overlap_mean": 0.10221100746547872,
+      "overlap_min": 0.0654458031580197,
+      "overlap_max": 0.19407367859049654,
+      "executable_tasks": 2496,
+      "total_tasks": 2496
+    }
+  },
+  "dataset_bytes": 122131376,
+  "final_test_content_used": false,
+  "new_distinct_orbits": 264,
+  "old_public_distinct_orbits": 20,
+  "orbital_parameter_hash_overlap_with_public_base": 0
+}

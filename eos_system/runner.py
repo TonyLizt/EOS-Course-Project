@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 
 from schedulers.constraint_model import ConstraintModel
@@ -36,6 +37,14 @@ def prepare(config: RunConfig) -> tuple[Solver, SchedulingProblem, ConstraintMod
     constraint_model = build_constraint_model(problem, config)
     context = make_context(config.seed, config.time_budget_s, config.objective_weights.model_dump(), spec, config.algorithm_params,
                            schedule_model=config.schedule_model)
+    context = replace(context, model_provenance=config.model_provenance)
+    if config.algorithm_id == 'lavis':
+        from algorithms.lavis.protocol import DOMAIN
+        actual = config.constraints.model_dump() | {'placement_mode':config.placement_mode,
+            'execution_mode':config.execution_mode,'has_ground_stations':bool(problem.ground_stations)}
+        if any(actual[k] != DOMAIN[k] for k in actual):raise ValueError('LAVIS_MODEL_DOMAIN_MISMATCH')
+        if config.scenario_provenance.get('scenario_physics_version') != config.model_provenance.get('scenario_physics_version'):
+            raise ValueError('LAVIS_SCENARIO_PHYSICS_DOMAIN_MISMATCH')
     solver = spec.build(context)
     internal = getattr(getattr(solver, 'algorithm', None), 'cfg', None)
     if internal is not None:

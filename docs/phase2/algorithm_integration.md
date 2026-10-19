@@ -1,3 +1,5 @@
+> 2026-10-18 LAVIS增量：新增算法D `lavis` / 0.1.0，现比较清单12种（PPO仍未开放）。首版仅完成率目标、earliest、默认约束、无地面站的工程物理核验；参数只选冻结model_id，安装requirements-ml.txt并离线训练后才能运行。SolveContext末尾和RunConfig新增默认空model_provenance；模型快照进入配置哈希与JSON导出，旧算法和旧记录保持兼容。训练60来源、验证20来源，最终测试不读取。详见[算法D实现](algorithms/lavis.md)。下文数量为各次历史快照。
+
 # 第二阶段个人算法接入说明（v0.2）
 
 > 2026-10-18 RABAS 增量：算法 B `rabas` / `1.0.0` 直接实现共享 solve，不走旧 search 工厂；严格参数由注册表公开，新增至比较算法（原九种 + CAABS + RABAS，共11种）。Web 自动读取清单，无独立前端或 Solver API。Worker/Controller/SQLite/物理门禁不改；真实小场景预览20/20与合成正式生命周期正例分开报告，真实正式非空认证仍受数据谱系门禁阻挡。见 [RABAS实现及消融](algorithms/auction_bundle.md)。下文10种清单为此前集成快照。

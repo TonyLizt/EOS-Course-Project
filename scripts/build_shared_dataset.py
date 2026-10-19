@@ -123,11 +123,12 @@ def parameters(satellite, mission):
 
 class OrbitGrid:
     """相同固定星座/时域共享Orekit位置网格；不把近似轨道当作物理核验。"""
-    def __init__(self, satellites, start, step):
+    def __init__(self, satellites, start, step, duration_s=86400):
         from org.orekit.propagation.analytical import KeplerianPropagator
         from orekit_jpype.pyhelpers import datetime_to_absolutedate
         self.start, self.step = start, step
-        self.seconds = np.arange(0.,86400.+step,step)
+        # 默认保持原全天语义；独立高冲突生成器可以明确使用更短的新时域。
+        self.seconds = np.arange(0.,float(duration_s)+step,step)
         self.times = [start+timedelta(seconds=float(s)) for s in self.seconds]
         self.positions = {}; self.periods = {}
         ctx = visibility._CONTEXT
