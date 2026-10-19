@@ -17,6 +17,7 @@ from algorithms.conflict_beam import CAABSParams, ConflictBeamScheduler, VERSION
 from algorithms.auction_bundle import RABASParams, ResourceAwareBundleAuctionScheduler, VERSION as RABAS_VERSION
 from algorithms.lavis.protocol import LavisParams
 from algorithms.lavis.solver import build as build_lavis
+from algorithms.deadline_insertion import DARTISParams, DARTISScheduler, VERSION as DARTIS_VERSION
 from algorithms.factory import create_algorithm
 from algorithms.objectives import ObjectiveWeights
 # Re-export the existing public names for HTTP/Worker and third-party callers.
@@ -200,6 +201,15 @@ _SPECS: dict[str, AlgorithmSpec] = {
         objectives="完成任务数优先，再按共享 ObjectiveModel 得分与规范键确定次序。",
         limitations="Beam 宽度、分支及候选上限限制覆盖；不保证全局最优，候选仍须来源与连续曝光核验。",
     ),
+    "dartis": AlgorithmSpec(
+        algorithm_id="dartis", name="DARTIS · 截止期感知动态可行插入", category="traditional",
+        owner="何明涛", version=DARTIS_VERSION, params_model=DARTISParams,
+        build=lambda context: DARTISScheduler(),
+        description="离线单计划构造；按观测机会 LLF/EDF 紧迫度选择并动态重评估。",
+        strategy="跨卫星及窗口探查可行插入；每次接受后全量重算未安排任务机会。",
+        objectives="优先增加完成任务数；LLF/EDF 仅决定搜索顺序，正式指标由 Controller 重算。",
+        limitations="窗口和位置有界，松弛度仅针对受检候选近似；大于 1024 网格的敏捷窗口暂跳过，仍须公共认证。",
+    ),
     "rabas": AlgorithmSpec(
         algorithm_id="rabas", name="RABAS · 资源感知任务包竞价调度", category="traditional",
         owner="梁兆榮", version=RABAS_VERSION, params_model=RABASParams,
@@ -213,7 +223,8 @@ _SPECS: dict[str, AlgorithmSpec] = {
 
 
 COMPARISON_ALGORITHMS = ('mip', 'profit_first', 'timeliness_first', 'balance_first',
-                         'pressure_repair', 'sa', 'ga', 'aco', 'ppo', 'caabs', 'rabas', 'lavis')
+                         'pressure_repair', 'sa', 'ga', 'aco', 'ppo', 'caabs', 'rabas',
+                         'lavis', 'dartis')
 
 _DEFINITIONS = [
     ('mip', '混合整数规划 MIP', 'exact', MIPParams, '离散候选与冲突约束构建 MILP，由 CBC 求解。', '候选集上的加权目标优化，含实现中的主目标增强。', '候选集有限；独立建模，不使用初始模型解。'),

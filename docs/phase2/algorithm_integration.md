@@ -1,8 +1,12 @@
-> 2026-10-18 LAVIS增量：新增算法D `lavis` / 0.1.0，现比较清单12种（PPO仍未开放）。首版仅完成率目标、earliest、默认约束、无地面站的工程物理核验；参数只选冻结model_id，安装requirements-ml.txt并离线训练后才能运行。SolveContext末尾和RunConfig新增默认空model_provenance；模型快照进入配置哈希与JSON导出，旧算法和旧记录保持兼容。训练60来源、验证20来源，最终测试不读取。详见[算法D实现](algorithms/lavis.md)。下文数量为各次历史快照。
+> 2026-10-19 DARTIS 与 LAVIS 合流：当前比较算法清单为原九种 + CAABS + RABAS + LAVIS + DARTIS，共 **13 种唯一 ID**；初始模型 `completion_first`/`adaptive_repair` 仍独立于比较清单。LAVIS 保留当前 main 的构造和模型参数，DARTIS 保留 `DARTISParams` 与 `DARTISScheduler`。下文 10/11/12 种数字分别是各阶段历史快照；本次仅解决 rebase 兼容性，未完成五算法正式对照或真实连续物理认证。
+
+> 2026-10-18 LAVIS增量：新增算法D `lavis` / 0.1.0，该阶段比较清单12种（PPO仍未开放）。首版仅完成率目标、earliest、默认约束、无地面站的工程物理核验；参数只选冻结model_id，安装requirements-ml.txt并离线训练后才能运行。SolveContext末尾和RunConfig新增默认空model_provenance；模型快照进入配置哈希与JSON导出，旧算法和旧记录保持兼容。训练60来源、验证20来源，最终测试不读取。详见[算法D实现](algorithms/lavis.md)。下文数量为各次历史快照。
 
 # 第二阶段个人算法接入说明（v0.2）
 
-> 2026-10-18 RABAS 增量：算法 B `rabas` / `1.0.0` 直接实现共享 solve，不走旧 search 工厂；严格参数由注册表公开，新增至比较算法（原九种 + CAABS + RABAS，共11种）。Web 自动读取清单，无独立前端或 Solver API。Worker/Controller/SQLite/物理门禁不改；真实小场景预览20/20与合成正式生命周期正例分开报告，真实正式非空认证仍受数据谱系门禁阻挡。见 [RABAS实现及消融](algorithms/auction_bundle.md)。下文10种清单为此前集成快照。
+> 2026-10-18 DARTIS G1-B/G2：传统算法 A `dartis` / `0.1.0` 已登记；原分支该阶段比较算法为原九种 + CAABS + RABAS + DARTIS，当时共 12 种。严格参数、直接 Solver 构造及 Worker 接入见[算法 A 专题](algorithms/deadline_insertion.md)。合成正式事务使用仅限隔离测试服务的 `UNIT_TEST_ONLY` 收据；真实场景候选和生产连续认证尚须分开报告。下述 10/11 种记录保留为历史集成快照。
+
+> 2026-10-18 RABAS 增量：算法 B `rabas` / `1.0.0` 直接实现共享 solve，不走旧 search 工厂；严格参数由注册表公开，新增至比较算法（原九种 + CAABS + RABAS，当时共11种）。Web 自动读取清单，无独立前端或 Solver API。Worker/Controller/SQLite/物理门禁不改；真实小场景预览20/20与合成正式生命周期正例分开报告，真实正式非空认证仍受数据谱系门禁阻挡。见 [RABAS实现及消融](algorithms/auction_bundle.md)。下文10种清单为此前集成快照。
 
 > 2026-10-18：集成 main PR #19 / 22299b4 后 Web 比较列表为原九算法加 CAABS（十种），完成率优先/自适应修复作为初始排程模型独立选择；`get_algorithm` 仍保留两个模型的历史 ID。共用 SolveContext 在原取消回调之后增加有默认值的 schedule_model，保留中立契约和 Registry 同一类型重导出。MIP/PPO 及初始解限制见[九算法历史交接](nine_algorithm_console_handoff.md)，CAABS 保持上游真实实现与参数，I2 来源身份和正式认证门禁不放宽。
 
@@ -56,6 +60,10 @@ class MyScheduler:
 现有 `completion_first` 和 `adaptive_repair` 通过 `LegacySearchAdapter` 保留旧 `search(problem, constraint_model, initial_schedule)` 协议及旧 CLI。新算法直接实现 `solve`；若算法需要初始计划，可自行调用 `constraints.build_initial_schedule()`。
 
 CAABS 以 `caabs` 登记，版本取算法的 `VERSION`（当前 `0.1.0`），参数模型为 `CAABSParams`，直接构造 `ConflictBeamScheduler`，不走旧 CLI 工厂。登记可查询、参数合法、能返回候选 Schedule 不等于来源窗口消歧或严格连续认证通过；I1 验证和仍未处理的 I2 边界见 [R2-B 报告](algorithms/caabs_i1_registry_fix_20261018.md)。
+
+DARTIS 以 `dartis` 登记，版本 `0.1.0`，参数模型 `DARTISParams`，直接构造 `DARTISScheduler()`。默认 `priority_mode=llf`、`max_windows_per_task=8`、`max_positions_per_window=4`、`recompute_mode=full`，可用 `priority_mode=edf` 做消融。现有 HTTP 算法列表和 Worker 的 `prepare() → solve() → schedule_to_dict()` 路径自动读取注册项；Controller 独立核验候选与提交结果。物理连续证明仍由公共认证器负责，不由算法候选或测试收据替代。
+
+LAVIS 以 `lavis` 登记，版本 `0.1.0`，参数模型为 `LavisParams`，构造入口是 `algorithms.lavis.solver.build`；模型身份与参数域仍由 LAVIS 自身及公共注册表校验，不改旧算法或 DARTIS 的 Solver 接口。
 
 ## 4. 机器学习算法 D
 

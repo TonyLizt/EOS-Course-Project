@@ -1,4 +1,4 @@
-"""Nine comparison algorithms and two seed models are separate public concepts."""
+"""Registered comparison algorithms and seed models are separate concepts."""
 from types import SimpleNamespace
 from pathlib import Path
 import tempfile
@@ -20,7 +20,10 @@ from test_adaptive_repair import AdaptiveRepairTests
 class NineAlgorithmTests(unittest.TestCase):
     def test_catalog_and_models_are_disjoint_and_dependencies_explicit(self):
         rows = list_algorithms()
-        self.assertEqual(len(rows), 12)  # 原九种 + CAABS + RABAS + 真实冻结模型LAVIS。
+        self.assertEqual(len(rows), 13)  # 原九种 + CAABS + RABAS + LAVIS + DARTIS。
+        self.assertEqual(len({r['algorithm_id'] for r in rows}), 13)
+        self.assertIn('lavis', {r['algorithm_id'] for r in rows})
+        self.assertIn('dartis', {r['algorithm_id'] for r in rows})
         self.assertEqual({r['algorithm_id'] for r in rows}, set(COMPARISON_ALGORITHMS))
         self.assertEqual({r['model_id'] for r in list_schedule_models()},
                          {'completion_first', 'adaptive_repair'})
