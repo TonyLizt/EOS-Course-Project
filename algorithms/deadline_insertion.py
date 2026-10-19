@@ -25,11 +25,11 @@ _MAX_DOWNLINK_CHECKS = 16
 
 class DARTISParams(AlgorithmParams):
     model_config = ConfigDict(extra="forbid", frozen=True)
-    priority_mode: Literal["llf", "edf"] = "llf"
+    priority_mode: Literal["llf", "edf"] = Field("llf", description="llf 按受检机会的近似松弛度优先，edf 按观测窗口结束时间优先；另一项作为次级排序键。")
     max_windows_per_task: int = Field(8, ge=1, le=64, strict=True)
     max_positions_per_window: int = Field(4, ge=1, le=32, strict=True)
-    recompute_mode: Literal["full"] = "full"
-    tie_break: Literal["earliest_deadline_then_id"] = "earliest_deadline_then_id"
+    recompute_mode: Literal["full"] = Field("full", description="仅支持 full：每次成功插入后，基于更新的计划全量重算剩余任务的受检机会。")
+    tie_break: Literal["earliest_deadline_then_id"] = Field("earliest_deadline_then_id", description="固定平局规则标识：主紧迫度相同时先比较另一紧迫度量，再按任务、卫星、窗口、开始时刻及下传字段稳定排序；当前不切换排序实现。")
 
 
 class DARTISCancelled(RuntimeError):

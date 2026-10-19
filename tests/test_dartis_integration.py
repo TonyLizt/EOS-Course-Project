@@ -325,19 +325,40 @@ class DARTISHttpTests(unittest.TestCase):
         self.start_server(cert="none")
         rid = self.submit(execution_mode="planning_preview")
         row = self.wait_run(rid)
-        # The real Worker produces a candidate. With a working optional
-        # physics runtime it may pass preview; otherwise fail closed.
-        self.assertIn("candidate_result",
-                      [event["event_type"] for event in row["events"]])
-        if row["status"] == "SUCCEEDED":
-            self.assertEqual(row["continuous_certification"]["status"],
-                             "NOT_CERTIFIED")
+        # The legacy windows can fail a real Orekit visibility check. If
+        # Orekit is unavailable, preview must also reject the candidate.
+        events = [event["event_type"] for event in row["events"]]
+        self.assertIn("candidate_result", events)
+        self.assertEqual(row["status"], "FAILED", row.get("error"))
+        self.assertEqual(row["error"]["code"], "PREVIEW_REJECTED")
+        message = row["error"]["message"]
+        self.assertIn("ExposureStatus.REJECTED: PREVIEW_PHYSICS_CHECK_FAILED:", message)
+        if '"reason": "NONVISIBLE_EXPOSURE_START"' in message:
+            self.assertIn('"task_id": "M025"', message)
+            self.assertIn('"satellite_id": "ALOS-2_39766"', message)
+            self.assertIn('"sampled_boundaries_status": "FAIL"', message)
         else:
-            self.assertEqual(row["status"], "FAILED", row.get("error"))
-            self.assertEqual(row["error"]["code"], "PREVIEW_REJECTED")
-            self.assertIn("PHYSICS_UNAVAILABLE", row["error"]["message"])
-            self.assertIsNone(row["plan"])
-            self.assertIsNone(row["metrics"])
+            self.assertIn('"reason": "PHYSICS_UNAVAILABLE"', message)
+            self.assertIn('"sampled_boundaries_status": "UNAVAILABLE"', message)
+        self.assertIsNone(row["plan"])
+        self.assertIsNone(row["metrics"])
+        self.assertEqual(row["attempts"][0]["outcome"], "FAILED")
+        self.assertEqual(row["attempts"][0]["exit_code"], 0)
+        self.assertNotIn("PREVIEW_VALIDATED", events)
+        self.assertNotIn("CONTINUOUS_CERTIFIED", events)
+        self.assertNotIn("SUCCEEDED", events)
+        with sqlite3.connect(self.runtime / "results.sqlite3") as db:
+            self.assertEqual(db.execute(
+                "SELECT status,error_code FROM runs WHERE run_id=?", (rid,)
+            ).fetchone(), ("FAILED", "PREVIEW_REJECTED"))
+            self.assertEqual(db.execute(
+                "SELECT outcome,error_code FROM run_attempts WHERE run_id=?", (rid,)
+            ).fetchone(), ("FAILED", "PREVIEW_REJECTED"))
+            for table in ("plans", "assignments", "metrics"):
+                with self.subTest(table=table):
+                    self.assertEqual(db.execute(
+                        f"SELECT COUNT(*) FROM {table} WHERE run_id=?", (rid,)
+                    ).fetchone()[0], 0)
         self.assert_reaped(row)
         self.assertEqual(sha256_file(REAL_SOURCE), before)
 
