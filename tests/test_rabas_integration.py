@@ -112,7 +112,7 @@ class RABASIntegrationTests(unittest.TestCase):
                     app.state.replay.close()
                     app.state.controller.stop()
 
-    def test_legacy_absolute_v1_scene_is_preserved_and_rejected_by_relative_v2(self):
+    def test_legacy_scene_uses_its_contract_and_formal_stays_rejected(self):
         scene=ROOT/'experiments/scenarios/small/Scenario_S1_Sats10_M20_T1.0d_dist1_epoch_fixed_v1.json'
         if not scene.exists() or scene.stat().st_size<1024:
             self.skipTest('small scene LFS payload not available; do not fake physical input')
@@ -142,11 +142,14 @@ class RABASIntegrationTests(unittest.TestCase):
                             return row if row['status'] in {'SUCCEEDED','FAILED','TIMED_OUT'} else None
                         row=wait_for(done)
                         if mode=='planning_preview':
-                            self.assertEqual(row['status'],'FAILED')
-                            self.assertEqual(row['error']['code'],'PREVIEW_REJECTED')
-                            self.assertIn('NONVISIBLE_EXPOSURE_START',row['error']['message'])
-                            self.assertIsNone(row['plan'])
-                            self.assertIsNone(row['metrics'])
+                            # 用户确认恢复旧课程模型；新版独立 witness 仍须不可见，
+                            # 但旧场景应按自己的角度定义核验，不能被新版规则追溯拒绝。
+                            self.assertEqual(row['status'],'SUCCEEDED',row.get('error'))
+                            self.assertEqual(row['preview_validation']['attitude_model_version'],
+                                             'target_pointing_inertial_euler_v1')
+                            self.assertGreater(len(row['plan']['assignments']),0)
+                            self.assertIsNotNone(row['metrics'])
+                            self.assertEqual(row['continuous_certification']['status'],'NOT_CERTIFIED')
                         else:
                             self.assertEqual(row['status'],'FAILED')
                             self.assertIn('UNTRUSTED_PHYSICAL_SETTINGS',row['error']['message'])

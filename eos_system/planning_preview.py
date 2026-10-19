@@ -58,9 +58,12 @@ def _audit_preview_local(config, official, *, deadline, data_path):
     scene = json.loads(raw)
     settings = scene.get('metadata', {}).get('extra', {}).get('visibility_settings', {})
     minimum = float(settings.get('min_elevation_deg', 5.0))
+    from utils.course_compatibility import engineering_attitude
+    attitude_contract = engineering_attitude(scene, config.scenario_provenance)
     if official['assignments']:
         auditor = PlanExposureAuditor(scene, data_path=data_path,
-                                      min_elevation_deg=minimum, step_s=.05)
+                                      min_elevation_deg=minimum, step_s=.05,
+                                      attitude_contract=attitude_contract)
         auditor.deadline = deadline
         result = auditor.audit(official)
         if len(result.get('rows', [])) != len(official['assignments']) or any(
@@ -75,6 +78,7 @@ def _audit_preview_local(config, official, *, deadline, data_path):
         run_id=config.run_id, scenario_sha256=config.scenario_sha256,
         plan_sha256=plan_digest(official), completed_tasks=len(official['assignments']),
         step_s=.05, min_elevation_deg=minimum, audit_summary=result,
+        attitude_model_version=attitude_contract,
         validation_scope='Orekit full-exposure 0.05s sampled physics; not a continuous interval proof',
         warning='已检查来源窗口、资源、转向及曝光全时段采样；未取得连续区间证明。')
     return PreviewReceipt(json.dumps(evidence, ensure_ascii=False), _PREVIEW_ISSUER)

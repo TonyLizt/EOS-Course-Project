@@ -67,6 +67,26 @@ class Fixture(unittest.TestCase):
 
 
 class FoundationTests(Fixture):
+    def test_engineering_window_admission_matches_public_exposure_policy(self):
+        # 只验证候选准入，不伪造物理传播成功；最终核验仍由公共模型负责。
+        from schedulers.preview_exposure import candidate_exposure
+        from utils.continuous_exposure import ExposureStatus
+        task = self.task("legacy", [("S1", 0)], width=20, evidence=False)
+        window = task.windows[0]
+        adapter = BoundedCandidateAdapter(self.cm, CAABSParams())
+        for mode in ('physical_validation', 'planning_preview'):
+            with self.subTest(mode=mode):
+                self.problem.execution_mode = mode
+                self.assertEqual(adapter._windows(task), [window])
+                decision = candidate_exposure(self.problem, window, window.start_time,
+                    window.start_time + timedelta(seconds=task.required_duration), task.required_duration)
+                self.assertIs(decision.status, ExposureStatus.PLANNING_FEASIBLE)
+        self.problem.execution_mode = 'formal'
+        self.assertEqual(adapter._windows(task), [])
+        self.problem.execution_mode = 'physical_validation'
+        task.required_duration = 20
+        self.assertEqual(adapter._windows(task), [])
+
     def test_parameter_defaults_and_validation(self):
         params = CAABSParams()
         self.assertEqual((params.beam_width, params.branch_limit, params.max_candidates_per_task), (8, 8, 16))
@@ -734,12 +754,12 @@ class StopTests(Fixture):
         self.task("T1", [("S1", i * 30) for i in range(20)])
         import algorithms.conflict_beam as module
         cancelled = [False]
-        original = module.planning_window
-        def checked(window):
-            result = original(window)
+        original = module.candidate_exposure
+        def checked(*args):
+            result = original(*args)
             cancelled[0] = True
             return result
-        with patch.object(module, "planning_window", checked):
+        with patch.object(module, "candidate_exposure", checked):
             result = self.solve(context=replace(self.context(), is_cancelled=lambda: cancelled[0]))
         self.assertEqual(result.metadata["caabs"]["stop_reason"], "cancelled")
         self.assertEqual(result.metadata["caabs"]["stop_phase"], "candidate_preparation")
