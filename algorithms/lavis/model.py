@@ -20,7 +20,10 @@ def inference_code_sha():
     paths=[p for p in paths if p.name not in ('labels.py','training.py')]
     paths += [root/name for name in ('schedulers/assignment_building.py','schedulers/constraint_model.py',
         'schedulers/source_windows.py','schedulers/observation_geometry.py','schedulers/transition_utils.py',
-        'schedulers/preview_exposure.py','utils/continuous_exposure.py','utils/visibility.py','utils/time_parsing.py')]
+        'schedulers/preview_exposure.py','utils/continuous_exposure.py','utils/visibility.py','utils/time_parsing.py',
+        # PR25把姿态数学拆为共享模块；其内容变化也必须使旧权重失效。
+        'utils/attitude_frames.py','utils/certification_identity.py',
+        'schedulers/scenario_loader.py','core/models.py')]
     h=hashlib.sha256()
     for p in sorted(paths):
         h.update(p.relative_to(root).as_posix().encode());h.update(b'\0');h.update(p.read_bytes().replace(b'\r\n',b'\n'));h.update(b'\0')

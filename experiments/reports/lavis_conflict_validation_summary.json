@@ -753,5 +753,13 @@
     "owned_partial_files": 0,
     "owned_generator_tmp_directories": 0,
     "large_artifacts_in_git": false
+  },
+  "current_applicability": {
+    "status": "HISTORICAL_ONLY_REGENERATION_RETRAINING_REQUIRED",
+    "validated_base_commit": "2d8a808c58334dd5c6c085e9753bbd5aa86eced1",
+    "local_preserved_feature_commit": "50660f3",
+    "rebased_main_commit": "7fcc77d",
+    "compatible_with_rebased_runtime": false,
+    "note": "Existing physical pass and performance fields describe the previous physics version, not PR25/current main."
   }
 }

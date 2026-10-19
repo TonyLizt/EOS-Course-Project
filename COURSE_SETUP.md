@@ -1,3 +1,15 @@
+## LAVIS rebase到main PR #25与集成审核（2026-10-19）
+
+- 按本次明确授权，保存前轮LAVIS工作后rebase到origin/main的7fcc77d；原提交50660f3保留在本地backup/lavis-before-pr25-rebase，重放功能提交ab1fc4d。
+- runner唯一导入冲突保留deepcopy与replace；新开发来源路由、姿态四元数/FOV/跟踪、初始转向、Controller期限和主分支算法均保留。
+- 模型指纹补充共享姿态模块、物理身份、loader和core数据模型，新增边界四元数及间接依赖变更拒绝回归。
+- 旧模型实测LAVIS_INCOMPATIBLE_MODEL，旧F033来源证据被拒绝，当前兼容生产模型0。README、历史算法/数据说明及报告已标注旧物理适用范围；不修改旧权重/侧车SHA，不删除用户数据。
+- rebase后最终定向92项中91通过、1项WSL无Node跳过，已开启真实GEN02/CAABS物理集成；Windows Node 32项及实际14个注册Schema检查通过。主分支物理/生命周期文件逐字保留。
+- 此PR先作为集成审核草稿；需要新物理数据/划分、标签、训练与实际系统验收后再确认新推荐模型，不能沿用旧成绩。详见[集成交接](docs/phase2/algorithms/lavis_main_rebase_handoff.md)。
+- 下文“未commit/push”和旧性能数字均为当时阶段记录；本次推送/PR以最终Git回执为准。
+
+---
+
 ## LAVIS独立高冲突数据与相对排序训练（2026-10-19）
 
 - 沿用feat/lavis-learning-scheduler，保留前轮未提交修改，不commit/push。

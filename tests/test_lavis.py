@@ -52,6 +52,18 @@ class MechanismTests(unittest.TestCase):
         self.assertEqual(len(a.assignments),1);self.assertEqual(len(b.assignments),2)
         self.assertEqual(len(set(b.assigned_task_ids)),len(b.assignments))
 
+    def test_main_quaternion_boundaries_are_preserved_and_fractional_endpoint_rejected(self):
+        from schedulers.assignment_building import configured_observation
+        from schedulers.source_windows import observation_source_matches
+        task=self.problem.tasks['T1'];window=task.windows[0]
+        window.agile_data['boundary_quaternions_xyzw']=[[0.,0.,0.,1.] for _ in range(4)]
+        a=configured_observation(self.problem,task,window,'earliest')
+        self.assertEqual(len(a.sat_angles['boundary_quaternions_xyzw']),3)
+        self.assertTrue(observation_source_matches(self.problem,task,window,vars(a),a.sat_start_time,a.sat_end_time))
+        task.required_duration=1.5
+        bad=configured_observation(self.problem,task,window,'earliest')
+        self.assertFalse(observation_source_matches(self.problem,task,window,vars(bad),bad.sat_start_time,bad.sat_end_time))
+
     def test_all_24_features_and_overlap_pressure(self):
         rows=extract(self.problem,Schedule(),self.pool,self.pool,Control())
         self.assertTrue(all(len(r)==24 and all(math.isfinite(x) for x in r) for r in rows))
@@ -124,6 +136,16 @@ class ModelIdentityTests(unittest.TestCase):
         prediction=predictor.predict([[0.]*24,[1000.]*24]);self.assertNotEqual(prediction[0],prediction[1])
         (directory/'model.joblib').write_bytes(b'changed')
         with self.assertRaisesRegex(ValueError,'SHA_MISMATCH'):verify_snapshot(snapshot)
+
+    def test_shared_attitude_module_change_invalidates_frozen_model(self):
+        self.artifact();freeze('tiny')
+        original=Path.read_bytes
+        def changed(path):
+            raw=original(path)
+            return raw+b'\n# UNIT_TEST_ONLY changed attitude contract\n' if path.as_posix().endswith('/utils/attitude_frames.py') else raw
+        # 只替换本进程读取结果，不修改仓库或实际物理源码。
+        with patch.object(Path,'read_bytes',changed):
+            with self.assertRaisesRegex(ValueError,'INCOMPATIBLE'):freeze('tiny')
 
     def test_manifest_replacement_schema_and_paths_are_rejected(self):
         directory=self.artifact();snapshot=freeze('tiny')
