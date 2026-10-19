@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## LAVIS rebase到main PR #25与集成审核（2026-10-19）
 
 - 按本次明确授权，保存前轮LAVIS工作后rebase到origin/main的7fcc77d；原提交50660f3保留在本地backup/lavis-before-pr25-rebase，重放功能提交ab1fc4d。
@@ -91,13 +90,12 @@
 ## DARTIS 与 LAVIS 注册表合流（2026-10-19，rebase 冲突处理）
 
 - 保留当前 main 的 LAVIS 及本分支 DARTIS，比较算法清单合流后为 13 种；下列两算法的 12 种记录分别是各自完成时的历史快照。仅处理登记、清单和文档兼容性；此时 rebase 尚未继续，未做全量测试。
-=======
+
 ## 算法 A：DARTIS G3 最小离线对照收尾（2026-10-18）
 
 - 同一只读 EOS-Bench 母文件临时派生 1 星/30 任务，固定 `PYTHONHASHSEED=0`、拆分 seed 20260927、搜索 seed 42 和每算法 5 秒请求预算。DARTIS-LLF、DARTIS-EDF、Greedy `completion_first`、RABAS 各返回 24/30，来源与公共离散回放 PASS；派生 SHA `3c3b777271ebfff8a820f2c56875ed4412832dd2ae929a0de1bf9ac05b43d962`，脚本两次复跑的候选/指标一致，RT 有墙钟波动。
 - CAABS 的 37/37 窗口均未通过可信来源验证，候选构造器调用 0；其空计划不参与算法排名。当前真实 3 星原始场景 5,508/5,508 窗口也缺匹配证据。Orekit planning preview 与正式连续认证未运行；五算法有效对照待团队提供同物理版本可信场景，不属于 DARTIS 求解器失败。
 - 可执行探针和完整参数、SHA、四层结果、失败原因见 [DARTIS G3 实验记录](docs/phase2/algorithms/deadline_insertion_g3.md)。相关 10 模块 173 项测试：171 通过、2 环境跳过；脚本只使用临时派生输入，未写正式数据库或 EOS-Bench 母数据。
->>>>>>> 742258c (test(algorithm): add reproducible DARTIS G3 experiment)
 
 ## 算法 A：DARTIS G1-A / G1-B + G2 隔离集成（2026-10-18）
 
