@@ -43,8 +43,15 @@ def prepare(config: RunConfig) -> tuple[Solver, SchedulingProblem, ConstraintMod
         actual = config.constraints.model_dump() | {'placement_mode':config.placement_mode,
             'execution_mode':config.execution_mode,'has_ground_stations':bool(problem.ground_stations)}
         if any(actual[k] != DOMAIN[k] for k in actual):raise ValueError('LAVIS_MODEL_DOMAIN_MISMATCH')
-        if config.scenario_provenance.get('scenario_physics_version') != config.model_provenance.get('scenario_physics_version'):
+        from utils.course_compatibility import model_scene_compatible
+        if not model_scene_compatible(config.model_provenance, config.scenario_provenance):
             raise ValueError('LAVIS_SCENARIO_PHYSICS_DOMAIN_MISMATCH')
+        if config.model_provenance.get('runtime_compatibility'):
+            import json
+            from utils.course_compatibility import engineering_attitude, LEGACY_ATTITUDE
+            if engineering_attitude(json.loads(Path(config.scenario_path).read_bytes()),
+                                    config.scenario_provenance) != LEGACY_ATTITUDE:
+                raise ValueError('LAVIS_LEGACY_MODEL_REQUIRES_LEGACY_ATTITUDE_SCENE')
     solver = spec.build(context)
     internal = getattr(getattr(solver, 'algorithm', None), 'cfg', None)
     if internal is not None:

@@ -382,6 +382,7 @@ def create_visibility_evaluator(
     target_lat_deg, target_lon_deg, target_alt_m,
     max_yaw_deg, max_pitch_deg, max_roll_deg, min_elevation_deg=5.0,
     field_of_view_deg=45.0, maneuverability_type="agile", max_tracking_rate_deg_s=None,
+    attitude_contract="nadir_relative_fixed_camera_v1",
 ):
     """Build the SAME Orekit predicate used by generation, without scanning.
 
@@ -416,6 +417,10 @@ def create_visibility_evaluator(
 
     attitude_provider = TargetPointing(ctx.inertial, target_geo, ctx.earth)
     nominal_provider = NadirPointing(ctx.inertial, ctx.earth)
+    from utils.course_compatibility import LEGACY_ATTITUDE, NADIR_ATTITUDE
+    if attitude_contract not in (LEGACY_ATTITUDE, NADIR_ATTITUDE):
+        raise ValueError('unsupported attitude contract')
+    legacy_attitude = attitude_contract == LEGACY_ATTITUDE
     if maneuverability_type not in ("agile", "super_agile", "non_agile"):
         raise ValueError("unsupported maneuverability type")
     fixed_camera_in_fov((0, 0, 1), field_of_view_deg)  # validate before any scan
@@ -471,10 +476,13 @@ def create_visibility_evaluator(
 
             try:
                 nominal = nominal_provider.getAttitude(propagator, date, ctx.inertial)
-                attitude = (nominal if maneuverability_type == "non_agile" else
+                attitude = (nominal if maneuverability_type == "non_agile" and not legacy_attitude else
                             attitude_provider.getAttitude(propagator, date, ctx.inertial))
                 rotation = attitude.getRotation()
-                relative = relative_body_rotation(rotation, nominal.getRotation())
+                # 经用户确认：旧数据保留原 TargetPointing 绝对 Euler 定义。
+                # 遮挡和仰角检查在本分支之前，始终执行。
+                relative = (rotation if legacy_attitude else
+                            relative_body_rotation(rotation, nominal.getRotation()))
                 angles = relative.getAngles(RotationOrder.ZYX, RotationConvention.FRAME_TRANSFORM)
                 yaw_deg = math.degrees(float(angles[0]))
                 pitch_deg = math.degrees(float(angles[1]))
@@ -490,8 +498,8 @@ def create_visibility_evaluator(
                     abs(yaw_deg) <= float(max_yaw_deg)
                     and abs(pitch_deg) <= float(max_pitch_deg)
                     and abs(roll_deg) <= float(max_roll_deg)
-                    and camera_visible
-                    and (max_tracking_rate_deg_s is None or
+                    and (legacy_attitude or camera_visible)
+                    and (legacy_attitude or max_tracking_rate_deg_s is None or
                          tracking_rate_deg_s <= max_tracking_rate_deg_s)
                 ):
                     visible = True
@@ -510,7 +518,7 @@ def create_visibility_evaluator(
             "pitch_deg": pitch_deg,
             "roll_deg": roll_deg,
             "inertial_to_body_quaternion_xyzw": body_quaternion,
-            "attitude_model_version": ATTITUDE_MODEL_VERSION,
+            "attitude_model_version": attitude_contract,
             "camera_visible": camera_visible,
             "tracking_rate_deg_s": tracking_rate_deg_s,
             "earth_unoccluded": bool(earth_unoccluded),

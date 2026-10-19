@@ -137,6 +137,27 @@ class ModelIdentityTests(unittest.TestCase):
         (directory/'model.joblib').write_bytes(b'changed')
         with self.assertRaisesRegex(ValueError,'SHA_MISMATCH'):verify_snapshot(snapshot)
 
+    def test_reviewed_legacy_weights_freeze_runtime_adapter_without_rewriting_artifact(self):
+        from utils.course_compatibility import LEGACY_INFERENCE_SHA
+        directory = self.artifact()
+        path = directory/'manifest.json'
+        manifest = json.loads(path.read_text())
+        manifest.update(inference_code_sha256_lf=LEGACY_INFERENCE_SHA,
+                        scenario_physics_version='fresh_epoch_parsed_v1')
+        path.write_text(json.dumps(manifest))
+        original = path.read_bytes()
+        snapshot = freeze('tiny')
+        self.assertEqual(path.read_bytes(), original)
+        self.assertEqual(snapshot['inference_code_sha256_lf'], LEGACY_INFERENCE_SHA)
+        self.assertEqual(snapshot['runtime_compatibility']['runtime_inference_code_sha256_lf'], inference_code_sha())
+        FrozenPredictor(snapshot)
+        # 适配器更新后也要拒绝已提交的旧快照，不仅检查训练时的指纹。
+        with patch('algorithms.lavis.model.inference_code_sha', return_value='changed-runtime'):
+            with self.assertRaisesRegex(ValueError, 'CHANGED_AFTER'): verify_snapshot(snapshot)
+        manifest['inference_code_sha256_lf'] = 'unknown-history'
+        path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(ValueError, 'INCOMPATIBLE'): freeze('tiny')
+
     def test_shared_attitude_module_change_invalidates_frozen_model(self):
         self.artifact();freeze('tiny')
         original=Path.read_bytes

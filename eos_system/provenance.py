@@ -42,6 +42,7 @@ def capture_provenance(scene: Path, scenario_sha: str) -> dict:
             'scenario_physics_version','epoch_parser_version','propagation_version',
             'parent_scenario_sha256','scenario_sha256','provenance_status','lineage_group_id')} | {
             'sidecar_sha256': hashlib.sha256(raw).hexdigest(),
+            'attitude_model_version': lineage['attitude_model_version'],
             'physical_validation_status': 'SAMPLED_PASS',
             'continuous_certification_status': 'INCONCLUSIVE',
             'publication_status': 'development'}
@@ -58,7 +59,12 @@ def capture_provenance(scene: Path, scenario_sha: str) -> dict:
     return {key:evidence.get(key) for key in (
         "scenario_physics_version","epoch_parser_version","propagation_version",
         "parent_scenario_sha256","scenario_sha256","registry_id","provenance_status")} | {
-        "sidecar_sha256":hashlib.sha256(raw).hexdigest(), "physical_validation_status":"PASS"}
+        "sidecar_sha256":hashlib.sha256(raw).hexdigest(), "physical_validation_status":"PASS",
+        "attitude_model_version": (
+            "target_pointing_inertial_euler_v1" if evidence.get('scenario_physics_version') == 'epoch_fixed_v1'
+            and evidence.get('source_files_sha256', {}).get('utils/visibility.py') ==
+                '6a0a6bb58076f26667318521affa2c51eda1ad64fae94114d52035b4ff5db177'
+            else None)}
 
 def verify_provenance(config) -> None:
     """运行与独立核验都复查提交时的 sidecar，不接受提交后替换来源文件。"""

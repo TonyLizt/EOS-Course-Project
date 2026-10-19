@@ -219,7 +219,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 if any(actual[k] != DOMAIN[k] for k in actual):
                     raise ValueError('LAVIS_V1_DOMAIN_MISMATCH：仅支持earliest、默认约束及工程物理核验')
                 model_provenance = freeze(spec.parse_params(request.algorithm_params).model_id)
-                if provenance.get('scenario_physics_version') != model_provenance.get('scenario_physics_version'):
+                from utils.course_compatibility import model_scene_compatible
+                if not model_scene_compatible(model_provenance, provenance):
                     raise ValueError('LAVIS_SCENARIO_PHYSICS_DOMAIN_MISMATCH')
             except (ValueError,OSError) as exc:
                 raise HTTPException(status_code=422, detail=str(exc)) from exc

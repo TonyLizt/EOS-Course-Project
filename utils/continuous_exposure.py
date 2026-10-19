@@ -97,8 +97,10 @@ def audit_interval(evaluate, start, end, required_s, *, step_s=0.05, certificate
 class PlanExposureAuditor:
     """Bounded per-instance state; no disk cache or cross-input global audit cache."""
     def __init__(self, scene, *, data_path=None, min_elevation_deg, step_s=0.05,
-                 evaluator_factory=None, max_pairs=8, max_evaluations=100000):
+                 evaluator_factory=None, max_pairs=8, max_evaluations=100000,
+                 attitude_contract="nadir_relative_fixed_camera_v1"):
         self.scene = deepcopy(scene)
+        self.attitude_contract = attitude_contract
         self.scene_digest = hashlib.sha256(json.dumps(scene,sort_keys=True,allow_nan=False).encode()).hexdigest()
         if isinstance(min_elevation_deg,bool) or not math.isfinite(min_elevation_deg) or not -90 <= min_elevation_deg <= 90:
             raise ValueError("invalid min_elevation_deg")
@@ -148,6 +150,11 @@ class PlanExposureAuditor:
         params['min_elevation_deg']=effective_minimum_elevation(self.minimum,
             sensors[0].get('min_elevation_angle_deg') if sensors else None,
             mission.get('observation_requirement',{}).get('min_elevation_angle_deg'))
+        from utils.course_compatibility import LEGACY_ATTITUDE
+        if self.attitude_contract == LEGACY_ATTITUDE:
+            # 完整复用历史姿态/仰角合同；不追溯新增 FOV/跟踪限制到旧窗口。
+            params['attitude_contract'] = LEGACY_ATTITUDE
+            params['min_elevation_deg'] = self.minimum
         if (params["a_m"]<=0 or not 0<=params["e"]<1 or not -90<=params["target_lat_deg"]<=90
                 or any(params[k]<0 for k in ("max_yaw_deg","max_pitch_deg","max_roll_deg"))):
             raise ValueError("physical inputs outside supported Keplerian/target/attitude domain")
@@ -383,14 +390,19 @@ def planning_evidence(scene, path, scene_sha):
     if fresh and isinstance(record,dict) and 'physics_sources_sha256_lf' in record:
         source_matches = (record.get('physics_provenance_schema') == WINDOW_PHYSICS_SCHEMA
                           and record.get('physics_sources_sha256_lf') == window_physics_sources())
+        from utils.course_compatibility import legacy_window_record
+        # 旧来源保留原 SHA；接纳明确的历史合同，不声称符合新 Nadir 模型。
+        source_matches = source_matches or legacy_window_record(record)
     if (isinstance(record,dict) and record.get("window_algorithm_version")=="visibility_exit_refined_v3"
             and source_matches
             and record.get("endpoint_semantics")=="visible_side_exit_or_evaluated_horizon"
             and record.get("interval_semantics")=="half_open"
             and record.get("boundary_refinement_version")=="visible_side_bisection_v1"
             and type(record.get("exit_precision_us")) is int and record["exit_precision_us"]==1):
+        from utils.course_compatibility import legacy_window_record, LEGACY_ATTITUDE, NADIR_ATTITUDE
         return dict(trusted=True, version="visibility_exit_refined_v3", step_s=record.get("scan_step_s"),
                     min_elevation_deg=record.get("min_elevation_deg"),
+                    attitude_model_version=(LEGACY_ATTITUDE if legacy_window_record(record) else NADIR_ATTITUDE),
                     evidence_sha256=hashlib.sha256(json.dumps(record,sort_keys=True).encode()).hexdigest())
     return None
 

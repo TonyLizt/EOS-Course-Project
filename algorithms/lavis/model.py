@@ -23,7 +23,7 @@ def inference_code_sha():
         'schedulers/preview_exposure.py','utils/continuous_exposure.py','utils/visibility.py','utils/time_parsing.py',
         # PR25把姿态数学拆为共享模块；其内容变化也必须使旧权重失效。
         'utils/attitude_frames.py','utils/certification_identity.py',
-        'schedulers/scenario_loader.py','core/models.py')]
+        'schedulers/scenario_loader.py','core/models.py','utils/course_compatibility.py')]
     h=hashlib.sha256()
     for p in sorted(paths):
         h.update(p.relative_to(root).as_posix().encode());h.update(b'\0');h.update(p.read_bytes().replace(b'\r\n',b'\n'));h.update(b'\0')
@@ -42,14 +42,26 @@ def read_artifact(model_id):
     manifest=directory/'manifest.json';weights=directory/'model.joblib'
     if not manifest.is_file() or manifest.is_symlink() or manifest.stat().st_size>128*1024:raise ValueError('LAVIS_MODEL_NOT_REGISTERED')
     raw=manifest.read_bytes();record=json.loads(raw)
+    from utils.course_compatibility import LEGACY_INFERENCE_SHA, LEGACY_ATTITUDE
+    current_code = inference_code_sha()
+    legacy = record.get('inference_code_sha256_lf') == LEGACY_INFERENCE_SHA
+    if legacy and record.get('scenario_physics_version') != 'fresh_epoch_parsed_v1':
+        raise ValueError('LAVIS_INCOMPATIBLE_LEGACY_DOMAIN')
     if (record.get('model_id')!=model_id or record.get('format')!='team-joblib-v1'
         or record.get('feature_version')!=FEATURE_VERSION or record.get('features')!=list(FEATURE_NAMES)
         or record.get('candidate_version')!=CANDIDATE_VERSION or record.get('label_version')!=LABEL_VERSION
         or record.get('pool_config')!=POOL_CONFIG or record.get('domain')!=DOMAIN
-        or record.get('inference_code_sha256_lf')!=inference_code_sha()):raise ValueError('LAVIS_INCOMPATIBLE_MODEL')
+        or (not legacy and record.get('inference_code_sha256_lf')!=current_code)):raise ValueError('LAVIS_INCOMPATIBLE_MODEL')
     if not weights.is_file() or weights.is_symlink() or not 0<weights.stat().st_size<=MODEL_LIMIT:raise ValueError('LAVIS_MODEL_SIZE_OR_PATH')
     data=weights.read_bytes()
     if digest(data)!=record.get('model_sha256'):raise ValueError('LAVIS_MODEL_SHA_MISMATCH')
+    if legacy:
+        # 仅接受已知历史协议；冻结适配器身份，不改写原清单和权重。
+        record = record | {'runtime_compatibility': {
+            'schema': 'lavis-course-compat-v1', 'attitude_model_version': LEGACY_ATTITUDE,
+            'runtime_inference_code_sha256_lf': current_code,
+            'training_inference_code_sha256_lf': LEGACY_INFERENCE_SHA,
+            'note': 'reused weights; engineering compatibility, not retraining or new performance claims'}}
     return record|{'manifest_sha256':digest(raw)},data
 
 def freeze(model_id):

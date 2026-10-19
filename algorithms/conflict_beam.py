@@ -8,7 +8,7 @@ from __future__ import annotations
 from bisect import bisect_left
 from copy import deepcopy
 from dataclasses import dataclass, fields, replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import math
 import time
 from typing import Callable
@@ -19,7 +19,8 @@ from algorithms.objectives import ObjectiveModel
 from algorithms.solver_contracts import AlgorithmParams, SolveContext
 from schedulers.constraint_model import Assignment, ConstraintModel, Schedule
 from schedulers.scenario_loader import SchedulingProblem, SchedulingTask, TaskWindow
-from utils.continuous_exposure import ExposureStatus, planning_window
+from utils.continuous_exposure import ExposureStatus
+from schedulers.preview_exposure import candidate_exposure
 
 VERSION = "0.2.0"
 Checkpoint = Callable[[], None]
@@ -171,10 +172,11 @@ class BoundedCandidateAdapter:
         groups: dict[str, list[TaskWindow]] = {}
         for window in task.windows:
             self.checkpoint()
-            decision = planning_window(window)
+            # 复用公共曝光准入，避免 CAABS 在工程模式额外要求正式窗口来源。
+            # 这里只判断窗口能否容纳一次曝光；公共构造器和 Controller 仍完整核验。
+            decision = candidate_exposure(self.constraints.problem, window, window.start_time,
+                window.start_time + timedelta(seconds=task.required_duration), task.required_duration)
             if decision.status is not ExposureStatus.PLANNING_FEASIBLE:
-                continue
-            if (decision.safe_end - decision.safe_start).total_seconds() < task.required_duration:
                 continue
             groups.setdefault(window.satellite_id, []).append(window)
         cap = min(self.params.max_windows_per_task, self.params.max_candidates_per_task)
