@@ -216,7 +216,7 @@ _SPECS: dict[str, AlgorithmSpec] = {
         build=lambda context: ResourceAwareBundleAuctionScheduler(),
         description="单 Worker 内中心化多卫星任务包竞价；不是分布式 CBBA。",
         strategy="每星有界建包、可选多起点，动态机会/资源/转向报价；按候选量及剩余预算收窄搜索，全量核验中标后重新竞价。",
-        objectives="最终计划只接受完成数增加；内部按新增数减有界机会损失、包大小和公共效用减成本竞价，非正式 TP。",
+        objectives="最终计划只接受完成数增加；默认按包大小、公共效用减成本竞价，可选未来机会优先排序；Bid 非正式 TP。",
         limitations="有界窗口、放置、任务包和竞价轮数；不保证全局最优，不使用初始模型解，仍须 Controller 独立认证。",
     ),
 }

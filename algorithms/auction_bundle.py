@@ -38,7 +38,7 @@ class RABASParams(AlgorithmParams):
     multi_starts: int = Field(1, ge=1, le=4, strict=True)
     adaptive_search: bool = Field(True, strict=True)
     repair_attempts: int = Field(0, ge=0, le=64, strict=True)
-    future_aware_rank: bool = Field(True, strict=True)
+    future_aware_rank: bool = Field(False, strict=True)
     reauction_mode: Literal['all_affected'] = Field('all_affected', description='当前实现：所有卫星全量重新报价')
 
 
