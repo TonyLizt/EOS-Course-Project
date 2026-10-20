@@ -36,6 +36,18 @@ class CrossScaleMechanisms(RABASFixture):
             {'balance':auction.objective.balance_score(base),'transition':{'S1':auction.transition_total('S1',base)}})
         self.assertAlmostEqual(bid.utility_gain,auction.objective.score(candidate)-auction.objective.score(base))
 
+    def test_objective_fallback_preserves_clipped_negative_profit(self):
+        self.task('negative',[('S1',0)],-2)
+        self.task('positive',[('S1',30)],1)
+        auction=self.auction(opportunity_cost_weight=0.)
+        base=Schedule()
+        a=next(auction.options('S1','negative',base))
+        candidate=Schedule([a])
+        bid=auction.bid('S1',0,base,candidate,(a,),{'negative','positive'},
+                        {'balance':auction.objective.balance_score(base),'transition':{'S1':0.}})
+        self.assertAlmostEqual(bid.utility_gain,auction.objective.score(candidate)-auction.objective.score(base))
+        self.assertEqual(auction.control.stats['objective_full_calls'],3)
+
     def test_original_grid_latest_and_gap_available(self):
         self.problem.satellites['S1'].maneuverability_type='agile'
         self.task('wide',[('S1',0)],width=100)

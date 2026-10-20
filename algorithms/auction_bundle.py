@@ -190,6 +190,8 @@ class _Auction:
         self.problem, self.constraints, self.params, self.control = problem, constraints, params, control
         self.objective = ObjectiveModel(problem, context.objective_weights)
         self.horizon = max(1., (problem.end_time-problem.start_time).total_seconds())
+        self.additive_domain = ((problem.end_time-problem.start_time).total_seconds() >= 1.
+                               and all(task.priority >= 0 for task in problem.tasks.values()))
         self.windows, self.exclusive = {}, {}
         for tid, task in sorted(problem.tasks.items()):
             control.checkpoint()
@@ -388,6 +390,10 @@ class _Auction:
         if w.w_balance:
             c.stats['objective_full_calls'] += 1
             delta += w.w_balance*(self.objective.balance_score(candidate)-baseline['balance'])
+        if not self.additive_domain:
+            # Preserve public clipping and subsecond-horizon semantics as well.
+            delta = self.objective.score(candidate) - self.objective.score(base)
+            c.stats['objective_full_calls'] += 2
         c.stats['objective_delta_calls'] += 1
         transition = max(0., self.transition_total(sid, candidate)-baseline['transition'][sid])
         snapshots = self.resources(sid, candidate)
