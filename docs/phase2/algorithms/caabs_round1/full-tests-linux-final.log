@@ -1,0 +1,958 @@
+test_candidates_cover_separate_windows (test_adaptive_repair.AdaptiveRepairTests) ... ok
+test_chain_reinserts_displaced_task (test_adaptive_repair.AdaptiveRepairTests) ... ok
+test_factory_and_search_return_feasible_schedule (test_adaptive_repair.AdaptiveRepairTests) ... ok
+test_B1_opportunity_changes_actual_bid_and_allocation (test_algorithm_auction_bundle.AuctionMechanismTests) ... ok
+test_B2_same_task_never_wins_twice (test_algorithm_auction_bundle.AuctionMechanismTests) ... ok
+test_B3_real_two_task_bid_is_globally_awarded_atomically (test_algorithm_auction_bundle.AuctionMechanismTests) ... ok
+test_B4_round_versions_rebuilt_after_award (test_algorithm_auction_bundle.AuctionMechanismTests) ... ok
+test_B4_shared_ground_station_invalidates_old_other_satellite_bid (test_algorithm_auction_bundle.AuctionMechanismTests) ... ok
+test_B5_bundle_ablation_records_mechanism_not_assumed_superiority (test_algorithm_auction_bundle.AuctionMechanismTests) ... ok
+test_cumulative_storage_prevents_three_task_bundle (test_algorithm_auction_bundle.AuctionMechanismTests) ... ok
+test_middle_insertion_checks_successor_not_only_predecessor (test_algorithm_auction_bundle.AuctionMechanismTests) ... ok
+test_power_capacity_is_not_energy_reinterpreted (test_algorithm_auction_bundle.AuctionMechanismTests) ... ok
+test_resource_weight_affects_actual_score (test_algorithm_auction_bundle.AuctionMechanismTests) ... ok
+test_three_task_bundle_is_supported (test_algorithm_auction_bundle.AuctionMechanismTests) ... ok
+test_true_agile_transition_helper_used_for_bid_cost (test_algorithm_auction_bundle.AuctionMechanismTests) ... ok
+test_budget_returns_last_whole_award (test_algorithm_auction_bundle.ContractTests) ... ok
+test_cancel_after_award_still_does_not_return_success (test_algorithm_auction_bundle.ContractTests) ... ok
+test_cancelled_is_exception_not_successful_incumbent (test_algorithm_auction_bundle.ContractTests) ... ok
+test_earth_blocked_window_rejected_by_shared_preview_geometry (test_algorithm_auction_bundle.ContractTests) ... ok
+test_empty_problem (test_algorithm_auction_bundle.ContractTests) ... ok
+test_input_unchanged_and_deterministic (test_algorithm_auction_bundle.ContractTests) ... ok
+test_invalid_budget_rejected (test_algorithm_auction_bundle.ContractTests) ... ok
+test_invalid_parameters_rejected (test_algorithm_auction_bundle.ContractTests) ... ok
+test_missing_planning_lineage_is_not_bypassed (test_algorithm_auction_bundle.ContractTests) ... ok
+test_round_limit_and_check_limit_are_bounded (test_algorithm_auction_bundle.ContractTests) ... ok
+test_M1_container_types_with_real_slew_constraints (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_M1_dedup_keeps_container_semantics (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_agile_slew_uses_real_shared_angle_model (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_branch_limit_bounds_real_alternatives (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_completion_count_precedes_public_profit (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_deduplication_removes_actual_duplicate_children (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_downlink_equality_rejected_and_strictly_later_accepted (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_exact_fit_downlink_has_no_strictly_later_solution (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_frozen_objective_weights_decide_equal_completion (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_ground_station_conflict_is_left_to_public_model (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_index_handles_nested_intervals_without_pair_graph (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_inputs_and_original_placement_configuration_unchanged (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_non_agile_slew_not_pruned_statically (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_normalized_utc_and_microsecond_keys (test_algorithm_conflict_beam.BoundaryTests) ... ok
+test_agile_earliest_center_latest (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_candidate_coverage_balances_satellites_and_horizon (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_constructor_call_bound_even_when_all_modes_fail (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_engineering_window_admission_matches_public_exposure_policy (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_key_distinguishes_all_assignment_fields (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_key_order_and_metadata_independence (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_key_preserves_nested_container_types (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_key_preserves_scalar_and_float_encoding (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_key_preserves_sequence_types_order_and_stability (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_late_candidate_recovers_third_public_feasible_task (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_late_candidates_remain_bounded (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_no_windows_and_zero_duration (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_non_agile_center_and_missing_evidence (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_parameter_defaults_and_validation (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_schedule_branch_deep_isolation (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_v2_boundary_uses_shared_planning_semantics (test_algorithm_conflict_beam.FoundationTests) ... ok
+test_actual_default_beam_siblings_and_incumbent_own_nested_payloads (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_cached_key_matches_exact_container_sensitive_identity (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_candidate_cache_does_not_cross_constraint_domains (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_candidate_cache_is_per_solve_and_rechecks_changed_evidence (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_check_budget_can_reach_feasible_tail_without_exceeding_children (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_default_portfolio_is_deterministic_feasible_and_completion_first (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_default_portfolio_polls_cancellation_during_greedy_initialization (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_diversity_rotates_existing_public_placement_modes (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_greedy_initialization_is_inside_budget_and_keeps_complete_incumbent (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_incremental_and_full_search_are_identical_without_wall_clock_truncation (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_incremental_keys_and_objective_match_full_computation_at_every_state (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_incremental_objective_falls_back_for_negative_priority_and_subseconds (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_new_budget_and_strategy_parameters_are_strict (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_scarcity_uses_public_feasible_samples_and_improves_narrow_beam (test_algorithm_conflict_beam.RoundOneTests) ... ok
+test_C1_real_alternative_path_survives_and_improves (test_algorithm_conflict_beam.SearchTests) ... ok
+test_C2_true_cumulative_storage_and_power (test_algorithm_conflict_beam.SearchTests) ... ok
+test_C3_task_unique_with_multiple_satellites (test_algorithm_conflict_beam.SearchTests) ... ok
+test_C4_saturated_frontiers_are_unique_sorted_and_deterministic (test_algorithm_conflict_beam.SearchTests) ... ok
+test_C4_widths_and_stable_ranking (test_algorithm_conflict_beam.SearchTests) ... ok
+test_C5_budget_returns_incumbent_with_manual_clock (test_algorithm_conflict_beam.SearchTests) ... ok
+test_C5_cancel_uses_current_solve_context_and_keeps_incumbent (test_algorithm_conflict_beam.SearchTests) ... ok
+test_C6_prefilter_ablation_reduces_calls_without_changing_plan (test_algorithm_conflict_beam.SearchTests) ... ok
+test_empty_no_candidates_and_missing_evidence (test_algorithm_conflict_beam.SearchTests) ... ok
+test_every_insert_checks_untouched_parent (test_algorithm_conflict_beam.SearchTests) ... ok
+test_incumbent_and_beam_siblings_own_mutable_data (test_algorithm_conflict_beam.SearchTests) ... ok
+test_safe_index_only_proven_conflicts (test_algorithm_conflict_beam.SearchTests) ... ok
+test_seeded_determinism_and_serialization (test_algorithm_conflict_beam.SearchTests) ... ok
+test_budget_reserve_stops_before_requested_budget (test_algorithm_conflict_beam.StopTests) ... ok
+test_cancellation_inside_preparation_is_polled (test_algorithm_conflict_beam.StopTests) ... ok
+test_invalid_budget_rejected_without_lifecycle_state (test_algorithm_conflict_beam.StopTests) ... ok
+test_stop_after_pruning_sort_keeps_incumbent (test_algorithm_conflict_beam.StopTests) ... ok
+test_stop_during_canonicalization_keeps_prior_snapshot (test_algorithm_conflict_beam.StopTests) ... ok
+test_stop_during_deduplication_keeps_incumbent (test_algorithm_conflict_beam.StopTests) ... ok
+test_stop_during_scoring_preserves_unpruned_incumbent (test_algorithm_conflict_beam.StopTests) ... ok
+test_stop_in_later_preparation_preserves_incumbent (test_algorithm_conflict_beam.StopTests) ... ok
+test_A1_infeasible_narrow_window_preserves_wide_alternative (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_A2_middle_insertion_rejects_successor_slew (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_A3_alternate_satellite_and_unique_task (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_A4_edf_llf_differ_and_full_recomputation_is_deterministic (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_budget_after_first_insertion_returns_last_legal_plan (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_budget_returns_owned_feasible_plan (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_cancel_after_first_insertion_suppresses_incumbent (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_cancellation_is_not_successful_return (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_dynamic_inspected_earliest_start_moves_after_insertion (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_empty_and_no_window (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_energy_and_storage_limits_use_public_model (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_existing_registry_algorithms_unmodified (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_feasible_middle_insertion_not_tail_only (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_ground_station_downlink_source_and_conflict (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_input_unchanged_and_standard_serialization (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_invalid_params_are_rejected (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_large_grid_is_not_materialized (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_missing_planning_evidence_is_rejected_by_public_model (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_position_cap_reports_approximation (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_window_cap_preserves_other_satellite (test_algorithm_deadline_insertion.DARTISCoreTests) ... ok
+test_actual_registry_schemas_render_and_validate_in_javascript (test_algorithm_parameter_metadata.ParameterMetadataTests) ... ok
+test_all_registered_metadata_and_validation_contracts_unchanged (test_algorithm_parameter_metadata.ParameterMetadataTests) ... test_algorithm_then_registry_in_fresh_process (test_algorithm_registry_i1.FreshImportTests) ... ok
+test_contract_import_does_not_initialize_registry_or_factory (test_algorithm_registry_i1.FreshImportTests) ... ok
+test_registry_alone_can_query_validate_and_build_caabs (test_algorithm_registry_i1.FreshImportTests) ... ok
+test_registry_then_algorithm_in_fresh_process (test_algorithm_registry_i1.FreshImportTests) ... ok
+test_all_parameter_boundaries_are_valid_and_frozen (test_algorithm_registry_i1.RegistryParameterTests) ... ok
+test_context_and_compatibility_validator_use_same_model (test_algorithm_registry_i1.RegistryParameterTests) ... ok
+test_existing_algorithms_keep_metadata_and_validation (test_algorithm_registry_i1.RegistryParameterTests) ... ok
+test_http_algorithm_list_exposes_real_caabs_schema (test_algorithm_registry_i1.RegistryParameterTests) ... ok
+test_metadata_schema_defaults_and_version_are_actual_caabs (test_algorithm_registry_i1.RegistryParameterTests) ... ok
+test_old_pickled_contract_type_references_remain_resolvable (test_algorithm_registry_i1.RegistryParameterTests) ... ok
+test_public_contract_names_remain_identical_reexports (test_algorithm_registry_i1.RegistryParameterTests) ... ok
+test_runner_prepares_caabs_from_real_config_and_loader (test_algorithm_registry_i1.RegistryParameterTests) ... ok
+test_strict_integer_ranges_and_boolean_validation (test_algorithm_registry_i1.RegistryParameterTests) ... ok
+test_unknown_fields_non_objects_and_wrong_parameter_scope_rejected (test_algorithm_registry_i1.RegistryParameterTests) ... ok
+test_build_does_not_capture_pre_worker_context (test_algorithm_registry_i1.RegistrySolverTests) ... ok
+test_existing_registry_solvers_keep_legacy_adapter_and_work (test_algorithm_registry_i1.RegistrySolverTests) ... ok
+test_registry_solver_replays_nonempty_schedule_through_public_constraints (test_algorithm_registry_i1.RegistrySolverTests) ... ok
+test_real_scene_runner_spawn_cancel_crash_and_controller_restart (test_caabs_real_integration.RealIntegrationTests) ... ok
+test_accepted_cancel_beats_certification_timeout (test_certification_final_p1.CancellationTests) ... ok
+test_accepted_cancel_beats_error (test_certification_final_p1.CancellationTests) ... ok
+test_accepted_cancel_beats_inconclusive (test_certification_final_p1.CancellationTests) ... ok
+test_accepted_cancel_beats_rejected (test_certification_final_p1.CancellationTests) ... ok
+test_cancel_terminal_rejects_late_success (test_certification_final_p1.CancellationTests) ... ok
+test_cancel_transaction_commits_before_failure_transaction (test_certification_final_p1.CancellationTests) ... ok
+test_failure_transaction_commits_before_cancel_transaction (test_certification_final_p1.CancellationTests) ... ok
+test_no_cancel_normal_failure_retained (test_certification_final_p1.CancellationTests) ... ok
+test_stop_and_search_timeout_priorities_preserved (test_certification_final_p1.CancellationTests) ... ok
+test_complete_context_matching_positive (test_certification_final_p1.DataIdentityTests) ... ok
+test_complete_empty_unit_plan_receipt_preserves_lifecycle_contract (test_certification_final_p1.DataIdentityTests) ... ok
+test_data_change_during_real_signing_path_rejected (test_certification_final_p1.DataIdentityTests) ... ok
+test_data_changed_after_freeze_not_silently_reaccepted (test_certification_final_p1.DataIdentityTests) ... ok
+test_detected_data_change_remains_revoked_after_restore (test_certification_final_p1.DataIdentityTests) ... ok
+test_legacy_receipt_never_certified (test_certification_final_p1.DataIdentityTests) ... ok
+test_malformed_sha_and_missing_schema_fields_rejected (test_certification_final_p1.DataIdentityTests) ... ok
+test_missing_orekit_sha_rejected (test_certification_final_p1.DataIdentityTests) ... ok
+test_scene_plan_version_and_dataset_combinations_rejected (test_certification_final_p1.DataIdentityTests) ... ok
+test_storage_read_source_oserror_hides_plan_not_http500 (test_certification_final_p1.DataIdentityTests) ... ok
+test_storage_rejects_changed_dataset_receipt_atomically (test_certification_final_p1.DataIdentityTests) ... ok
+test_unreadable_data_fails_closed (test_certification_final_p1.DataIdentityTests) ... ok
+test_wrong_orekit_sha_rejected (test_certification_final_p1.DataIdentityTests) ... ok
+test_already_queued_pass_retrieved_after_deadline_rejected (test_certification_final_p1.DeadlineTests) ... ok
+test_before_deadline_can_continue (test_certification_final_p1.DeadlineTests) ... ok
+test_expired_before_wait_does_not_read_ready_queue (test_certification_final_p1.DeadlineTests) ... ok
+test_expired_between_validation_and_success_transaction (test_certification_final_p1.DeadlineTests) ... ok
+test_expiry_during_credential_validation_rejected (test_certification_final_p1.DeadlineTests) ... ok
+test_expiry_inside_transaction_rolls_back_every_result_table (test_certification_final_p1.DeadlineTests) ... ok
+test_late_pass_cannot_replace_timeout_terminal (test_certification_final_p1.DeadlineTests) ... ok
+test_context_from_other_generation_rejected (test_certification_final_p1.ProcessIdentityTests) ... ok
+test_disk_changed_during_certification_rejected (test_certification_final_p1.ProcessIdentityTests) ... ok
+test_initializing_module_compiled_A_disk_B_rejected (test_certification_final_p1.ProcessIdentityTests) ... ok
+test_loaded_A_then_disk_B_rejected_and_new_process_required (test_certification_final_p1.ProcessIdentityTests) ... ok
+test_module_loaded_A_before_bootstrap_disk_B_rejected (test_certification_final_p1.ProcessIdentityTests) ... ok
+test_new_deployment_new_process_old_receipt_invalid (test_certification_final_p1.ProcessIdentityTests) ... ok
+test_observed_source_change_stays_revoked_after_restore (test_certification_final_p1.ProcessIdentityTests) ... ok
+test_preloaded_transition_with_set_constants_matches_same_source (test_certification_final_p1.ProcessIdentityTests) ... ok
+test_process_deployment_and_disk_agree (test_certification_final_p1.ProcessIdentityTests) ... ok
+test_real_other_process_cannot_reuse_receipt (test_certification_final_p1.ProcessIdentityTests) ... ok
+test_source_unreadable_before_issuing_rejected (test_certification_final_p1.ProcessIdentityTests) ... ok
+test_absent_lock_is_not_created (test_cli_startup.CliStartupTests) ... ok
+test_duplicate_cli_does_not_start_api_or_release_owner_lock (test_cli_startup.CliStartupTests) ... ok
+test_existing_unlocked_file_does_not_block_startup (test_cli_startup.CliStartupTests) ... ok
+test_shutdown_intent_is_written_before_uvicorn_drain (test_cli_startup.CliStartupTests) ... ok
+test_48_fresh_families_are_preassigned_32_16_and_stratified (test_conflict_dataset.FamilyTests) ... ok
+test_orbits_are_new_synthetic_values_and_reproducible_proposals (test_conflict_dataset.FamilyTests) ... ok
+test_protected_index_reads_no_scene_content (test_conflict_dataset.FamilyTests) ... ok
+test_same_orbit_family_cannot_cross_extra_train_validation (test_conflict_dataset.FamilyTests) ... ok
+test_advantage_ignores_state_baseline_and_does_not_mutate_labels (test_conflict_dataset.RelativeTargetTests) ... ok
+test_ordinal_target_keeps_ties_without_using_absolute_values (test_conflict_dataset.RelativeTargetTests) ... ok
+test_publication_requires_both_cohorts_and_strict_challenge_gain (test_conflict_dataset.RelativeTargetTests) ... ok
+test_all_regressing_trials_are_rejected_without_registering_weights (test_conflict_dataset.SamplingTests) ... skipped '需要requirements-ml.txt'
+test_old_distribution_guard_beats_a_challenge_only_gain (test_conflict_dataset.SamplingTests) ... ok
+test_reachable_sampling_includes_middle_of_short_trace (test_conflict_dataset.SamplingTests) ... ok
+test_sibling_states_include_scene_sha_to_avoid_cross_variant_deduplication (test_conflict_dataset.SamplingTests) ... ok
+test_algorithm_strategy_and_schema_come_from_actual_registry (test_console_catalog.ConsoleMetadataTests) ... ok
+test_custom_scene_summary_and_changed_content_identity (test_console_catalog.ConsoleMetadataTests) ... ok
+test_all_visible_points_without_certificate_are_inconclusive (test_continuous_exposure.ExposureTests) ... ok
+test_bad_duration_times_and_one_us_short_rejected_publicly (test_continuous_exposure.ExposureTests) ... ok
+test_cache_is_bounded_and_does_not_alias_nearby_orbits_or_targets (test_continuous_exposure.ExposureTests) ... ok
+test_equivalent_utc_and_microseconds (test_continuous_exposure.ExposureTests) ... ok
+test_hidden_gap_is_not_falsely_certified (test_continuous_exposure.ExposureTests) ... ok
+test_horizon_is_evaluated_and_refined_without_extra_grid_samples (test_continuous_exposure.ExposureTests) ... ok
+test_json_cannot_claim_a_continuity_certificate (test_continuous_exposure.ExposureTests) ... ok
+test_legal_exposure_and_visible_safe_endpoint_public_pass (test_continuous_exposure.ExposureTests) ... ok
+test_missing_physics_and_evaluator_budget_are_not_pass (test_continuous_exposure.ExposureTests) ... ok
+test_refined_endpoint_grid_pose_is_not_exported (test_continuous_exposure.ExposureTests) ... ok
+test_refinement_rejects_unbracketed_inputs_and_terminates_at_one_us (test_continuous_exposure.ExposureTests) ... ok
+test_separate_windows_cannot_be_spanned (test_continuous_exposure.ExposureTests) ... ok
+test_steps_subsecond_exits_and_half_open_pose_slicing (test_continuous_exposure.ExposureTests) ... ok
+test_two_historical_overruns_rejected_by_public_gate (test_continuous_exposure.ExposureTests) ... ok
+test_absolute_v1_probe_history_is_hash_frozen_and_independently_reclassified (test_continuous_exposure.RealExposureTests) ... WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.jpype.JPypeContext in an unnamed module (file:/home/meteor/eos-course-runtime/.venv/lib/python3.10/site-packages/org.jpype.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+ok
+test_relative_v2_real_exit_brackets_and_positive_uncertified_exposure (test_continuous_exposure.RealExposureTests) ... ok
+test_ordinary_generation_records_precision_separately_from_certification (test_continuous_pipeline.AdditionalEvidenceTests) ... ok
+test_stale_completed_sidecar_cannot_fall_back_to_metadata (test_continuous_pipeline.AdditionalEvidenceTests) ... ok
+test_controller_exception_never_persists_success (test_continuous_pipeline.FormalPipelineTests) ... ok
+test_controller_fail_never_persists_success (test_continuous_pipeline.FormalPipelineTests) ... ok
+test_controller_inconclusive_never_persists_success (test_continuous_pipeline.FormalPipelineTests) ... ok
+test_controller_timeout_and_late_pass_cannot_commit (test_continuous_pipeline.FormalPipelineTests) ... ok
+test_formal_verifier_keeps_missing_provenance_inconclusive (test_continuous_pipeline.FormalPipelineTests) ... ok
+test_historical_succeeded_storage_api_and_file_exports_fail_closed (test_continuous_pipeline.FormalPipelineTests) ... ok
+test_positive_unit_injection_reaches_real_transaction_and_export (test_continuous_pipeline.FormalPipelineTests) ... ok
+test_real_certifier_missing_evidence_is_not_a_pass (test_continuous_pipeline.FormalPipelineTests) ... ok
+test_storage_rejects_missing_forged_and_reused_receipt_atomically (test_continuous_pipeline.FormalPipelineTests) ... ok
+test_worker_forged_certification_ignored (test_continuous_pipeline.FormalPipelineTests) ... ok
+test_both_known_old_acceptances_rejected_by_both_new_entries (test_continuous_pipeline.PlanningGateTests) ... ok
+test_crossing_discontinuous_windows_rejected (test_continuous_pipeline.PlanningGateTests) ... ok
+test_unknown_step_and_forged_or_stale_source_fail_closed (test_continuous_pipeline.PlanningGateTests) ... ok
+test_v2_threshold_comes_from_verified_lineage_not_embedded_claim (test_continuous_pipeline.PlanningGateTests) ... ok
+test_v3_budget_not_deducted_twice_and_exact_microsecond (test_continuous_pipeline.PlanningGateTests) ... ok
+test_ack_does_not_finish_run_before_worker_exits (test_controller_cancel.ControllerCancelTests) ... ok
+test_cancel_during_real_spawn_candidate_verification_blocks_commit (test_controller_cancel.ControllerCancelTests) ... ok
+test_cancel_immediately_after_attempt_starts (test_controller_cancel.ControllerCancelTests) ... ok
+test_candidate_and_cancel_race_cannot_commit_success (test_controller_cancel.ControllerCancelTests) ... ok
+test_closed_event_pipe_does_not_wait_forever (test_controller_cancel.ControllerCancelTests) ... ok
+test_complete_cancel_envelope_and_duplicate_ack (test_controller_cancel.ControllerCancelTests) ... ok
+test_early_worker_exit_does_not_wait_forever (test_controller_cancel.ControllerCancelTests) ... ok
+test_http_cancel_uses_existing_route_and_temporary_database (test_controller_cancel.ControllerCancelTests) ... ok
+test_normal_success_path_still_commits_verified_plan (test_controller_cancel.ControllerCancelTests) ... ok
+test_real_spawn_controller_sends_cancel_and_records_ack (test_controller_cancel.ControllerCancelTests) ... ok
+test_repeated_cancel_produces_one_ack_and_one_terminal_event (test_controller_cancel.ControllerCancelTests) ... ok
+test_stale_attempt_ack_is_ignored (test_controller_cancel.ControllerCancelTests) ... ok
+test_unmodified_reference_worker_success_path (test_controller_cancel.ControllerCancelTests)
+实际注册表和旧 start 经 Controller 完成空场景闭环。 ... ok
+test_worker_exit_without_ack_still_finishes_cancel (test_controller_cancel.ControllerCancelTests) ... ok
+test_blocked_verification_keeps_flock_until_thread_finishes (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_cancel_before_delayed_started_never_sends_start (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_cancel_before_setsid_uses_direct_reap_without_group_signal (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_controller_recovers_child_after_immediate_leader_crash (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_crashed_leader_leaves_no_verified_live_descendant (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_fast_reference_worker_confirms_session_before_success (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_startup_exception_releases_flock (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_stop_active_worker_marks_internal_interruption_and_releases_lock (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_stop_and_start_attempt_are_serialized (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_stop_before_delayed_started_never_sends_start (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_stop_cleans_verified_descendant (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_thread_start_exception_releases_flock (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_unconfirmed_session_cannot_commit_legal_candidate (test_controller_shutdown.ControllerShutdownTests) ... ok
+test_candidate_exit_timeout_reaps_worker (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_candidate_followed_by_crash_cannot_commit (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_crash_cannot_be_mistaken_for_success (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_failed_event_wins_over_zero_exit_code (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_ignored_sigterm_falls_back_to_kill (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_malformed_json_and_invalid_fields_are_protocol_errors (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_new_sequence_candidate_cannot_extend_exit_deadline (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_oversized_frame_rejected_before_body (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_partial_event_frame_closed_early_is_interrupted (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_partial_event_frame_has_transfer_deadline (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_persisted_user_cancel_precedes_search_timeout (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_pipe_descriptors_close_after_worker_failure (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_real_blocked_control_send_has_deadline (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_real_reference_worker_success_records_zero_exit (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_repeated_searching_does_not_extend_wall_deadline (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_same_sequence_candidate_remains_deduplicated (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_search_wall_timeout_reaps_uncooperative_worker (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_startup_prepare_timeout_is_failed_not_algorithm_timeout (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_timeout_reason_does_not_change_after_late_cancel (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_user_cancel_stays_bounded_while_start_send_is_blocked (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_zero_length_send_bytes_is_protocol_error (test_controller_timeouts.ControllerTimeoutTests) ... ok
+test_new_nadir_scene_never_silently_uses_legacy_angles (test_course_compatibility.CourseCompatibilityTests) ... ok
+test_only_reviewed_old_generation_sources_are_accepted (test_course_compatibility.CourseCompatibilityTests) ... ok
+test_reused_model_is_restricted_to_supported_legacy_scenes (test_course_compatibility.CourseCompatibilityTests) ... ok
+test_bounded_failure_and_backoff (test_daemon.DaemonProcessTests) ... ok
+test_crash_recovery_three_processes_and_worker_failure (test_daemon.DaemonProcessTests) ...
+PROCESS EVIDENCE
+    PID    PPID STAT CMD
+  11136   10201 Sl+  /home/meteor/eos-course-runtime/.venv/bin/python -m eos_system.daemon run --runtime-dir /tmp/eos-watchdog-f4bgs8e6/runtime --port 46787 --interval .15 --request-timeout .2 --startup-grace 12 --progress-timeout .8 --failures 3 --max-restarts 2 --backoff .3 --backoff-cap .6 --stop-grace 6
+  11137   11136 Ssl  /home/meteor/eos-course-runtime/.venv/bin/python -m eos_system
+  11149   11137 Ss   /home/meteor/eos-course-runtime/.venv/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=13, pipe_handle=15) --multiprocessing-fork
+
+RECOVERY EVIDENCE daemon=11136 old=11137 new=11152 worker=11149 reaped
+ok
+test_detached_start_status_stop_commands (test_daemon.DaemonProcessTests) ... ok
+test_dispatch_hang_short_delay_and_singleton (test_daemon.DaemonProcessTests) ... ok
+test_normal_controller_stop_is_not_restarted (test_daemon.DaemonProcessTests) ... ok
+test_persistently_stopped_service_is_recovered (test_daemon.DaemonProcessTests) ... ok
+test_reference_worker_parent_death (test_daemon.DaemonProcessTests) ... ok
+test_ambiguous_lease_cannot_certify_clean_shutdown (test_daemon.IdentityTests) ... ok
+test_event_elapsed_evidence_survives_backward_utc_step (test_daemon.IdentityTests) ... ok
+test_external_controller_lock_blocks_launch (test_daemon.IdentityTests) ... ok
+test_health_checks_dispatch_not_just_live_pid (test_daemon.IdentityTests) ... ok
+test_pid_reuse_identity_never_signalled (test_daemon.IdentityTests) ... ok
+test_policy_validation_and_backoff (test_daemon.IdentityTests) ... ok
+test_unknown_orphan_blocks_without_signalling (test_daemon.IdentityTests) ... ok
+test_real_eos_bench_derived_scene_without_certification_bypass (test_dartis_integration.DARTISHttpTests) ... skipped 'read-only EOS-Bench source unavailable'
+test_real_http_budget_return_commits_partial_plan_test_clock_only (test_dartis_integration.DARTISHttpTests) ... ok
+test_real_http_running_cancel_dartis (test_dartis_integration.DARTISHttpTests) ... ok
+test_real_http_solver_exception_is_failed (test_dartis_integration.DARTISHttpTests) ... ok
+test_real_http_worker_formal_transaction_synthetic_certificate_only (test_dartis_integration.DARTISHttpTests) ... ok
+test_fresh_import_is_acyclic (test_dartis_integration.DARTISRegistryTests) ... ok
+test_registry_metadata_context_and_strict_params (test_dartis_integration.DARTISRegistryTests) ... ok
+test_generation_respects_sensor_and_task_minimum_not_only_global (test_declared_physics.DeclaredPhysicsTests) ... ok
+test_independent_auditor_respects_same_declared_minimum (test_declared_physics.DeclaredPhysicsTests) ... ok
+test_underground_target_cannot_be_optically_visible (test_declared_physics.DeclaredPhysicsTests) ... ok
+test_all_fractional_czml_knots_and_duration_endpoints (test_e3_e4_orekit.E3E4OrekitTests) ... ok
+test_fixed_eme2000_itrf_pv_and_aware_utc (test_e3_e4_orekit.E3E4OrekitTests) ... ok
+test_gpm_relative_v2_boundaries_all_samples_and_recompute_serialization (test_e3_e4_orekit.E3E4OrekitTests) ... ok
+test_historical_absolute_gpm_roots_remain_versioned_negative_evidence (test_e3_e4_orekit.E3E4OrekitTests) ... ok
+test_all_requested_durations (test_e3_e4_time_semantics.ClosedOrbitSamplingTests) ... ok
+test_fractional_start_and_step_include_exact_end_once (test_e3_e4_time_semantics.ClosedOrbitSamplingTests) ... ok
+test_invalid_steps_and_reversed_interval_fail (test_e3_e4_time_semantics.ClosedOrbitSamplingTests) ... ok
+test_cache_identity_changes_without_version_or_contract_change (test_e3_e4_time_semantics.CzmlPrecisionTests) ... ok
+test_demo_keeps_fractional_scene_and_orbit_epoch (test_e3_e4_time_semantics.CzmlPrecisionTests) ... ok
+test_empty_samples_rejected (test_e3_e4_time_semantics.CzmlPrecisionTests) ... ok
+test_equivalent_utc_forms_preserve_absolute_time (test_e3_e4_time_semantics.CzmlPrecisionTests) ... ok
+test_fractional_clock_availability_epoch_and_offsets (test_e3_e4_time_semantics.CzmlPrecisionTests) ... ok
+test_invalid_sample_time_rejected_before_writing (test_e3_e4_time_semantics.CzmlPrecisionTests) ... ok
+test_mixed_aware_naive_normalized_at_boundary (test_e3_e4_time_semantics.CzmlPrecisionTests) ... ok
+test_negative_offset_not_relabelled (test_e3_e4_time_semantics.CzmlPrecisionTests) ... ok
+test_endpoint_attitude_cannot_leak_into_half_open_window (test_e3_e4_time_semantics.VisibilityGridTests) ... ok
+test_inner_fragments_and_attitudes_match_half_open_windows (test_e3_e4_time_semantics.VisibilityGridTests) ... ok
+test_offset_and_naive_grid_inputs_mean_utc (test_e3_e4_time_semantics.VisibilityGridTests) ... ok
+test_short_pass_between_invisible_coarse_points_is_found (test_e3_e4_time_semantics.VisibilityGridTests) ... ok
+test_substep_hidden_window_limitation_is_explicit (test_e3_e4_time_semantics.VisibilityGridTests) ... ok
+test_zero_window_and_horizon_clip (test_e3_e4_time_semantics.VisibilityGridTests) ... ok
+test_epoch_fixed_candidates_do_not_bypass_current_release_gate (test_epoch_fixed_scenarios.EpochFixedScenarioSchedulingTests) ... ok
+test_medium_coverage_diagnostics_identify_short_or_empty_windows (test_epoch_fixed_scenarios.EpochFixedScenarioSchedulingTests) ... ok
+test_all_english_months (test_epoch_parsing.EpochParsingTests) ... ok
+test_datetime_aware (test_epoch_parsing.EpochParsingTests) ... ok
+test_datetime_naive (test_epoch_parsing.EpochParsingTests) ... ok
+test_empty (test_epoch_parsing.EpochParsingTests) ... ok
+test_english_month (test_epoch_parsing.EpochParsingTests) ... ok
+test_equivalent_formats (test_epoch_parsing.EpochParsingTests) ... ok
+test_error_context (test_epoch_parsing.EpochParsingTests) ... ok
+test_fractional_seconds (test_epoch_parsing.EpochParsingTests) ... ok
+test_generator_prevalidation_before_pool_without_importing_generator (test_epoch_parsing.EpochParsingTests) ... ok
+test_invalid_dates (test_epoch_parsing.EpochParsingTests) ... ok
+test_invalid_types_and_numbers (test_epoch_parsing.EpochParsingTests) ... ok
+test_iso (test_epoch_parsing.EpochParsingTests) ... ok
+test_leap_day (test_epoch_parsing.EpochParsingTests) ... ok
+test_legacy_formats (test_epoch_parsing.EpochParsingTests) ... ok
+test_naive_string_means_utc (test_epoch_parsing.EpochParsingTests) ... ok
+test_negative_offset (test_epoch_parsing.EpochParsingTests) ... ok
+test_no_locale_dependency (test_epoch_parsing.EpochParsingTests) ... ok
+test_no_wall_clock_dependency (test_epoch_parsing.EpochParsingTests) ... ok
+test_numeric_unix_seconds (test_epoch_parsing.EpochParsingTests) ... ok
+test_positive_offset (test_epoch_parsing.EpochParsingTests) ... ok
+test_unsupported_month (test_epoch_parsing.EpochParsingTests) ... ok
+test_visibility_entry_point_without_jvm (test_epoch_parsing.EpochParsingTests) ... ok
+test_z (test_epoch_parsing.EpochParsingTests) ... ok
+test_sampled_candidate_cannot_be_formally_released (test_epoch_release.EpochReleaseTests) ... ok
+test_static_lineage_change_is_rejected_without_sidecar (test_epoch_release.EpochReleaseTests) ... ok
+test_cesium_retains_original_page_and_run_context (test_experiments.ExperimentTests) ... ok
+test_compare_only_opposite_models_and_identical_experiment_inputs (test_experiments.ExperimentTests) ... ok
+test_control_creation_rechecks_source_membership_inside_transaction (test_experiments.ExperimentTests) ... ok
+test_existing_upgrade_backup_is_never_overwritten (test_experiments.ExperimentTests) ... ok
+test_http_add_to_pre_ui_and_inline_metadata_experiments (test_experiments.ExperimentTests) ... FAIL
+test_http_group_contract_and_changed_scene_addition_rejected (test_experiments.ExperimentTests) ... ok
+test_inline_metadata_regression_can_add_without_rewriting_history (test_experiments.ExperimentTests) ... ok
+test_one_experiment_many_runs_atomic_queue_and_idempotency (test_experiments.ExperimentTests) ... ok
+test_reject_mixed_experiment_conditions_and_duplicate_algorithms (test_experiments.ExperimentTests) ... ok
+test_remove_retains_run_cancels_and_readd_does_not_resurrect (test_experiments.ExperimentTests) ... ok
+test_remove_running_requests_original_cancellation (test_experiments.ExperimentTests) ... ok
+test_v3_backup_migration_and_legacy_not_guessed_by_time (test_experiments.ExperimentTests) ... ok
+test_agile_only_window_export_preserves_exact_quaternion_boundaries (test_gen02_attitude.FrameMathTests) ... ok
+test_fixed_square_fov_front_boundary_and_back (test_gen02_attitude.FrameMathTests) ... ok
+test_invalid_fov_not_silently_accepted (test_gen02_attitude.FrameMathTests) ... ok
+test_quaternion_sign_and_shortest_arc (test_gen02_attitude.FrameMathTests) ... ok
+test_real_public_model_requires_initial_attitude_and_slew_settle (test_gen02_attitude.FrameMathTests) ... ok
+test_actual_exposure_remains_uncertified_without_interval_proof (test_gen02_attitude.RealFixedCameraTests) ... ok
+test_agile_tracks_with_body_not_independent_camera (test_gen02_attitude.RealFixedCameraTests) ... ok
+test_nadir_absolute_angle_counterexample_now_visible (test_gen02_attitude.RealFixedCameraTests) ... ok
+test_off_axis_limits_and_earth_occultation_still_reject (test_gen02_attitude.RealFixedCameraTests) ... ok
+test_real_visible_start_does_not_hide_later_pointing_exit (test_gen02_attitude.RealFixedCameraTests) ... ok
+test_rotation_composition_matrix_and_independent_los (test_gen02_attitude.RealFixedCameraTests) ... ok
+test_tracking_hardware_rate_not_ignored (test_gen02_attitude.RealFixedCameraTests) ... ok
+test_utc_offset_equal_but_orbit_time_shift_not_equal (test_gen02_attitude.RealFixedCameraTests) ... ok
+[INFO] Scenario CAABS real orbit development (pid=10201): Computing mission 1/3 (mission_id=DEV01-00)
+[INFO] Scenario CAABS real orbit development (pid=10201): Computing mission 2/3 (mission_id=DEV02-00)
+[INFO] Scenario CAABS real orbit development (pid=10201): Computing mission 3/3 (mission_id=DEV03-00)
+test_completion_first_real_candidates_keep_n_plus_one_boundary_states (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+test_current_source_hash_mismatch_rejected (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+test_deleted_sidecar_cannot_fall_back_to_embedded_record (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+test_formal_provenance_gate_does_not_accept_development_record (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+test_http_real_spawn_development_preview_and_formal_export_gate (test_gen02_development_source.RealDevelopmentSourceTests) ... FAIL
+test_non_object_sidecar_fails_closed_without_loader_crash (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+test_raw_input_identity_tampering_rejected (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+test_real_generation_has_three_trusted_windows_and_nonempty_candidate (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+test_real_nonempty_plan_independent_preview_is_not_continuous_pass (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+test_source_id_tampering_rejected_by_independent_verifier (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+test_symlink_sidecar_is_not_trusted (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+test_truncated_sidecar_is_not_trusted (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+test_window_and_attitude_byte_tampering_rejected (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+test_wrong_generator_version_is_not_trusted (test_gen02_development_source.RealDevelopmentSourceTests) ... ok
+[INFO] Scenario CAABS real orbit development (pid=10201): Computing mission 1/3 (mission_id=DEV01-00)
+[INFO] Scenario CAABS real orbit development (pid=10201): Computing mission 2/3 (mission_id=DEV02-00)
+[INFO] Scenario CAABS real orbit development (pid=10201): Computing mission 3/3 (mission_id=DEV03-00)
+test_actual_formal_certificate_is_blocked_despite_positive_point_checks (test_ground_link_development.GroundLinkTests) ... ok
+test_communication_geometry_does_not_invent_camera_angles (test_ground_link_development.GroundLinkTests) ... ok
+test_downlink_owner_id_duration_and_strict_after_observation_negatives (test_ground_link_development.GroundLinkTests) ... ok
+test_real_downlink_physics_rejects_opposite_earth_station (test_ground_link_development.GroundLinkTests) ... ok
+test_real_link_sources_and_independent_observation_and_downlink_replay (test_ground_link_development.GroundLinkTests) ... ok
+test_real_spawn_controller_ground_result_is_only_a_preview (test_ground_link_development.GroundLinkTests) ... ok
+test_true_public_storage_and_power_limits_reject_real_assignment (test_ground_link_development.GroundLinkTests) ... ok
+test_two_individually_feasible_requests_cannot_share_ground_station (test_ground_link_development.GroundLinkTests) ... ok
+test_real_http_crash_reaps_trusted_descendant (test_http_failure_e2e.HttpFailureE2ETests) ... ok
+test_real_http_running_cancel_reaps_worker_without_plan (test_http_failure_e2e.HttpFailureE2ETests) ... ok
+test_real_http_search_timeout_reaps_slow_solver (test_http_failure_e2e.HttpFailureE2ETests) ... ok
+test_committed_plan_to_published_samples_and_compatibility (test_integrated_replay.IntegratedReplayTests) ... ok
+test_interrupted_build_blocks_deletion_until_recovery (test_integrated_replay.IntegratedReplayTests) ... ok
+test_manifest_samples_reject_nan_and_missing_coverage (test_integrated_replay.IntegratedReplayTests) ... ok
+test_replay_relocates_identical_scenario_from_registered_source (test_integrated_replay.IntegratedReplayTests) ... ok
+test_timeout_failure_retry_and_resource_corruption_leave_run_intact (test_integrated_replay.IntegratedReplayTests) ... ok
+test_candidate_not_promoted_by_directory_registration (test_integrated_replay.ProvenanceTests) ... ok
+test_source_snapshot_unknown_or_verified_never_fabricated (test_integrated_replay.ProvenanceTests) ... ok
+test_dense_point_audit_cannot_issue_a_missing_interval_proof (test_interval_proof_design.IntervalDesignTests) ... ok
+test_endpoint_slew_budget_does_not_imply_tracking_trajectory (test_interval_proof_design.IntervalDesignTests) ... ok
+test_mean_value_radius_requires_numeric_error_too (test_interval_proof_design.IntervalDesignTests) ... ok
+test_nearest_float_is_not_an_outward_bound (test_interval_proof_design.IntervalDesignTests) ... ok
+test_point_derivatives_are_not_a_global_bound (test_interval_proof_design.IntervalDesignTests) ... ok
+test_strict_boundary_zero_is_not_certifiable (test_interval_proof_design.IntervalDesignTests) ... ok
+test_visible_endpoints_hide_an_exact_negative_interior (test_interval_proof_design.IntervalDesignTests) ... ok
+test_float_nonfinite_bool_and_reversed_bounds_rejected (test_interval_proofs.ExactIntervalTests) ... ok
+test_hidden_substep_gap_not_missed_by_theorem (test_interval_proofs.ExactIntervalTests) ... ok
+test_identity_and_cell_budget (test_interval_proofs.ExactIntervalTests) ... ok
+test_lipschitz_radius_has_exact_error_enclosure (test_interval_proofs.ExactIntervalTests) ... ok
+test_missing_each_required_margin_fails_closed (test_interval_proofs.ExactIntervalTests) ... ok
+test_mutable_or_duplicate_claims_are_rejected (test_interval_proofs.ExactIntervalTests) ... ok
+test_negative_and_uncertain_bounds_cannot_be_proved (test_interval_proofs.ExactIntervalTests) ... ok
+test_one_microsecond_gap_overlap_and_outside_are_not_proofs (test_interval_proofs.ExactIntervalTests) ... ok
+test_positive_model_enclosures_are_only_conditional_not_certification (test_interval_proofs.ExactIntervalTests) ... ok
+test_shared_endpoints_cover_real_time_and_preserve_microseconds (test_interval_proofs.ExactIntervalTests) ... ok
+test_strict_and_inclusive_boundary (test_interval_proofs.ExactIntervalTests) ... ok
+test_all_24_features_and_overlap_pressure (test_lavis.MechanismTests) ... ok
+test_close_scores_are_not_clipped_and_nonfinite_is_rejected (test_lavis.MechanismTests) ... ok
+test_dynamic_mask_matches_full_shared_check_and_invalidates_conflict (test_lavis.MechanismTests) ... ok
+test_expanded_positions_are_source_aligned_and_original_defaults_unchanged (test_lavis.MechanismTests) ... ok
+test_labels_are_paired_continuations_not_teacher_action_flags (test_lavis.MechanismTests) ... ok
+test_long_window_has_one_configured_position_and_cancellation_is_not_success (test_lavis.MechanismTests) ... ok
+test_main_quaternion_boundaries_are_preserved_and_fractional_endpoint_rejected (test_lavis.MechanismTests) ... ok
+test_multisatellite_candidates_and_model_scores_change_decision (test_lavis.MechanismTests) ... ok
+test_multistart_preserves_incumbent_and_uses_model_alternative (test_lavis.MechanismTests) ... ok
+test_splits_are_60_20_and_group_disjoint (test_lavis.MechanismTests) ... ok
+test_manifest_replacement_schema_and_paths_are_rejected (test_lavis.ModelIdentityTests) ... skipped '需要requirements-ml.txt；算法本体导入不依赖sklearn'
+test_opportunity_model_loads_only_with_explicit_training_contract (test_lavis.ModelIdentityTests) ... skipped '需要requirements-ml.txt；算法本体导入不依赖sklearn'
+test_real_training_loading_and_replacement_sha_fail_closed (test_lavis.ModelIdentityTests) ... skipped '需要requirements-ml.txt；算法本体导入不依赖sklearn'
+test_reviewed_legacy_weights_freeze_runtime_adapter_without_rewriting_artifact (test_lavis.ModelIdentityTests) ... skipped '需要requirements-ml.txt；算法本体导入不依赖sklearn'
+test_same_model_id_changed_snapshot_has_distinct_idempotency_identity (test_lavis.ModelIdentityTests) ... ok
+test_shared_attitude_module_change_invalidates_frozen_model (test_lavis.ModelIdentityTests) ... skipped '需要requirements-ml.txt；算法本体导入不依赖sklearn'
+test_blocking_only_satellite_has_worse_label_than_spare_satellite (test_lavis_opportunity.OpportunityTests) ... ok
+test_chosen_task_alternatives_are_not_counted_as_other_task_loss (test_lavis_opportunity.OpportunityTests) ... ok
+test_new_label_contract_cannot_be_mislabeled_as_old_rollout (test_lavis_opportunity.OpportunityTests) ... ok
+test_candidates_cover_separate_windows (test_adaptive_repair.AdaptiveRepairTests) ... ok
+test_chain_reinserts_displaced_task (test_adaptive_repair.AdaptiveRepairTests) ... ok
+test_factory_and_search_return_feasible_schedule (test_adaptive_repair.AdaptiveRepairTests) ... ok
+test_catalog_and_models_are_disjoint_and_dependencies_explicit (test_nine_algorithms.NineAlgorithmTests) ... ok
+test_selected_model_is_passed_to_real_search_adapter (test_nine_algorithms.NineAlgorithmTests) ... ok
+test_seven_available_searches_on_small_trusted_unit_fixture (test_nine_algorithms.NineAlgorithmTests) ... ok
+test_submission_rejects_model_as_algorithm_and_unavailable_ppo (test_nine_algorithms.NineAlgorithmTests) ... ok
+test_known_gpm_m018_exposure_is_earth_occluded (test_observation_geometry.ObservationGeometryTests) ... ok
+test_known_scd_m003_exposure_is_earth_occluded (test_observation_geometry.ObservationGeometryTests) ... ok
+test_unified_constraint_model_rejects_stale_window_assignment (test_observation_geometry.ObservationGeometryTests) ... ok
+test_equivalent_orbit_and_scene_offsets_export_identical_czml (test_orbit_export_integration.OrbitExportIntegrationTests) ... ok
+test_curved_midpoints_and_off_grid_queries (test_orbit_interpolation.OrbitInterpolationTests) ... ok
+test_czml_declares_position_interpolation_without_changing_time (test_orbit_interpolation.OrbitInterpolationTests) ... ok
+test_exact_knots_and_fractional_endpoint_are_preserved (test_orbit_interpolation.OrbitInterpolationTests) ... ok
+test_existing_budgets_not_relaxed (test_orbit_interpolation.OrbitInterpolationTests) ... ok
+test_single_and_two_point_legacy_inputs (test_orbit_interpolation.OrbitInterpolationTests) ... ok
+test_300s_nodes_and_dense_off_grid_vs_direct_orekit (test_orbit_interpolation.OrekitInterpolationTests) ... ok
+test_ready_backend_and_node_consumer_at_5_20_135_seconds (test_orbit_interpolation.OrekitInterpolationTests) ... ok
+test_missing_development_sidecar_never_downgrades_to_legacy (test_p7_source_integration.DevelopmentRoutingTests) ... ok
+test_relative_pointing_helper_change_invalidates_window_physics_identity (test_p7_source_integration.PhysicsClosureTests) ... ok
+test_real_parallel_workers_isolated_cancel_and_reduced_limit (test_parallel_controller.ParallelControllerTests) ... [OK] CZML written to: /tmp/tmp614wl9vq/orbit.czml
+[*] Scenario: Scenario_S1
+    Time interval: 2025-11-18T12:00:00.123456+00:00 -> 2025-11-18T12:10:50.123456+00:00, step=60.0 s, number of satellites=3
+    Satellite ALOS-2_39766: a=7013623.6 m, e=0.000898, i=98.04 deg, RAAN=57.345 deg, argp=101.516 deg, M=96.356 deg
+        Number of samples: 12
+        Estimated orbital period ~= 5845.5 s
+    Satellite GPM-CORE_39574: a=6801857.2 m, e=0.001294, i=64.827 deg, RAAN=293.591 deg, argp=284.823 deg, M=176.987 deg
+        Number of samples: 12
+        Estimated orbital period ~= 5582.8 s
+    Satellite SCD_1_22490: a=7121145.6 m, e=0.003755, i=25.1 deg, RAAN=68.138 deg, argp=73.8 deg, M=156.998 deg
+        Number of samples: 12
+        Estimated orbital period ~= 5980.5 s
+[OK] CZML written to: /tmp/orbit-interpolation-8vt9dhq_/orbit.czml
+ok
+test_api_default_remains_formal_and_preview_window_is_conservative (test_planning_preview.PreviewIsolationTests) ... ok
+test_preview_storage_readback_exports_and_tamper_isolation (test_planning_preview.PreviewIsolationTests) ... ok
+test_no_model_remains_unavailable_and_no_arbitrary_path (test_ppo_shared.ProtocolTests) ... ok
+test_physics_domain_mismatch_is_rejected (test_ppo_shared.ProtocolTests) ... ok
+test_request_mismatch_is_rejected_without_mutation (test_ppo_shared.ProtocolTests) ... ok
+test_cached_mapping_dynamic_conflicts_and_state (test_ppo_shared.SharedEnvironmentTests) ... ok
+test_empty_problem_is_terminal_with_skip_mask (test_ppo_shared.SharedEnvironmentTests) ... ok
+test_invalid_index_does_not_clip_to_assignment (test_ppo_shared.SharedEnvironmentTests) ... ok
+test_missing_public_window_evidence_and_no_candidates_are_safe (test_ppo_shared.SharedEnvironmentTests) ... ok
+test_post_action_replay_is_transactional (test_ppo_shared.SharedEnvironmentTests) ... ok
+test_public_per_orbit_capacity_masks_second_task (test_ppo_shared.SharedEnvironmentTests) ... ok
+test_stale_candidate_recheck_advances_without_insertion (test_ppo_shared.SharedEnvironmentTests) ... ok
+test_no_overwrite_and_single_sample_update_is_finite (test_ppo_shared.TrainedArtifactTests) ... skipped 'PyTorch not installed'
+test_sha_protocol_snapshot_and_untrained_rejection (test_ppo_shared.TrainedArtifactTests) ... skipped 'PyTorch not installed'
+test_trained_artifact_runner_and_independent_verifier_SYNTHETIC_ONLY (test_ppo_shared.TrainedArtifactTests) ... skipped 'PyTorch not installed'
+test_empty_preview_does_not_start_jvm (test_preview_process.PreviewProcessTests) ... ok
+test_physics_rejection_is_preserved (test_preview_process.PreviewProcessTests) ... ok
+test_process_crash_and_invalid_json_fail_closed (test_preview_process.PreviewProcessTests) ... ok
+test_receipt_from_another_plan_is_rejected (test_preview_process.PreviewProcessTests) ... ok
+test_timeout_reaps_real_process_then_next_preview_can_run (test_preview_process.PreviewProcessTests) ... ok
+test_budget_between_complete_bids_uses_finalization_reserve (test_rabas_cross_scale.CrossScaleMechanisms) ... ok
+test_distinct_multistart_chains_and_real_bundle (test_rabas_cross_scale.CrossScaleMechanisms) ... ok
+test_downlink_center_latest_and_gap_are_real_public_candidates (test_rabas_cross_scale.CrossScaleMechanisms) ... ok
+test_dynamic_shared_task_becomes_single_satellite (test_rabas_cross_scale.CrossScaleMechanisms) ... ok
+test_exact_incremental_objective_including_balance (test_rabas_cross_scale.CrossScaleMechanisms) ... ok
+test_identity_renaming_preserves_non_tied_quality (test_rabas_cross_scale.CrossScaleMechanisms) ... ok
+test_objective_fallback_preserves_clipped_negative_profit (test_rabas_cross_scale.CrossScaleMechanisms) ... ok
+test_original_grid_latest_and_gap_available (test_rabas_cross_scale.CrossScaleMechanisms) ... ok
+test_repair_bounded_and_strictly_increases_count (test_rabas_cross_scale.CrossScaleMechanisms) ... ok
+test_templates_rechecked_for_new_plan_and_custom_constraint (test_rabas_cross_scale.CrossScaleMechanisms) ... ok
+test_fresh_import_has_no_registry_cycle_or_factory_requirement (test_rabas_integration.RABASIntegrationTests) ... ok
+test_legacy_scene_uses_its_contract_and_formal_stays_rejected (test_rabas_integration.RABASIntegrationTests) ... ok
+test_real_worker_controller_storage_gantt_replay_SYNTHETIC_CERTIFICATE_ONLY (test_rabas_integration.RABASIntegrationTests) ... ok
+test_registry_metadata_and_strict_http_validation (test_rabas_integration.RABASIntegrationTests) ... ok
+test_relative_v2_real_generated_nonempty_preview_and_formal_source_isolation (test_rabas_integration.RABASIntegrationTests) ... [INFO] Scenario CAABS real orbit development (pid=10201): Computing mission 1/3 (mission_id=DEV01-00)
+[INFO] Scenario CAABS real orbit development (pid=10201): Computing mission 2/3 (mission_id=DEV02-00)
+[INFO] Scenario CAABS real orbit development (pid=10201): Computing mission 3/3 (mission_id=DEV03-00)
+ok
+test_broad_exception_helper_cannot_swallow_deadline (test_rabas_study_budget.StudyBudgetTests) ... ok
+test_even_base_exception_swallow_cannot_claim_equal_budget_success (test_rabas_study_budget.StudyBudgetTests) ... ok
+test_http_build_reuse_resources_and_delete (test_replay_backend.ReplayBackendTests)
+单任务正式结果用固定轨道样本验证独立构建与观测阶段。 ... ok
+test_v2_database_adds_replay_table_without_rewriting_runs (test_replay_backend.ReplayBackendTests) ... ok
+test_load_is_byte_preserving_and_links_original_ids (test_replay_contracts.ReplayContractTests) ... ok
+test_manifest_has_source_hashes_and_no_absolute_paths (test_replay_contracts.ReplayContractTests) ... ok
+test_missing_timezone_is_diagnostic_not_repaired (test_replay_contracts.ReplayContractTests) ... ok
+test_output_must_not_overlap_any_source (test_replay_contracts.ReplayContractTests) ... ok
+test_successful_run_replay_is_repeatable_read_only_and_complete (test_replay_delivery.ReplayDeliveryTests) ... ok
+test_insufficient_gap_is_diagnostic_and_never_moves_observation (test_replay_timeline.TimelineTests) ... ok
+test_phase_is_half_open_and_order_independent (test_replay_timeline.TimelineTests) ... ok
+test_plural_angles_use_current_legacy_model_and_endpoints_stay_exact (test_replay_timeline.TimelineTests) ... ok
+test_formula_directions_and_upper_bound (test_result_scoring.ResultScoringTests) ... ok
+test_nonfinite_invalid_or_missing_results_are_not_scores (test_result_scoring.ResultScoringTests) ... ok
+test_display_mapping_does_not_claim_source_satellite_identity (test_satellite_asset.SatelliteAssetTests) ... ok
+test_landsat_glb_matches_manifest_and_has_no_animation (test_satellite_asset.SatelliteAssetTests) ... ok
+test_core_source_is_indexed_lf_bytes (test_scenario_artifact_identity.ArtifactEvidenceIdentityTests) ... ok
+test_current_document_update_does_not_replace_historical_identity (test_scenario_artifact_identity.ArtifactEvidenceIdentityTests) ... ok
+test_existing_lfs_rules_unchanged (test_scenario_artifact_identity.ArtifactEvidenceIdentityTests) ... ok
+test_git_store_and_checkout_preserve_bytes_with_both_autocrlf_modes (test_scenario_artifact_identity.ArtifactEvidenceIdentityTests) ... ok
+test_historical_byte_change_including_eol_is_a_failure (test_scenario_artifact_identity.ArtifactEvidenceIdentityTests) ... ok
+test_historical_snapshot_has_pinned_identity_and_version (test_scenario_artifact_identity.ArtifactEvidenceIdentityTests) ... ok
+test_bad_registry_id_even_when_sha_matches (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_bad_sha_is_invalid (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_candidate_cannot_be_released_or_certified (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_cli_exit_and_stdout_only (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_different_windows_keep_static_without_proving_origin (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_duplicate_id_and_duplicate_json_keys_fail (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_e3_subject_sha_checked_independently_from_filename (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_frozen_cohort_rejects_added_old_candidate (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_happy_identity_checks_are_scoped_and_missing_reports_warn (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_invalid_identity_types_do_not_crash (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_list_evidence_subject_selector_is_exact_and_unambiguous (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_missing_local_root_is_missing_evidence (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_missing_original_file_is_warn_not_verified (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_missing_reference_target_is_invalid (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_parent_sha_contradiction_fails_despite_equal_static (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_path_traversal_absolute_and_windows_paths_rejected (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_raw_hypothesis_stays_unverified (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_raw_only_verified_bytes_can_pass (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_same_name_different_content_fails (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_sidecar_source_map_must_match (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_source_static_changes_affect_static_hash (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_symlink_rejected_even_if_it_points_inside_root (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_uncertified_ml_lineage_is_not_accepted (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_validation_preserves_index_and_all_source_bytes (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_wrong_sidecar_result (test_scenario_artifacts.ArtifactIndexTests) ... ok
+test_change_between_passes_even_if_same_size (test_scenario_manifest.ManifestTests) ... ok
+test_cli_exit_status_and_required_arguments (test_scenario_manifest.ManifestTests) ... ok
+test_detect_change_during_read (test_scenario_manifest.ManifestTests) ... ok
+test_duplicate_content (test_scenario_manifest.ManifestTests) ... ok
+test_duplicate_entity_ids_and_json_keys (test_scenario_manifest.ManifestTests) ... ok
+test_empty_directory_is_not_success (test_scenario_manifest.ManifestTests) ... ok
+test_endpoint_and_step_override (test_scenario_manifest.ManifestTests) ... ok
+test_existing_reports_never_overwritten (test_scenario_manifest.ManifestTests) ... ok
+test_explicit_registry_collision_fails_both (test_scenario_manifest.ManifestTests) ... ok
+test_failed_file_only_in_validation_report (test_scenario_manifest.ManifestTests) ... ok
+test_file_symlink_to_protected_path_not_opened (test_scenario_manifest.ManifestTests) ... ok
+test_inconsistent_angle_lengths (test_scenario_manifest.ManifestTests) ... ok
+test_invalid_internal_id_and_negative_resource (test_scenario_manifest.ManifestTests) ... ok
+test_invalid_intervals (test_scenario_manifest.ManifestTests) ... ok
+test_invalid_json (test_scenario_manifest.ManifestTests) ... ok
+test_io_failure_mid_read (test_scenario_manifest.ManifestTests) ... ok
+test_io_failure_missing_file_and_nonregular (test_scenario_manifest.ManifestTests) ... ok
+test_legacy_angle_arrays_and_window_level_fallback (test_scenario_manifest.ManifestTests) ... ok
+test_malformed_structures (test_scenario_manifest.ManifestTests) ... ok
+test_missing_attitude_fields (test_scenario_manifest.ManifestTests) ... ok
+test_missing_metadata_fails (test_scenario_manifest.ManifestTests) ... ok
+test_missing_mission_reference (test_scenario_manifest.ManifestTests) ... ok
+test_missing_provenance_is_not_invented (test_scenario_manifest.ManifestTests) ... ok
+test_missing_satellite_reference (test_scenario_manifest.ManifestTests) ... ok
+test_multiple_windows_one_mission_not_multiple_completions (test_scenario_manifest.ManifestTests) ... ok
+test_no_windows (test_scenario_manifest.ManifestTests) ... ok
+test_nonfinite_values (test_scenario_manifest.ManifestTests) ... ok
+test_normal_scene (test_scenario_manifest.ManifestTests) ... ok
+test_numeric_and_duration_rules (test_scenario_manifest.ManifestTests) ... ok
+test_optional_missing_fields_warn_not_fail (test_scenario_manifest.ManifestTests) ... ok
+test_outer_and_inner_counts (test_scenario_manifest.ManifestTests) ... ok
+test_output_equals_input_or_overlaps (test_scenario_manifest.ManifestTests) ... ok
+test_output_isolation_and_csv_parity (test_scenario_manifest.ManifestTests) ... ok
+test_partial_attitude (test_scenario_manifest.ManifestTests) ... ok
+test_protected_roots_rejected_before_discovery (test_scenario_manifest.ManifestTests) ... ok
+test_readonly_input_and_no_mutation (test_scenario_manifest.ManifestTests) ... ok
+test_rename_does_not_change_registry_id (test_scenario_manifest.ManifestTests) ... ok
+test_same_filename_different_content (test_scenario_manifest.ManifestTests) ... ok
+test_same_internal_id_different_scale (test_scenario_manifest.ManifestTests) ... ok
+test_sensor_and_station_references (test_scenario_manifest.ManifestTests) ... ok
+test_sha_stability_and_complete_bytes (test_scenario_manifest.ManifestTests) ... ok
+test_small_fallback_limit_without_large_fixture (test_scenario_manifest.ManifestTests) ... ok
+test_stream_and_fallback_parity_arbitrary_key_order (test_scenario_manifest.ManifestTests) ... ok
+test_symlink_protected_directory_and_report (test_scenario_manifest.ManifestTests) ... ok
+test_timezone_matches_loader (test_scenario_manifest.ManifestTests) ... ok
+test_trailing_json_rejected_both_parsers (test_scenario_manifest.ManifestTests) ... ok
+test_unknown_numeric_overflow_and_malformed_attitude (test_scenario_manifest.ManifestTests) ... ok
+test_catalog_lists_all_six_real_files_without_reading_window_objects (test_scenario_scale.CatalogTests) ... ok
+test_http_submission_rechecks_sha_even_after_cached_listing (test_scenario_scale.CatalogTests) ... ok
+test_list_explains_missing_pointer_and_corruption (test_scenario_scale.CatalogTests) ... ok
+test_overlapping_output_is_never_registered_as_input (test_scenario_scale.CatalogTests) ... ok
+test_registration_is_idempotent_and_reuses_manual_root (test_scenario_scale.CatalogTests) ... ok
+test_coarser_grid_still_keeps_short_task_and_slew_endpoints (test_scenario_scale.SamplingScaleTests) ... ok
+test_real_scale_profiles_fit_budget (test_scenario_scale.SamplingScaleTests) ... ok
+test_small_case_keeps_five_seconds_and_impossible_case_refuses (test_scenario_scale.SamplingScaleTests) ... ok
+test_missing_ijson_only_allows_bounded_fallback (test_scenario_scale.SceneProjectionTests) ... ok
+test_rejects_duplicate_root_fields_and_invalid_root (test_scenario_scale.SceneProjectionTests) ... ok
+test_static_fields_are_exact_and_windows_not_materialized (test_scenario_scale.SceneProjectionTests) ... ok
+test_100_sources_and_stratified_60_20_20 (test_shared_dataset.AllocationTests) ... ok
+test_all_task_collections_unique_reproducible_and_controlled (test_shared_dataset.AllocationTests) ... ok
+test_cli_private_seeds_are_not_derived_from_public_seed_formula (test_shared_dataset.AllocationTests) ... ok
+test_static_inputs_match_real_raw_orbits (test_shared_dataset.AllocationTests) ... ok
+test_engineering_export_is_labeled_and_cannot_be_continuously_certified (test_shared_dataset.EngineeringRecordTests) ... ok
+test_fresh_physics_binding_rejects_changed_geometry_but_ignores_controller_identity (test_shared_dataset.FreshProvenanceTests) ... ok
+test_fresh_sources_allow_no_parent_but_do_not_claim_continuous_pass (test_shared_dataset.FreshProvenanceTests) ... ok
+test_only_line_endings_are_normalized (test_shared_dataset.FreshProvenanceTests) ... ok
+test_downlink_must_be_contained_long_enough_and_strictly_after_exposure (test_source_window_identity.CommunicationIdentityTests) ... ok
+test_duplicate_communication_ids_are_invalid (test_source_window_identity.CommunicationIdentityTests) ... ok
+test_formal_verifier_uses_trusted_configured_downlink_ratio (test_source_window_identity.CommunicationIdentityTests) ... ok
+test_ground_source_is_retained_and_reconstructed (test_source_window_identity.CommunicationIdentityTests) ... ok
+test_ground_station_and_satellite_ownership_rejected (test_source_window_identity.CommunicationIdentityTests) ... ok
+test_legacy_ground_source_only_when_unique (test_source_window_identity.CommunicationIdentityTests) ... ok
+test_no_ground_station_scene_rejects_injected_ground_identity (test_source_window_identity.CommunicationIdentityTests) ... ok
+test_public_constraint_model_rejects_forged_ground_source (test_source_window_identity.CommunicationIdentityTests) ... ok
+test_unknown_and_invalid_ground_ids_rejected (test_source_window_identity.CommunicationIdentityTests) ... ok
+test_agile_angle_slice_can_uniquely_resolve_legacy_source (test_source_window_identity.ObservationIdentityTests) ... ok
+test_duplicate_loaded_ids_are_invalid_not_first_match (test_source_window_identity.ObservationIdentityTests) ... ok
+test_explicit_ids_have_strict_positive_integer_type (test_source_window_identity.ObservationIdentityTests) ... ok
+test_export_keeps_actual_narrow_window_and_formal_reconstruction (test_source_window_identity.ObservationIdentityTests) ... ok
+test_exposure_cannot_escape_source_by_one_microsecond (test_source_window_identity.ObservationIdentityTests) ... ok
+test_legacy_unique_full_semantics_select_narrow_source (test_source_window_identity.ObservationIdentityTests) ... ok
+test_missing_planning_provenance_remains_inconclusive (test_source_window_identity.ObservationIdentityTests) ... ok
+test_orbit_must_match_exact_source_without_numeric_coercion (test_source_window_identity.ObservationIdentityTests) ... ok
+test_other_satellite_task_and_sensor_window_references_rejected (test_source_window_identity.ObservationIdentityTests) ... ok
+test_public_constraint_model_checks_source_center_and_orbit (test_source_window_identity.ObservationIdentityTests) ... ok
+test_same_ids_do_not_override_exported_scenario_sha (test_source_window_identity.ObservationIdentityTests) ... ok
+test_same_time_different_id_requires_explicit_identity (test_source_window_identity.ObservationIdentityTests) ... ok
+test_same_time_id_swap_with_different_angles_is_rejected (test_source_window_identity.ObservationIdentityTests) ... ok
+test_source_grid_and_attitudes_are_checked (test_source_window_identity.ObservationIdentityTests) ... ok
+test_swapped_id_cannot_fall_back_to_time_match (test_source_window_identity.ObservationIdentityTests) ... ok
+test_unknown_explicit_id_rejected_by_both_public_verifiers (test_source_window_identity.ObservationIdentityTests) ... ok
+test_utc_offset_equivalence_preserves_identity (test_source_window_identity.ObservationIdentityTests) ... ok
+test_cli_json_export_import_round_trip_is_read_only (test_source_window_identity.RoundTripAndAlgorithmTests) ... ok
+test_formal_json_and_csv_exports_keep_both_source_ids (test_source_window_identity.RoundTripAndAlgorithmTests) ... ok
+test_loader_ids_are_snapshot_scoped_separate_ordinals (test_source_window_identity.RoundTripAndAlgorithmTests) ... ok
+test_multiple_actual_algorithms_emit_verifiable_source_identities (test_source_window_identity.RoundTripAndAlgorithmTests) ... ok
+test_new_source_validator_is_in_deployment_identity (test_source_window_identity.RoundTripAndAlgorithmTests) ... ok
+test_direct_naive_utc_aware_utc_and_equivalent_offsets (test_source_window_p2.AssignmentUTCTests) ... ok
+test_downlink_offsets_boundaries_and_strictly_after (test_source_window_p2.AssignmentUTCTests) ... ok
+test_existing_grid_index_tolerance_is_preserved (test_source_window_p2.AssignmentUTCTests) ... ok
+test_ground_station_conflict_with_other_satellite_and_mixed_zones (test_source_window_p2.AssignmentUTCTests) ... ok
+test_mixed_schedule_times_preserve_half_open_touch_and_overlap (test_source_window_p2.AssignmentUTCTests) ... ok
+test_nonzero_offset_is_converted_not_discarded (test_source_window_p2.AssignmentUTCTests) ... ok
+test_scenario_horizon_is_not_relaxed (test_source_window_p2.AssignmentUTCTests) ... ok
+test_source_endpoints_and_microsecond_outside_duration (test_source_window_p2.AssignmentUTCTests) ... ok
+test_explicit_zero_rejected_at_each_configuration_level (test_source_window_p2.SourceStepTests) ... ok
+test_invalid_numeric_steps_rejected_by_both (test_source_window_p2.SourceStepTests) ... ok
+test_invalid_step_cannot_be_recovered_by_legacy_matching (test_source_window_p2.SourceStepTests) ... ok
+test_malformed_resolved_step_rejected_without_certifier (test_source_window_p2.SourceStepTests) ... ok
+test_missing_or_none_global_step_keeps_existing_default (test_source_window_p2.SourceStepTests) ... ok
+test_resolved_none_step_is_not_an_implicit_one_second (test_source_window_p2.SourceStepTests) ... ok
+test_valid_fractional_and_integer_steps_still_pass_both (test_source_window_p2.SourceStepTests) ... ok
+test_aggregate_zero_failures_and_metric_schema_isolation (test_statistics_export.StatisticsExportTests) ... ok
+test_excel_formula_text_is_escaped_without_changing_numbers (test_statistics_export.StatisticsExportTests) ... ok
+test_failed_and_untrusted_rows_do_not_supply_metrics (test_statistics_export.StatisticsExportTests) ... ok
+test_verified_export_and_zip_manifest (test_statistics_export.StatisticsExportTests) ... ok
+test_cancel_during_verification_blocks_success (test_system_storage.StorageTransactionTests)
+核验与取消交错时不能留下正式计划，也不能卡在 VERIFYING。 ... ok
+test_failed_metric_rolls_back_plan_and_assignments (test_system_storage.StorageTransactionTests) ... ok
+test_queued_cancel_never_starts_worker (test_system_storage.StorageTransactionTests) ... ok
+test_repeated_worker_sequence_is_ignored (test_system_storage.StorageTransactionTests) ... ok
+test_scenario_registration_stays_inside_selected_directory (test_system_v02.CatalogTests) ... ok
+test_changed_export_file_is_preserved (test_system_v02.DeleteApiTests) ... ok
+test_only_terminal_run_can_be_deleted_and_database_compacts (test_system_v02.DeleteApiTests) ... ok
+test_successful_plan_is_saved_under_its_run_id (test_system_v02.MigrationAndExportTests) ... ok
+test_v1_database_is_migrated_without_dropping_runs (test_system_v02.MigrationAndExportTests) ... ok
+test_dense_display_samples_have_distinct_cache_identity (test_system_v02.OrbitCacheIdentityTests) ... ok
+test_custom_algorithm_can_define_its_own_nested_parameters (test_system_v02.RegistryTests) ... ok
+test_cached_orbit_survives_missing_original_scenario (test_system_v02.ReplayTests)
+场景登记目录移动后，已有缓存仍能按提交时哈希回放。 ... ok
+test_api_is_memory_only_idempotent_and_no_replay_identity (test_temporary_controls.TemporaryControlTests) ... ok
+test_bad_model_changed_source_capacity_and_forged_receipt_rejected (test_temporary_controls.TemporaryControlTests) ... ok
+test_real_worker_verification_uses_volatile_sink_and_no_exports (test_temporary_controls.TemporaryControlTests) ... ok
+test_running_cancel_expiry_and_late_result_are_safe (test_temporary_controls.TemporaryControlTests) ... ok
+test_existing_angle_shape_remains_supported (test_transition_model.TransitionModelTests) ... ok
+test_non_agile_transition_setting_is_stored (test_transition_model.TransitionModelTests) ... ok
+test_plural_angle_fields_use_last_then_first_sample (test_transition_model.TransitionModelTests) ... ok
+test_profile_is_stored_and_changes_transition_time (test_transition_model.TransitionModelTests) ... ok
+test_equivalent_epochs_pv_windows_attitudes_and_small_bundle (test_window_recompute.OrekitEpochIntegrationTests)
+One synthetic orbit, two fixed targets, 600 s; never open real scenes. ... OREKIT_EPOCH_EVIDENCE={"attitude_limits_deg": 180, "attitude_samples": 82, "attitude_tolerance_deg": 0, "candidate_sha256": "ac0f4dfb604ebe007b712192e40838175e2d90681b084406189699dd860ec849", "coarse_step_s": 60, "completed_at": "2026-10-20T19:49:52.623436+00:00", "duration_s": 600, "fine_step_s": 10, "fixed_targets_lat_lon": [[5, 125], [8, 135]], "formats": ["18 Nov 2025 12:00:00.000", "2025-11-18T12:00:00Z", "2025-11-18T20:00:00+08:00"], "frames": ["EME2000", "ITRF / IERS 2010 / simpleEOP=True", "WGS84"], "full_E3_E4_acceptance": "NOT_RUN", "java": "25.0.2", "max_attitude_error_deg": 0, "max_position_error_m": 0.0, "max_velocity_error_m_s": 0.0, "max_window_error_s": 0, "min_elevation_deg": 5, "observation_segments": 4, "orekit_data_sha256": "1c104cba89468a817d4d32ca8a12df7cab56f8d06a978ee736c841af123b7985", "orekit_java": null, "orekit_jpype": "13.1.5.0", "position_tolerance_m": 1e-06, "pv_offsets_s": [0, 300, 600], "python": "3.10.12", "scope": "equivalent epoch formats and synthetic E2 bundle only", "source_sha256": "79b1d29eb9f006755d321019260a19596f22f3a1a78f3e0de6cd064c09d6c9aa", "static_sha256": "2e7c52c046069dbfa6fc6058f16f8fcbf8948be4e405871321b934e8a5798eeb", "status": "PASS", "test_source": "tests/test_window_recompute.py::OrekitEpochIntegrationTests", "utc_start": "2025-11-18T12:00:00+00:00", "velocity_tolerance_m_s": 1e-09, "window_tolerance_s": 0}
+ok
+test_atomic_no_replace_race_preserves_competing_file (test_window_recompute.RecomputeTests) ... ok
+test_broken_output_symlink_rejected (test_window_recompute.RecomputeTests) ... ok
+test_calculation_exception_no_publication (test_window_recompute.RecomputeTests) ... ok
+test_calculator_replaced_missions_rejected (test_window_recompute.RecomputeTests) ... ok
+test_calculator_static_mutation_fails_with_field_diff (test_window_recompute.RecomputeTests) ... ok
+test_communication_without_station_rejected (test_window_recompute.RecomputeTests) ... ok
+test_completion_is_not_physics_or_scheduling_acceptance (test_window_recompute.RecomputeTests) ... ok
+test_completion_timestamp_created_after_scenario_hash_verification (test_window_recompute.RecomputeTests) ... ok
+test_custom_sensor_is_rejected_without_renaming (test_window_recompute.RecomputeTests) ... ok
+test_deterministic_candidate_bytes_and_static_hash (test_window_recompute.RecomputeTests) ... ok
+test_duplicate_json_keys_rejected (test_window_recompute.RecomputeTests) ... ok
+test_existing_output_never_overwritten (test_window_recompute.RecomputeTests) ... ok
+test_existing_scanning_settings_forwarded (test_window_recompute.RecomputeTests) ... ok
+test_existing_sidecar_never_overwritten (test_window_recompute.RecomputeTests) ... ok
+test_explicit_fixed_fov_and_tracking_rate_forwarded_without_defaults (test_window_recompute.RecomputeTests) ... ok
+test_frozen_sha_mismatch_rejected (test_window_recompute.RecomputeTests) ... ok
+test_ground_stations_preserved_communication_recomputed (test_window_recompute.RecomputeTests) ... ok
+test_hashes_and_source_provenance_computed_from_bytes (test_window_recompute.RecomputeTests) ... ok
+test_independent_output_directory_required (test_window_recompute.RecomputeTests) ... ok
+test_invalid_epoch_fails_before_calculator (test_window_recompute.RecomputeTests) ... ok
+test_invalid_recomputed_reference_rejected (test_window_recompute.RecomputeTests) ... ok
+test_missing_attitudes_rejected (test_window_recompute.RecomputeTests) ... ok
+test_missing_ground_stations_no_fabricated_communication (test_window_recompute.RecomputeTests) ... ok
+test_missing_orbit_number_rejected (test_window_recompute.RecomputeTests) ... ok
+test_missing_required_orbit_field_rejected_without_defaults (test_window_recompute.RecomputeTests) ... ok
+test_multi_sensor_is_rejected_before_calculation (test_window_recompute.RecomputeTests) ... ok
+test_multiple_windows_and_attitudes_replaced (test_window_recompute.RecomputeTests) ... ok
+test_no_resampling_or_generator_import (test_window_recompute.RecomputeTests) ... ok
+test_out_of_range_coordinates_rejected (test_window_recompute.RecomputeTests) ... ok
+test_output_cannot_equal_input (test_window_recompute.RecomputeTests) ... ok
+test_output_name_must_distinguish_physics (test_window_recompute.RecomputeTests) ... ok
+test_projection_preserves_configs_no_defaults (test_window_recompute.RecomputeTests) ... ok
+test_protected_paths_rejected_before_open (test_window_recompute.RecomputeTests) ... ok
+test_readonly_input_byte_and_metadata_unchanged (test_window_recompute.RecomputeTests) ... ok
+test_second_publish_failure_rolls_back_owned_scene (test_window_recompute.RecomputeTests) ... ok
+test_sensor_resources_coordinates_priority_duration_preserved (test_window_recompute.RecomputeTests) ... ok
+test_sidecar_staging_failure_removes_published_candidate (test_window_recompute.RecomputeTests) ... ok
+test_size_limit (test_window_recompute.RecomputeTests) ... ok
+test_source_changed_during_calculation_rejected (test_window_recompute.RecomputeTests) ... ok
+test_static_diff_function_includes_unknown_fields (test_window_recompute.RecomputeTests) ... ok
+test_static_fields_including_unknown_fields_identical (test_window_recompute.RecomputeTests) ... ok
+test_uncommitted_tool_does_not_claim_base_commit_as_tool_version (test_window_recompute.RecomputeTests) ... ok
+test_unknown_scanning_override_rejected (test_window_recompute.RecomputeTests) ... ok
+test_zero_window_task_preserved_and_denominator_correct (test_window_recompute.RecomputeTests) ... ok
+test_cancel_is_visible_during_solve_and_candidate_is_suppressed (test_worker_ipc.WorkerIpcTests) ... ok
+test_control_eof_after_start_reports_failure_and_exits (test_worker_ipc.WorkerIpcTests) ... Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 172, in worker_main
+    command = receive_message(control_pipe)
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 95, in receive_message
+    return decode_message_bytes(connection.recv_bytes(MAX_MESSAGE_BYTES))
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 216, in recv_bytes
+    buf = self._recv_bytes(maxlength)
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 414, in _recv_bytes
+    buf = self._recv(4)
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 383, in _recv
+    raise EOFError
+EOFError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 175, in worker_main
+    raise ConnectionError("Worker 控制 Pipe 已关闭") from exc
+ConnectionError: Worker 控制 Pipe 已关闭
+ok
+test_distinct_cancel_sequences_still_have_one_ack_per_attempt (test_worker_ipc.WorkerIpcTests) ... ok
+test_full_start_envelope_is_accepted (test_worker_ipc.WorkerIpcTests) ... ok
+test_legacy_adapter_still_uses_engine_contract (test_worker_ipc.WorkerIpcTests) ... ok
+test_legacy_start_normal_exit_and_event_sequence (test_worker_ipc.WorkerIpcTests) ... ok
+test_malformed_json_and_required_fields_are_rejected (test_worker_ipc.WorkerIpcTests) ... ok
+test_real_spawn_closed_event_pipe_exits_without_lingering_process (test_worker_ipc.WorkerIpcTests) ... Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 184, in worker_main
+    report("cancel_ack", {"accepted": True})
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 123, in report
+    send_message(event_pipe, {
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 82, in send_message
+    connection.send_bytes(encode_message_bytes(message))
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 200, in send_bytes
+    self._send_bytes(m[offset:offset + size])
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 411, in _send_bytes
+    self._send(header + buf)
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 368, in _send
+    n = write(self._handle, buf)
+BrokenPipeError: [Errno 32] Broken pipe
+ok
+test_real_spawn_control_eof_exits_without_lingering_process (test_worker_ipc.WorkerIpcTests) ... Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 172, in worker_main
+    command = receive_message(control_pipe)
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 95, in receive_message
+    return decode_message_bytes(connection.recv_bytes(MAX_MESSAGE_BYTES))
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 216, in recv_bytes
+    buf = self._recv_bytes(maxlength)
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 414, in _recv_bytes
+    buf = self._recv(4)
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 383, in _recv
+    raise EOFError
+EOFError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 175, in worker_main
+    raise ConnectionError("Worker 控制 Pipe 已关闭") from exc
+ConnectionError: Worker 控制 Pipe 已关闭
+ok
+test_real_spawn_cooperative_cancel_observed_without_candidate (test_worker_ipc.WorkerIpcTests) ... ok
+test_real_spawn_rejects_bad_start_and_exits (test_worker_ipc.WorkerIpcTests) ... Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 142, in worker_main
+    command = receive_message(control_pipe)
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 95, in receive_message
+    return decode_message_bytes(connection.recv_bytes(MAX_MESSAGE_BYTES))
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 104, in decode_message_bytes
+    return _validate_message(message)
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 58, in _validate_message
+    raise ValueError("IPC 协议版本不受支持")
+ValueError: IPC 协议版本不受支持
+ok
+test_real_spawn_runs_empty_test_scenario (test_worker_ipc.WorkerIpcTests) ... ok
+test_real_spawn_solver_exception_exits_without_lingering_process (test_worker_ipc.WorkerIpcTests) ... Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 195, in worker_main
+    raise value
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 157, in execute
+    plan, runtime = run_prepared(solver, problem, constraints, context)
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 33, in run_prepared
+    return implementation(*args)
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/runner.py", line 67, in run_prepared
+    schedule = solver.solve(problem, constraints, context)
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/tests/test_worker_ipc.py", line 39, in solve
+    raise RuntimeError("spawn test solver failure")
+RuntimeError: spawn test solver failure
+ok
+test_real_spawn_uncooperative_cancel_has_bounded_worker_exit (test_worker_ipc.WorkerIpcTests) ... ok
+test_repeated_cancel_has_only_one_ack (test_worker_ipc.WorkerIpcTests) ... ok
+test_solver_cancel_exception_does_not_become_failure (test_worker_ipc.WorkerIpcTests) ... ok
+test_solver_exception_reports_failure (test_worker_ipc.WorkerIpcTests) ... Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 195, in worker_main
+    raise value
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 157, in execute
+    plan, runtime = run_prepared(solver, problem, constraints, context)
+  File "/usr/lib/python3.10/unittest/mock.py", line 1114, in __call__
+    return self._mock_call(*args, **kwargs)
+  File "/usr/lib/python3.10/unittest/mock.py", line 1118, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+  File "/usr/lib/python3.10/unittest/mock.py", line 1179, in _execute_mock_call
+    result = effect(*args, **kwargs)
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/tests/test_worker_ipc.py", line 528, in solve
+    raise RuntimeError("test solver failed")
+RuntimeError: test solver failed
+ok
+test_wrong_cancel_identity_reports_failure (test_worker_ipc.WorkerIpcTests) ... Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 176, in worker_main
+    _check_control(command, run_id, attempt, "cancel")
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 111, in _check_control
+    raise ValueError("控制消息与 Worker 身份不一致")
+ValueError: 控制消息与 Worker 身份不一致
+ok
+test_wrong_cancel_version_is_rejected (test_worker_ipc.WorkerIpcTests) ... Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 172, in worker_main
+    command = receive_message(control_pipe)
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 95, in receive_message
+    return decode_message_bytes(connection.recv_bytes(MAX_MESSAGE_BYTES))
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 104, in decode_message_bytes
+    return _validate_message(message)
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 58, in _validate_message
+    raise ValueError("IPC 协议版本不受支持")
+ValueError: IPC 协议版本不受支持
+ok
+test_wrong_version_and_identity_are_rejected (test_worker_ipc.WorkerIpcTests) ... Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 142, in worker_main
+    command = receive_message(control_pipe)
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 95, in receive_message
+    return decode_message_bytes(connection.recv_bytes(MAX_MESSAGE_BYTES))
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 104, in decode_message_bytes
+    return _validate_message(message)
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 58, in _validate_message
+    raise ValueError("IPC 协议版本不受支持")
+ValueError: IPC 协议版本不受支持
+Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 143, in worker_main
+    _check_control(command, run_id, attempt, "start")
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 111, in _check_control
+    raise ValueError("控制消息与 Worker 身份不一致")
+ValueError: 控制消息与 Worker 身份不一致
+Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 143, in worker_main
+    _check_control(command, run_id, attempt, "start")
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/eos_system/worker_reference.py", line 111, in _check_control
+    raise ValueError("控制消息与 Worker 身份不一致")
+ValueError: 控制消息与 Worker 身份不一致
+ok
+test_before_setsid_has_no_group_signal (test_worker_process_group.WorkerIdentityTests) ... ok
+test_cancel_before_setsid_uses_direct_process_fallback (test_worker_process_group.WorkerIdentityTests) ... ok
+test_child_exits_between_scan_and_pidfd_open (test_worker_process_group.WorkerIdentityTests) ... ok
+test_child_ignores_term_then_receives_verified_kill (test_worker_process_group.WorkerIdentityTests) ... ok
+test_controller_group_number_is_never_signalled (test_worker_process_group.WorkerIdentityTests) ... ok
+test_crashed_leader_discovers_unseen_child_after_reap (test_worker_process_group.WorkerIdentityTests) ... ok
+test_guard_close_releases_pidfd (test_worker_process_group.WorkerIdentityTests) ... ok
+test_identity_failure_downgrades_to_direct_reap (test_worker_process_group.WorkerIdentityTests) ... ok
+test_leader_exit_still_allows_pinned_child_recovery (test_worker_process_group.WorkerIdentityTests) ... ok
+test_live_unpinned_child_risk_clears_after_confirmed_exit (test_worker_process_group.WorkerIdentityTests) ... ok
+test_missing_boot_id_downgrades_without_group_signal (test_worker_process_group.WorkerIdentityTests) ... ok
+test_real_setsid_is_bound_to_process_identity (test_worker_process_group.WorkerIdentityTests) ... ok
+test_reap_real_isolated_worker (test_worker_process_group.WorkerIdentityTests) ... ok
+test_stat_parser_accepts_comm_with_parentheses_and_spaces (test_worker_process_group.WorkerIdentityTests) ... ok
+test_wrong_starttime_rejects_group_signal (test_worker_process_group.WorkerIdentityTests) ... ok
+test_initial_jvm_start_in_background_thread_is_rejected_without_hang (test_worker_runtime.WorkerRuntimeTests) ... ok
+test_worker_import_does_not_load_algorithms_before_started_handshake (test_worker_runtime.WorkerRuntimeTests) ... ok
+
+======================================================================
+FAIL: test_all_registered_metadata_and_validation_contracts_unchanged (test_algorithm_parameter_metadata.ParameterMetadataTests) (algorithm='caabs')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/tests/test_algorithm_parameter_metadata.py", line 35, in test_all_registered_metadata_and_validation_contracts_unchanged
+    self.assertTrue(prop.get('description'), (aid, key))
+AssertionError: None is not true : ('caabs', 'candidate_check_limit')
+
+======================================================================
+FAIL: test_http_add_to_pre_ui_and_inline_metadata_experiments (test_experiments.ExperimentTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/tests/test_experiments.py", line 211, in test_http_add_to_pre_ui_and_inline_metadata_experiments
+    self.assertTrue(all(prop.get('description') for a in catalog for prop in a['parameters']['properties'].values()))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_http_real_spawn_development_preview_and_formal_export_gate (test_gen02_development_source.RealDevelopmentSourceTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/caabs-round1-snapshot-u0un7qh_/tests/test_gen02_development_source.py", line 199, in test_http_real_spawn_development_preview_and_formal_export_gate
+    self.assertEqual(caabs["version"], "0.2.0")
+AssertionError: '0.3.0' != '0.2.0'
+- 0.3.0
+?   ^
++ 0.2.0
+?   ^
+
+
+----------------------------------------------------------------------
+Ran 758 tests in 259.515s
+
+FAILED (failures=3, skipped=10)
