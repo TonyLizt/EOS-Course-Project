@@ -18,7 +18,8 @@ from schedulers.constraint_model import ConstraintModel, Schedule
 from schedulers.evaluation_metrics import compute_evaluation_metrics
 
 SPLITS={'development': [('uniform',101)],'validation':[('clustered',211),('capacity',211)],
-        'heldout':[('hub',307),('downlink',307)]}
+        'reclassified_validation':[('hub',307),('downlink',307)],
+        'heldout':[('orbit_bands',409),('station_network',503)]}
 ALGORITHMS=['rabas_baseline','rabas','completion_first','adaptive_repair','profit_first','timeliness_first',
             'balance_first','pressure_repair','caabs','dartis','sa','ga','aco','mip','lavis','ppo']
 RANDOM={'completion_first','sa','ga','aco'}
