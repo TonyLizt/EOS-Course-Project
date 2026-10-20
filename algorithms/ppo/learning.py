@@ -469,33 +469,7 @@ class PPOLearningScheduler:
         Note: initial_schedule is not used here. RL decoding directly generates
         the schedule to keep the process independent.
         """
-        base_dir = base_dir or Path(__file__).resolve().parents[1]
-        self._ensure_loaded(base_dir)
-
-        # Build env consistent with training
-        env = RLSchedulingEnv(
-            max_actions=self._max_actions,
-            placement_mode=self.run_cfg.placement_mode,
-            unassigned_penalty=self.run_cfg.unassigned_penalty,
-            downlink_duration_ratio=self.run_cfg.downlink_duration_ratio,
-            objective_weights=self.run_cfg.objective_weights,
-            reward_scale=self.run_cfg.reward_scale,
-            agility_profile=self.run_cfg.agility_profile,
-            non_agile_transition_s=self.run_cfg.non_agile_transition_s,
-        )
-        obs = env.reset(problem)
-
-        # Initialize policy and agent
-        # state_dim comes from env
-        state_dim = int(obs["state"].shape[0])
-        policy = PPOPolicy(state_dim=state_dim, max_actions=self._max_actions, hidden=128)
-        agent = PPOAgent(policy=policy, cfg=PPOConfig(), device=self.run_cfg.device)
-        agent.load(self.model_path)
-        self._agent = agent
-
-        done = False
-        while not done:
-            a = agent.greedy(obs["state"], obs["action_mask"])  # Greedy selection is more stable for testing
-            obs, r, done, info = env.step(a)
-
-        return env.get_schedule()
+        # The legacy factory must not provide an unchecked raw-weight back door.
+        raise ValueError(
+            'PPO_REGISTERED_SOLVER_REQUIRED: use eos_system Runner with a registered model_id; '
+            'train/register using python -m algorithms.ppo.training. Legacy checkpoints are incompatible.')

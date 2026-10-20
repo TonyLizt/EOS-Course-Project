@@ -17,6 +17,8 @@ from algorithms.conflict_beam import CAABSParams, ConflictBeamScheduler, VERSION
 from algorithms.auction_bundle import RABASParams, ResourceAwareBundleAuctionScheduler, VERSION as RABAS_VERSION
 from algorithms.lavis.protocol import LavisParams
 from algorithms.lavis.solver import build as build_lavis
+from algorithms.ppo.protocol import PPOParams, VERSION as PPO_VERSION
+from algorithms.ppo.solver import build as build_ppo
 from algorithms.deadline_insertion import DARTISParams, DARTISScheduler, VERSION as DARTIS_VERSION
 from algorithms.factory import create_algorithm
 from algorithms.objectives import ObjectiveWeights
@@ -81,7 +83,11 @@ def availability(algorithm_id: str) -> tuple[str, str]:
         if not pulp.PULP_CBC_CMD(msg=False).available():
             return 'unavailable', '未找到可用的 CBC 求解器。'
     if algorithm_id == 'ppo':
-        return 'unavailable', ('缺少 PyTorch；' if find_spec('torch') is None else '') + '尚未接入受信任训练模型及共享约束，禁止随机策略冒充训练结果。'
+        if find_spec('torch') is None:
+            return 'unavailable', '缺少 PyTorch；请在 Worker 的 WSL Python 环境安装。'
+        from algorithms.ppo.model import list_models
+        if not list_models():
+            return 'unavailable', '尚无兼容的已训练 PPO 模型；请运行 python -m algorithms.ppo.training 训练并登记新模型ID。'
     return 'ready', ''
 
 
@@ -112,6 +118,12 @@ class AlgorithmSpec:
         schema = self.params_model.model_json_schema()
         if self.algorithm_id == 'lavis':
             from algorithms.lavis.model import list_models
+            models = list_models()
+            if models:
+                schema['properties']['model_id']['enum'] = [item['model_id'] for item in models]
+                schema['properties']['model_id']['default'] = models[0]['model_id']
+        if self.algorithm_id == 'ppo' and find_spec('torch') is not None:
+            from algorithms.ppo.model import list_models
             models = list_models()
             if models:
                 schema['properties']['model_id']['enum'] = [item['model_id'] for item in models]
@@ -166,6 +178,14 @@ def _build_legacy(algorithm_id: str, context: SolveContext) -> Solver:
 
 # 显式注册可审查的本仓库算法；组员新增算法时只在这里增加一项元数据。
 _SPECS: dict[str, AlgorithmSpec] = {
+    "ppo": AlgorithmSpec(
+        algorithm_id="ppo", name="PPO 强化学习", category="learning",
+        owner="EOS-Bench / 项目现有实现", version=PPO_VERSION, params_model=PPOParams,
+        build=build_ppo, description="使用已登记训练策略及公共候选/约束逐任务解码。",
+        strategy="现有Actor-Critic、固定特征与动作协议、动态可行掩码、执行前复查与时间顺序重放。",
+        objectives="v1仅收益目标：收益权重大于0，其余权重为0，与训练奖励一致。",
+        limitations="仅earliest、默认约束、无地面站；执行模式及场景物理域须与训练清单一致。训练模型仍须独立核验，不保证性能。",
+    ),
     "lavis": AlgorithmSpec(
         algorithm_id="lavis", name="LAVIS · 学习型分配价值引导插入调度", category="learning",
         owner="李泽同（刘懋兴、何明涛配合）", version="0.1.0", params_model=LavisParams,
@@ -235,7 +255,6 @@ _DEFINITIONS = [
     ('sa', '模拟退火 SA', 'metaheuristic', SAParams, '从所选初始模型解出发，温度与邻域搜索优化。', '共享 ObjectiveModel 的加权目标。', '随机启发式，受迭代次数和 Worker 硬预算限制。'),
     ('ga', '遗传算法 GA', 'metaheuristic', GAParams, '候选编码、交叉、变异与可行解码，保留初始模型解为 incumbent。', '共享 ObjectiveModel 的加权目标。', '初始模型不替代独立种群生成；不保证最优。'),
     ('aco', '蚁群优化 ACO', 'metaheuristic', ACOParams, '信息素与启发因子构造，保留初始模型解为 incumbent。', '共享 ObjectiveModel 的加权目标。', '初始模型不替代蚁群构造；受候选和迭代限制。'),
-    ('ppo', 'PPO 强化学习', 'learning', AlgorithmParams, '训练策略通过动作掩码逐任务选择候选。', '训练和推理配置的奖励目标。', '独立解码，不使用初始模型；可信模型与统一约束尚未接入，当前不可运行。'),
 ]
 for _id, _name, _category, _params, _strategy, _objectives, _limits in _DEFINITIONS:
     _SPECS[_id] = AlgorithmSpec(_id, _name, _category, 'EOS-Bench / 项目现有实现',
