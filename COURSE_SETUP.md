@@ -1,3 +1,4 @@
+<!-- 2026-10-20 RABAS 跨规模阶段 1：减少复制/重复构造/目标计算；专项 22 项通过，独立测试尚未开始。详见 docs/phase2/algorithms/rabas_cross_scale.md。 -->
 ## 统一场景与四算法兼容修复（2026-10-19实现，2026-10-20提交PR）
 
 - 基于 main e53a6a3 创建 fix/unified-scenario-algorithm-compatibility；按用户确认恢复旧课程姿态定义，保留遮挡检查，不批量生成、不重训、不改写场景和原模型。

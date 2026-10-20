@@ -5,7 +5,6 @@ Only validated current-version awards become the returned incumbent. No I/O.
 """
 from __future__ import annotations
 
-from copy import deepcopy
 from dataclasses import dataclass, replace
 import math
 import time
@@ -94,7 +93,9 @@ class _Control:
         self.deadline = clock() + context.time_budget_s - self.reserve
         self.stats = dict(rounds=0, candidate_bundles=0, max_bundle_built=0,
                           public_constraint_checks=0, constructor_calls=0,
-                          reauctions=0, stale_bids_rejected=0, awards=0)
+                          reauctions=0, stale_bids_rejected=0, awards=0,
+                          full_plan_copies=0, objective_full_calls=0, objective_delta_calls=0,
+                          option_cache_hits=0)
         self.round_checks = 0
         self.check_limit = 0
 
@@ -158,17 +159,29 @@ class _Auction:
                 self.windows.setdefault((w.satellite_id, tid), []).append(w)
             if len(owners) == 1:
                 self.exclusive.setdefault(next(iter(owners)), []).append(tid)
+        self.selected_windows = {key: _spread(sorted(rows, key=lambda w: (w.start_time, w.end_time, w.window_id)),
+                                              params.max_windows_per_task) for key, rows in self.windows.items()}
+        self.single_tasks = {w.window_id: replace(problem.tasks[tid], windows=[w])
+                             for (sid, tid), rows in self.selected_windows.items() for w in rows}
+        self.option_cache = {}
         self.constructors = {}
         modes = [constraints.placement_mode]
         if params.max_positions_per_window == 2:
             modes.append('center' if constraints.placement_mode == 'earliest' else 'earliest')
         for sid in sorted(problem.satellites):
             control.checkpoint()
-            self.constructors[sid] = [_Constructor(constraints, mode, sid, control) for mode in modes]
+            self.constructors[sid] = [_Constructor(constraints, mode, sid, control) for mode in (modes[:1] if problem.satellites[sid].maneuverability_type == 'non_agile' else modes)]
 
     def options(self, sid: str, tid: str, plan: Schedule):
         self.control.checkpoint()
-        windows = sorted(self.windows.get((sid, tid), []), key=lambda w: (w.start_time, w.end_time, w.window_id))
+        # Exact plan identity, retained for one auction round only.
+        key = (sid, tid, tuple(id(a) for a in plan.assignments))
+        if key in self.option_cache:
+            self.control.stats['option_cache_hits'] += 1
+            yield from self.option_cache[key]
+            return
+        windows = self.selected_windows.get((sid, tid), [])
+        cached = []
         seen = set()
         # Fixed input windows; no time/angle/source rewriting to create placements.
         for window in _spread(windows, self.params.max_windows_per_task):
@@ -176,11 +189,14 @@ class _Auction:
                 self.control.checkpoint()
                 self.control.stats['constructor_calls'] += 1
                 candidate = model.build_feasible_assignment_for_task(
-                    replace(self.problem.tasks[tid], windows=[window]), plan)
+                    self.single_tasks[window.window_id], plan)
                 self.control.checkpoint()
                 if candidate is not None and assignment_key(candidate) not in seen:
                     seen.add(assignment_key(candidate))
+                    cached.append(candidate)
                     yield candidate
+        # Only complete enumerations are cached; early generator close is safe.
+        self.option_cache[key] = tuple(cached)
 
     def has_option(self, sid, tid, plan):
         return next(self.options(sid, tid, plan), None) is not None
@@ -238,7 +254,16 @@ class _Auction:
     def bid(self, sid, version, base, candidate, additions, remaining, baseline):
         c, p = self.control, self.params
         c.checkpoint()
-        delta = self.objective.score(candidate) - baseline['utility']
+        # Exact shared-objective delta for additive terms. BD keeps its public helper.
+        w = self.objective.weights
+        delta = sum(w.w_profit*self.problem.tasks[a.task_id].priority/self.objective.total_priority
+                    + w.w_completion/self.objective.total_tasks
+                    + w.w_timeliness*(1-(a.sat_start_time-self.problem.start_time).total_seconds()/self.horizon)/self.objective.total_tasks
+                    for a in additions)
+        if w.w_balance:
+            c.stats['objective_full_calls'] += 1
+            delta += w.w_balance*(self.objective.balance_score(candidate)-baseline['balance'])
+        c.stats['objective_delta_calls'] += 1
         transition = max(0., self.transition_total(sid, candidate)-baseline['transition'][sid])
         snapshots = self.resources(sid, candidate)
         resource = self.resource_pressure(sid, base, candidate, snapshots)
@@ -293,7 +318,8 @@ class ResourceAwareBundleAuctionScheduler:
                 control.stats['reauctions'] += int(version > 0)
                 control.round_checks, control.check_limit = 0, params.max_checks_per_round
                 # Per-round caches ONLY. Never reuse an old plan's quotations.
-                baseline = {'utility': auction.objective.score(plan), 'feasible': {},
+                auction.option_cache.clear()
+                baseline = {'balance': auction.objective.balance_score(plan) if auction.objective.weights.w_balance else 0., 'feasible': {},
                             'transition': {sid: auction.transition_total(sid, plan) for sid in sorted(problem.satellites)}}
                 bids = []
                 for sid in sorted(problem.satellites):
@@ -309,10 +335,10 @@ class ResourceAwareBundleAuctionScheduler:
                             found = False
                             for assignment in auction.options(sid, tid, prefix):
                                 found = True
-                                candidate = Schedule(deepcopy(prefix.assignments) + [deepcopy(assignment)])
+                                candidate = Schedule(prefix.assignments + [assignment])
                                 control.checkpoint()
                                 bid = auction.bid(sid, version, plan, candidate,
-                                    additions+(deepcopy(assignment),), remaining, baseline)
+                                    additions+(assignment,), remaining, baseline)
                                 self._observe_bid(bid)
                                 control.checkpoint()
                                 if best is None or bid.rank < best.rank:
@@ -337,7 +363,7 @@ class ResourceAwareBundleAuctionScheduler:
                 for assignment in sorted(winner.candidate_plan.assignments, key=lambda a: (a.sat_start_time, assignment_key(a))):
                     if not control.check(constraints, assignment, replay, award=True):
                         raise RuntimeError('public constraints rejected RABAS global award')
-                    replay.assignments.append(deepcopy(assignment))
+                    replay.assignments.append(assignment)
                 control.checkpoint()
                 plan = replay
                 remaining.difference_update(a.task_id for a in winner.additions)
