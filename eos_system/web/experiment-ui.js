@@ -2,8 +2,8 @@
 (function(root){
  'use strict';
  let catalog=[];
- // 课程交付隐藏未接通的算法入口；后端与历史记录保持可追溯。
- const visibleCatalog=items=>items.filter(item=>!['mip','ppo'].includes(item.algorithm_id));
+ // 保留MIP的交付隐藏策略；PPO与其他算法统一按后端可用性显示和禁用。
+ const visibleCatalog=items=>items.filter(item=>item.algorithm_id!=='mip');
  const Rules = typeof module==='object' && module.exports ? require('./comparison.js') : root.RunComparison;
  const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const metrics=[['TP',1],['TCR',1],['BD',1],['TM',-1],['RT',-1]];
