@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from collections import OrderedDict
+from datetime import timedelta
 import math
 import time
 from typing import Callable, Literal
@@ -18,7 +19,7 @@ from algorithms.solver_contracts import AlgorithmParams, SolveContext
 from schedulers.constraint_model import Assignment, ConstraintModel, Schedule
 from schedulers.scenario_loader import SchedulingProblem
 
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 
 
 class RABASParams(AlgorithmParams):
@@ -171,9 +172,11 @@ class _Constructor(ConstraintModel):
 
 class _Placement:
     """Deterministically ask the PUBLIC builder for one original-grid start."""
-    def __init__(self, k): self.k = k
+    def __init__(self, k, fractions=(0.,)):
+        self.k, self.fractions = k, fractions
+        self.values = iter(fractions)
     def randrange(self, start, stop): return max(start, min(stop-1, self.k))
-    def random(self): return 0.
+    def random(self): return next(self.values, self.fractions[-1])
     def shuffle(self, rows): pass
 
 
@@ -258,21 +261,54 @@ class _Auction:
             unique = unique[:3] + _spread(unique[3:], cap-3)
         return unique[:cap]
 
-    def templates(self, sid, window, k):
+    def templates(self, sid, window, k, fractions=(0.,)):
         c = self.control
-        template_key = (window.window_id, k)
+        template_key = (window.window_id, k, fractions)
         if template_key not in self.template_cache:
             model = self.constructors[sid]
             model.captured = []
             c.stats['constructor_calls'] += 1
             model.build_feasible_assignment_for_task(self.single_tasks[window.window_id], Schedule(),
-                                                     randomized=True, rng=_Placement(k))
+                                                     randomized=True, rng=_Placement(k, fractions))
             self.template_cache[template_key] = tuple(model.captured)
             if len(self.template_cache) > 4096:
                 self.template_cache.popitem(last=False)
         else:
             c.stats['template_cache_hits'] += 1
         return self.template_cache[template_key]
+
+    def downlink_gap_fractions(self, sid, tid, window, k, plan):
+        """Ask the public constructor for a bounded free-gap downlink proposal.
+
+        Fractions refer to original communication windows. No window is altered;
+        exact source, satellite and shared-station checks still happen in options.
+        """
+        task = self.problem.tasks[tid]
+        end = window.start_time + timedelta(seconds=k*float(window.time_step or 1.)+task.required_duration)
+        duration = task.required_duration*self.constraints.downlink_duration_ratio
+        fractions = []
+        for cw in self.constructors[sid].problem.comm_windows:
+            self.control.checkpoint()
+            first = max(cw.start_time, end)
+            slack = (cw.end_time-first).total_seconds()-duration
+            # Match precisely the public builder's calls to rng.random().
+            if slack <= 1e-9:
+                continue
+            proposed = max(first, end+timedelta(microseconds=1))
+            occupied = []
+            for a in plan.assignments:
+                self.control.checkpoint()
+                if a.satellite_id == sid:
+                    occupied.append((a.sat_start_time, a.sat_end_time))
+                if a.gs_start_time is not None and (a.satellite_id == sid or a.ground_station_id == cw.ground_station_id):
+                    occupied.append((a.gs_start_time, a.gs_end_time))
+            for left, right in sorted(occupied):
+                if proposed+timedelta(seconds=duration) <= left:
+                    break
+                if proposed < right:
+                    proposed = right
+            fractions.append(min(1., max(0., (proposed-first).total_seconds()/slack)))
+        return tuple(fractions) or (0.,)
 
     def options(self, sid: str, tid: str, plan: Schedule):
         c = self.control
@@ -286,13 +322,24 @@ class _Auction:
         for window in _spread(self.selected_windows.get((sid, tid), []), self.effective_windows):
             for k in self._starts(sid, tid, window, plan):
                 c.checkpoint()
-                for candidate in self.templates(sid, window, k):
-                    akey = assignment_key(candidate)
-                    if akey not in seen:
-                        seen.add(akey)
-                        if c.check(self.constraints, candidate, plan):
-                            cached.append(candidate)
-                            yield candidate
+                placements = [(0.,)]
+                if self.problem.ground_stations:
+                    # Retain center coverage from v1.0; add latest and a current-plan gap.
+                    if self.effective_positions == 1:
+                        placements = [(.5,)] if self.constraints.placement_mode == 'center' else [(0.,)]
+                    else:
+                        placements = [(0.,), (.5,), (1.,)] if self.effective_positions >= 4 else [(.5,)]
+                        if self.effective_positions == 3:
+                            placements.append((1.,))
+                        placements.append(self.downlink_gap_fractions(sid, tid, window, k, plan))
+                for fractions in dict.fromkeys(placements):
+                    for candidate in self.templates(sid, window, k, fractions):
+                        akey = assignment_key(candidate)
+                        if akey not in seen:
+                            seen.add(akey)
+                            if c.check(self.constraints, candidate, plan):
+                                cached.append(candidate)
+                                yield candidate
         self.option_cache[key] = tuple(cached)
 
     def has_option(self, sid, tid, plan):

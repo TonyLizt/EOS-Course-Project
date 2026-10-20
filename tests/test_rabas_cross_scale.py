@@ -101,6 +101,22 @@ class CrossScaleMechanisms(RABASFixture):
         self.assertEqual(plan.metadata['rabas']['stop_reason'],'budget')
         self.feasible(plan)
 
+    def test_downlink_center_latest_and_gap_are_real_public_candidates(self):
+        from datetime import timedelta
+        from schedulers.scenario_loader import SchedulingGroundStation, CommWindow
+        from schedulers.constraint_model import ConstraintModel
+        self.problem.ground_stations['G']=SchedulingGroundStation('G')
+        self.problem.comm_windows=[CommWindow(1,'S1','G',self.start+timedelta(seconds=200),
+                                                    self.start+timedelta(seconds=300))]
+        self.cm=ConstraintModel(self.problem,non_agile_transition_s=0)
+        for i in range(4):self.task(str(i),[('S1',30*i)])
+        _,plan=self.solve()
+        self.assertEqual(len(plan.assignments),4)
+        starts={(a.gs_start_time-self.start).total_seconds() for a in plan.assignments}
+        self.assertEqual(len(starts),4)
+        self.assertTrue(any(value not in (200.,245.,290.) for value in starts))
+        self.feasible(plan)
+
     def test_identity_renaming_preserves_non_tied_quality(self):
         self.task('a',[('S1',0)],4);self.task('b',[('S1',30)],2)
         _,p=self.solve();self.problem.scenario_id='unknown-name-and-sha'
