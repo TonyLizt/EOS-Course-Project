@@ -100,6 +100,11 @@ def run_job(job, directory):
     started = time.perf_counter()
     plan = module.ConflictBeamScheduler().solve(problem, constraints, context)
     runtime = time.perf_counter() - started
+    if profiler:
+        profiler.disable()
+    if job["instrument"] == "memory":
+        row["peak_python_bytes"] = tracemalloc.get_traced_memory()[1]
+        tracemalloc.stop()
     try:
         import psutil
         memory = psutil.Process().memory_info()
@@ -119,9 +124,6 @@ def run_job(job, directory):
                 "self_s": value[2], "cumulative_s": value[3]}
                 for key, value in pstats.Stats(profiler).stats.items() if key[2] in functions]
         row["profile"] = groups
-    if job["instrument"] == "memory":
-        row["peak_python_bytes"] = tracemalloc.get_traced_memory()[1]
-        tracemalloc.stop()
     candidate = schedule_to_dict(plan, problem)
     (directory / (job["id"] + ".plan.json")).write_text(json.dumps(candidate), encoding="utf-8")
     row.update(runtime=runtime, diagnostic_completed=len(plan.assignments), diagnostics=plan.metadata,
@@ -159,7 +161,8 @@ def run_job(job, directory):
     row["derived"] = dict(states_per_s=stats["scored_states"]/runtime,
         feasible_children_per_s=stats["accepted_insertions"]/runtime,
         public_acceptance=stats["accepted_insertions"]/max(1,stats["public_constraint_calls"]),
-        dedup_rate=stats["duplicate_states"]/max(1,stats["scored_states"]+stats["levels_completed"]))
+        dedup_rate=(stats["duplicate_states"]/max(1,stats["dedup_input_states"]))
+            if "dedup_input_states" in stats else (0. if stats["duplicate_states"] == 0 else None))
     if config and job.get("audit", False):
         from eos_system.verification import verify_candidate
         verify_started = time.perf_counter()

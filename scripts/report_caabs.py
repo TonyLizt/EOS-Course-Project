@@ -31,7 +31,7 @@ def main():
         flat.append({k:row.get(k) for k in ("id","name","suite","family","total","repeat","scenario_sha256","scenario_file_sha256","implementation_sha256","budget","runtime","completed","unassigned","status","controller_status","controller_error","peak_python_bytes")}
             | row.get("metrics",{}) | row.get("derived",{}) | stats
             | {k:diagnostic.get(k) for k in ("stop_reason","stop_phase")}
-            | row.get("process_memory",{}))
+            | (row.get("process_memory") or {}))
     fields=list(dict.fromkeys(key for row in flat for key in row))
     with targets[1].open("w",newline="",encoding="utf-8-sig") as stream:
         writer=csv.DictWriter(stream,fieldnames=fields);writer.writeheader();writer.writerows(flat)

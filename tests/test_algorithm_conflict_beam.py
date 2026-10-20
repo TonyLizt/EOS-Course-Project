@@ -842,6 +842,66 @@ class RoundOneTests(Fixture):
             with self.subTest(values=values), self.assertRaises(ValidationError):
                 CAABSParams(**values)
 
+    def test_incremental_keys_and_objective_match_full_computation_at_every_state(self):
+        from algorithms.objectives import ObjectiveModel
+        for i in range(5):
+            self.task(f"T{i}", [("S1", i*40), ("S2", i*40+10)], priority=i+1)
+        for weights in (ObjectiveWeights(), ObjectiveWeights(0,1,0,0),
+                        ObjectiveWeights(.2,.3,.1,.4), ObjectiveWeights(0,0,0,1)):
+            for fractional in (False, True):
+                with self.subTest(weights=weights, fractional=fractional):
+                    self.problem.tasks["T0"].priority = .125 if fractional else 1.
+                    recorder = RecordingScheduler()
+                    context = replace(self.context(incremental_keys=True, incremental_objective=True), objective_weights=weights)
+                    result = self.solve(scheduler=recorder, context=context)
+                    model = ObjectiveModel(self.problem, weights)
+                    for level in recorder.levels:
+                        for state in level:
+                            self.assertEqual(state.objective_score, model.score(state.schedule))
+                            self.assertEqual(state.canonical_key, canonical_state_key(state.schedule))
+                    stats = result.metadata["caabs"]["stats"]
+                    self.assertGreater(stats["incremental_key_calls"], 0)
+                    self.assertGreater(stats["full_objective_calls"] if fractional else stats["incremental_objective_calls"], 0)
+                    self.assert_shared_feasible(result)
+
+    def test_incremental_objective_falls_back_for_negative_priority_and_subseconds(self):
+        for priority, offset in ((-2., 0.), (1., .125)):
+            with self.subTest(priority=priority,offset=offset):
+                self.setUp()
+                self.task("T1", [("S1", offset)], priority=priority)
+                weights = ObjectiveWeights(.2,.2,.3,.3)
+                full = self.solve(context=replace(self.context(), objective_weights=weights))
+                incremental = self.solve(context=replace(self.context(incremental_keys=True,incremental_objective=True), objective_weights=weights))
+                self.assertEqual(canonical_state_key(full), canonical_state_key(incremental))
+                self.assertGreater(incremental.metadata["caabs"]["stats"]["full_objective_calls"], 0)
+
+    def test_incremental_and_full_search_are_identical_without_wall_clock_truncation(self):
+        self.multipath()
+        first = RecordingScheduler()
+        second = RecordingScheduler()
+        baseline = self.solve(scheduler=first)
+        fast = self.solve(scheduler=second,incremental_keys=True,incremental_objective=True)
+        self.assertEqual(canonical_state_key(baseline),canonical_state_key(fast))
+        self.assertEqual([[s.rank_key for s in level] for level in first.levels],
+                         [[s.rank_key for s in level] for level in second.levels])
+        # Mutable assignments remain fully isolated even with cached identities.
+        before = deepcopy(second.levels[-1])
+        second.levels[-1][0].schedule.assignments[0].sat_angles["roll_angle"] = 123
+        self.assertEqual(fast.assignments[0].sat_angles["roll_angle"], 0.)
+        self.assertEqual(before[-1].schedule, second.levels[-1][-1].schedule)
+
+    def test_cached_key_matches_exact_container_sensitive_identity(self):
+        from algorithms.conflict_beam import extend_canonical_key
+        task = self.task("T1", [("S1", 0)])
+        a = self.candidate(task)
+        variants = [replace(a,task_id=f"T{i}",sat_angles=value) for i,value in enumerate(
+            ([{"roll":0.}],({"roll":0.},),{"roll":[0.]},None))]
+        key = ()
+        for candidate in variants:
+            key = extend_canonical_key(key,canonical_assignment_key(candidate))
+        self.assertEqual(key,canonical_state_key(Schedule(variants)))
+        self.assertEqual(len(set(key)),len(variants))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -43,6 +43,8 @@ class CAABSParams(AlgorithmParams):
     candidate_diversity: bool = Field(default=False, strict=True)
     task_order: Literal["id", "scarcity"] = "id"
     greedy_incumbent: bool = Field(default=False, strict=True)
+    incremental_keys: bool = Field(default=False, strict=True)
+    incremental_objective: bool = Field(default=False, strict=True)
 
 
 def _freeze(value, checkpoint: Checkpoint) -> tuple:
@@ -108,12 +110,79 @@ def branch_schedule(parent: Schedule, candidate: Assignment, checkpoint: Checkpo
 
 
 @dataclass(frozen=True)
+class ObjectiveTotals:
+    profit: float
+    wait_s: float
+    workloads: tuple[float, ...]
+
+
+class _IncrementalObjective:
+    """Exact arithmetic domain; fall back to the full public objective otherwise.
+
+    Integral nonnegative priorities and integral seconds whose sums stay below
+    2**52 are exactly representable regardless of set/dict summation order.
+    Fractional priorities, negative priorities, subsecond horizons/placements
+    and oversized sums use ObjectiveModel.score, preserving its rounding and
+    clipping behavior. Workloads use the public balance helper.
+    """
+
+    def __init__(self, objective: ObjectiveModel, checkpoint: Checkpoint):
+        self.objective = objective
+        self.horizon = (objective.problem.end_time-objective.problem.start_time).total_seconds()
+        self.sat_index = {sid: i for i, sid in enumerate(objective.sat_ids)}
+        priorities = []
+        for task in objective.problem.tasks.values():
+            checkpoint()
+            priorities.append(float(task.priority))
+        self.safe = (bool(priorities) and self.horizon > 0 and self.horizon.is_integer()
+            and self.horizon * len(priorities) < 2**52
+            and all(math.isfinite(p) and p >= 0 and p.is_integer() for p in priorities)
+            and sum(priorities) < 2**52)
+
+    def initial(self) -> ObjectiveTotals | None:
+        return ObjectiveTotals(0., 0., (0.,)*len(self.sat_index)) if self.safe else None
+
+    def extend(self, parent: ObjectiveTotals | None, candidate: Assignment) -> ObjectiveTotals | None:
+        if parent is None:
+            return None
+        offset = max(0., (candidate.sat_start_time-self.objective.problem.start_time).total_seconds())
+        duration = (candidate.sat_end_time-candidate.sat_start_time).total_seconds()
+        if (not offset.is_integer() or not duration.is_integer() or offset > self.horizon
+                or sum(parent.workloads)+duration >= 2**52):
+            return None
+        loads = list(parent.workloads)
+        loads[self.sat_index[candidate.satellite_id]] += duration
+        return ObjectiveTotals(parent.profit+float(self.objective.problem.tasks[candidate.task_id].priority),
+            parent.wait_s+offset, tuple(loads))
+
+    def score(self, totals: ObjectiveTotals, completed: int) -> float:
+        model = self.objective
+        w = model.weights
+        profit = max(0., min(1., totals.profit/model.total_priority))
+        tm = (totals.wait_s+(len(model.problem.tasks)-completed)*self.horizon)/(self.horizon*len(model.problem.tasks))
+        timeliness = max(0., min(1., 1.-tm))
+        balance = model.balance_score_from_workloads(dict(zip(model.sat_ids, totals.workloads))) if w.w_balance else 0.
+        return (w.w_profit*profit + w.w_completion*(completed/float(model.total_tasks))
+                + w.w_timeliness*timeliness + w.w_balance*balance)
+
+
+def extend_canonical_key(parent_key: tuple, candidate_key: tuple, checkpoint: Checkpoint = _noop) -> tuple:
+    """Insert an exact complete Assignment key; no hash-only identity."""
+    checkpoint()
+    index = bisect_left(parent_key, candidate_key)
+    result = parent_key[:index] + (candidate_key,) + parent_key[index:]
+    checkpoint()
+    return result
+
+
+@dataclass(frozen=True)
 class BeamState:
     schedule: Schedule
     task_index: int
     completed: int
     objective_score: float
     canonical_key: tuple
+    objective_totals: ObjectiveTotals | None = None
 
     @property
     def search_key(self) -> tuple:
@@ -349,6 +418,10 @@ class ConflictBeamScheduler:
             "candidate_checks": 0, "feasible_children": 0,
             "prepared_tasks": 0, "candidate_cache_hits": 0,
             "greedy_tasks_completed": 0,
+            "incremental_key_calls": 0, "full_key_calls": 0,
+            "incremental_objective_calls": 0, "full_objective_calls": 0,
+            "skip_states": 0,
+            "dedup_input_states": 0,
         }
         best_feasible = Schedule()
         best_rank = None
@@ -357,6 +430,7 @@ class ConflictBeamScheduler:
             checkpoint()
             params = CAABSParams.model_validate(context.params.model_dump())
             objective = ObjectiveModel(problem, context.objective_weights)
+            incremental = _IncrementalObjective(objective, checkpoint) if params.incremental_objective else None
             checkpoint()
             # ID order is deliberately fixed: no order changes after a skip.
             task_ids = sorted(problem.tasks, key=lambda tid: (checkpoint(), tid)[1])
@@ -383,22 +457,36 @@ class ConflictBeamScheduler:
                     candidate_cache[tid] = result
                 return result
 
-            def state(schedule: Schedule, task_index: int) -> BeamState:
+            def state(schedule: Schedule, task_index: int, parent: BeamState | None = None,
+                      candidate: Assignment | None = None, candidate_key: tuple | None = None) -> BeamState:
                 nonlocal phase
                 phase = "scoring"
                 checkpoint()
-                score = objective.score(schedule)
+                totals = (incremental.extend(parent.objective_totals, candidate) if parent is not None
+                          else incremental.initial()) if incremental else None
+                if totals is None:
+                    score = objective.score(schedule)
+                    stats["full_objective_calls"] += 1
+                else:
+                    score = incremental.score(totals, len(schedule.assignments))
+                    stats["incremental_objective_calls"] += 1
                 stats["scored_states"] += 1
                 checkpoint()
                 phase = "canonicalization"
-                key = canonical_state_key(schedule, checkpoint)
-                return BeamState(schedule, task_index, len(schedule.assignments), score, key)
+                if params.incremental_keys and parent is not None:
+                    key = extend_canonical_key(parent.canonical_key, candidate_key, checkpoint)
+                    stats["incremental_key_calls"] += 1
+                else:
+                    key = canonical_state_key(schedule, checkpoint)
+                    stats["full_key_calls"] += 1
+                return BeamState(schedule, task_index, len(schedule.assignments), score, key, totals)
 
             def remember(candidate_state: BeamState) -> None:
-                nonlocal best_feasible, best_rank
+                nonlocal best_feasible, best_rank, phase
                 checkpoint()
                 if best_rank is None or candidate_state.rank_key < best_rank:
                     # Only replace the incumbent after the isolated copy finishes.
+                    phase = "incumbent_copy"
                     snapshot = clone_schedule(candidate_state.schedule, checkpoint)
                     best_feasible = snapshot
                     best_rank = candidate_state.rank_key
@@ -430,7 +518,9 @@ class ConflictBeamScheduler:
                         if not accepted:
                             continue
                         stats["accepted_insertions"] += 1
-                        greedy = state(branch_schedule(greedy.schedule, candidate, checkpoint), 0)
+                        phase = "state_copy"
+                        key = canonical_assignment_key(candidate, checkpoint) if params.incremental_keys else None
+                        greedy = state(branch_schedule(greedy.schedule, candidate, checkpoint), 0, greedy, candidate, key)
                         remember(greedy)
                         break
                     stats["greedy_tasks_completed"] += 1
@@ -442,14 +532,18 @@ class ConflictBeamScheduler:
                 # Prepare one task at a time, preserving an incumbent if later
                 # preparation is interrupted. Candidate order preserves coverage.
                 candidates = prepare_candidates(tid)
+                phase = "candidate_keys"
+                candidate_keys = {id(a): canonical_assignment_key(a, checkpoint) for a in candidates} if params.incremental_keys else {}
                 children: list[BeamState] = []
                 for parent in beam:
                     phase = "expansion"
                     checkpoint()
                     # A skip is a real, independent branch at the next cursor.
+                    phase = "state_copy"
                     skipped = BeamState(clone_schedule(parent.schedule, checkpoint), task_index,
-                                        parent.completed, parent.objective_score, parent.canonical_key)
+                                        parent.completed, parent.objective_score, parent.canonical_key, parent.objective_totals)
                     children.append(skipped)
+                    stats["skip_states"] += 1
                     index = None
                     if params.conflict_prefilter:
                         phase = "conflict_index"
@@ -471,7 +565,9 @@ class ConflictBeamScheduler:
                         if not accepted:
                             continue
                         stats["accepted_insertions"] += 1
-                        child = state(branch_schedule(parent.schedule, candidate, checkpoint), task_index)
+                        phase = "state_copy"
+                        child = state(branch_schedule(parent.schedule, candidate, checkpoint), task_index,
+                                      parent, candidate, candidate_keys.get(id(candidate)))
                         remember(child)  # Save before deduplication or Top-B pruning.
                         children.append(child)
                         admitted += 1
@@ -481,6 +577,7 @@ class ConflictBeamScheduler:
                 unique = {}
                 for child in children:
                     checkpoint()
+                    stats["dedup_input_states"] += 1
                     if child.search_key in unique:
                         stats["duplicate_states"] += 1
                     else:

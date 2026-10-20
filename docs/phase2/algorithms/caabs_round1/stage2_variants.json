@@ -1,0 +1,6 @@
+[
+  {"name":"stage1","ref":"current","params":{"candidate_diversity":true,"task_order":"scarcity","greedy_incumbent":true}},
+  {"name":"keys","ref":"current","params":{"candidate_diversity":true,"task_order":"scarcity","greedy_incumbent":true,"incremental_keys":true}},
+  {"name":"objective","ref":"current","params":{"candidate_diversity":true,"task_order":"scarcity","greedy_incumbent":true,"incremental_objective":true}},
+  {"name":"fast","ref":"current","params":{"candidate_diversity":true,"task_order":"scarcity","greedy_incumbent":true,"incremental_keys":true,"incremental_objective":true}}
+]
