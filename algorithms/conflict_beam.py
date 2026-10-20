@@ -40,10 +40,10 @@ class CAABSParams(AlgorithmParams):
     max_candidates_per_task: int = Field(default=16, ge=1, le=128, strict=True)
     max_windows_per_task: int = Field(default=32, ge=1, le=256, strict=True)
     conflict_prefilter: bool = Field(default=True, strict=True)
-    candidate_diversity: bool = Field(default=False, strict=True)
-    task_order: Literal["id", "scarcity"] = "id"
-    greedy_incumbent: bool = Field(default=False, strict=True)
-    incremental_keys: bool = Field(default=False, strict=True)
+    candidate_diversity: bool = Field(default=True, strict=True)
+    task_order: Literal["id", "scarcity"] = "scarcity"
+    greedy_incumbent: bool = Field(default=True, strict=True)
+    incremental_keys: bool = Field(default=True, strict=True)
     incremental_objective: bool = Field(default=False, strict=True)
 
 
@@ -228,7 +228,7 @@ class BoundedCandidateAdapter:
     """At most three public constructor calls per selected observation window.
 
     Selection balances satellites, then spreads each satellite's window quota
-    over the horizon. One placement per selected window precedes extra centers and latest positions.
+    over the horizon. Diversity rotates public placement anchors across windows.
     Public constructors choose only their first feasible downlink combination.
     """
 

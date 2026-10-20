@@ -283,7 +283,12 @@ class RecordingScheduler(ConflictBeamScheduler):
 
 class SearchTests(Fixture):
     def context(self, **params):
-        return SolveContext(42, 60, ObjectiveWeights(), CAABSParams(**params))
+        # Preserve the original mechanism fixtures independently of the tuned
+        # default portfolio. RoundOneTests and real integration cover defaults.
+        options = dict(task_order="id", greedy_incumbent=False, candidate_diversity=False,
+                       incremental_keys=False, incremental_objective=False)
+        options.update(params)
+        return SolveContext(42, 60, ObjectiveWeights(), CAABSParams(**options))
 
     def solve(self, *, scheduler=None, context=None, constraints=None, **params):
         scheduler = scheduler or ConflictBeamScheduler()
@@ -775,6 +780,41 @@ class RoundOneTests(Fixture):
     context = SearchTests.context
     solve = SearchTests.solve
     multipath = SearchTests.multipath
+
+    def test_default_portfolio_is_deterministic_feasible_and_completion_first(self):
+        self.multipath()
+        params = CAABSParams()
+        self.assertEqual(params.task_order, "scarcity")
+        self.assertTrue(params.greedy_incumbent and params.candidate_diversity and params.incremental_keys)
+        self.assertFalse(params.incremental_objective)
+        context = SolveContext(41, 60, ObjectiveWeights(), params)
+        first = self.solve(context=context)
+        second = self.solve(context=context)
+        self.assertEqual(first,second)
+        self.assertEqual(len(first.assignments),2)
+        self.assert_shared_feasible(first)
+        self.assertEqual(first.metadata["caabs"]["stop_phase"],"completed")
+        self.setUp()
+        self.task("T1", [("S1",0)],duration=40,width=40,priority=100)
+        self.task("T2", [("S1",0)],priority=1)
+        self.task("T3", [("S1",20)],priority=1)
+        result = self.solve(context=context)
+        self.assertEqual(set(result.assigned_task_ids),{"T2","T3"})
+
+    def test_default_portfolio_polls_cancellation_during_greedy_initialization(self):
+        self.multipath()
+        cancelled = [False]
+        original = self.cm.is_feasible_assignment
+        def checked(candidate, schedule):
+            answer = original(candidate,schedule)
+            cancelled[0] = True
+            return answer
+        self.cm.is_feasible_assignment = checked
+        context = SolveContext(41,60,ObjectiveWeights(),CAABSParams(),is_cancelled=lambda:cancelled[0])
+        result = self.solve(context=context)
+        self.assertEqual(result.metadata["caabs"]["stop_reason"],"cancelled")
+        self.assertEqual(result.metadata["caabs"]["stop_phase"],"greedy_initialization")
+        self.assertEqual(result.metadata["caabs"]["stats"]["levels_completed"],0)
 
     def test_check_budget_can_reach_feasible_tail_without_exceeding_children(self):
         self.task("T1", [("S1", 0)])
