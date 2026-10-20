@@ -1,7 +1,7 @@
 """Volatile comparison jobs. No database connection, export or replay registration.
 
 Implements only the Controller execution sink, using the same worker/verification
-path. The ordinary Controller queue owns dispatch: no extra worker concurrency.
+path. The ordinary Controller queue owns dispatch: shared bounded Worker slots, no separate pool.
 """
 from __future__ import annotations
 
@@ -86,7 +86,9 @@ class TemporaryControls:
                 raise KeyError('临时对照不存在或已过期，请重新创建')
             session['lease'] = self.clock() + self.LEASE_S
             rows = copy.deepcopy([self.runs[rid] for rid in session['ids']])
+            from .result_scoring import score_run
             for row in rows:
+                row['ranking_score'] = score_run(row)
                 row['config'].pop('scenario_path', None)
                 row['config'].pop('output_root', None)
             return {'experiment_id':sid, 'temporary':True, 'source_experiment_id':session['source'],
@@ -143,8 +145,12 @@ class TemporaryControls:
             row['last_seq'] = message['seq']
             return True
 
-    def record_system_event(self, *args, **kwargs):
-        pass  # Diagnostics are not persisted for temporary comparisons.
+    def record_system_event(self, rid, attempt, kind, payload=None):
+        # 临时对照只保留当前内存资源身份，不新增数据库记录。
+        if kind == 'EXECUTION_RESOURCES':
+            with self.lock:
+                if rid in self.runs:
+                    self.runs[rid]['execution_resources'] = copy.deepcopy(payload)
 
     record_attempt_exit = record_system_event
 

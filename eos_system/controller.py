@@ -1,6 +1,6 @@
 """实验队列和参考 Worker 的 Controller。
 
-持久排队以 SQLite 为准；本线程只负责串行取件，避免内存队列在重启后丢任务。
+持久排队以 SQLite 为准；调度槽位并行求解、串行领取同一条记录，避免内存队列在重启后丢任务。
 """
 
 from __future__ import annotations
@@ -58,11 +58,47 @@ class Controller:
         self.instance_id = f"{os.getpid()}-{int(time.time())}"
         self._progress_at = time.monotonic()
         self.worker_journal = WorkerJournal(settings.runtime_dir)
+        if type(settings.max_workers) is not int or not 1 <= settings.max_workers <= 8:
+            raise ValueError('并发 Worker 数须为 1 到 8')
+        self._max_workers = settings.max_workers
+        self._slot_local = threading.local()
+        self._threads = []
+        self._active_runs = {}
+        # 槽位0保留旧路径以兼容历史恢复；其余槽位有独立租约，互不覆盖。
+        self._journals = [self.worker_journal] + [
+            WorkerJournal(settings.runtime_dir / 'worker-slots' / str(i)) for i in range(1, 8)]
+        self._verification_slots = [self._verification_slot] + [threading.BoundedSemaphore(1) for _ in range(7)]
+        self._verification_threads = {}
+        self._verification_lock = threading.Lock()
+        self._slot_progress = [time.monotonic()] * 8
+
+    def _touch(self):
+        self._progress_at = time.monotonic()
+        self._slot_progress[getattr(self._slot_local, 'slot', 0)] = self._progress_at
+
+    @property
+    def max_workers(self):
+        return self._max_workers
+
+    def execution_status(self):
+        with self._dispatch_lock:
+            return {'max_workers': self._max_workers, 'active_runs': len(self._active_runs),
+                    'slots': [{'slot': k + 1, 'run_id': v} for k, v in sorted(self._active_runs.items())],
+                    'maximum': 8}
+
+    def set_max_workers(self, value):
+        if type(value) is not int or not 1 <= value <= 8:
+            raise ValueError('并发 Worker 数须为 1 到 8')
+        with self._dispatch_lock:
+            atomic_json(self.settings.runtime_dir / 'execution-settings.json', {'max_workers': value})
+            self._max_workers = value
+        return self.execution_status()
 
     def heartbeat(self) -> dict:
         return {"process": identity(os.getpid()), "stopping": self._stop.is_set(),
-                "dispatch_alive": bool(self._thread and self._thread.is_alive()),
-                "progress_age_s": max(0., time.monotonic() - self._progress_at)}
+                "dispatch_alive": bool(self._threads and all(t.is_alive() for t in self._threads)),
+                "progress_age_s": max(0., time.monotonic() - min(
+                    [self._slot_progress[i] for i in list(self._active_runs)] or [self._progress_at]))}
 
     def start(self) -> None:
         """单实例文件锁与数据库恢复由 Controller 在启动时完成。"""
@@ -79,16 +115,22 @@ class Controller:
         try:
             fcntl.flock(self._lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
             # Only the lock-owning Controller coordinates old Workers. No task replay.
-            self.worker_journal.recover(self.settings.stop_grace_s)
+            for journal in self._journals:
+                journal.recover(self.settings.stop_grace_s)
             self.database.recover_interrupted()
-            self._progress_at = time.monotonic()
-            self._thread = threading.Thread(target=self._loop, name="eos-controller", daemon=True)
-            self._thread.start()
+            self._touch()
+            # 固定上限8个轻量管理线程；只有开放槽位领取任务，真正计算仍在独立进程。
+            self._threads = [threading.Thread(target=self._loop, args=(i,),
+                name='eos-controller' if i == 0 else f'eos-controller-{i+1}', daemon=True) for i in range(8)]
+            self._thread = self._threads[0]
+            for thread in self._threads:
+                thread.start()
         except BaseException as exc:
-            if self._thread is not None and self._thread.is_alive():
-                self._stop.set()
-                self._thread.join(timeout=self._shutdown_timeout_s)
-                if self._thread.is_alive():
+            self._stop.set()
+            for thread in self._threads:
+                if thread.is_alive():
+                    thread.join(timeout=self._shutdown_timeout_s)
+                if thread.is_alive():
                     raise RuntimeError("Controller 启动异常后线程仍存活；实例锁仍保留") from exc
             fcntl.flock(self._lock_file, fcntl.LOCK_UN)
             self._lock_file.close()
@@ -111,17 +153,21 @@ class Controller:
         if not self._dispatch_lock.acquire(timeout=max(1.0, self.settings.stop_grace_s)):
             raise RuntimeError("Controller 停机未能等待任务领取结束；实例锁仍保留")
         self._dispatch_lock.release()
-        if self._thread:
-            self._thread.join(timeout=self._shutdown_timeout_s)
-            if self._thread.is_alive():
-                raise RuntimeError("Controller 执行线程尚未退出；实例锁仍保留")
-        if self._verification_thread is not None:
-            self._verification_thread.join(timeout=self._shutdown_timeout_s)
-        if self._verification_thread is not None and self._verification_thread.is_alive():
-            raise RuntimeError("认证线程尚未退出；实例锁仍保留")
+        deadline = time.monotonic() + self._shutdown_timeout_s
+        for thread in self._threads:
+            thread.join(timeout=max(0., deadline - time.monotonic()))
+            if thread.is_alive():
+                raise RuntimeError('Controller 执行线程尚未退出；实例锁仍保留')
+        with self._verification_lock:
+            verifiers = list(self._verification_threads.values())
+        for thread in verifiers:
+            thread.join(timeout=max(0., deadline - time.monotonic()))
+            if thread.is_alive():
+                raise RuntimeError('认证线程尚未退出；实例锁仍保留')
         if self._lock_file:
             # Do not certify a clean shutdown while a failed reap left a lease.
-            self.worker_journal.recover(self.settings.stop_grace_s)
+            for journal in self._journals:
+                journal.recover(self.settings.stop_grace_s)
             if token := os.environ.get('EOS_SUPERVISION_TOKEN'):
                 atomic_json(self.settings.runtime_dir / 'controller-stopped.json',
                             {'token': token, 'instance_id': self.instance_id,
@@ -130,37 +176,51 @@ class Controller:
             self._lock_file.close()
             self._lock_file = None
 
-    def _loop(self) -> None:
+    def _loop(self, slot=0) -> None:
+        self._slot_local.slot = slot
         while not self._stop.is_set():
-            self._progress_at = time.monotonic()
-            store = self.database
-            queued = self.database.next_queued()
-            if queued is None and self.transient is not None:
-                store = self.transient
-                queued = store.next_queued()
-            if queued is None:
-                self._stop.wait(0.2)
-                continue
+            self._touch()
+            started = None
             with self._dispatch_lock:
                 if self._stop.is_set():
                     break
-                started = store.start_attempt(queued["run_id"])
+                # 降低并发时已运行的任务继续完成；关闭槽位不再领取新任务。
+                # 优先最低空闲槽位，保持第一个任务沿用历史租约路径，恢复证据可预测。
+                next_slot = next((i for i in range(self._max_workers) if i not in self._active_runs), None)
+                if slot == next_slot and len(self._active_runs) < self._max_workers:
+                    store = self.database
+                    queued = store.next_queued()
+                    if queued is None and self.transient is not None:
+                        store = self.transient
+                        queued = store.next_queued()
+                    if queued is not None:
+                        started = store.start_attempt(queued['run_id'])
+                        if started is not None:
+                            self._active_runs[slot] = queued['run_id']
+                            limit_at_dispatch = self._max_workers
+                            active_at_dispatch = len(self._active_runs)
             if started is None:
+                self._stop.wait(.1)
                 continue
             attempt, config_data = started
             try:
+                store.record_system_event(queued['run_id'], attempt, 'EXECUTION_RESOURCES',
+                    {'worker_limit': limit_at_dispatch, 'active_at_dispatch': active_at_dispatch, 'slot': slot + 1,
+                     'warning': '并行运行存在资源竞争；严肃耗时比较请设为1'})
                 if store is self.database:
                     self._execute(RunConfig.model_validate(config_data), attempt)
                 else:
                     self._execute(RunConfig.model_validate(config_data), attempt, store)
             except BaseException as exc:
-                # 队列线程不能因单次实验故障而退出，否则后续 QUEUED 将无人处理。
-                store.finish_failure(queued["run_id"], attempt, "FAILED", type(exc).__name__, str(exc))
+                store.finish_failure(queued['run_id'], attempt, 'FAILED', type(exc).__name__, str(exc))
+            finally:
+                with self._dispatch_lock:
+                    self._active_runs.pop(slot, None)
 
     def _reap_worker(self, process: mp.Process, group: WorkerGroup,
                      initial_grace_s: float) -> dict:
         def progress():
-            self._progress_at = time.monotonic()
+            self._touch()
         return reap_worker(process, group, initial_grace_s, self.settings.stop_grace_s,
                            on_progress=progress)
 
@@ -170,7 +230,9 @@ class Controller:
         deadline = time.monotonic() + VERIFICATION_TIMEOUT_S
         context = (store or self.database).expected_certification_context()
         check_deadline(deadline)
-        if not self._verification_slot.acquire(blocking=False):
+        slot = getattr(self._slot_local, 'slot', 0)
+        verification_slot = self._verification_slots[slot]
+        if not verification_slot.acquire(blocking=False):
             raise ContinuousCertificationError(ExposureStatus.ERROR, "PREVIOUS_VERIFIER_STILL_RUNNING")
         result = queue.Queue(maxsize=1)
         def verify():
@@ -180,12 +242,15 @@ class Controller:
             except BaseException as exc:
                 result.put((False, exc))
             finally:
-                self._verification_slot.release()
+                verification_slot.release()
         thread = threading.Thread(target=verify, name="eos-continuous-verifier", daemon=True)
-        self._verification_thread = thread
+        with self._verification_lock:
+            self._verification_threads[slot] = thread
+        if slot == 0:
+            self._verification_thread = thread
         thread.start()
         while not self._stop.is_set():
-            self._progress_at = time.monotonic()
+            self._touch()
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise ContinuousCertificationError(ExposureStatus.ERROR, "CERTIFICATION_TIMEOUT")
@@ -213,6 +278,7 @@ class Controller:
 
     def _execute(self, config: RunConfig, attempt: int, store=None) -> None:
         store = store or self.database
+        journal = self._journals[getattr(self._slot_local, 'slot', 0)]
         context = mp.get_context("spawn")
         event_recv, event_send = context.Pipe(duplex=False)
         control_recv, control_send = context.Pipe(duplex=False)
@@ -248,10 +314,10 @@ class Controller:
             # W1 最多等待 2 秒；Controller 额外留出一次 IPC/调度宽限。
             cancel_grace_s = CANCEL_GRACE_S + self.settings.stop_grace_s
             while True:
-                self._progress_at = time.monotonic()
+                self._touch()
                 group.refresh()
                 if start_queued:
-                    self.worker_journal.capture(group, config.run_id, attempt)
+                    journal.capture(group, config.run_id, attempt)
                 state = store.get_status(config.run_id)
                 if not state or state["current_attempt"] != attempt:
                     failure = ("FAILED", "WORKER_STATE", "运行记录或 attempt 已变化")
@@ -294,7 +360,7 @@ class Controller:
                         and group.confirmed and group.leader_fd is not None
                         and leader is not None and leader.live
                         and leader.pgrp == process.pid and leader.sid == process.pid):
-                    self.worker_journal.capture(group, config.run_id, attempt)
+                    journal.capture(group, config.run_id, attempt)
                     try:
                         writer.enqueue({"kind": "start", "run_id": config.run_id,
                                         "attempt": attempt, "config": config.model_dump()},
@@ -435,7 +501,7 @@ class Controller:
                 self._stop.set()  # do not dispatch more work with unowned survivors
                 store.finish_failure(config.run_id, attempt, "FAILED", "WORKER_CLEANUP_INCOMPLETE", "Worker 或已识别后代未能确认退出")
                 return
-            self.worker_journal.clear()
+            journal.clear()
             if stop_reason == "USER_CANCEL":
                 message = "用户取消运行" if cancel_ack_received else "用户取消运行；未收到 Worker 确认"
                 store.finish_failure(config.run_id, attempt, "CANCELLED", "CANCELLED", message)
@@ -512,7 +578,7 @@ class Controller:
             if process.pid is not None and not reaped and group is not None:
                 cleanup = self._reap_worker(process, group, 0)
                 if not cleanup['alive'] and not cleanup['live_members'] and not cleanup['scan_limited']:
-                    self.worker_journal.clear()
+                    journal.clear()
                 else:
                     self._stop.set()
             elif process.pid is not None and not reaped and process.is_alive():

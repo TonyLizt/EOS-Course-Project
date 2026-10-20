@@ -1,6 +1,7 @@
 """冻结v1候选、特征、标签和训练域；不在训练后悄悄改变搜索空间。"""
 from __future__ import annotations
 from dataclasses import dataclass
+from typing import Literal
 from pydantic import Field
 from algorithms.solver_contracts import AlgorithmParams
 
@@ -25,6 +26,9 @@ FEATURE_NAMES = (
  'has_ground_station','downlink_duration_ratio','ground_station_load')
 
 class LavisParams(AlgorithmParams):
+    candidate_strategy: Literal['configured', 'expanded'] = Field('configured', description='configured保留训练时每窗单位置；expanded在同一源网格增加中间/末端位置，是原权重的候选分布扩展验证。')
+    search_mode: Literal['greedy', 'multistart'] = Field('greedy', description='原模型单路径，或复用同一权重的多分支续排；不重新训练。')
+    max_branches: int = Field(8, ge=1, le=32, description='多分支续排最多尝试的替代决策数；仍受总搜索预算限制。')
     model_id: str = Field('lavis-v1', pattern=r'^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$',
                           description='已登记的冻结模型ID；仅选择ID，不接受文件路径。v1仅支持完成率目标、earliest及默认约束。')
 

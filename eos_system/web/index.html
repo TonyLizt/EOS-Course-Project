@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/static/algorithm-parameters.css">
   <link rel="stylesheet" href="/static/workspace.css">
   <script defer src="/static/algorithm-parameters.js"></script>
+  <script defer src="/static/comparison.js"></script>
   <script defer src="/static/experiment-ui.js"></script>
   <script defer src="/static/app.js"></script>
   <script defer src="/static/console.js"></script>
@@ -61,6 +62,11 @@
           <label>随机种子<input id="seed" type="number" min="0" value="42" required></label>
           <label>算法预算 / 秒<input id="budget" type="number" min="1" max="600" value="60" required></label>
         </div>
+        <details class="advanced-settings"><summary>并行运行设置 <span>全局 Worker 槽位</span></summary>
+          <div class="two-cols"><label>并发 Worker 数（1—8）<input id="worker-limit" type="number" min="1" max="8" step="1" value="2"></label><button type="button" id="apply-worker-limit" class="secondary">应用并发数</button></div>
+          <p id="worker-status" class="hint" role="status">正在读取并发设置…</p>
+          <p class="hint">默认2个独立进程。调低不终止已运行任务；耗时受资源竞争影响，正式耗时对照请设为1。设置保存于运行目录。</p>
+        </details>
         <label>任务放置模式<select id="placement"><option value="earliest">最早可行时间</option><option value="center">窗口中心</option></select></label>
         <details class="advanced-settings"><summary>高级实验参数 <span>目标权重、资源与转向约束</span></summary>
           <p class="hint">SA／GA／ACO、CAABS／RABAS 使用目标权重；CAABS／RABAS 仍以完成任务数优先。固定策略启发式保持原策略。</p>
@@ -136,6 +142,8 @@
       <details class="quiet-details metric-guide"><summary>如何阅读比较指标</summary><p class="hint">TP ↑ 收益 · TCR ↑ 完成率 · BD ↑ 均衡度 · TM ↓ 等待时间 · RT ↓ 秒 · RV ↓ 多次收益方差（单次通常无值）。</p></details>
       <p id="control-status" class="hint" role="status">对照仅用于本页临时比较，不保存到实验列表或 Cesium。</p>
       <label>结果组织方式<select id="comparison-mode"><option value="algorithm">按算法比较</option><option value="experiment">按实验比较</option></select></label><div id="comparison-choices"></div>
+      <div class="two-cols"><label>同条件结果排序<select id="result-sort"><option value="">原顺序</option><option value="SCORE">综合评分</option><option value="TCR">完成率 TCR</option><option value="TP">任务收益 TP</option><option value="TM">等待时间 TM</option><option value="RT">算法耗时 RT</option><option value="BD">均衡度 BD</option><option value="RV">收益方差 RV</option></select></label><label>排序方向<select id="result-direction"><option value="desc">从大到小</option><option value="asc">从小到大</option></select></label></div>
+      <p class="hint">综合评分＝70×完成率＋20×收益占场景总优先级比例＋10×(1−归一化等待时间)。耗时不计入；不同场景、预算、初始模型或并发配置分别排序；失败或缺失指标不参评。场景总优先级为0时收益项计0。</p>
       <p id="comparison-status" class="message" role="status"></p><div id="comparison-groups"></div>
       </div>
     </section>

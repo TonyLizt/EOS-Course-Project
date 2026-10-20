@@ -50,3 +50,19 @@ test('magnetic hit uses screen distance, exact hits and lanes, with bounded radi
  assert.equal(T.magneticHit({x:16.5,y:20},bars),null); // Ambiguous midpoint.
  const before=JSON.stringify(bars);T.magneticHit({x:8,y:20},bars);assert.equal(JSON.stringify(bars),before);
 });
+
+
+test('score/metric sorting respects conditions, invalid results and original objects',()=>{
+ const make=(id,score,scene='same',status='SUCCEEDED')=>({run_id:id,status,plan:{assignments:[]},
+  config:{algorithm_id:id,scenario_sha256:scene,algorithm_code_sha:'code',constraints:{},objective_weights:{},
+    placement_mode:'earliest',seed:42,time_budget_s:30,scenario_provenance:{scenario_physics_version:'v1'}},
+  metrics:{TCR:score/100,RT:100-score},ranking_score:{value:score}});
+ const rows=[make('a',50),make('b',80),make('failed',100,'same','FAILED'),make('other',99,'different')];
+ const input=[{experiment_id:'e',runs:rows}],before=JSON.stringify(input);
+ const ids=(metric,direction)=>UI.orderedRows(input,'experiment',null,metric,direction).map(x=>x.run.run_id);
+ assert.deepEqual(ids('SCORE','desc'),['b','a','failed','other']);
+ assert.deepEqual(ids('TCR','asc'),['a','b','failed','other']);
+ assert.deepEqual(ids('RT','asc'),['b','a','failed','other']);
+ assert.equal(JSON.stringify(input),before);
+ assert.match(UI.results(input,null,'experiment',null,'SCORE','desc'),/综合分/);
+});

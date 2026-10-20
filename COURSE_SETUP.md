@@ -1,3 +1,11 @@
+## 2026-10-20：并行 Worker、统一评分与 LAVIS 可选候选扩展
+
+- 分支 feat/parallel-ranking-lavis-optimization，工作中按要求将 main 和本分支快进至82bb261，保留PR #29 RABAS更新及未提交工作。
+- 默认并发2、网页1—8、运行目录保存、独立槽位租约/核验与安全停机恢复；真实两个Worker并行、取消隔离、临时对照不写库及设置重启保留通过。
+- 固定70%完成率＋20%归一化收益＋10%时效评分；同条件排序，导出保留口径，耗时不计分。无效/失败结果不冒充0分。
+- 按李泽同确认复用原权重，新增多分支与真实网格候选扩展；旧策略保留默认。八个公开验证场景308→356任务，其中高冲突160→208，最新RABAS357/209。八场景独立物理采样通过，不宣称连续认证或全验证集领先。
+- 未训练/批量生成/读取冻结测试；原模型未改，隔离验收运行目录已清理。不迁移已有SQLite。阶段完成后待用户决定commit/push。
+- 实现、使用及验收详见 docs/phase2/parallel_ranking_lavis_handoff.md。下文历史单Worker限制以本轮说明为准。
 <!-- 2026-10-20 RABAS PR集成：用户授权推送并通过PR合并；已fetch并rebase到origin/main 89dff80（无新增上游提交、无冲突），算法1.1.1冻结SHA不变。沿用同实现全量718项无失败/50跳过及真实Controller核验证据；按团队规范请求非作者审核后合并，未绕过审核。实验与物理认证限制见RABAS跨规模报告。 -->
 <!-- 2026-10-20 RABAS最终交付：1.1.1冻结后144次独立公共模型比较、完整消融、10秒验证、40次真实核验及6次Controller运行；全量718项无失败/50跳过。Small并列、中大型仅在有效返回方法中领先，正式认证未达标。详见docs/phase2/RABAS_cross_scale_report_20261020.md及RABAS_algorithm_explanation_20261020.md。仅本地提交。 -->
 <!-- 2026-10-20 RABAS 1.1.1：修复模板化造成的下传center覆盖退化，新增有界下传空隙；原独立族转验证，另预留未见结构族；32项算法测试通过。 -->
@@ -747,3 +755,5 @@ cd /Users/tonylizt/Projects/EOS-Course-Project
 - 两轮最新main完整discover均651/651、0失败/错误/跳过、六组真实物理opt-in全部开启；最终259.422秒、退出0。Node32/32；真实Chromium下无GS3/3、GS2/3、共享公开根pilot20/20，正式失败与未认证标识可见。DrvFS的停机测试阶段等待先采栈复现，测试修复后重复及整组通过，生产期限不改。
 - 新原始证据`D:/VC/caabs-p7-evidence-20261019`，旧240/P6的115项逐SHA未变；不复制私有最终测试规格、不修改旧数据。旧物理指纹的冻结数据不能自动升级当前模型；连续证明/正式发布仍BLOCKED。
 - 完整场景SHA、冲突映射、实际命令与Draft PR内容见[P7验收报告](docs/phase2/algorithms/caabs_p7_integration_acceptance.md)、[Rebase记录](docs/phase2/algorithms/caabs_p7_rebase_resolution.md)、[Draft PR正文](docs/phase2/algorithms/caabs_p7_draft_pr.md)。本轮只建议Draft独立审查，不push、建PR或merge，不提供正式合并批准。
+
+<!-- 2026-10-20：李泽同授权提交并推送本轮并行/评分/LAVIS功能及创建PR；提交前fetch确认origin/main仍为82bb261，无需rebase。不自动合并。 -->

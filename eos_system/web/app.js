@@ -35,6 +35,9 @@ async function bootstrap() {
     currentAlgorithms = algorithms.items;
     $("schedule-model").innerHTML = algorithms.models.map(m => `<option value="${escapeHtml(m.model_id)}">${escapeHtml(m.name)}</option>`).join('');
     window.ConsoleUI?.catalog(currentAlgorithms);
+    const execution = await api('/api/execution-settings');
+    if ($('worker-limit')) $('worker-limit').value = execution.max_workers;
+    if ($('worker-status')) $('worker-status').textContent = `最多 ${execution.max_workers} 个 Worker · 当前占用 ${execution.active_runs} 个槽位`;
     await loadScenarios();
     if(sources.catalog_warnings?.length) $("register-message").textContent=sources.catalog_warnings.join("；");
     updateHints();
@@ -286,3 +289,14 @@ $("previous-page").addEventListener("click", () => { pageOffset = Math.max(0, pa
 $("next-page").addEventListener("click", () => { pageOffset += pageSize; refresh(); });
 bootstrap();
 setInterval(() => { if (autoRefresh) refresh(); }, 2000);
+
+// 并发数属于服务全局配置，不混入单次实验算法参数。
+$('apply-worker-limit')?.addEventListener('click', async () => {
+  const button = $('apply-worker-limit'); button.disabled = true;
+  try {
+    const value = Number($('worker-limit').value);
+    const state = await api('/api/execution-settings', {method:'PUT', headers:{'Content-Type':'application/json'},body:JSON.stringify({max_workers:value})});
+    $('worker-status').textContent = `已保存：最多 ${state.max_workers} 个 Worker · 当前占用 ${state.active_runs} 个槽位；已运行任务不受中断`;
+  } catch(error) { $('worker-status').textContent = error.message; }
+  finally { button.disabled = false; }
+});

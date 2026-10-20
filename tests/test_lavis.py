@@ -64,6 +64,33 @@ class MechanismTests(unittest.TestCase):
         bad=configured_observation(self.problem,task,window,'earliest')
         self.assertFalse(observation_source_matches(self.problem,task,window,vars(bad),bad.sat_start_time,bad.sat_end_time))
 
+    def test_expanded_positions_are_source_aligned_and_original_defaults_unchanged(self):
+        import copy
+        before = copy.deepcopy(self.problem.tasks)
+        original,_ = build_pool(self.problem,self.cm,Control())
+        expanded,stats = build_pool(self.problem,self.cm,Control(),strategy='expanded')
+        self.assertEqual(len(original),3)
+        self.assertGreater(len(expanded),len(original))
+        self.assertTrue(set(map(key,original)).issubset(set(map(key,expanded))))
+        self.assertEqual(self.problem.tasks,before)
+        self.assertEqual(stats['candidate_strategy'],'expanded')
+        for item in expanded:
+            self.assertEqual((item.sat_start_time-self.problem.start_time).total_seconds()%1,0)
+            self.assertTrue(self.cm.is_feasible_assignment(item,Schedule()))
+
+    def test_multistart_preserves_incumbent_and_uses_model_alternative(self):
+        single=LavisScheduler(Bias(0)).solve(self.problem,self.cm,self.ctx)
+        context=replace(self.ctx,params=LavisParams(search_mode='multistart',max_branches=4))
+        branched=LavisScheduler(Bias(0)).solve(self.problem,self.cm,context)
+        self.assertEqual(len(single.assignments),1)
+        self.assertEqual(len(branched.assignments),2)
+        self.assertTrue(branched.metadata['lavis']['weights_reused'])
+        self.assertEqual(len(set(branched.assigned_task_ids)),2)
+        replay=Schedule()
+        for item in branched.assignments:
+            self.assertTrue(self.cm.is_feasible_assignment(item,replay))
+            replay.assignments.append(item)
+
     def test_all_24_features_and_overlap_pressure(self):
         rows=extract(self.problem,Schedule(),self.pool,self.pool,Control())
         self.assertTrue(all(len(r)==24 and all(math.isfinite(x) for x in r) for r in rows))

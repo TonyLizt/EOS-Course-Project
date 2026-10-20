@@ -36,6 +36,11 @@ from .planning_preview import require_preview_record, preview_schedule
 
 def _public_run(record: dict) -> dict:
     """隐藏 WSL 文件位置；路径属于服务端配置而不是网页协议。"""
+    from .result_scoring import score_run
+    record['ranking_score'] = record.get('ranking_score') or score_run(record)
+    resources = [e['payload'] for e in record.get('events', [])
+                 if e['event_type'] == 'EXECUTION_RESOURCES']
+    record['execution_resources'] = resources[-1] if resources else record.get('execution_resources')
     record["config"].pop("scenario_path", None)
     return record
 
@@ -122,6 +127,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ok", "version": VERSION, "controller_instance_id": controller.instance_id, "time": now(),
                 "controller": heartbeat,
                 "ui": {"name": "统一调度控制台", "build_id": ui_build_id}}
+
+    @app.get('/api/execution-settings')
+    def execution_settings():
+        return controller.execution_status()
+
+    @app.put('/api/execution-settings')
+    async def update_execution_settings(request: Request):
+        try:
+            payload = await request.json()
+            if not isinstance(payload, dict) or set(payload) != {'max_workers'}:
+                raise ValueError('只允许指定 max_workers')
+            return controller.set_max_workers(payload['max_workers'])
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     @app.get("/api/scenarios")
     def scenarios(source_id: str = "runtime", execution_mode: Literal['formal','planning_preview','physical_validation'] = 'physical_validation'):

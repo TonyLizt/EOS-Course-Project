@@ -1,4 +1,4 @@
-/* Shared comparison rules: no synthetic aggregate score, no cross-condition winners. */
+/* 只在相同条件内比较；综合分使用固定公开公式，失败不计分。 */
 (function (root) {
   'use strict';
   const metrics = [
@@ -13,6 +13,8 @@
   function conditions(run) {
     const c = run.config || {};
     return canonical({scenario_sha256: c.scenario_sha256, scenario_physics_version: c.scenario_provenance?.scenario_physics_version,
+      attitude_model_version: run.preview_validation?.attitude_model_version || c.scenario_provenance?.attitude_model_version || null,
+      worker_limit: run.execution_resources?.worker_limit ?? null,
       execution_mode: c.execution_mode || 'formal', preview_version: run.preview_validation?.preview_version || null,
       schedule_model: c.schedule_model || 'legacy_unspecified',
       algorithm_code_sha: c.algorithm_code_sha, constraints: c.constraints, placement_mode: c.placement_mode,

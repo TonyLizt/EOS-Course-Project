@@ -13,6 +13,17 @@ def configured_observation(problem, task, window, mode):
     last = math.floor((slack+1e-9)/step)
     center = satellite.maneuverability_type == 'non_agile' or mode == 'center'
     k = max(0,min(last,round(slack/(2*step)))) if center else 0
+    return observation_at_index(problem, task, window, k)
+
+
+def observation_at_index(problem, task, window, k):
+    """从真实源采样网格取指定位置；不伪造窗口、角度或插值四元数。"""
+    satellite = problem.satellites[window.satellite_id]
+    step, duration = float(window.time_step), float(task.required_duration)
+    slack = (window.end_time-window.start_time).total_seconds()-duration
+    if (type(k) is not int or k < 0 or not math.isfinite(step) or step <= 0
+            or duration <= 0 or slack < 0 or k*step > slack+1e-9):
+        return None
     start = window.start_time+timedelta(seconds=k*step)
     end = start+timedelta(seconds=duration)
     angles = (window.non_agile_data if satellite.maneuverability_type=='non_agile'
