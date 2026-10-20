@@ -244,6 +244,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     raise ValueError('LAVIS_SCENARIO_PHYSICS_DOMAIN_MISMATCH')
             except (ValueError,OSError) as exc:
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if request.algorithm_id == 'ppo':
+            from algorithms.ppo.model import freeze
+            from algorithms.ppo.protocol import validate_request, validate_scene
+            try:
+                model_provenance = freeze(spec.parse_params(request.algorithm_params).model_id)
+                validate_request(request, model_provenance)
+                raw_scene = json.loads(scene.read_bytes())
+                if raw_scene.get('ground_stations'):
+                    raise ValueError('PPO_MODEL_DOMAIN_MISMATCH: ground stations unsupported')
+                validate_scene(raw_scene, provenance, model_provenance)
+            except (ValueError, OSError) as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
         config = RunConfig(
             **request.model_dump(), model_provenance=model_provenance, run_id=str(uuid.uuid4()), scenario_sha256=digest,
             scenario_path=str(scene), output_kind=profile["kind"], output_root=profile["root_path"],

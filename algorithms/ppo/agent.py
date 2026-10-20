@@ -107,7 +107,7 @@ class PPOAgent:
         ret = torch.tensor(batch["ret"], dtype=torch.float32, device=self.device)
 
         # Advantage normalization
-        adv = (adv - adv.mean()) / (adv.std() + 1e-8)
+        adv = (adv - adv.mean()) / (adv.std(unbiased=False) + 1e-8)
 
         n = states.shape[0]
         idx = np.arange(n)

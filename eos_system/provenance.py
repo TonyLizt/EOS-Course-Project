@@ -71,6 +71,17 @@ def verify_provenance(config) -> None:
     if config.algorithm_id == 'lavis':
         from algorithms.lavis.model import verify_snapshot
         verify_snapshot(config.model_provenance)
+    if config.algorithm_id == 'ppo':
+        from algorithms.ppo.model import verify_snapshot
+        from algorithms.ppo.protocol import validate_request, validate_scene
+        verify_snapshot(config.model_provenance)
+        if config.model_provenance['model_id'] != config.algorithm_params.get('model_id', 'ppo-v1'):
+            raise ValueError('PPO_MODEL_ID_MISMATCH')
+        validate_request(config, config.model_provenance)
+        raw_scene = json.loads(Path(config.scenario_path).read_bytes())
+        if raw_scene.get('ground_stations'):
+            raise ValueError('PPO_MODEL_DOMAIN_MISMATCH: ground stations unsupported')
+        validate_scene(raw_scene, config.scenario_provenance, config.model_provenance)
     snapshot = config.scenario_provenance
     if snapshot.get("provenance_status") == "development_planning_only":
         if config.execution_mode != "planning_preview":

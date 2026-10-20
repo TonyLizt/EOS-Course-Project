@@ -52,6 +52,8 @@ class PPOPolicy(nn.Module):
         """
         Action masking: replace logits of infeasible actions with a very small value.
         """
-        neg = torch.tensor(-1e9, device=logits.device, dtype=logits.dtype)
+        if not (action_mask > 0.5).any(dim=-1).all():
+            raise ValueError('PPO_EMPTY_ACTION_MASK')
+        neg = torch.tensor(float('-inf'), device=logits.device, dtype=logits.dtype)
         # Keep the original value if mask > 0.5; otherwise set it to a very small negative number
         return torch.where(action_mask > 0.5, logits, neg)
