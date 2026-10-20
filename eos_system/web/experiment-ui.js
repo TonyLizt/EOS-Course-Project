@@ -2,9 +2,11 @@
 (function(root){
  'use strict';
  let catalog=[];
+ // 课程交付隐藏未接通的算法入口；后端与历史记录保持可追溯。
+ const visibleCatalog=items=>items.filter(item=>!['mip','ppo'].includes(item.algorithm_id));
  const Rules = typeof module==='object' && module.exports ? require('./comparison.js') : root.RunComparison;
  const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const metrics=[['TP',1],['TCR',1],['BD',1],['TM',-1],['RT',-1],['RV',-1]];
+ const metrics=[['TP',1],['TCR',1],['BD',1],['TM',-1],['RT',-1]];
  const name=id=>catalog.find(a=>a.algorithm_id===id)?.name||({completion_first:'完成率优先',adaptive_repair:'自适应修复'}[id])||id;
  const model=id=>({completion_first:'完成率优先',adaptive_repair:'自适应修复'}[id]||'历史未记录');
  const format=(k,v)=>v==null?'—':k==='TCR'?(v*100).toFixed(1)+'%':Number(v).toFixed(3);
@@ -46,7 +48,13 @@
   const cohortKey=run=>Rules.identified(run)?JSON.stringify(Rules.conditions(run)):'unknown:'+run.run_id;
   const cohorts=new Map();for(const {run} of rows){const key=cohortKey(run);if(!cohorts.has(key))cohorts.set(key,cohorts.size+1);}
   let previousCohort=null;
-  return `<div class="table-wrap comparison-results" tabindex="0" aria-label="算法比较"><table><thead><tr><th scope="col">算法</th><th scope="col">来源 / 初始模型</th><th scope="col">状态 / 核验</th><th scope="col">完成任务</th><th scope="col">综合分 / 100</th>${metrics.map(([m])=>`<th scope="col">${m}</th>`).join('')}<th scope="col">查看</th></tr></thead><tbody>${rows.map(({experiment,run})=>{
+  // 原生表头按钮支持键盘，aria-sort和箭头同步表达当前方向。
+  const sortHeader=(key,label)=>{
+   const active=sortMetric===key, state=active?(direction==='asc'?'ascending':'descending'):'none';
+   const next=active&&direction==='desc'?'升序':active?'降序':['TM','RT'].includes(key)?'升序':'降序';
+   return `<th scope="col" aria-sort="${state}"><button type="button" class="column-sort" data-sort-metric="${key}" data-focus-key="sort-${key}" aria-label="${E(label)}，点击按${next}排序">${E(label)} <span aria-hidden="true">${active?(direction==='asc'?'↑':'↓'):'↕'}</span></button></th>`;
+  };
+  return `<div class="table-wrap comparison-results" tabindex="0" aria-label="算法比较"><table><thead><tr><th scope="col">算法</th><th scope="col">来源 / 初始模型</th><th scope="col">状态 / 核验</th>${sortHeader('completed_tasks','完成任务')}${sortHeader('SCORE','综合分 / 100')}${metrics.map(([m])=>sortHeader(m,m)).join('')}<th scope="col">查看</th></tr></thead><tbody>${rows.map(({experiment,run})=>{
    const m=usable(run)?run.metrics:null;
    const validation=run.result_kind==='physical_validation'?'工程物理采样通过':run.result_kind==='planning_preview'?'采样通过 · 未认证':run.continuous_certification?.status||'核验未提供';
    const status=run.status==='SUCCEEDED'&&!m?'计划不可用':run.status;
@@ -76,27 +84,31 @@
    }).join('')}</div></div>`;
   }).join('')+'</div>';
  }
- function comparison(container,select,orderBox,onSelect,{compactSelection=false,sortSelect=null,directionSelect=null}={}){
-  let records=[],selected=null,scope='',chosen=null;
+ function comparison(container,select,orderBox,onSelect,{compactSelection=false}={}){
+  let records=[],selected=null,scope='',chosen=null,sortMetric='',sortDirection='desc';
   function render(){
    const arranged=orderedRows(records,select.value),active=arranged.filter(r=>chosen===null||chosen.has(r.run.run_id)).map(r=>r.run.run_id);
-   update(container,results(records,selected,select.value,active,sortSelect?.value||'',directionSelect?.value||'desc'));
+   update(container,results(records,selected,select.value,active,sortMetric,sortDirection));
    orderBox.hidden=false;
    if(compactSelection){update(orderBox,compactChoices(orderedRows(records,'experiment'),active));return;}
    update(orderBox,filterChoices(records,active));
   }
   select.addEventListener('change',render);
-  sortSelect?.addEventListener('change',()=>{
-    if(directionSelect)directionSelect.value=['TM','RT','RV'].includes(sortSelect.value)?'asc':'desc';
-    render();
-  });
-  directionSelect?.addEventListener('change',render);
   orderBox.addEventListener('change',event=>{
    const input=event.target.closest('[data-result-id]');if(!input)return;
    chosen=chosen??new Set(orderedRows(records,'experiment').map(r=>r.run.run_id));
    if(input.checked)chosen.add(input.dataset.resultId);else chosen.delete(input.dataset.resultId);render();
   });
-  container.addEventListener('click',event=>{const b=event.target.closest('.select-algorithm');if(b)onSelect(b.dataset.experiment,b.dataset.run);});
+  container.addEventListener('click',event=>{
+   const header=event.target.closest('[data-sort-metric]');
+   if(header){
+    const key=header.dataset.sortMetric;
+    // 首次点击优先显示更优值；再次点击反转。轮询和筛选保留排序状态。
+    sortDirection=key===sortMetric?(sortDirection==='asc'?'desc':'asc'):['TM','RT'].includes(key)?'asc':'desc';
+    sortMetric=key;render();return;
+   }
+   const b=event.target.closest('.select-algorithm');if(b)onSelect(b.dataset.experiment,b.dataset.run);
+  });
   return {set(next,id){const key=next.map(e=>e.experiment_id).join('|');if(key!==scope){scope=key;chosen=null;}records=next;selected=id;render();}};
  }
  function card(prefix,id,heading,content,extra=''){
@@ -130,6 +142,6 @@
    finally{busy=false;box.dataset.adding='false';box.dataset.key='';try{await add(null,null);}catch(error){failure=error.message;}if(failure)box.querySelector('.hint').textContent='部分算法未添加：'+failure;}
   };
  }
- const api={E,name,model,format,usable,results,available,update,orderedRows,compactChoices,filterChoices,comparison,card,bindCards,description,setCatalog:v=>{catalog=v;},getCatalog:()=>catalog};
+ const api={E,name,model,format,usable,results,available,update,orderedRows,compactChoices,filterChoices,comparison,card,bindCards,description,visibleCatalog,setCatalog:v=>{catalog=visibleCatalog(v);},getCatalog:()=>catalog};
  if(typeof module==='object'&&module.exports)module.exports=api;else root.ExperimentUI=api;
 })(typeof window==='undefined'?globalThis:window);

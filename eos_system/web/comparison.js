@@ -3,7 +3,7 @@
   'use strict';
   const metrics = [
     ['TP', 1, '总收益'], ['TCR', 1, '完成率'], ['BD', 1, '负载均衡度'],
-    ['TM', -1, '归一化等待时间'], ['RT', -1, '算法耗时 / 秒'], ['RV', -1, '收益样本方差']
+    ['TM', -1, '归一化等待时间'], ['RT', -1, '算法耗时 / 秒']
   ];
   function canonical(value) {
     if (Array.isArray(value)) return value.map(canonical);

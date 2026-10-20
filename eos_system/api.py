@@ -26,6 +26,7 @@ from .temporary_controls import TemporaryControls
 from .deletion import remove_exported_files
 from .exporting import render_csv, render_json, require_certified_record, require_exportable_record
 from .storage import Database, now
+from .statistics_export import StatisticsExportRequest
 from .replay_service import ReplayError, ReplayService, REPLAY_CONFIG_ID
 from .visualization import OrbitUnavailable, orbit_cache_path
 from .provenance import capture_execution_provenance
@@ -437,6 +438,35 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if not accepted:
             raise HTTPException(status_code=409, detail=f"实验已结束：{status}")
         return {"run_id": run_id, "status": status, "cancel_requested": True}
+
+    @app.post('/api/statistics/export')
+    def statistics_export(request: StatisticsExportRequest):
+        # 先读取受保护的结果快照，压缩在锁外进行，避免阻塞Worker终态提交。
+        from .statistics_export import MAX_RUNS, render_statistics
+        ids = list(dict.fromkeys(request.experiment_ids))
+        items = []
+        with controller.finalization_lock:
+            with database.connect() as conn:
+                for eid in ids:
+                    if conn.execute('SELECT 1 FROM experiments WHERE experiment_id=?', (eid,)).fetchone() is None:
+                        raise HTTPException(status_code=404, detail='所选实验已不存在，请刷新列表')
+                    links = conn.execute('SELECT run_id,removed_at FROM experiment_runs WHERE experiment_id=? '
+                        + ('' if request.include_removed else 'AND removed_at IS NULL ') + 'ORDER BY rowid', (eid,)).fetchall()
+                    for link in links:
+                        if len(items) >= MAX_RUNS:
+                            raise HTTPException(status_code=413, detail='一次最多导出500次算法运行，请分批选择实验')
+                        record = database.get_run(link['run_id'])
+                        if record is not None:
+                            items.append({'experiment_id': eid, 'removed_at': link['removed_at'], 'record': record})
+        try:
+            content = render_statistics(items, request.format, ids, request.include_removed)
+        except OverflowError as exc:
+            raise HTTPException(status_code=413, detail=str(exc)) from exc
+        from datetime import datetime, timezone
+        name = 'eos-statistics-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '.' + request.format
+        media = 'text/csv' if request.format == 'csv' else 'application/zip'
+        return Response(content, media_type=media, headers={'Content-Disposition': f'attachment; filename="{name}"',
+            'Cache-Control': 'no-store', 'X-EOS-Statistics-Schema': 'eos-statistics-v1'})
 
     @app.get("/api/runs/{run_id}/export")
     def export_run(run_id: str, format: str = Query(pattern="^(json|csv)$")):
