@@ -1,0 +1,440 @@
+{
+  "date": "2026-10-20",
+  "base_main": "82bb261",
+  "branch": "feat/parallel-ranking-lavis-optimization",
+  "training_performed": false,
+  "scenarios_generated": false,
+  "frozen_test_used": false,
+  "budget_s": 30,
+  "seed": 42,
+  "model_id": "lavis-v3-ranking",
+  "weight_sha256": "e8d83ae7dd56af6571a8bbecf2c9705dc89d7f814c59d8b1c5b3d16b1085487c",
+  "optional_strategy": {
+    "search_mode": "multistart",
+    "candidate_strategy": "expanded",
+    "max_branches": 8
+  },
+  "defaults_changed": false,
+  "score_policy": "completion70-profit20-timeliness10-v1",
+  "score_formula": "70*TCR + 20*(TP/total_priority) + 10*(1-TM)",
+  "solver_rows": [
+    {
+      "scenario": "EOS-G0016",
+      "variant": "lavis-greedy",
+      "source_group": "eos-course-task-source-0016",
+      "completed": 17,
+      "total": 20,
+      "RT": 0.06644966899999982,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0016",
+      "variant": "lavis-multistart",
+      "source_group": "eos-course-task-source-0016",
+      "completed": 17,
+      "total": 20,
+      "RT": 0.6500870509999999,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0016",
+      "variant": "profit_first",
+      "source_group": "eos-course-task-source-0016",
+      "completed": 17,
+      "total": 20,
+      "RT": 0.030675265999999368,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0016",
+      "variant": "rabas",
+      "source_group": "eos-course-task-source-0016",
+      "completed": 17,
+      "total": 20,
+      "RT": 0.14092674399999972,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0041",
+      "variant": "lavis-greedy",
+      "source_group": "eos-course-task-source-0041",
+      "completed": 27,
+      "total": 40,
+      "RT": 0.11237195300000025,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0041",
+      "variant": "lavis-multistart",
+      "source_group": "eos-course-task-source-0041",
+      "completed": 27,
+      "total": 40,
+      "RT": 2.504125943,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0041",
+      "variant": "profit_first",
+      "source_group": "eos-course-task-source-0041",
+      "completed": 27,
+      "total": 40,
+      "RT": 0.14914337499999952,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0041",
+      "variant": "rabas",
+      "source_group": "eos-course-task-source-0041",
+      "completed": 27,
+      "total": 40,
+      "RT": 0.41814476699999936,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0066",
+      "variant": "lavis-greedy",
+      "source_group": "eos-course-task-source-0066",
+      "completed": 34,
+      "total": 40,
+      "RT": 0.2115234430000008,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0066",
+      "variant": "lavis-multistart",
+      "source_group": "eos-course-task-source-0066",
+      "completed": 34,
+      "total": 40,
+      "RT": 4.640575539,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0066",
+      "variant": "profit_first",
+      "source_group": "eos-course-task-source-0066",
+      "completed": 34,
+      "total": 40,
+      "RT": 0.13506464000000307,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0066",
+      "variant": "rabas",
+      "source_group": "eos-course-task-source-0066",
+      "completed": 34,
+      "total": 40,
+      "RT": 0.9246357399999994,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0091",
+      "variant": "lavis-greedy",
+      "source_group": "eos-course-task-source-0091",
+      "completed": 70,
+      "total": 80,
+      "RT": 0.9344261100000004,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0091",
+      "variant": "lavis-multistart",
+      "source_group": "eos-course-task-source-0091",
+      "completed": 70,
+      "total": 80,
+      "RT": 28.502151015,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0091",
+      "variant": "profit_first",
+      "source_group": "eos-course-task-source-0091",
+      "completed": 70,
+      "total": 80,
+      "RT": 0.5122102429999984,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "EOS-G0091",
+      "variant": "rabas",
+      "source_group": "eos-course-task-source-0091",
+      "completed": 70,
+      "total": 80,
+      "RT": 3.1758926649999992,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F033-V1",
+      "variant": "lavis-greedy",
+      "source_group": "lavis-hc-family-d611cb5ec134a0a52374",
+      "completed": 15,
+      "total": 64,
+      "RT": 0.10752238900000322,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F033-V1",
+      "variant": "lavis-multistart",
+      "source_group": "lavis-hc-family-d611cb5ec134a0a52374",
+      "completed": 23,
+      "total": 64,
+      "RT": 2.8681564859999966,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F033-V1",
+      "variant": "profit_first",
+      "source_group": "lavis-hc-family-d611cb5ec134a0a52374",
+      "completed": 21,
+      "total": 64,
+      "RT": 2.9878024530000005,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F033-V1",
+      "variant": "rabas",
+      "source_group": "lavis-hc-family-d611cb5ec134a0a52374",
+      "completed": 22,
+      "total": 64,
+      "RT": 0.3950761800000038,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F034-V1",
+      "variant": "lavis-greedy",
+      "source_group": "lavis-hc-family-0e0c5c89f9b4d61c169d",
+      "completed": 50,
+      "total": 96,
+      "RT": 0.6313514750000024,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F034-V1",
+      "variant": "lavis-multistart",
+      "source_group": "lavis-hc-family-0e0c5c89f9b4d61c169d",
+      "completed": 75,
+      "total": 96,
+      "RT": 25.43541397099999,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F034-V1",
+      "variant": "profit_first",
+      "source_group": "lavis-hc-family-0e0c5c89f9b4d61c169d",
+      "completed": 68,
+      "total": 96,
+      "RT": 5.017224012,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F034-V1",
+      "variant": "rabas",
+      "source_group": "lavis-hc-family-0e0c5c89f9b4d61c169d",
+      "completed": 77,
+      "total": 96,
+      "RT": 2.207985874000002,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F035-V1",
+      "variant": "lavis-greedy",
+      "source_group": "lavis-hc-family-2421f008b2215aed1f4b",
+      "completed": 17,
+      "total": 64,
+      "RT": 0.08146856499999444,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F035-V1",
+      "variant": "lavis-multistart",
+      "source_group": "lavis-hc-family-2421f008b2215aed1f4b",
+      "completed": 24,
+      "total": 64,
+      "RT": 1.3094158140000047,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F035-V1",
+      "variant": "profit_first",
+      "source_group": "lavis-hc-family-2421f008b2215aed1f4b",
+      "completed": 20,
+      "total": 64,
+      "RT": 0.2985601910000071,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F035-V1",
+      "variant": "rabas",
+      "source_group": "lavis-hc-family-2421f008b2215aed1f4b",
+      "completed": 20,
+      "total": 64,
+      "RT": 0.3032259870000047,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F036-V1",
+      "variant": "lavis-greedy",
+      "source_group": "lavis-hc-family-037e3784e184eaa21f81",
+      "completed": 78,
+      "total": 112,
+      "RT": 1.520821791000003,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F036-V1",
+      "variant": "lavis-multistart",
+      "source_group": "lavis-hc-family-037e3784e184eaa21f81",
+      "completed": 86,
+      "total": 112,
+      "RT": 28.505325653000014,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F036-V1",
+      "variant": "profit_first",
+      "source_group": "lavis-hc-family-037e3784e184eaa21f81",
+      "completed": 79,
+      "total": 112,
+      "RT": 15.356917360000011,
+      "status": "SOLVER_RETURNED"
+    },
+    {
+      "scenario": "HC-F036-V1",
+      "variant": "rabas",
+      "source_group": "lavis-hc-family-037e3784e184eaa21f81",
+      "completed": 90,
+      "total": 112,
+      "RT": 4.573714650999989,
+      "status": "SOLVER_RETURNED"
+    }
+  ],
+  "independent_audit": [
+    {
+      "scenario": "EOS-G0016",
+      "completed": 17,
+      "status": "SAMPLED_PHYSICAL_PASS",
+      "attitude_model_version": "target_pointing_inertial_euler_v1"
+    },
+    {
+      "scenario": "EOS-G0041",
+      "completed": 27,
+      "status": "SAMPLED_PHYSICAL_PASS",
+      "attitude_model_version": "target_pointing_inertial_euler_v1"
+    },
+    {
+      "scenario": "EOS-G0066",
+      "completed": 34,
+      "status": "SAMPLED_PHYSICAL_PASS",
+      "attitude_model_version": "target_pointing_inertial_euler_v1"
+    },
+    {
+      "scenario": "EOS-G0091",
+      "completed": 70,
+      "status": "SAMPLED_PHYSICAL_PASS",
+      "attitude_model_version": "target_pointing_inertial_euler_v1"
+    },
+    {
+      "scenario": "HC-F033-V1",
+      "completed": 23,
+      "status": "SAMPLED_PHYSICAL_PASS",
+      "attitude_model_version": "target_pointing_inertial_euler_v1"
+    },
+    {
+      "scenario": "HC-F034-V1",
+      "completed": 75,
+      "status": "SAMPLED_PHYSICAL_PASS",
+      "attitude_model_version": "target_pointing_inertial_euler_v1"
+    },
+    {
+      "scenario": "HC-F035-V1",
+      "completed": 24,
+      "status": "SAMPLED_PHYSICAL_PASS",
+      "attitude_model_version": "target_pointing_inertial_euler_v1"
+    },
+    {
+      "scenario": "HC-F036-V1",
+      "completed": 86,
+      "status": "SAMPLED_PHYSICAL_PASS",
+      "attitude_model_version": "target_pointing_inertial_euler_v1"
+    }
+  ],
+  "http_acceptance": {
+    "base_main": "82bb261",
+    "runs": [
+      {
+        "algorithm": "lavis",
+        "run_id": "a08fd2c9-25eb-4061-88e9-e81b2fa6b616",
+        "status": "SUCCEEDED",
+        "completed": 23,
+        "score": 33.606096,
+        "RT": 3.1864084750000004,
+        "worker_pid": 413,
+        "worker_limit": 2
+      },
+      {
+        "algorithm": "rabas",
+        "run_id": "cd2cf1f8-6845-4dd0-be00-c6254b808c8c",
+        "status": "SUCCEEDED",
+        "completed": 22,
+        "score": 32.201534,
+        "RT": 0.5554004800000012,
+        "worker_pid": 414,
+        "worker_limit": 2
+      },
+      {
+        "algorithm": "profit_first",
+        "run_id": "4365c01b-3c23-44ea-afe2-a1890cb418bf",
+        "status": "SUCCEEDED",
+        "completed": 21,
+        "score": 32.998623,
+        "RT": 3.025938513,
+        "worker_pid": 628,
+        "worker_limit": 2
+      },
+      {
+        "algorithm": "caabs",
+        "run_id": "c7497901-fa4e-4569-89fc-f3474eef7506",
+        "status": "SUCCEEDED",
+        "completed": 23,
+        "score": 34.341684,
+        "RT": 0.7102332279999999,
+        "worker_pid": 660,
+        "worker_limit": 2
+      }
+    ],
+    "max_observed_live_workers": 2,
+    "training_performed": false,
+    "scope": "real isolated HTTP/Worker/Controller/physics/SQLite; no frozen test access",
+    "invalid_limits": "422",
+    "temporary_scoring_no_db_writes": "PASS",
+    "service_exit_codes": [
+      -15,
+      -15
+    ],
+    "persisted_limit_after_restart": 3,
+    "controls_and_exports": "PASS",
+    "temporary_runtime_cleaned": true,
+    "original_models_unchanged": true
+  },
+  "regressions": {
+    "parallel_shutdown_daemon": {
+      "run": 28,
+      "passed": 28
+    },
+    "interfaces_scoring_lavis_compatibility": {
+      "run": 36,
+      "passed": 36
+    },
+    "windows_node": {
+      "run": 33,
+      "passed": 33
+    }
+  },
+  "test_invocation_note": "First 36-test invocation lacked tests on PYTHONPATH and had one import error; rerun with PYTHONPATH=tests:.",
+  "limits": [
+    "Eight selected public validation scenarios only; not a full 52-scenario performance study.",
+    "Independent audit is sampled physics, not continuous certification.",
+    "Expanded candidates reuse old weights with a changed candidate distribution; no generalization claim.",
+    "Parallel resources affect runtime; serial setting 1 required for controlled runtime comparisons.",
+    "No human visual browser acceptance claimed."
+  ]
+}

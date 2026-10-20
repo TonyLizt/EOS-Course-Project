@@ -11,13 +11,19 @@ class LavisScheduler:
     def __init__(self,predictor):self.predictor=predictor
 
     def solve(self,problem,constraints,context):
+        if context.params.search_mode == 'multistart':
+            from .multistart import solve_multistart
+            return solve_multistart(self, problem, constraints, context)
+        return self._greedy_solve(problem, constraints, context)
+
+    def _greedy_solve(self,problem,constraints,context):
         validate_weights(context.objective_weights)
         plan=Schedule();trace=[];stats={};started=time.monotonic()
         reserve=max(.1,.05*context.time_budget_s)
         if context.time_budget_s<=reserve:raise ValueError('LAVIS_BUDGET_TOO_SMALL')
         control=Control(deadline=started+context.time_budget_s-reserve,cancelled=context.is_cancelled)
         try:
-            pool,stats=build_pool(problem,constraints,control)
+            pool,stats=build_pool(problem,constraints,control,strategy=context.params.candidate_strategy)
             for _ in problem.tasks:
                 current=feasible(pool,plan,constraints,control)
                 if not current:break

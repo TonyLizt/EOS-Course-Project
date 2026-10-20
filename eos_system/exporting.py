@@ -44,6 +44,11 @@ def render_json(record: dict) -> bytes:
     require_exportable_record(record)
     plan = dict(record["plan"])
     metric = record["metrics"]
+    from .result_scoring import score_run
+    plan['ranking_score'] = record.get('ranking_score') or score_run(record)
+    plan['execution_resources'] = record.get('execution_resources') or next(
+        (e['payload'] for e in reversed(record.get('events', []))
+         if e['event_type'] == 'EXECUTION_RESOURCES'), None)
     plan["metrics"] = {
         "TP": metric["TP"], "TCR": metric["TCR"], "BD": metric["BD"],
         "TM": metric["TM"], "RT": metric["RT"], "RV": metric["RV"],
@@ -73,12 +78,16 @@ def render_csv(record: dict) -> bytes:
               "sat_start_time", "sat_end_time", "ground_station_id", "gs_start_time", "gs_end_time",
               "completed_tasks", "total_tasks", "TP", "TCR", "BD", "TM", "RT",
               "scenario_sha256", "scenario_physics_version", "parent_scenario_sha256", "algorithm_code_sha",
-              "continuous_certification_status", "continuous_audit_version", "certified_plan_sha256", "result_kind", "physical_validation_status", "validated_plan_sha256", "validation_scope"]
+              "continuous_certification_status", "continuous_audit_version", "certified_plan_sha256", "result_kind", "physical_validation_status", "validated_plan_sha256", "validation_scope", "ranking_score", "ranking_policy"]
     writer = csv.DictWriter(output, fieldnames=fields)
     writer.writeheader()
     metrics = record["metrics"]
     certificate = record["continuous_certification"]
+    from .result_scoring import score_run
+    score = record.get('ranking_score') or score_run(record)
     base = {
+        'ranking_score': score['value'] if score else None,
+        'ranking_policy': score['policy'] if score else None,
         "continuous_certification_status":certificate["status"],
         "continuous_audit_version":certificate.get("audit_version", ""),
         "certified_plan_sha256":certificate.get("plan_sha256", ""),

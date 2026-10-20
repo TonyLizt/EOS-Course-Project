@@ -7,7 +7,7 @@
   let controlPending=false,controlKey=null,controlSignature=null;
   const comparison=UI.comparison($('comparison-groups'),$('comparison-mode'),$('comparison-choices'),(eid,rid)=>{
     if(eid!==experimentId)showExperiment(eid,rid);else{selectedId=rid;refreshExperiments();}
-  });
+  },{sortSelect:$('result-sort'),directionSelect:$('result-direction')});
   function catalog(algorithms) {
     UI.setCatalog(algorithms);
     const first=algorithms.find(a=>a.availability==='ready')?.algorithm_id;
@@ -66,9 +66,13 @@
   async function refreshExperiments() {
     const token=++generation;
     try {
-      let list=await api(`/api/experiments?limit=${pageSize}&offset=${pageOffset}`);
+      let [list,execution]=await Promise.all([
+        api(`/api/experiments?limit=${pageSize}&offset=${pageOffset}`),api('/api/execution-settings')]);
       if(pageOffset>0&&pageOffset>=list.total){pageOffset=0;list=await api(`/api/experiments?limit=${pageSize}&offset=0`);}
       if(token!==generation)return;
+      const workerStatus=$('worker-status'),workerInput=$('worker-limit');
+      if(workerStatus)workerStatus.textContent=`最多 ${execution.max_workers} 个 Worker · 当前占用 ${execution.active_runs} 个槽位（含核验）`;
+      if(workerInput&&document.activeElement!==workerInput&&!$('apply-worker-limit')?.disabled)workerInput.value=execution.max_workers;
       $('run-count').textContent=`共 ${list.total} 个实验（每行包含多个算法）`;
       $('page-label').textContent=list.total?`${pageOffset+1}–${Math.min(pageOffset+pageSize,list.total)} / ${list.total}`:'0 / 0';
       $('previous-page').disabled=pageOffset===0;$('next-page').disabled=pageOffset+pageSize>=list.total;

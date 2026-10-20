@@ -5,6 +5,9 @@ from .algorithm_registry import AlgorithmParams, AlgorithmSpec, list_algorithms,
 # Presentation-only metadata, shared by every page. Defaults/types remain owned
 # by the existing Pydantic models; do not replace nullable defaults with guesses.
 _PARAMETER_HELP = {
+    'candidate_strategy': ('LAVIS候选策略', 'configured保持原候选；expanded增加源网格上的观测位置，原权重不变，属于扩展候选分布验证。'),
+    'search_mode': ('LAVIS搜索方式', 'greedy保留原模型路径；multistart复用原权重尝试多条模型续排路径，不重新训练。'),
+    'max_branches': ('LAVIS替代分支上限', '每个分支仍由模型打分续排，全部分支共用本次算法预算。'),
     'model_id': ('冻结模型', '选择管理员登记的训练模型ID；不接受任意文件路径。'),
     'max_candidates_per_task': ('每任务候选上限', '限制每项任务保留的离散候选数；默认配置由对应算法决定。'),
     'alns_iterations': ('破坏重建轮数', '自适应修复的破坏与重建迭代上限。'),

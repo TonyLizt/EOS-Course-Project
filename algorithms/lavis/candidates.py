@@ -1,8 +1,10 @@
 """稳定轮转的有限候选池；来源先核验一次，池冻结后不修改Assignment。"""
 from collections import defaultdict, deque
 from dataclasses import replace
+from itertools import islice
+import math
 from schedulers.constraint_model import Schedule, TimePlacementStrategy
-from schedulers.assignment_building import configured_observation
+from schedulers.assignment_building import configured_observation, observation_at_index
 from schedulers.source_windows import observation_source_matches
 from .protocol import POOL_CONFIG
 
@@ -18,8 +20,11 @@ def round_robin(groups):
         group=active.popleft();yield group.popleft()
         if group:active.append(group)
 
-def build_pool(problem, constraints, control, config=None):
-    config=config or POOL_CONFIG
+def build_pool(problem, constraints, control, config=None, *, strategy='configured'):
+    if strategy not in ('configured', 'expanded'):
+        raise ValueError('LAVIS_UNKNOWN_CANDIDATE_STRATEGY')
+    config=config or (POOL_CONFIG if strategy=='configured' else POOL_CONFIG | {
+        'max_candidates_per_task':96, 'max_candidates_total':8192})
     empty=Schedule(); comm=defaultdict(list); per_task=[]
     records=0; admitted=0; selected_windows=0
     stats={'source_records':0,'source_records_truncated':False,'window_quota_truncated_tasks':0}
@@ -39,11 +44,21 @@ def build_pool(problem, constraints, control, config=None):
         ordered=[sorted(groups[sid],key=lambda w:(w.start_time,w.end_time,w.window_id)) for sid in sorted(groups)]
         if len(task.windows)>config['max_source_windows_per_task']:stats['window_quota_truncated_tasks']+=1
         result=[];seen=set()
-        for index,w in enumerate(round_robin(ordered)):
+        selected=list(islice(round_robin(ordered),config['max_source_windows_per_task']))
+        selected_windows+=len(selected)
+        variants=[(w,None) for w in selected]
+        if strategy=='expanded':
+            # 先覆盖所有来源窗口，再覆盖时间位置，避免第一个窗口耗尽候选预算。
+            for fraction in (.5,1.,.25,.75):
+                for w in selected:
+                    step=float(w.time_step)
+                    slack=(w.end_time-w.start_time).total_seconds()-task.required_duration
+                    if math.isfinite(step) and step>0 and slack>=0:
+                        variants.append((w,round(math.floor((slack+1e-9)/step)*fraction)))
+        for w,offset in variants:
             control.checkpoint()
-            if index>=config['max_source_windows_per_task']:break
-            selected_windows+=1
-            a=configured_observation(problem,task,w,constraints.placement_mode)
+            a=(configured_observation(problem,task,w,constraints.placement_mode) if offset is None
+               else observation_at_index(problem,task,w,offset))
             if a is None:continue
             options=[]
             if not problem.ground_stations:options=[a]
@@ -73,7 +88,7 @@ def build_pool(problem, constraints, control, config=None):
         control.checkpoint()
         if len(pool)>=config['max_candidates_total']:break
         pool.append(a)
-    stats.update(source_records=records,selected_windows=selected_windows,admitted_before_total_limit=admitted,
+    stats.update(candidate_strategy=strategy, source_records=records,selected_windows=selected_windows,admitted_before_total_limit=admitted,
                  candidates=len(pool),total_quota_truncated=admitted>len(pool),
                  omitted_candidate_tasks=len([items for items in per_task if items])-len({a.task_id for a in pool}))
     return sorted(pool,key=key),stats

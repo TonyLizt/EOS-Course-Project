@@ -2,6 +2,7 @@
 (function(root){
  'use strict';
  let catalog=[];
+ const Rules = typeof module==='object' && module.exports ? require('./comparison.js') : root.RunComparison;
  const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const metrics=[['TP',1],['TCR',1],['BD',1],['TM',-1],['RT',-1],['RV',-1]];
  const name=id=>catalog.find(a=>a.algorithm_id===id)?.name||({completion_first:'完成率优先',adaptive_repair:'自适应修复'}[id])||id;
@@ -16,24 +17,46 @@
   const selector=key?`[data-focus-key="${CSS.escape(key)}"]`:rid?`button[data-run="${CSS.escape(rid)}"]`:eid?`button[data-experiment="${CSS.escape(eid)}"]`:null;
   if(selector)box.querySelector(selector)?.focus({preventScroll:true});
  }
- function orderedRows(experiments,mode='algorithm',selectedIds=null){
+ function orderedRows(experiments,mode='algorithm',selectedIds=null,sortMetric='',direction='desc'){
   let rows=experiments.flatMap((experiment,ei)=>experiment.runs.map(run=>({experiment,run,ei})));
   if(selectedIds!==null){const chosen=new Set(selectedIds);rows=rows.filter(r=>chosen.has(r.run.run_id));}
-  if(mode==='experiment')return rows.sort((a,b)=>a.ei-b.ei);
   const ids=[...new Set(rows.map(r=>r.run.config.algorithm_id))];
-  return rows.sort((a,b)=>ids.indexOf(a.run.config.algorithm_id)-ids.indexOf(b.run.config.algorithm_id));
+  rows.sort(mode==='experiment'?(a,b)=>a.ei-b.ei:(a,b)=>ids.indexOf(a.run.config.algorithm_id)-ids.indexOf(b.run.config.algorithm_id));
+  if(!sortMetric)return rows;
+  // 不跨场景、预算、初始模型或并发合同争夺名次；未知条件不强行合组。
+  const groups=new Map();
+  for(const row of rows){
+    const key=Rules.identified(row.run)?JSON.stringify(Rules.conditions(row.run)):'unknown:'+row.run.run_id;
+    if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row);
+  }
+  const value=row=>{
+    if(!usable(row.run)||(row.run.continuous_certification?.status==='INCONCLUSIVE'&&!row.run.temporary))return null;
+    const v=sortMetric==='SCORE'?row.run.ranking_score?.value:row.run.metrics?.[sortMetric];
+    return typeof v==='number'&&Number.isFinite(v)?v:null;
+  };
+  return [...groups.values()].flatMap(group=>group.sort((a,b)=>{
+    const x=value(a),y=value(b);
+    if(x===null||y===null)return x===y?0:x===null?1:-1;
+    return (direction==='asc'?1:-1)*(x-y);
+  }));
  }
- function results(experiments,selected,mode='algorithm',selectedIds=null){
-  const rows=orderedRows(experiments,mode,selectedIds);
+ function results(experiments,selected,mode='algorithm',selectedIds=null,sortMetric='',direction='desc'){
+  const rows=orderedRows(experiments,mode,selectedIds,sortMetric,direction);
   if(!rows.length)return '<p>暂无已选择结果；请在上方选择需要比较的算法结果。</p>';
-  return `<div class="table-wrap comparison-results" tabindex="0" aria-label="算法比较"><table><thead><tr><th scope="col">算法</th><th scope="col">来源 / 初始模型</th><th scope="col">状态 / 核验</th><th scope="col">完成任务</th>${metrics.map(([m])=>`<th scope="col">${m}</th>`).join('')}<th scope="col">查看</th></tr></thead><tbody>${rows.map(({experiment,run})=>{
+  const cohortKey=run=>Rules.identified(run)?JSON.stringify(Rules.conditions(run)):'unknown:'+run.run_id;
+  const cohorts=new Map();for(const {run} of rows){const key=cohortKey(run);if(!cohorts.has(key))cohorts.set(key,cohorts.size+1);}
+  let previousCohort=null;
+  return `<div class="table-wrap comparison-results" tabindex="0" aria-label="算法比较"><table><thead><tr><th scope="col">算法</th><th scope="col">来源 / 初始模型</th><th scope="col">状态 / 核验</th><th scope="col">完成任务</th><th scope="col">综合分 / 100</th>${metrics.map(([m])=>`<th scope="col">${m}</th>`).join('')}<th scope="col">查看</th></tr></thead><tbody>${rows.map(({experiment,run})=>{
    const m=usable(run)?run.metrics:null;
    const validation=run.result_kind==='physical_validation'?'工程物理采样通过':run.result_kind==='planning_preview'?'采样通过 · 未认证':run.continuous_certification?.status||'核验未提供';
    const status=run.status==='SUCCEEDED'&&!m?'计划不可用':run.status;
    const note=m?validation:run.status==='SUCCEEDED'?(run.continuous_certification?.status||'核验未提供'):'';
    const source=experiment.temporary?'临时':'已保存';
    const gantt=experiment.temporary?`/visualization/temporary-gantt/${encodeURIComponent(experiment.experiment_id)}/${encodeURIComponent(run.run_id)}`:`/visualization/gantt/${encodeURIComponent(run.run_id)}`;
-   return `<tr class="${run.run_id===selected?'selected':''}" ${run.run_id===selected?'aria-current="true"':''} data-run="${E(run.run_id)}"><th scope="row">${experiment.temporary?E(name(run.config.algorithm_id)):`<button type="button" class="select-algorithm" data-experiment="${E(experiment.experiment_id)}" data-run="${E(run.run_id)}">${E(name(run.config.algorithm_id))}</button>`}</th><td><span class="result-source">${source}</span> ${E(model(run.config.schedule_model))}</td><td><span>${E(status)}</span>${note?'<small class="validation-note">'+E(note)+'</small>':''}${run.error?'<small class="validation-note">'+E(run.error.message)+'</small>':''}</td><td>${m?`${m.completed_tasks} / ${m.total_tasks}`:'—'}</td>${metrics.map(([k])=>`<td>${format(k,m?.[k])}</td>`).join('')}<td>${usable(run)?`<a href="${E(gantt)}" target="_blank" rel="noopener">${experiment.temporary?'临时 Gantt':'Gantt'}</a>`:'尚无计划'}</td></tr>`;
+   const cohort=cohortKey(run);
+   const divider=sortMetric&&cohorts.size>1&&cohort!==previousCohort?`<tr class="condition-group"><th colspan="${6+metrics.length}">${Rules.identified(run)?'同条件组 '+cohorts.get(cohort):'条件记录不完整'} · 不同组之间不作名次比较</th></tr>`:'';
+   previousCohort=cohort;
+   return divider+`<tr class="${run.run_id===selected?'selected':''}" ${run.run_id===selected?'aria-current="true"':''} data-run="${E(run.run_id)}"><th scope="row">${experiment.temporary?E(name(run.config.algorithm_id)):`<button type="button" class="select-algorithm" data-experiment="${E(experiment.experiment_id)}" data-run="${E(run.run_id)}">${E(name(run.config.algorithm_id))}</button>`}</th><td><span class="result-source">${source}</span> ${E(model(run.config.schedule_model))}</td><td><span>${E(status)}</span>${note?'<small class="validation-note">'+E(note)+'</small>':''}${run.error?'<small class="validation-note">'+E(run.error.message)+'</small>':''}</td><td>${m?`${m.completed_tasks} / ${m.total_tasks}`:'—'}</td><td>${m&&Number.isFinite(run.ranking_score?.value)?run.ranking_score.value.toFixed(2):'—'}</td>${metrics.map(([k])=>`<td>${format(k,m?.[k])}</td>`).join('')}<td>${usable(run)?`<a href="${E(gantt)}" target="_blank" rel="noopener">${experiment.temporary?'临时 Gantt':'Gantt'}</a>`:'尚无计划'}</td></tr>`;
   }).join('')}</tbody></table></div>`;
  }
  function compactChoices(rows,active){
@@ -53,16 +76,21 @@
    }).join('')}</div></div>`;
   }).join('')+'</div>';
  }
- function comparison(container,select,orderBox,onSelect,{compactSelection=false}={}){
+ function comparison(container,select,orderBox,onSelect,{compactSelection=false,sortSelect=null,directionSelect=null}={}){
   let records=[],selected=null,scope='',chosen=null;
   function render(){
    const arranged=orderedRows(records,select.value),active=arranged.filter(r=>chosen===null||chosen.has(r.run.run_id)).map(r=>r.run.run_id);
-   update(container,results(records,selected,select.value,active));
+   update(container,results(records,selected,select.value,active,sortSelect?.value||'',directionSelect?.value||'desc'));
    orderBox.hidden=false;
    if(compactSelection){update(orderBox,compactChoices(orderedRows(records,'experiment'),active));return;}
    update(orderBox,filterChoices(records,active));
   }
   select.addEventListener('change',render);
+  sortSelect?.addEventListener('change',()=>{
+    if(directionSelect)directionSelect.value=['TM','RT','RV'].includes(sortSelect.value)?'asc':'desc';
+    render();
+  });
+  directionSelect?.addEventListener('change',render);
   orderBox.addEventListener('change',event=>{
    const input=event.target.closest('[data-result-id]');if(!input)return;
    chosen=chosen??new Set(orderedRows(records,'experiment').map(r=>r.run.run_id));

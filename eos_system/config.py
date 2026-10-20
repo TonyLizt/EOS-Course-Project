@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import tempfile
@@ -40,7 +41,13 @@ class Settings:
             scenarios = (runtime_scenarios
                          if has_runtime_scenarios or not project_scenarios.is_dir()
                          else project_scenarios)
-        return cls(runtime_dir=runtime, scenario_dir=scenarios)
+        # 命令行环境变量优先；网页保存的并发设置位于运行目录，不进入仓库。
+        saved = runtime / 'execution-settings.json'
+        stored = json.loads(saved.read_text(encoding='utf-8')) if saved.is_file() else {}
+        workers = int(os.environ.get('EOS_MAX_WORKERS', stored.get('max_workers', 2)))
+        if not 1 <= workers <= 8:
+            raise ValueError('EOS_MAX_WORKERS 必须为 1 到 8')
+        return cls(runtime_dir=runtime, scenario_dir=scenarios, max_workers=workers)
 
     @property
     def replay_dir(self) -> Path:
