@@ -187,7 +187,7 @@ class ContractTests(RABASFixture):
     def test_invalid_parameters_rejected(self):
         for raw in ({'max_bundle_size':0},{'max_bundle_size':4},{'max_bundle_size':True},
                     {'max_bundle_size':'2'},{'max_rounds':-1},{'max_windows_per_task':1.2},
-                    {'max_positions_per_window':3},{'reauction_mode':'partial'},
+                    {'max_positions_per_window':9},{'reauction_mode':'partial'},
                     {'opportunity_cost_weight':float('nan')},{'resource_cost_weight':float('inf')},
                     {'transition_cost_weight':True},{'unknown':1}):
             with self.subTest(raw=raw),self.assertRaises(ValidationError): RABASParams(**raw)

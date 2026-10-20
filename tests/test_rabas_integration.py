@@ -58,7 +58,7 @@ class RABASIntegrationTests(unittest.TestCase):
     def test_fresh_import_has_no_registry_cycle_or_factory_requirement(self):
         result=subprocess.run([sys.executable,'-c',
             "import sys;import algorithms.auction_bundle;assert 'eos_system.algorithm_registry' not in sys.modules;"
-            "from eos_system.algorithm_registry import get_algorithm;assert get_algorithm('rabas').version=='1.0.0'"],
+            "from eos_system.algorithm_registry import get_algorithm;assert get_algorithm('rabas').version=='1.1.0'"],
             cwd=ROOT,capture_output=True,text=True,timeout=15)
         self.assertEqual(result.returncode,0,result.stderr)
 

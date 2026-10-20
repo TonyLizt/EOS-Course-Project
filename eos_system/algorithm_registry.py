@@ -215,8 +215,8 @@ _SPECS: dict[str, AlgorithmSpec] = {
         owner="梁兆榮", version=RABAS_VERSION, params_model=RABASParams,
         build=lambda context: ResourceAwareBundleAuctionScheduler(),
         description="单 Worker 内中心化多卫星任务包竞价；不是分布式 CBBA。",
-        strategy="每星增量构建真实多任务 Bundle，资源/转向/机会成本报价，全局核验中标后全量重新竞价。",
-        objectives="新增完成任务数优先，同数量按公共加权效用增量减归一化成本报价，再按稳定 ID 裁决。",
+        strategy="每星有界建包、可选多起点，动态机会/资源/转向报价；按候选量及剩余预算收窄搜索，全量核验中标后重新竞价。",
+        objectives="最终计划只接受完成数增加；内部按新增数减有界机会损失、包大小和公共效用减成本竞价，非正式 TP。",
         limitations="有界窗口、放置、任务包和竞价轮数；不保证全局最优，不使用初始模型解，仍须 Controller 独立认证。",
     ),
 }

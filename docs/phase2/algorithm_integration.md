@@ -76,3 +76,8 @@ LAVIS 以 `lavis` 登记，版本 `0.1.0`，参数模型为 `LavisParams`，构�
 - 候选计划通过 `eos_system.verification.verify_candidate`；不能直接把算法报告的指标写成正式结果。
 - 实际从 HTTP → Worker → Controller → SQLite 跑通至少一个小实例，并与已有基线在相同场景和约束下成对实验。
 - 新依赖按用途写入相应 requirements 文件，输出文件进入已登记的运行目录；不将大型模型、虚拟环境、缓存或临时结果提交 Git。
+
+
+### 2026-10-20 RABAS 1.1.0
+
+RABAS 参数新增动态机会、多样候选、自适应计算及可选多起点/有界替换；位置上限扩至 8、默认 4。算法版本由注册表导入，Solver、Worker、Controller、数据库及正式指标契约不变。缓存只复用原始候选模板，插入与中标始终调用原始公共约束。详见 [跨规模报告](algorithms/rabas_cross_scale.md)。
