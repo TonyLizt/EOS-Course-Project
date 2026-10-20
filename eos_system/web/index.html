@@ -12,6 +12,7 @@
   <script defer src="/static/comparison.js"></script>
   <script defer src="/static/experiment-ui.js"></script>
   <script defer src="/static/app.js"></script>
+  <script defer src="/static/statistics-export.js"></script>
   <script defer src="/static/console.js"></script>
   <script defer src="/static/workspace-pages.js"></script>
   <script defer src="/static/workspace.js"></script>
@@ -27,7 +28,7 @@
   <main class="layout" id="main-content" tabindex="-1">
     <section class="workspace-page create-page" id="new-experiment" data-console-page="create" aria-label="新建实验工作区">
     <section class="card form-card" aria-labelledby="create-heading">
-      <div class="section-title"><p class="eyebrow">CREATE EXPERIMENT</p><h2 id="create-heading">新建实验</h2><p>按三个步骤完成配置。所有高级设置都可以展开调整。</p></div>
+      <div class="section-title"><p class="eyebrow">CREATE EXPERIMENT</p><h2 id="create-heading">配置实验</h2><p>选择统一输入，再为本次实验配置算法与运行设置。</p></div>
       <div class="panel-scroll create-scroll" role="region" aria-label="实验配置与目录管理" tabindex="0">
       <form id="run-form">
         <div class="workflow-tabs" aria-label="实验配置步骤">
@@ -103,14 +104,20 @@
       <div class="page-toolbar"><p>在列表中选择实验，右侧查看进度、计划与导出。</p><a href="#comparison" data-console-route="compare" class="workspace-text-link">比较当前实验 <span aria-hidden="true">→</span></a></div>
     <section class="card list-card" aria-labelledby="runs-heading">
       <div class="section-title inline"><div><p class="eyebrow">EXPERIMENTS</p><h2 id="runs-heading">实验列表</h2><p id="run-count">状态每两秒刷新一次。</p></div><div class="toolbar"><button class="secondary" id="toggle-refresh" type="button" aria-pressed="false">暂停自动更新</button><button class="secondary" id="refresh" type="button">立即刷新</button></div></div>
-      <div class="table-wrap" tabindex="0" aria-label="实验列表，可水平滚动"><table><caption class="sr-only">一个实验一行，内含多种算法</caption><thead><tr><th scope="col">实验 / 创建时间</th><th scope="col">场景</th><th scope="col">初始模型</th><th scope="col">算法</th><th scope="col">状态</th></tr></thead><tbody id="runs"></tbody></table></div>
+      <div class="export-toolbar" aria-label="批量统计导出">
+        <div class="export-selection"><strong id="export-selection-count">已选 0 个实验</strong><button id="clear-export-selection" type="button" class="text-button">清空选择</button></div>
+        <div class="export-buttons"><button type="button" data-stat-export data-export-scope="selected" data-export-format="csv" class="secondary" disabled>统计 CSV</button><button type="button" data-stat-export data-export-scope="selected" data-export-format="zip" disabled>统计数据包 ZIP</button></div>
+        <label class="inline-check"><input id="export-include-removed" type="checkbox">包含已移除算法的历史记录</label>
+      </div>
+      <div class="table-wrap" tabindex="0" aria-label="实验列表，可水平滚动"><table><caption class="sr-only">一个实验一行，内含多种算法</caption><thead><tr><th scope="col" class="selection-column"><input id="select-export-page" type="checkbox" aria-label="选择本页所有实验用于导出"></th><th scope="col">实验 / 创建时间</th><th scope="col">场景 / 初始模型</th><th scope="col">算法</th><th scope="col">状态</th></tr></thead><tbody id="runs"></tbody></table></div>
       <div class="list-footer"><button class="secondary" id="previous-page" type="button">上一页</button><span id="page-label"></span><button class="secondary" id="next-page" type="button">下一页</button></div>
-      <p id="list-message" class="message" role="status"></p>
+      <p id="list-message" class="message" role="status"></p><p class="message export-message" data-export-message role="status"></p>
     </section>
 
     <section class="card detail-card" aria-labelledby="detail-heading">
       <div class="section-title inline"><div><p class="eyebrow">SELECTED EXPERIMENT</p><h2 id="detail-heading">实验详情</h2><p id="selected-run">选择列表中的实验</p></div><span id="detail-status" class="badge muted" role="status">尚未选择</span></div>
       <div class="panel-scroll detail-scroll" role="region" aria-label="所选实验详情" tabindex="0">
+      <div class="current-export"><span>当前实验统计</span><button type="button" data-stat-export data-export-scope="current" data-export-format="csv" class="secondary" disabled>汇总 CSV</button><button type="button" data-stat-export data-export-scope="current" data-export-format="zip" class="secondary" disabled>完整数据包</button></div>
       <label>查看实验内算法<select id="detail-algorithm"></select></label>
       <details class="quiet-details add-algorithms"><summary>为当前实验添加算法</summary><div id="experiment-algorithm-add"></div></details>
       <div id="metrics" class="metrics"></div>
@@ -139,16 +146,24 @@
     <section class="card comparison-card workspace-page" data-console-page="compare" hidden id="comparison" aria-labelledby="comparison-heading">
       <div class="comparison-header"><div class="section-title"><p class="eyebrow">COMPARE RESULTS</p><h2 id="comparison-heading">结果比较</h2><p>选择实验后，在这里比较各算法与临时模型对照。</p></div><div class="control-action"><label for="control-model" class="sr-only">对照实验初始模型</label><select id="control-model"><option value="completion_first">完成率优先</option><option value="adaptive_repair">自适应修复</option></select><button type="button" class="secondary" id="create-control" disabled>一键创建对照实验</button></div></div>
       <div class="panel-scroll comparison-scroll" role="region" aria-label="结果比较内容" tabindex="0">
-      <details class="quiet-details metric-guide"><summary>如何阅读比较指标</summary><p class="hint">TP ↑ 收益 · TCR ↑ 完成率 · BD ↑ 均衡度 · TM ↓ 等待时间 · RT ↓ 秒 · RV ↓ 多次收益方差（单次通常无值）。</p></details>
-      <p id="control-status" class="hint" role="status">对照仅用于本页临时比较，不保存到实验列表或 Cesium。</p>
-      <label>结果组织方式<select id="comparison-mode"><option value="algorithm">按算法比较</option><option value="experiment">按实验比较</option></select></label><div id="comparison-choices"></div>
-      <div class="two-cols"><label>同条件结果排序<select id="result-sort"><option value="">原顺序</option><option value="SCORE">综合评分</option><option value="TCR">完成率 TCR</option><option value="TP">任务收益 TP</option><option value="TM">等待时间 TM</option><option value="RT">算法耗时 RT</option><option value="BD">均衡度 BD</option><option value="RV">收益方差 RV</option></select></label><label>排序方向<select id="result-direction"><option value="desc">从大到小</option><option value="asc">从小到大</option></select></label></div>
-      <p class="hint">综合评分＝70×完成率＋20×收益占场景总优先级比例＋10×(1−归一化等待时间)。耗时不计入；不同场景、预算、初始模型或并发配置分别排序；失败或缺失指标不参评。场景总优先级为0时收益项计0。</p>
-      <p id="comparison-status" class="message" role="status"></p><div id="comparison-groups"></div>
+      <div class="comparison-export"><div><h3>保存实验统计</h3><p>汇总每行一次算法运行。数据包含分组均值、样本标准差、任务明细与配置；临时对照不计入持久导出。</p></div><div class="export-buttons"><button type="button" data-stat-export data-export-scope="current" data-export-format="csv" class="secondary" disabled>本实验 CSV</button><button type="button" data-stat-export data-export-scope="current" data-export-format="zip" disabled>统计数据包</button></div></div><p class="message export-message" data-export-message role="status"></p>
+      <div class="comparison-workarea">
+        <aside class="comparison-selection" aria-label="比较范围与指标说明">
+          <h3>选择对照范围</h3>
+          <label class="organization-control">结果组织方式<select id="comparison-mode"><option value="algorithm">按算法比较</option><option value="experiment">按实验比较</option></select></label>
+          <div id="comparison-choices"></div>
+          <details class="quiet-details metric-guide"><summary>指标说明</summary><p class="hint">TP ↑ 任务收益<br>TCR ↑ 任务完成率<br>BD ↑ 负载均衡度<br>TM ↓ 归一化等待时间<br>RT ↓ 算法耗时（秒）</p></details>
+        </aside>
+        <section class="comparison-main" aria-label="结果表与排序">
+          <p class="hint">综合分＝70×完成率＋20×收益比例＋10×(1−等待时间)。耗时不计分；同场景、预算、初始模型与并发设置内排序，总优先级为0时收益项计0。</p>
+          <p id="control-status" class="hint" role="status">临时对照仅用于本页比较，不保存到实验列表或 Cesium。</p>
+          <p id="comparison-status" class="message" role="status"></p><div id="comparison-groups"></div>
+        </section>
+      </div>
       </div>
     </section>
   </main>
   <dialog id="algorithm-dialog" aria-labelledby="algorithm-dialog-title"><div class="inline"><h2 id="algorithm-dialog-title">算法详情</h2><button type="button" id="close-algorithm-dialog" class="secondary">关闭</button></div><div id="algorithm-description"></div></dialog>
-  <footer>统一调度控制台 · Run 与结果由现有 Controller 和 SQLite 提供</footer>
+  <footer>EOS · 地球观测卫星调度实验 · 来源可追溯，结果可复核</footer>
 </body>
 </html>

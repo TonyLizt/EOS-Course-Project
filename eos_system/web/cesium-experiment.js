@@ -4,7 +4,7 @@
  const $=id=>document.getElementById(id),UI=ExperimentUI,query=new URLSearchParams(location.search);
  const rid=query.get('run_id')||(query.get('schedule')||'').match(/^\/api\/runs\/([^/]+)\//)?.[1];
  if(!rid)return;
- let exp=null,generation=0;
+ let exp=null,generation=0,catalogReady=false;
  async function api(url,options){const r=await fetch(url,options);const data=await r.json();if(!r.ok)throw Error(data.error?.message||'请求失败');return data;}
  function navigate(eid,id){
   try{const state=window.EOSReplayState?.capture();if(state)sessionStorage.setItem('eos-replay-navigation-state',JSON.stringify({...state,experiment_id:eid,saved_at:Date.now()}));}catch(_){/* Optional. */}
@@ -26,6 +26,8 @@
   }).join('');UI.bindCards(box);
  }
  async function refresh(){
+  // 首次算法目录就绪前不轮询，避免缓存成裸算法ID及空的追加列表。
+  if(!catalogReady)return;
   const token=++generation;
   try{
    const next=exp?await api('/api/experiments/'+encodeURIComponent(exp.experiment_id)):await api('/api/runs/'+encodeURIComponent(rid)+'/experiment');
@@ -52,6 +54,6 @@
   try{await api(`/api/experiments/${encodeURIComponent(exp.experiment_id)}/algorithms/${encodeURIComponent(remove.dataset.remove)}`,{method:'DELETE'});await refresh();}
   catch(error){$('cesium-experiment-status').textContent=error.message;}
  });
- (async()=>{try{UI.setCatalog((await api('/api/algorithms')).items);await refresh();}catch(error){$('cesium-experiment-status').textContent=error.message;}})();
+ (async()=>{try{UI.setCatalog((await api('/api/algorithms')).items);catalogReady=true;await refresh();}catch(error){$('cesium-experiment-status').textContent=error.message;}})();
  setInterval(refresh,2500);
 })();

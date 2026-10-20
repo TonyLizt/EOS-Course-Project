@@ -35,6 +35,14 @@ def model_root():
 def dependencies():
     return {name:metadata.version(name) for name in ('scikit-learn','numpy','scipy','joblib')}
 
+def _known_label_protocol(record):
+    """训练标签与在线特征分开校验；新增监督必须显式声明，不能冒充旧续排标签。"""
+    if record.get('label_version') == LABEL_VERSION:
+        return True
+    return (record.get('label_version') == 'lavis-opportunity-cost-v1'
+            and record.get('training_protocol') == 'lavis-opportunity-cost-v1'
+            and record.get('training_candidate_strategy') == 'expanded')
+
 def read_artifact(model_id):
     if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}',model_id):raise ValueError('LAVIS_INVALID_MODEL_ID')
     root=model_root();directory=root/model_id
@@ -49,7 +57,7 @@ def read_artifact(model_id):
         raise ValueError('LAVIS_INCOMPATIBLE_LEGACY_DOMAIN')
     if (record.get('model_id')!=model_id or record.get('format')!='team-joblib-v1'
         or record.get('feature_version')!=FEATURE_VERSION or record.get('features')!=list(FEATURE_NAMES)
-        or record.get('candidate_version')!=CANDIDATE_VERSION or record.get('label_version')!=LABEL_VERSION
+        or record.get('candidate_version')!=CANDIDATE_VERSION or not _known_label_protocol(record)
         or record.get('pool_config')!=POOL_CONFIG or record.get('domain')!=DOMAIN
         or (not legacy and record.get('inference_code_sha256_lf')!=current_code)):raise ValueError('LAVIS_INCOMPATIBLE_MODEL')
     if not weights.is_file() or weights.is_symlink() or not 0<weights.stat().st_size<=MODEL_LIMIT:raise ValueError('LAVIS_MODEL_SIZE_OR_PATH')

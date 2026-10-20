@@ -18,6 +18,8 @@
   <link rel="stylesheet" href="/static/cesium-experiment.css">
   <link rel="stylesheet" href="/static/algorithm-parameters.css">
   <script src="/static/algorithm-parameters.js" defer></script>
+  <!-- 共用比较规则必须先于实验界面加载；defer按文档顺序执行。 -->
+  <script src="/static/comparison.js" defer></script>
   <script src="/static/experiment-ui.js" defer></script>
   <script src="/static/cesium-experiment.js" defer></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.136/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
@@ -686,8 +688,7 @@
         + metricRow('Completion Rate (TCR)', formatFloat(metrics.TCR, 3))
         + metricRow('Balance Degree (BD)', formatFloat(metrics.BD, 3))
         + metricRow('Timeliness (TM)', formatFloat(metrics.TM, 6))
-        + metricRow('Runtime (RT) [s]', formatFloat(metrics.RT, 3))
-        + metricRow('Robustness Var (RV)', metrics.RV == null ? '-' : formatFloat(metrics.RV, 3));
+        + metricRow('Runtime (RT) [s]', formatFloat(metrics.RT, 3));
 
       function metricRow(name, value) {
         return (

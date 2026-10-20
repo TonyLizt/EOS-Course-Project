@@ -7,8 +7,9 @@
   let controlPending=false,controlKey=null,controlSignature=null;
   const comparison=UI.comparison($('comparison-groups'),$('comparison-mode'),$('comparison-choices'),(eid,rid)=>{
     if(eid!==experimentId)showExperiment(eid,rid);else{selectedId=rid;refreshExperiments();}
-  },{sortSelect:$('result-sort'),directionSelect:$('result-direction')});
+  });
   function catalog(algorithms) {
+    algorithms=UI.visibleCatalog(algorithms);
     UI.setCatalog(algorithms);
     const first=algorithms.find(a=>a.availability==='ready')?.algorithm_id;
     $('algorithm-choices').innerHTML=algorithms.map(a=>UI.card('create',a.algorithm_id,
@@ -76,12 +77,15 @@
       $('run-count').textContent=`共 ${list.total} 个实验（每行包含多个算法）`;
       $('page-label').textContent=list.total?`${pageOffset+1}–${Math.min(pageOffset+pageSize,list.total)} / ${list.total}`:'0 / 0';
       $('previous-page').disabled=pageOffset===0;$('next-page').disabled=pageOffset+pageSize>=list.total;
-      const html=list.items.map(item=>`<tr data-experiment="${E(item.experiment_id)}" class="${item.experiment_id===experimentId?'selected':''}"><td><button class="experiment-select" type="button" data-experiment="${E(item.experiment_id)}">实验 ${E(item.experiment_id.slice(0,8))}</button><small class="experiment-date">${E(new Date(item.created_at).toLocaleString('zh-CN'))}</small>${item.legacy?'<small>历史单次运行（无批次证据）</small>':''}</td><td>${E(item.config.scenario_id)}</td><td>${E(UI.model(item.config.schedule_model))}</td><td>${E(item.algorithms.map(a=>UI.name(a.algorithm_id)).join('、')||'暂无算法')}</td><td>${E(item.status)}</td></tr>`).join('');
-      UI.update($('runs'),html);
-      if(!experimentId){renderResults([]);return;}
+      const html=list.items.map(item=>`<tr data-experiment="${E(item.experiment_id)}" class="${item.experiment_id===experimentId?'selected':''}"><td class="selection-column">${window.ExperimentExports?.checkbox(item.experiment_id)||''}</td><td><button class="experiment-select" type="button" data-experiment="${E(item.experiment_id)}">实验 ${E(item.experiment_id.slice(0,8))}</button><small class="experiment-date">${E(new Date(item.created_at).toLocaleString('zh-CN'))}</small>${item.legacy?'<small>历史单次运行（无批次证据）</small>':''}</td><td><strong class="scenario-name">${E(item.config.scenario_id)}</strong><small>${E(UI.model(item.config.schedule_model))}</small></td><td><span class="algorithm-list" title="${E(item.algorithms.map(a=>UI.name(a.algorithm_id)).join('、'))}">${E(item.algorithms.map(a=>UI.name(a.algorithm_id)).join('、')||'暂无算法')}</span><small>${item.algorithms.length} 种算法</small></td><td><span class="state-pill" data-state="${E(item.status)}">${E(item.status)}</span></td></tr>`).join('');
+      UI.update($('runs'),html||'<tr><td colspan="5" class="empty-cell">还没有实验，先在「新建实验」选择场景与算法。</td></tr>');
+      window.ExperimentExports?.setPage(list.items);
+
+      if(!experimentId){window.ExperimentExports?.setCurrent(null);renderResults([]);return;}
       const exp=await api(`/api/experiments/${encodeURIComponent(experimentId)}`);
       if(token!==generation)return;
       experiment=exp;
+      window.ExperimentExports?.setCurrent(exp.experiment_id);
       controlButton();
       for(const option of $('control-model').options)option.disabled=option.value===exp.config.schedule_model;
       $('control-model').value=exp.config.schedule_model==='completion_first'?'adaptive_repair':'completion_first';

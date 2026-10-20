@@ -158,6 +158,23 @@ class ModelIdentityTests(unittest.TestCase):
         (directory/'model.joblib').write_bytes(raw);(directory/'manifest.json').write_text(json.dumps(manifest))
         return directory
 
+    def test_opportunity_model_loads_only_with_explicit_training_contract(self):
+        directory = self.artifact()
+        path = directory/'manifest.json'
+        manifest = json.loads(path.read_text())
+        manifest.update(label_version='lavis-opportunity-cost-v1',
+                        training_protocol='lavis-opportunity-cost-v1',
+                        training_candidate_strategy='expanded')
+        path.write_text(json.dumps(manifest))
+        snapshot = freeze('tiny')
+        self.assertEqual(snapshot['label_version'], 'lavis-opportunity-cost-v1')
+        self.assertTrue(math.isfinite(FrozenPredictor(snapshot).predict([[0.]*24])[0]))
+        # 不允许只有新标签名、却缺少对应训练合同的制品混入模型列表。
+        del manifest['training_protocol']
+        path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(ValueError, 'INCOMPATIBLE_MODEL'):
+            freeze('tiny')
+
     def test_real_training_loading_and_replacement_sha_fail_closed(self):
         directory=self.artifact();snapshot=freeze('tiny');predictor=FrozenPredictor(snapshot)
         prediction=predictor.predict([[0.]*24,[1000.]*24]);self.assertNotEqual(prediction[0],prediction[1])

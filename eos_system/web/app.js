@@ -32,7 +32,7 @@ async function bootstrap() {
     outputProfiles = profiles.items;
     $("output-profile").innerHTML = profiles.items.map((p) => `<option value="${escapeHtml(p.profile_id)}">${escapeHtml(p.name)}</option>`).join("");
     replayConfigId = replayConfigs.default_id;
-    currentAlgorithms = algorithms.items;
+    currentAlgorithms = ExperimentUI.visibleCatalog(algorithms.items);
     $("schedule-model").innerHTML = algorithms.models.map(m => `<option value="${escapeHtml(m.model_id)}">${escapeHtml(m.name)}</option>`).join('');
     window.ConsoleUI?.catalog(currentAlgorithms);
     const execution = await api('/api/execution-settings');
@@ -225,7 +225,7 @@ function showDetail(run) {
   const m = run.metrics;
   $("metrics").innerHTML = m ? [
     ["完成任务", `${m.completed_tasks} / ${m.total_tasks}`], ["TCR", `${(m.TCR * 100).toFixed(1)}%`],
-    ["TP ↑", Number(m.TP).toFixed(2)], ["BD ↑", Number(m.BD).toFixed(3)], ["TM ↓", Number(m.TM).toFixed(3)], ["RV ↓", m.RV == null ? '未提供' : Number(m.RV).toFixed(3)], ["算法耗时 RT ↓", `${Number(m.RT).toFixed(3)} s`]
+    ["TP ↑", Number(m.TP).toFixed(2)], ["BD ↑", Number(m.BD).toFixed(3)], ["TM ↓", Number(m.TM).toFixed(3)], ["算法耗时 RT ↓", `${Number(m.RT).toFixed(3)} s`]
   ].map(([label, value]) => `<div class="metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></div>`).join("") : "";
   $("events").innerHTML = run.events.map((e) => `<li>${escapeHtml(e.recorded_at)} · ${escapeHtml(e.event_type)}</li>`).join("");
   const assignments = run.plan?.assignments || [];

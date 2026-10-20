@@ -25,7 +25,12 @@ def main():
     parser.add_argument('--models',required=True,type=Path,help='原LAVIS模型登记根目录')
     parser.add_argument('--orekit-data',required=True,type=Path)
     parser.add_argument('--output',required=True,type=Path)
+    parser.add_argument('--model-id',default='lavis-v3-ranking')
+    parser.add_argument('--base-main',default='unspecified')
     args=parser.parse_args()
+    import re
+    if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}',args.model_id):
+        parser.error('model-id必须为登记ID，不能是路径')
     if args.output.exists() or args.output.resolve().is_relative_to(ROOT):
         parser.error('报告必须是仓库外的新文件')
     for sid in ('HC-F033-V1','HC-F035-V1','HC-F036-V1'):
@@ -33,12 +38,12 @@ def main():
     args.output.parent.mkdir(parents=True,exist_ok=True)
     originals={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in args.models.glob('*/*')
                if p.name in ('manifest.json','model.joblib')}
-    result={'base_main':'82bb261','runs':[],'max_observed_live_workers':0,'training_performed':False,
+    result={'base_main':args.base_main,'model_id':args.model_id,'runs':[],'max_observed_live_workers':0,'training_performed':False,
             'scope':'real isolated HTTP/Worker/Controller/physics/SQLite; no frozen test access'}
     with tempfile.TemporaryDirectory(prefix='eos-parallel-acceptance-') as folder:
         temp=Path(folder);runtime=temp/'runtime';runtime.mkdir()
-        model=runtime/'models/lavis/lavis-v3-ranking';model.mkdir(parents=True)
-        for name in ('model.joblib','manifest.json'):shutil.copyfile(args.models/'lavis-v3-ranking'/name,model/name)
+        model=runtime/'models/lavis'/args.model_id;model.mkdir(parents=True)
+        for name in ('model.joblib','manifest.json'):shutil.copyfile(args.models/args.model_id/name,model/name)
         data=temp/'orekit-data.zip';shutil.copyfile(args.orekit_data,data)
         with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
         env=os.environ|{'EOS_RUNTIME_DIR':str(runtime),'EOS_SCENARIO_DIR':str(args.scenarios.resolve()),
@@ -84,7 +89,7 @@ def main():
             result['invalid_limits']='422'
             common={'source_id':'runtime','scenario_id':'HC-F033-V1','execution_mode':'physical_validation',
                     'seed':42,'time_budget_s':30,'objective_weights':{'w_profit':0,'w_completion':1}}
-            params={'model_id':'lavis-v3-ranking','search_mode':'multistart','candidate_strategy':'expanded','max_branches':8}
+            params={'model_id':args.model_id,'search_mode':'multistart','candidate_strategy':'expanded','max_branches':8}
             configs=[common|{'algorithm_id':aid,'algorithm_params':params if aid=='lavis' else {}}
                      for aid in ('lavis','rabas','profit_first','caabs')]
             exp=request('/api/experiments',{'runs':configs});eid=exp['experiment_id']
@@ -144,7 +149,9 @@ def main():
             assert request('/api/execution-settings')['max_workers']==3
             result['persisted_limit_after_restart']=3
             html=request('/',raw=True)
-            assert all(key.encode() in html for key in ('worker-limit','result-sort','result-direction'))
+            assert b'worker-limit' in html
+            # 排序已移入动态表头，不再要求已删除的下拉框DOM。
+            assert b'data-sort-metric' in request('/static/experiment-ui.js',raw=True)
             result['controls_and_exports']='PASS'
         except Exception as exc:
             result['error']=type(exc).__name__+': '+str(exc);raise

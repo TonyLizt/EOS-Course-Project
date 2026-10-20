@@ -56,6 +56,15 @@ def parameter_schema(model: type[AlgorithmParams]) -> dict:
 def algorithm_info(spec: AlgorithmSpec) -> dict:
     info = spec.public_info()
     decorated = parameter_schema(spec.params_model)
+    if spec.algorithm_id == 'lavis':
+        # 模型可以来自不同离线训练协议；不能把所有模型都说成沿用旧候选训练。
+        properties = decorated['properties']
+        properties['candidate_strategy']['description'] = (
+            'configured每窗保留配置位置；expanded增加源网格位置。'
+            '请按模型交接文档选择；候选策略不会在线更新已冻结的权重。')
+        properties['search_mode']['description'] = (
+            'greedy使用所选模型的单路径；multistart使用同一模型探索多条续排路径。'
+            '两者均不在线训练，全部搜索共用本次预算。')
     # 仅补展示文字，保留注册表实时给出的受控模型选项，不重建覆盖Schema。
     for key, prop in info['parameters'].get('properties', {}).items():
         for field in ('title', 'description'):
