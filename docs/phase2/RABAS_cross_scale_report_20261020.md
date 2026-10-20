@@ -2,6 +2,10 @@
 
 日期：2026-10-20（Asia/Hong_Kong）。本报告区分算法公共模型测试、真实场景预览核验及正式连续物理认证。**不把未核验候选数、超预算返回或合成 fixture 当作正式合法观测完成数。**
 
+## PR 集成更新（2026-10-20）
+
+本轮实验与本地交付完成后，用户追加授权推送分支并通过PR合并到main。已重新fetch并执行`git rebase origin/main`，远端仍为`89dff80`，无冲突、无提交重写。冻结算法SHA仍为`2fce981451f7f8283b4f0eef7ba995adc8f769a3757bd62187567422a744afa8`，下述实验无需因文档更新重测或改写。PR提交按团队规范先请求非作者审核；未获审核前不自行合并。下文“不Push/PR”描述的是原实验交付阶段，已由此次追加授权更新。
+
 ## Git 与交付边界
 
 - 独立克隆目录：`/home/asus/projects/eos-course-runtime-rabas-cross-scale`。
@@ -12,7 +16,7 @@
 - 公共约束、原始场景、其他算法、正式指标、Solver/Worker/Controller/数据库契约均未改动。
 - 参数初冻 `b3968a0`，目标边界修复后实现 `4fbaa80`；首轮独立集暴露下传覆盖回归后重新归类，1.1.1 实现第二次冻结 `cfe53ad`。
 
-算法原理、逐个参数的新旧值、公式及汇报流程见 [算法说明](RABAS_algorithm_explanation_20261020.md)。更细的开发阶段记录见 [阶段日志](/home/asus/projects/eos-course-runtime-rabas-cross-scale/docs/phase2/algorithms/rabas_cross_scale.md)。
+算法原理、逐个参数的新旧值、公式及汇报流程见 [算法说明](RABAS_algorithm_explanation_20261020.md)。更细的开发阶段记录见 [阶段日志](algorithms/rabas_cross_scale.md)。
 
 ## 审查结论与实际改动
 
