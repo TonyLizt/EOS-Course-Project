@@ -90,7 +90,8 @@ class _Control:
             raise ValueError('time_budget_s must be finite and positive')
         self.context, self.clock = context, clock
         self.reserve = min(.05, context.time_budget_s * .05)
-        self.deadline = clock() + context.time_budget_s - self.reserve
+        self.hard_deadline = clock() + context.time_budget_s
+        self.deadline = self.hard_deadline - self.reserve
         self.stats = dict(rounds=0, candidate_bundles=0, max_bundle_built=0,
                           public_constraint_checks=0, constructor_calls=0,
                           reauctions=0, stale_bids_rejected=0, awards=0,
@@ -322,36 +323,42 @@ class ResourceAwareBundleAuctionScheduler:
                 baseline = {'balance': auction.objective.balance_score(plan) if auction.objective.weights.w_balance else 0., 'feasible': {},
                             'transition': {sid: auction.transition_total(sid, plan) for sid in sorted(problem.satellites)}}
                 bids = []
-                for sid in sorted(problem.satellites):
-                    control.checkpoint()
-                    prefix, additions = plan, ()
-                    for _depth in range(params.max_bundle_size):
-                        best, feasible_tasks = None, 0
-                        for tid in sorted(remaining - {a.task_id for a in additions},
-                                          key=lambda tid: (-problem.tasks[tid].priority, tid)):
-                            control.checkpoint()
-                            if (sid, tid) not in auction.windows:
-                                continue
-                            found = False
-                            for assignment in auction.options(sid, tid, prefix):
-                                found = True
-                                candidate = Schedule(prefix.assignments + [assignment])
+                truncated = None
+                try:
+                    for sid in sorted(problem.satellites):
+                        control.checkpoint()
+                        prefix, additions = plan, ()
+                        for _depth in range(params.max_bundle_size):
+                            best, feasible_tasks = None, 0
+                            for tid in sorted(remaining - {a.task_id for a in additions},
+                                              key=lambda tid: (-problem.tasks[tid].priority, tid)):
                                 control.checkpoint()
-                                bid = auction.bid(sid, version, plan, candidate,
-                                    additions+(assignment,), remaining, baseline)
-                                self._observe_bid(bid)
-                                control.checkpoint()
-                                if best is None or bid.rank < best.rank:
-                                    best = bid
-                            feasible_tasks += int(found)
-                            if feasible_tasks >= params.bid_candidates_per_satellite:
+                                if (sid, tid) not in auction.windows:
+                                    continue
+                                found = False
+                                for assignment in auction.options(sid, tid, prefix):
+                                    found = True
+                                    candidate = Schedule(prefix.assignments + [assignment])
+                                    control.checkpoint()
+                                    bid = auction.bid(sid, version, plan, candidate,
+                                        additions+(assignment,), remaining, baseline)
+                                    self._observe_bid(bid)
+                                    control.checkpoint()
+                                    if best is None or bid.rank < best.rank:
+                                        best = bid
+                                        bids.append(bid)  # retain every completed best, even if next check stops
+                                feasible_tasks += int(found)
+                                if feasible_tasks >= params.bid_candidates_per_satellite:
+                                    break
+                            if best is None:
                                 break
-                        if best is None:
-                            break
-                        bids.append(best)  # one validated prefix per depth / satellite
-                        prefix, additions = best.candidate_plan, best.additions
+                            bids.append(best)  # one validated prefix per depth / satellite
+                            prefix, additions = best.candidate_plan, best.additions
+                except (_RoundLimit, _BudgetExpired) as stopped:
+                    truncated = 'round_check_limit' if isinstance(stopped, _RoundLimit) else 'budget'
+                    control.deadline = control.hard_deadline
                 if not bids:
-                    reason = 'no_feasible_bid'
+                    reason = truncated or 'no_feasible_bid'
                     break
                 control.checkpoint()
                 winner = min(bids, key=lambda bid: bid.rank)
@@ -373,6 +380,9 @@ class ResourceAwareBundleAuctionScheduler:
                 control.stats['awards'] += 1
                 version += 1
                 self._observe_award(winner)
+                if truncated:
+                    reason = truncated
+                    break
                 bids.clear()  # all old quotes invalidated; next round rebuilds all
             else:
                 if remaining:

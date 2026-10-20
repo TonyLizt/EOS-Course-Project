@@ -259,9 +259,11 @@ class ContractTests(RABASFixture):
         _,plan=self.solve(max_bundle_size=1,max_rounds=1)
         self.assertEqual(len(plan.assignments),1)
         self.assertEqual(plan.metadata['rabas']['stop_reason'],'round_limit')
-        _,plan=self.solve(max_checks_per_round=16)
+        _,plan=self.solve(max_checks_per_round=16, opportunity_cost_weight=0., bid_candidates_per_satellite=32)
         self.assertEqual(plan.metadata['rabas']['stop_reason'],'round_check_limit')
-        self.assertEqual(plan.metadata['rabas']['stats']['public_constraint_checks'],16)
+        self.assertGreater(len(plan.assignments),0)
+        self.assertLessEqual(plan.metadata['rabas']['stats']['public_constraint_checks'],16+len(plan.assignments))
+        self.feasible(plan)
 
     def test_empty_problem(self):
         _,plan=self.solve()
