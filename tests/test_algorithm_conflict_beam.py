@@ -875,6 +875,36 @@ class RoundOneTests(Fixture):
         second = self.solve(scheduler=scheduler, greedy_incumbent=True)
         self.assertEqual(second.assignments, [])
 
+    def test_candidate_cache_does_not_cross_constraint_domains(self):
+        self.task("T1", [("S1",0)])
+        scheduler = ConflictBeamScheduler()
+        context = SolveContext(41,60,ObjectiveWeights(),CAABSParams())
+        first = self.solve(scheduler=scheduler,context=context)
+        self.assertEqual(len(first.assignments),1)
+        self.problem.satellites["S1"].max_data_storage_GB = .5
+        changed = ConstraintModel(self.problem,non_agile_transition_s=0)
+        second = self.solve(scheduler=scheduler,context=context,constraints=changed)
+        self.assertEqual(second.assignments,[])
+        self.assertEqual(second.metadata["caabs"]["stats"]["prepared_tasks"],1)
+
+    def test_actual_default_beam_siblings_and_incumbent_own_nested_payloads(self):
+        self.multipath()
+        class Capturing(ConflictBeamScheduler):
+            def _observe_beam(inner, states):
+                inner.last = states
+        scheduler = Capturing()
+        context = SolveContext(41,60,ObjectiveWeights(),CAABSParams())
+        result = self.solve(scheduler=scheduler,context=context)
+        chosen = next(state for state in scheduler.last if state.schedule.assignments)
+        others = [state for state in scheduler.last if state is not chosen]
+        saved = deepcopy([state.schedule for state in others])
+        saved_result = deepcopy(result)
+        chosen.schedule.assignments[0].sat_angles["roll_angle"] = 123
+        chosen.schedule.metadata["nested"] = {"values":[99]}
+        self.assertEqual([state.schedule for state in others],saved)
+        self.assertEqual(result,saved_result)
+        self.assertEqual(self.problem.tasks["T1"].windows[0].non_agile_data["roll_angle"],0.)
+
     def test_new_budget_and_strategy_parameters_are_strict(self):
         for values in ({"candidate_check_limit":0},{"candidate_check_limit":129},
                        {"candidate_check_limit":True},{"task_order":"random"},

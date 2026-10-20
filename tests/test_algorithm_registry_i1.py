@@ -26,6 +26,10 @@ from test_algorithm_conflict_beam import Fixture
 
 ROOT = Path(__file__).resolve().parents[1]
 WEIGHTS = dict(w_profit=0.0, w_completion=1.0, w_timeliness=0.0, w_balance=0.0)
+EXPECTED_DEFAULTS = dict(beam_width=8, branch_limit=8, candidate_check_limit=16,
+    max_candidates_per_task=16, max_windows_per_task=32, conflict_prefilter=True,
+    candidate_diversity=True, task_order="scarcity", greedy_incumbent=True,
+    incremental_keys=True, incremental_objective=False)
 
 
 class FreshImportTests(unittest.TestCase):
@@ -97,31 +101,34 @@ class RegistryParameterTests(unittest.TestCase):
         self.assertEqual((info["algorithm_id"], info["owner"], info["category"], info["version"]),
                          ("caabs", "刘懋兴", "traditional", VERSION))
         self.assertIs(self.spec.params_model, CAABSParams)
-        self.assertEqual(self.spec.parse_params({}).model_dump(), dict(beam_width=8, branch_limit=8,
-                         max_candidates_per_task=16, max_windows_per_task=32, conflict_prefilter=True))
+        self.assertEqual(self.spec.parse_params({}).model_dump(), EXPECTED_DEFAULTS)
         self.assertEqual(set(info["parameters"]["properties"]), set(CAABSParams.model_fields))
         self.assertIs(info["parameters"]["additionalProperties"], False)
         json.dumps(registry.list_algorithms(), allow_nan=False)
 
     def test_all_parameter_boundaries_are_valid_and_frozen(self):
-        for raw in (dict(beam_width=1, branch_limit=1, max_candidates_per_task=1, max_windows_per_task=1, conflict_prefilter=False),
-                    dict(beam_width=256, branch_limit=64, max_candidates_per_task=128, max_windows_per_task=256, conflict_prefilter=True)):
+        for raw in (dict(beam_width=1, branch_limit=1, candidate_check_limit=1, max_candidates_per_task=1, max_windows_per_task=1, conflict_prefilter=False),
+                    dict(beam_width=256, branch_limit=64, candidate_check_limit=128, max_candidates_per_task=128, max_windows_per_task=256, conflict_prefilter=True)):
             with self.subTest(raw=raw):
                 params = self.spec.parse_params(raw)
                 self.assertIs(type(params), CAABSParams)
-                self.assertEqual(params.model_dump(), raw)
+                self.assertEqual(params.model_dump(), EXPECTED_DEFAULTS | raw)
                 with self.assertRaises(ValidationError):
                     params.beam_width = 2
 
     def test_strict_integer_ranges_and_boolean_validation(self):
         for field, upper in (("beam_width", 256), ("branch_limit", 64),
-                             ("max_candidates_per_task", 128), ("max_windows_per_task", 256)):
+                             ("candidate_check_limit",128), ("max_candidates_per_task", 128), ("max_windows_per_task", 256)):
             for value in (0, upper + 1, -1, True, 1.0, "2", None):
                 with self.subTest(field=field, value=value), self.assertRaisesRegex(ValueError, field):
                     self.spec.parse_params({field: value})
-        for value in (0, 1, "false", None):
-            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "conflict_prefilter"):
-                self.spec.parse_params({"conflict_prefilter": value})
+        for field in ("conflict_prefilter","candidate_diversity","greedy_incumbent","incremental_keys","incremental_objective"):
+            for value in (0, 1, "false", None):
+                with self.subTest(field=field,value=value), self.assertRaisesRegex(ValueError, field):
+                    self.spec.parse_params({field: value})
+        for value in ("random", 0, None):
+            with self.subTest(order=value), self.assertRaisesRegex(ValueError,"task_order"):
+                self.spec.parse_params({"task_order":value})
 
     def test_unknown_fields_non_objects_and_wrong_parameter_scope_rejected(self):
         for raw in ({"unknown": 1}, {"seed": 42}, {"time_budget_s": 1}, [], None, "{}", 1):
