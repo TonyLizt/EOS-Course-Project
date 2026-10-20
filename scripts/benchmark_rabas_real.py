@@ -14,6 +14,9 @@ from eos_system.algorithm_registry import get_algorithm, availability
 from utils.continuous_exposure import certification_runtime
 from schedulers.scenario_loader import load_scheduling_problem_from_json
 
+class StudyDeadline(BaseException):
+    pass
+
 SCENES=[('Small','experiments/scenarios/small/Scenario_S2_Sats10_M20_T1.0d_dist0_epoch_fixed_v1.json'),
         ('Small','experiments/scenarios/small/Scenario_S2_Sats20_M20_T1.0d_dist0_epoch_fixed_v1.json'),
         ('Medium','experiments/scenarios/medium/Scenario_S2_Sats50_M100_T3.0d_dist0_epoch_fixed_v1.json'),
@@ -29,12 +32,13 @@ def run(scene,aid,budget,seed,mode):
     row=dict(algorithm=aid,scenario=scene,sha256=digest,provenance=prov,n=len(p.tasks),satellites=len(p.satellites),
         windows=sum(len(t.windows) for t in p.tasks.values()),ground_stations=len(p.ground_stations),mode=mode,seed=seed,budget=budget,
         constraints=cfg.constraints.model_dump(),weights=cfg.objective_weights.model_dump())
-    def expired(*unused):raise TimeoutError('solver wall-clock ceiling')
+    def expired(*unused):raise StudyDeadline('solver wall-clock ceiling')
     signal.signal(signal.SIGALRM,expired);signal.setitimer(signal.ITIMER_REAL,budget)
     try:candidate,rt=run_prepared(solver,p,cm,ctx)
-    except TimeoutError:return row|{'status':'TIMED_OUT'}
+    except StudyDeadline:return row|{'status':'TIMED_OUT'}
     except Exception as e:return row|{'status':'SOLVER_FAILED','reason':repr(e)}
     finally:signal.setitimer(signal.ITIMER_REAL,0)
+    if rt > budget:return row|{'status':'OVER_BUDGET','runtime':rt}
     row.update(runtime=rt,candidate_count=len(candidate['assignments']),diagnostics=candidate.get('solver_diagnostics',{}))
     t=time.monotonic()
     try:

@@ -10,7 +10,7 @@ ROOT=Path(__file__).resolve().parents[1]
 if not (ROOT/'algorithms').is_dir(): ROOT=Path('/home/asus/projects/eos-course-runtime-rabas-cross-scale')
 sys.path.insert(0,str(ROOT))
 # The fixture implementation is installed alongside this script.
-from rabas_study_fixtures import fixture
+from scripts.rabas_study_fixtures import fixture
 from eos_system.algorithm_registry import get_algorithm, availability
 from algorithms.objectives import ObjectiveWeights
 from algorithms.solver_contracts import SolveContext
@@ -22,6 +22,10 @@ SPLITS={'development': [('uniform',101)],'validation':[('clustered',211),('capac
 ALGORITHMS=['rabas_baseline','rabas','completion_first','adaptive_repair','profit_first','timeliness_first',
             'balance_first','pressure_repair','caabs','dartis','sa','ga','aco','mip','lavis','ppo']
 RANDOM={'completion_first','sa','ga','aco'}
+
+class StudyDeadline(BaseException):
+    """A benchmark stop must not be swallowed by solver helper except Exception."""
+
 
 def module_at(sha):
     import importlib.util, types
@@ -50,17 +54,20 @@ def job_run(job):
         solver=spec.build(SolveContext(job['seed'],job['budget'],weights,par))
     context=SolveContext(job['seed'],job['budget'],weights,par)
     row['effective_params']=par.model_dump()
-    def expire(*unused): raise TimeoutError('solver wall-clock ceiling')
+    def expire(*unused): raise StudyDeadline('solver wall-clock ceiling')
     signal.signal(signal.SIGALRM,expire)
     start=time.perf_counter();signal.setitimer(signal.ITIMER_REAL,job['budget'])
     try:
         plan=solver.solve(p,cm,context)
         rt=time.perf_counter()-start
-    except TimeoutError:
+    except StudyDeadline:
         return row|{'status':'TIMED_OUT','runtime':time.perf_counter()-start,'budget_used':1.0,'completed':None}
     except Exception as e:
         return row|{'status':'FAILED','runtime':time.perf_counter()-start,'reason':repr(e),'completed':None}
     finally:signal.setitimer(signal.ITIMER_REAL,0)
+    if rt > job['budget']:
+        return row|{'status':'OVER_BUDGET','runtime':rt,'budget_used':rt/job['budget'],
+                    'completed':None,'diagnostic_returned_count':len(plan.assignments)}
     replay=Schedule()
     try:
         for a in sorted(plan.assignments,key=lambda a:a.sat_start_time):
