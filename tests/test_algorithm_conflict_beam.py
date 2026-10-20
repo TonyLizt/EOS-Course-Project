@@ -771,5 +771,77 @@ class StopTests(Fixture):
                 self.solve(context=replace(self.context(), time_budget_s=budget))
 
 
+class RoundOneTests(Fixture):
+    context = SearchTests.context
+    solve = SearchTests.solve
+    multipath = SearchTests.multipath
+
+    def test_check_budget_can_reach_feasible_tail_without_exceeding_children(self):
+        self.task("T1", [("S1", 0)])
+        self.task("T2", [("S1", 0), ("S2", 0)])
+        short = self.solve(beam_width=1, branch_limit=1, candidate_check_limit=1)
+        long = self.solve(beam_width=1, branch_limit=1, candidate_check_limit=2)
+        self.assertEqual(len(short.assignments), 1)
+        self.assertEqual(len(long.assignments), 2)
+        self.assertGreater(long.metadata["caabs"]["stats"]["prefilter_rejections"], 0)
+        self.assert_shared_feasible(long)
+        recorder = RecordingScheduler()
+        self.solve(scheduler=recorder, branch_limit=1, candidate_check_limit=16)
+        self.assertLessEqual(len(recorder.levels[0]), 2)  # one child + skip
+
+    def test_diversity_rotates_existing_public_placement_modes(self):
+        for sat in self.problem.satellites.values():
+            sat.maneuverability_type = "agile"
+        task = self.task("T", [("S1", i*100) for i in range(6)], width=30)
+        adapter = BoundedCandidateAdapter(self.cm, CAABSParams(max_candidates_per_task=3, candidate_diversity=True))
+        candidates = adapter.build(task)
+        offsets = [(a.sat_start_time - next(w for w in task.windows if w.window_id == a.sat_window_id).start_time).total_seconds() for a in candidates]
+        self.assertEqual(offsets, [0, 10, 20])
+        for candidate in candidates:
+            self.assertTrue(self.cm.is_feasible_assignment(candidate, Schedule()))
+
+    def test_scarcity_uses_public_feasible_samples_and_improves_narrow_beam(self):
+        from algorithms.conflict_beam import static_opportunity_key
+        self.multipath()
+        self.assertEqual(len(self.solve(beam_width=1, task_order="id").assignments), 1)
+        result = self.solve(beam_width=1, task_order="scarcity")
+        self.assertEqual(len(result.assignments), 2)
+        self.assert_shared_feasible(result)
+        task = self.problem.tasks["T1"]
+        self.assertGreater(static_opportunity_key(task, []), static_opportunity_key(task, [self.candidate(task)]))
+
+    def test_greedy_initialization_is_inside_budget_and_keeps_complete_incumbent(self):
+        self.task("T1", [("S1", 0)])
+        self.task("T2", [("S2", 0)])
+        clock = ManualClock()
+        recorder = RecordingScheduler(clock=clock, on_level=lambda _: setattr(clock, "now", 60))
+        result = self.solve(scheduler=recorder, greedy_incumbent=True)
+        self.assertEqual(len(result.assignments), 2)
+        self.assertEqual(result.metadata["caabs"]["stats"]["levels_completed"], 1)
+        self.assertEqual(result.metadata["caabs"]["stats"]["greedy_tasks_completed"], 2)
+        self.assertEqual(result.metadata["caabs"]["stop_reason"], "budget")
+        self.assert_shared_feasible(result)
+
+    def test_candidate_cache_is_per_solve_and_rechecks_changed_evidence(self):
+        self.multipath()
+        scheduler = ConflictBeamScheduler()
+        first = self.solve(scheduler=scheduler, greedy_incumbent=True)
+        stats = first.metadata["caabs"]["stats"]
+        self.assertEqual(stats["prepared_tasks"], 2)
+        self.assertEqual(stats["candidate_cache_hits"], 2)
+        for task in self.problem.tasks.values():
+            for window in task.windows:
+                window.planning_evidence = None
+        second = self.solve(scheduler=scheduler, greedy_incumbent=True)
+        self.assertEqual(second.assignments, [])
+
+    def test_new_budget_and_strategy_parameters_are_strict(self):
+        for values in ({"candidate_check_limit":0},{"candidate_check_limit":129},
+                       {"candidate_check_limit":True},{"task_order":"random"},
+                       {"candidate_diversity":1},{"greedy_incumbent":"yes"}):
+            with self.subTest(values=values), self.assertRaises(ValidationError):
+                CAABSParams(**values)
+
+
 if __name__ == "__main__":
     unittest.main()

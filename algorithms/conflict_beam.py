@@ -11,7 +11,7 @@ from dataclasses import dataclass, fields, replace
 from datetime import datetime, timedelta, timezone
 import math
 import time
-from typing import Callable
+from typing import Callable, Literal
 
 from pydantic import ConfigDict, Field
 
@@ -22,7 +22,7 @@ from schedulers.scenario_loader import SchedulingProblem, SchedulingTask, TaskWi
 from utils.continuous_exposure import ExposureStatus
 from schedulers.preview_exposure import candidate_exposure
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 Checkpoint = Callable[[], None]
 
 
@@ -36,9 +36,13 @@ class CAABSParams(AlgorithmParams):
     model_config = ConfigDict(extra="forbid", frozen=True)
     beam_width: int = Field(default=8, ge=1, le=256, strict=True)
     branch_limit: int = Field(default=8, ge=1, le=64, strict=True)
+    candidate_check_limit: int = Field(default=16, ge=1, le=128, strict=True)
     max_candidates_per_task: int = Field(default=16, ge=1, le=128, strict=True)
     max_windows_per_task: int = Field(default=32, ge=1, le=256, strict=True)
     conflict_prefilter: bool = Field(default=True, strict=True)
+    candidate_diversity: bool = Field(default=False, strict=True)
+    task_order: Literal["id", "scarcity"] = "id"
+    greedy_incumbent: bool = Field(default=False, strict=True)
 
 
 def _freeze(value, checkpoint: Checkpoint) -> tuple:
@@ -208,8 +212,13 @@ class BoundedCandidateAdapter:
         windows = self._windows(task)
         candidates = []
         seen = set()
-        for mode in ("earliest", "center", "latest"):
-            for window in windows:
+        modes = ("earliest", "center", "latest")
+        for round_index in range(len(modes)):
+            for window_index, window in enumerate(windows):
+                # Rotate anchors across the selected windows instead of letting
+                # an earliest-only round fill every candidate slot. Non-agile
+                # placement remains controlled by the public constructor.
+                mode = modes[(round_index + (window_index if self.params.candidate_diversity else 0)) % len(modes)]
                 self.checkpoint()
                 if len(candidates) >= self.params.max_candidates_per_task:
                     return candidates
@@ -224,9 +233,22 @@ class BoundedCandidateAdapter:
                 if key not in seen:
                     seen.add(key)
                     candidates.append(candidate)
-        # The list order is deterministic and intentionally preserves coverage
-        # before extra positions; solve applies a separate deterministic ranking.
+        # Deterministic coverage order; solve has separate check/child budgets.
         return candidates
+
+
+def static_opportunity_key(task: SchedulingTask, candidates: list[Assignment]) -> tuple:
+    """Sampled public-feasible opportunities, NOT all-window feasibility.
+
+    The caller constructs candidates with the authoritative model on an empty
+    plan. Ground station, resource, attitude and source rules are included in
+    those checks. No-candidate tasks go last; IDs resolve every tie.
+    """
+    opportunities = {(a.satellite_id, a.sat_window_id) for a in candidates}
+    satellites = {a.satellite_id for a in candidates}
+    latest = max((a.sat_start_time for a in candidates), default=datetime.max)
+    density = float(task.priority) / max(float(task.required_duration), 1e-9)
+    return not bool(candidates), len(opportunities), len(satellites), latest, -density, task.id
 
 
 @dataclass(frozen=True)
@@ -324,6 +346,9 @@ class ConflictBeamScheduler:
             "public_constraint_calls": 0, "accepted_insertions": 0,
             "scored_states": 0, "duplicate_states": 0, "pruned_states": 0,
             "max_beam_size": 0, "max_children": 0, "levels_completed": 0,
+            "candidate_checks": 0, "feasible_children": 0,
+            "prepared_tasks": 0, "candidate_cache_hits": 0,
+            "greedy_tasks_completed": 0,
         }
         best_feasible = Schedule()
         best_rank = None
@@ -337,6 +362,26 @@ class ConflictBeamScheduler:
             task_ids = sorted(problem.tasks, key=lambda tid: (checkpoint(), tid)[1])
             checkpoint()
             adapter = BoundedCandidateAdapter(constraints, params, checkpoint, stats)
+            # Cache lifetime is exactly this solve: problem, model configuration,
+            # modes, evidence and budgets are captured here, never reused by a
+            # different scene/constraint domain or a later invocation.
+            candidate_cache: dict[str, list[Assignment]] = {}
+
+            def prepare_candidates(tid: str) -> list[Assignment]:
+                nonlocal phase
+                phase = "candidate_preparation"
+                checkpoint()
+                if tid in candidate_cache:
+                    stats["candidate_cache_hits"] += 1
+                    return candidate_cache[tid]
+                result = adapter.build(problem.tasks[tid])
+                stats["generated_candidates"] += len(result)
+                stats["prepared_tasks"] += 1
+                # Only ordering/greedy needs reuse. Keep default streaming
+                # preparation's memory footprint bounded by the current task.
+                if params.task_order != "id" or params.greedy_incumbent:
+                    candidate_cache[tid] = result
+                return result
 
             def state(schedule: Schedule, task_index: int) -> BeamState:
                 nonlocal phase
@@ -360,6 +405,35 @@ class ConflictBeamScheduler:
 
             initial = state(Schedule(), 0)
             remember(initial)
+            if params.task_order == "scarcity" or params.greedy_incumbent:
+                for tid in task_ids:
+                    prepare_candidates(tid)
+                if params.task_order == "scarcity":
+                    phase = "task_ordering"
+                    def opportunity(tid: str) -> tuple:
+                        checkpoint()
+                        return static_opportunity_key(problem.tasks[tid], candidate_cache[tid])
+                    task_ids.sort(key=opportunity)
+                    checkpoint()
+            if params.greedy_incumbent:
+                greedy = initial
+                for tid in task_ids:
+                    phase = "greedy_initialization"
+                    checkpoint()
+                    choices = sorted(candidate_cache[tid], key=lambda a: (a.sat_start_time, a.satellite_id, a.sat_window_id))
+                    for candidate in choices[:params.candidate_check_limit]:
+                        checkpoint()
+                        stats["candidate_checks"] += 1
+                        stats["public_constraint_calls"] += 1
+                        accepted = constraints.is_feasible_assignment(candidate, greedy.schedule)
+                        checkpoint()
+                        if not accepted:
+                            continue
+                        stats["accepted_insertions"] += 1
+                        greedy = state(branch_schedule(greedy.schedule, candidate, checkpoint), 0)
+                        remember(greedy)
+                        break
+                    stats["greedy_tasks_completed"] += 1
             beam = [initial]
             stats["max_beam_size"] = 1
             for task_index, tid in enumerate(task_ids, 1):
@@ -367,8 +441,7 @@ class ConflictBeamScheduler:
                 checkpoint()
                 # Prepare one task at a time, preserving an incumbent if later
                 # preparation is interrupted. Candidate order preserves coverage.
-                candidates = adapter.build(problem.tasks[tid])
-                stats["generated_candidates"] += len(candidates)
+                candidates = prepare_candidates(tid)
                 children: list[BeamState] = []
                 for parent in beam:
                     phase = "expansion"
@@ -381,9 +454,13 @@ class ConflictBeamScheduler:
                     if params.conflict_prefilter:
                         phase = "conflict_index"
                         index = SafeConflictIndex.from_schedule(parent.schedule, checkpoint)
-                    for candidate in candidates[:params.branch_limit]:
+                    admitted = 0
+                    for candidate in candidates[:params.candidate_check_limit]:
                         phase = "expansion"
                         checkpoint()
+                        if admitted >= params.branch_limit:
+                            break
+                        stats["candidate_checks"] += 1
                         if index is not None and index.rejects(candidate):
                             stats["prefilter_rejections"] += 1
                             continue
@@ -397,6 +474,8 @@ class ConflictBeamScheduler:
                         child = state(branch_schedule(parent.schedule, candidate, checkpoint), task_index)
                         remember(child)  # Save before deduplication or Top-B pruning.
                         children.append(child)
+                        admitted += 1
+                        stats["feasible_children"] += 1
                 stats["max_children"] = max(stats["max_children"], len(children))
                 phase = "deduplication"
                 unique = {}
@@ -423,6 +502,8 @@ class ConflictBeamScheduler:
                 checkpoint()
         except _SearchStopped:
             pass
+        else:
+            phase = "completed"
         # No further search, score or full-plan copying after a stop. The
         # incumbent already owns its mutable data; attach only small diagnostics.
         best_feasible.metadata["caabs"] = {

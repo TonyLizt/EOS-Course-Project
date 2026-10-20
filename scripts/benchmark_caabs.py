@@ -36,7 +36,9 @@ def implementation(ref):
     if ref == "current":
         import algorithms.conflict_beam as module
         return module, (ROOT / "algorithms/conflict_beam.py").read_bytes()
-    source = subprocess.check_output(
+    # An immutable exported baseline is useful when WSL cannot read a Windows
+    # worktree's absolute gitdir pointer. Its source SHA is recorded per job.
+    source = Path(ref).read_bytes() if Path(ref).is_file() else subprocess.check_output(
         ["git", "show", f"{ref}:algorithms/conflict_beam.py"], cwd=ROOT)
     module = types.ModuleType("caabs_benchmark_baseline")
     sys.modules[module.__name__] = module
@@ -98,6 +100,13 @@ def run_job(job, directory):
     started = time.perf_counter()
     plan = module.ConflictBeamScheduler().solve(problem, constraints, context)
     runtime = time.perf_counter() - started
+    try:
+        import psutil
+        memory = psutil.Process().memory_info()
+        row["process_memory"] = dict(rss_bytes=memory.rss,
+            lifetime_peak_working_set_bytes=getattr(memory,"peak_wset",None))
+    except ImportError:
+        row["process_memory"] = None
     if profiler:
         profiler.disable()
         profiler.dump_stats(str(directory / (job["id"] + ".prof")))
@@ -230,7 +239,8 @@ def main():
             versions[name] = importlib.metadata.version(name)
         except importlib.metadata.PackageNotFoundError:
             versions[name] = None
-    manifest = dict(baseline=BASELINE, code_sha=subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip(),
+    code_sha = os.environ.get("CAABS_BENCHMARK_CODE_SHA") or subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip()
+    manifest = dict(baseline=BASELINE, code_sha=code_sha,
         python=sys.version, executable=sys.executable, platform=platform.platform(), processor=platform.processor(),
         versions=versions, hash_seed=os.environ.get("PYTHONHASHSEED"), threads={k:os.environ.get(k) for k in ("OMP_NUM_THREADS","MKL_NUM_THREADS","OPENBLAS_NUM_THREADS")},
         created_at=datetime.now(timezone.utc).isoformat(), weights=weights, variants=variants, scenarios=scenarios,
