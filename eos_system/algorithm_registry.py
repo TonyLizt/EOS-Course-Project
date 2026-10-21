@@ -217,9 +217,9 @@ _SPECS: dict[str, AlgorithmSpec] = {
         owner="刘懋兴", version=CAABS_VERSION, params_model=CAABSParams,
         build=lambda context: ConflictBeamScheduler(),
         description="完成数优先的有界多路径搜索；返回候选计划，仍须公共核验。",
-        strategy="有界候选生成、多路径 Beam 搜索与受限可行性预筛选。",
+        strategy="预算内贪心初解、受检机会排序、多路径 Beam 搜索、独立检查/可行分支预算与精确键缓存。",
         objectives="完成任务数优先，再按共享 ObjectiveModel 得分与规范键确定次序。",
-        limitations="Beam 宽度、分支及候选上限限制覆盖；不保证全局最优，候选仍须来源与连续曝光核验。",
+        limitations="Beam 宽度与候选上限限制覆盖；candidate_check_limit 限尝试数，branch_limit 限可行子节点数；不保证全局最优，候选仍须来源与连续曝光核验。",
     ),
     "dartis": AlgorithmSpec(
         algorithm_id="dartis", name="DARTIS · 截止期感知动态可行插入", category="traditional",

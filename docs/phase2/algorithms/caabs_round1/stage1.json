@@ -1,0 +1,5575 @@
+{
+  "stage1": {
+    "manifest": {
+      "baseline": "f344af9704d5839578b69caed4534a74374cab90",
+      "code_sha": "17697f3af15fdf2da837b07141ecd9404b366588",
+      "python": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]",
+      "executable": "D:\\Anaconda\\python.exe",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+      "versions": {
+        "numpy": "2.1.3",
+        "pydantic": "2.10.3",
+        "psutil": "5.9.0",
+        "orekit-jpype": null
+      },
+      "hash_seed": "0",
+      "threads": {
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "created_at": "2026-10-20T19:09:42.508032+00:00",
+      "weights": {
+        "w_profit": 1.0,
+        "w_completion": 0.0,
+        "w_timeliness": 0.0,
+        "w_balance": 0.0
+      },
+      "variants": [
+        {
+          "name": "baseline",
+          "ref": "f344af9704d5839578b69caed4534a74374cab90",
+          "params": {}
+        },
+        {
+          "name": "budget",
+          "ref": "current",
+          "params": {}
+        },
+        {
+          "name": "diversity",
+          "ref": "current",
+          "params": {
+            "candidate_check_limit": 8,
+            "candidate_diversity": true
+          }
+        },
+        {
+          "name": "order",
+          "ref": "current",
+          "params": {
+            "candidate_check_limit": 8,
+            "task_order": "scarcity"
+          }
+        },
+        {
+          "name": "greedy",
+          "ref": "current",
+          "params": {
+            "candidate_check_limit": 8,
+            "greedy_incumbent": true
+          }
+        },
+        {
+          "name": "stage1",
+          "ref": "current",
+          "params": {
+            "candidate_diversity": true,
+            "task_order": "scarcity",
+            "greedy_incumbent": true
+          }
+        }
+      ],
+      "scenarios": [
+        {
+          "label": "uniform-20",
+          "family": "uniform",
+          "n": 20,
+          "scenario_seed": 101
+        },
+        {
+          "label": "uniform-100",
+          "family": "uniform",
+          "n": 100,
+          "scenario_seed": 101
+        },
+        {
+          "label": "uniform-300",
+          "family": "uniform",
+          "n": 300,
+          "scenario_seed": 101
+        },
+        {
+          "label": "clustered-20",
+          "family": "clustered",
+          "n": 20,
+          "scenario_seed": 211
+        },
+        {
+          "label": "clustered-100",
+          "family": "clustered",
+          "n": 100,
+          "scenario_seed": 211
+        },
+        {
+          "label": "clustered-300",
+          "family": "clustered",
+          "n": 300,
+          "scenario_seed": 211
+        },
+        {
+          "label": "downlink-20",
+          "family": "downlink",
+          "n": 20,
+          "scenario_seed": 307
+        },
+        {
+          "label": "downlink-100",
+          "family": "downlink",
+          "n": 100,
+          "scenario_seed": 307
+        },
+        {
+          "label": "downlink-300",
+          "family": "downlink",
+          "n": 300,
+          "scenario_seed": 307
+        }
+      ],
+      "budget": 2.0,
+      "repeats": 1,
+      "instrument": "none",
+      "final_test_used": false,
+      "note": "No initial external schedule; greedy initialization, if enabled, is inside solver budget. Fresh subprocesses, serial execution. Profile/memory overhead excluded from ordinary RT tables."
+    },
+    "results": [
+      {
+        "label": "uniform-20",
+        "family": "uniform",
+        "n": 20,
+        "scenario_seed": 101,
+        "name": "baseline",
+        "ref": "f344af9704d5839578b69caed4534a74374cab90",
+        "params": {},
+        "id": "uniform-20-baseline-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "4a8020c15ad3a484162c8f864ca4853a3bb879c3030a784f393095d0ad35595d",
+        "scenario_sha256": "a0df11bac537441b2b30e0c8a28457ea64c280b05e474f503562ba1e6ce340be",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 85266432,
+          "lifetime_peak_working_set_bytes": 85266432
+        },
+        "runtime": 0.33423889987170696,
+        "diagnostic_completed": 20,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.2.0",
+            "stop_reason": "completed",
+            "stop_phase": "pruning",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 198,
+              "candidate_constraint_calls": 198,
+              "generated_candidates": 114,
+              "prefilter_rejections": 143,
+              "public_constraint_calls": 646,
+              "accepted_insertions": 562,
+              "scored_states": 563,
+              "duplicate_states": 0,
+              "pruned_states": 555,
+              "max_beam_size": 8,
+              "max_children": 69,
+              "levels_completed": 20
+            }
+          }
+        },
+        "plan_sha256": "64e93b48372da9b6546e7679d0bb7364a506e30b49128fc79c96188a59749cea",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 20,
+        "unassigned": 0,
+        "metrics": {
+          "task_profit": 112.0,
+          "task_completion_rate": 1.0,
+          "balance_degree": 0.7857142857142857,
+          "timeliness_metric": 0.18529166666666666,
+          "runtime_efficiency": 0.33423889987170696,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1684.4239261680789,
+          "feasible_children_per_s": 1681.4320541855423,
+          "public_acceptance": 0.8699690402476781,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-20",
+        "family": "uniform",
+        "n": 20,
+        "scenario_seed": 101,
+        "name": "budget",
+        "ref": "current",
+        "params": {},
+        "id": "uniform-20-budget-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "a0df11bac537441b2b30e0c8a28457ea64c280b05e474f503562ba1e6ce340be",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 84000768,
+          "lifetime_peak_working_set_bytes": 84508672
+        },
+        "runtime": 0.38008769997395575,
+        "diagnostic_completed": 20,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 198,
+              "candidate_constraint_calls": 198,
+              "generated_candidates": 114,
+              "prefilter_rejections": 142,
+              "public_constraint_calls": 688,
+              "accepted_insertions": 602,
+              "scored_states": 603,
+              "duplicate_states": 0,
+              "pruned_states": 595,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 20,
+              "candidate_checks": 830,
+              "feasible_children": 602,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "64e93b48372da9b6546e7679d0bb7364a506e30b49128fc79c96188a59749cea",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 20,
+        "unassigned": 0,
+        "metrics": {
+          "task_profit": 112.0,
+          "task_completion_rate": 1.0,
+          "balance_degree": 0.7857142857142857,
+          "timeliness_metric": 0.18529166666666666,
+          "runtime_efficiency": 0.38008769997395575,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1586.4759634192808,
+          "feasible_children_per_s": 1583.8449916723168,
+          "public_acceptance": 0.875,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-20",
+        "family": "uniform",
+        "n": 20,
+        "scenario_seed": 101,
+        "name": "diversity",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "candidate_diversity": true
+        },
+        "id": "uniform-20-diversity-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "a0df11bac537441b2b30e0c8a28457ea64c280b05e474f503562ba1e6ce340be",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 85172224,
+          "lifetime_peak_working_set_bytes": 85172224
+        },
+        "runtime": 0.34059830009937286,
+        "diagnostic_completed": 20,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 198,
+              "candidate_constraint_calls": 198,
+              "generated_candidates": 114,
+              "prefilter_rejections": 143,
+              "public_constraint_calls": 646,
+              "accepted_insertions": 562,
+              "scored_states": 563,
+              "duplicate_states": 0,
+              "pruned_states": 555,
+              "max_beam_size": 8,
+              "max_children": 69,
+              "levels_completed": 20,
+              "candidate_checks": 789,
+              "feasible_children": 562,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "64e93b48372da9b6546e7679d0bb7364a506e30b49128fc79c96188a59749cea",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 20,
+        "unassigned": 0,
+        "metrics": {
+          "task_profit": 112.0,
+          "task_completion_rate": 1.0,
+          "balance_degree": 0.7857142857142857,
+          "timeliness_metric": 0.18529166666666666,
+          "runtime_efficiency": 0.34059830009937286,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1652.97360508182,
+          "feasible_children_per_s": 1650.0375951260796,
+          "public_acceptance": 0.8699690402476781,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-20",
+        "family": "uniform",
+        "n": 20,
+        "scenario_seed": 101,
+        "name": "order",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "task_order": "scarcity"
+        },
+        "id": "uniform-20-order-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "a0df11bac537441b2b30e0c8a28457ea64c280b05e474f503562ba1e6ce340be",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "scarcity",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 86499328,
+          "lifetime_peak_working_set_bytes": 86499328
+        },
+        "runtime": 0.4321487999986857,
+        "diagnostic_completed": 20,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 198,
+              "candidate_constraint_calls": 198,
+              "generated_candidates": 114,
+              "prefilter_rejections": 129,
+              "public_constraint_calls": 678,
+              "accepted_insertions": 531,
+              "scored_states": 532,
+              "duplicate_states": 0,
+              "pruned_states": 524,
+              "max_beam_size": 8,
+              "max_children": 64,
+              "levels_completed": 20,
+              "candidate_checks": 807,
+              "feasible_children": 531,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 20,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "2c4877f39e07d9f1ebe34fa81f3213878a7c55b267fb2a084607c3327327660c",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 20,
+        "unassigned": 0,
+        "metrics": {
+          "task_profit": 112.0,
+          "task_completion_rate": 1.0,
+          "balance_degree": 0.7857142857142857,
+          "timeliness_metric": 0.19170833333333334,
+          "runtime_efficiency": 0.4321487999986857,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1231.0574505855807,
+          "feasible_children_per_s": 1228.743432821322,
+          "public_acceptance": 0.7831858407079646,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-20",
+        "family": "uniform",
+        "n": 20,
+        "scenario_seed": 101,
+        "name": "greedy",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "greedy_incumbent": true
+        },
+        "id": "uniform-20-greedy-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "a0df11bac537441b2b30e0c8a28457ea64c280b05e474f503562ba1e6ce340be",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 83984384,
+          "lifetime_peak_working_set_bytes": 84410368
+        },
+        "runtime": 0.353233499918133,
+        "diagnostic_completed": 20,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 198,
+              "candidate_constraint_calls": 198,
+              "generated_candidates": 114,
+              "prefilter_rejections": 143,
+              "public_constraint_calls": 691,
+              "accepted_insertions": 582,
+              "scored_states": 583,
+              "duplicate_states": 0,
+              "pruned_states": 555,
+              "max_beam_size": 8,
+              "max_children": 69,
+              "levels_completed": 20,
+              "candidate_checks": 834,
+              "feasible_children": 562,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 20,
+              "greedy_tasks_completed": 20
+            }
+          }
+        },
+        "plan_sha256": "64e93b48372da9b6546e7679d0bb7364a506e30b49128fc79c96188a59749cea",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 20,
+        "unassigned": 0,
+        "metrics": {
+          "task_profit": 112.0,
+          "task_completion_rate": 1.0,
+          "balance_degree": 0.7857142857142857,
+          "timeliness_metric": 0.18529166666666666,
+          "runtime_efficiency": 0.353233499918133,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1650.4663349742273,
+          "feasible_children_per_s": 1647.6353464065185,
+          "public_acceptance": 0.8422575976845152,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-20",
+        "family": "uniform",
+        "n": 20,
+        "scenario_seed": 101,
+        "name": "stage1",
+        "ref": "current",
+        "params": {
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "id": "uniform-20-stage1-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "a0df11bac537441b2b30e0c8a28457ea64c280b05e474f503562ba1e6ce340be",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 88797184,
+          "lifetime_peak_working_set_bytes": 88797184
+        },
+        "runtime": 0.5014110000338405,
+        "diagnostic_completed": 20,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 198,
+              "candidate_constraint_calls": 198,
+              "generated_candidates": 114,
+              "prefilter_rejections": 129,
+              "public_constraint_calls": 791,
+              "accepted_insertions": 614,
+              "scored_states": 615,
+              "duplicate_states": 0,
+              "pruned_states": 587,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 20,
+              "candidate_checks": 920,
+              "feasible_children": 594,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 20,
+              "greedy_tasks_completed": 20
+            }
+          }
+        },
+        "plan_sha256": "2c4877f39e07d9f1ebe34fa81f3213878a7c55b267fb2a084607c3327327660c",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 20,
+        "unassigned": 0,
+        "metrics": {
+          "task_profit": 112.0,
+          "task_completion_rate": 1.0,
+          "balance_degree": 0.7857142857142857,
+          "timeliness_metric": 0.19170833333333334,
+          "runtime_efficiency": 0.5014110000338405,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1226.5387076839027,
+          "feasible_children_per_s": 1224.5443358014898,
+          "public_acceptance": 0.7762326169405815,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-100",
+        "family": "uniform",
+        "n": 100,
+        "scenario_seed": 101,
+        "name": "stage1",
+        "ref": "current",
+        "params": {
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "id": "uniform-100-stage1-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "e18f392e54c4e48874e4e74f3548d4229aa3586c1d62c93675c8ea4eec827eed",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 93802496,
+          "lifetime_peak_working_set_bytes": 94158848
+        },
+        "runtime": 1.9523386999499053,
+        "diagnostic_completed": 79,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "expansion",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1288,
+              "candidate_constraint_calls": 1288,
+              "generated_candidates": 822,
+              "prefilter_rejections": 398,
+              "public_constraint_calls": 2041,
+              "accepted_insertions": 931,
+              "scored_states": 931,
+              "duplicate_states": 0,
+              "pruned_states": 835,
+              "max_beam_size": 8,
+              "max_children": 56,
+              "levels_completed": 54,
+              "candidate_checks": 2439,
+              "feasible_children": 851,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 55,
+              "greedy_tasks_completed": 100
+            }
+          }
+        },
+        "plan_sha256": "5409c2d0741981e2c4a4bd24542167ec6adfa5272cc1088a0b5c5c11a811f360",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 79,
+        "unassigned": 21,
+        "metrics": {
+          "task_profit": 443.0,
+          "task_completion_rate": 0.79,
+          "balance_degree": 0.9656565656565657,
+          "timeliness_metric": 0.376625,
+          "runtime_efficiency": 1.9523386999499053,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 476.8639785831671,
+          "feasible_children_per_s": 476.8639785831671,
+          "public_acceptance": 0.4561489465948065,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-100",
+        "family": "uniform",
+        "n": 100,
+        "scenario_seed": 101,
+        "name": "greedy",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "greedy_incumbent": true
+        },
+        "id": "uniform-100-greedy-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "e18f392e54c4e48874e4e74f3548d4229aa3586c1d62c93675c8ea4eec827eed",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 98357248,
+          "lifetime_peak_working_set_bytes": 99131392
+        },
+        "runtime": 1.9528856000397354,
+        "diagnostic_completed": 67,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "expansion",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1288,
+              "candidate_constraint_calls": 1288,
+              "generated_candidates": 822,
+              "prefilter_rejections": 252,
+              "public_constraint_calls": 2116,
+              "accepted_insertions": 1498,
+              "scored_states": 1498,
+              "duplicate_states": 0,
+              "pruned_states": 1419,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 42,
+              "candidate_checks": 2368,
+              "feasible_children": 1430,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 43,
+              "greedy_tasks_completed": 100
+            }
+          }
+        },
+        "plan_sha256": "2b12cd5d1f980f1c109a62a314328e835f7694cccb7edbd44eed59af7ae06f4a",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 67,
+        "unassigned": 33,
+        "metrics": {
+          "task_profit": 382.0,
+          "task_completion_rate": 0.67,
+          "balance_degree": 0.9494949494949495,
+          "timeliness_metric": 0.4580666666666667,
+          "runtime_efficiency": 1.9528856000397354,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 767.0700219047752,
+          "feasible_children_per_s": 767.0700219047752,
+          "public_acceptance": 0.7079395085066162,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-100",
+        "family": "uniform",
+        "n": 100,
+        "scenario_seed": 101,
+        "name": "order",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "task_order": "scarcity"
+        },
+        "id": "uniform-100-order-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "e18f392e54c4e48874e4e74f3548d4229aa3586c1d62c93675c8ea4eec827eed",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "scarcity",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 96808960,
+          "lifetime_peak_working_set_bytes": 97243136
+        },
+        "runtime": 1.9545934998895973,
+        "diagnostic_completed": 51,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "canonicalization",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1288,
+              "candidate_constraint_calls": 1288,
+              "generated_candidates": 822,
+              "prefilter_rejections": 412,
+              "public_constraint_calls": 1565,
+              "accepted_insertions": 881,
+              "scored_states": 882,
+              "duplicate_states": 0,
+              "pruned_states": 854,
+              "max_beam_size": 8,
+              "max_children": 56,
+              "levels_completed": 55,
+              "candidate_checks": 1977,
+              "feasible_children": 880,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 56,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "1e84f3e21fed60ca8919c5ecfa694960e6a641fcab6ea11807f4d74a1b649392",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 51,
+        "unassigned": 49,
+        "metrics": {
+          "task_profit": 293.0,
+          "task_completion_rate": 0.51,
+          "balance_degree": 0.9818181818181818,
+          "timeliness_metric": 0.599475,
+          "runtime_efficiency": 1.9545934998895973,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 451.2447217540725,
+          "feasible_children_per_s": 450.73310642328556,
+          "public_acceptance": 0.5629392971246007,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-100",
+        "family": "uniform",
+        "n": 100,
+        "scenario_seed": 101,
+        "name": "diversity",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "candidate_diversity": true
+        },
+        "id": "uniform-100-diversity-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "e18f392e54c4e48874e4e74f3548d4229aa3586c1d62c93675c8ea4eec827eed",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 97116160,
+          "lifetime_peak_working_set_bytes": 98000896
+        },
+        "runtime": 1.952286300016567,
+        "diagnostic_completed": 44,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "expansion",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 572,
+              "candidate_constraint_calls": 572,
+              "generated_candidates": 361,
+              "prefilter_rejections": 244,
+              "public_constraint_calls": 1824,
+              "accepted_insertions": 1444,
+              "scored_states": 1445,
+              "duplicate_states": 0,
+              "pruned_states": 1435,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 43,
+              "candidate_checks": 2068,
+              "feasible_children": 1444,
+              "prepared_tasks": 44,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "1e144d222df8b6f6821e62bdb567e661742f577b8529e9dc95d8a567126c422f",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 44,
+        "unassigned": 56,
+        "metrics": {
+          "task_profit": 248.0,
+          "task_completion_rate": 0.44,
+          "balance_degree": 0.9414141414141414,
+          "timeliness_metric": 0.6412166666666667,
+          "runtime_efficiency": 1.952286300016567,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 740.1578344260971,
+          "feasible_children_per_s": 739.645614471477,
+          "public_acceptance": 0.7916666666666666,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-100",
+        "family": "uniform",
+        "n": 100,
+        "scenario_seed": 101,
+        "name": "budget",
+        "ref": "current",
+        "params": {},
+        "id": "uniform-100-budget-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "e18f392e54c4e48874e4e74f3548d4229aa3586c1d62c93675c8ea4eec827eed",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 102260736,
+          "lifetime_peak_working_set_bytes": 102834176
+        },
+        "runtime": 1.9532841998152435,
+        "diagnostic_completed": 40,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "canonicalization",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 545,
+              "candidate_constraint_calls": 545,
+              "generated_candidates": 340,
+              "prefilter_rejections": 248,
+              "public_constraint_calls": 1921,
+              "accepted_insertions": 1548,
+              "scored_states": 1549,
+              "duplicate_states": 0,
+              "pruned_states": 1540,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 40,
+              "candidate_checks": 2169,
+              "feasible_children": 1547,
+              "prepared_tasks": 41,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "b5d0b0fc1c0245ed3d17c9470e5a409642351b78ec9592fae65c26e85d8dbb56",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 40,
+        "unassigned": 60,
+        "metrics": {
+          "task_profit": 227.0,
+          "task_completion_rate": 0.4,
+          "balance_degree": 0.9353535353535354,
+          "timeliness_metric": 0.6732916666666666,
+          "runtime_efficiency": 1.9532841998152435,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 793.0233604236988,
+          "feasible_children_per_s": 792.5114021535738,
+          "public_acceptance": 0.8058302967204581,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-100",
+        "family": "uniform",
+        "n": 100,
+        "scenario_seed": 101,
+        "name": "baseline",
+        "ref": "f344af9704d5839578b69caed4534a74374cab90",
+        "params": {},
+        "id": "uniform-100-baseline-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "4a8020c15ad3a484162c8f864ca4853a3bb879c3030a784f393095d0ad35595d",
+        "scenario_sha256": "e18f392e54c4e48874e4e74f3548d4229aa3586c1d62c93675c8ea4eec827eed",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 96161792,
+          "lifetime_peak_working_set_bytes": 96899072
+        },
+        "runtime": 1.953593899961561,
+        "diagnostic_completed": 43,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.2.0",
+            "stop_reason": "budget",
+            "stop_phase": "canonicalization",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 566,
+              "candidate_constraint_calls": 566,
+              "generated_candidates": 355,
+              "prefilter_rejections": 253,
+              "public_constraint_calls": 1780,
+              "accepted_insertions": 1441,
+              "scored_states": 1442,
+              "duplicate_states": 0,
+              "pruned_states": 1419,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 42
+            }
+          }
+        },
+        "plan_sha256": "798c1b28b2e91efc7d2930345e3fd795ac9d09ca4a79877716768b7467e605bf",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 43,
+        "unassigned": 57,
+        "metrics": {
+          "task_profit": 240.0,
+          "task_completion_rate": 0.43,
+          "balance_degree": 0.9353535353535354,
+          "timeliness_metric": 0.6500166666666667,
+          "runtime_efficiency": 1.953593899961561,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 738.1267928960941,
+          "feasible_children_per_s": 737.6149157859027,
+          "public_acceptance": 0.8095505617977528,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-300",
+        "family": "uniform",
+        "n": 300,
+        "scenario_seed": 101,
+        "name": "baseline",
+        "ref": "f344af9704d5839578b69caed4534a74374cab90",
+        "params": {},
+        "id": "uniform-300-baseline-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "4a8020c15ad3a484162c8f864ca4853a3bb879c3030a784f393095d0ad35595d",
+        "scenario_sha256": "d5cbf4e6fd4ce18157de7ee6d2a692567368e4b4ed9233b31fd1e84afd4facde",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 103407616,
+          "lifetime_peak_working_set_bytes": 103407616
+        },
+        "runtime": 1.9537521000020206,
+        "diagnostic_completed": 35,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.2.0",
+            "stop_reason": "budget",
+            "stop_phase": "canonicalization",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 488,
+              "candidate_constraint_calls": 488,
+              "generated_candidates": 337,
+              "prefilter_rejections": 73,
+              "public_constraint_calls": 1596,
+              "accepted_insertions": 1412,
+              "scored_states": 1413,
+              "duplicate_states": 0,
+              "pruned_states": 1402,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 34
+            }
+          }
+        },
+        "plan_sha256": "49f9c79157dd7b13cae3be624efa195ac179f23ee99c6182318a31297de1e90e",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 35,
+        "unassigned": 265,
+        "metrics": {
+          "task_profit": 190.0,
+          "task_completion_rate": 0.11666666666666667,
+          "balance_degree": 0.9723551302498671,
+          "timeliness_metric": 0.9029583333333333,
+          "runtime_efficiency": 1.9537521000020206,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 723.2237907759836,
+          "feasible_children_per_s": 722.7119551137218,
+          "public_acceptance": 0.8847117794486216,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-300",
+        "family": "uniform",
+        "n": 300,
+        "scenario_seed": 101,
+        "name": "budget",
+        "ref": "current",
+        "params": {},
+        "id": "uniform-300-budget-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "d5cbf4e6fd4ce18157de7ee6d2a692567368e4b4ed9233b31fd1e84afd4facde",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 103170048,
+          "lifetime_peak_working_set_bytes": 104042496
+        },
+        "runtime": 1.952959100017324,
+        "diagnostic_completed": 34,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "canonicalization",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 470,
+              "candidate_constraint_calls": 470,
+              "generated_candidates": 327,
+              "prefilter_rejections": 72,
+              "public_constraint_calls": 1719,
+              "accepted_insertions": 1515,
+              "scored_states": 1516,
+              "duplicate_states": 0,
+              "pruned_states": 1495,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 33,
+              "candidate_checks": 1791,
+              "feasible_children": 1514,
+              "prepared_tasks": 34,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "854ebac18bd5737e38612aba9abb2158348b7f30efd2d3d20b97b4e95ba19bc1",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 34,
+        "unassigned": 266,
+        "metrics": {
+          "task_profit": 187.0,
+          "task_completion_rate": 0.11333333333333333,
+          "balance_degree": 0.9749069643806486,
+          "timeliness_metric": 0.9053916666666667,
+          "runtime_efficiency": 1.952959100017324,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 776.2579359632017,
+          "feasible_children_per_s": 775.7458924698223,
+          "public_acceptance": 0.881326352530541,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-300",
+        "family": "uniform",
+        "n": 300,
+        "scenario_seed": 101,
+        "name": "diversity",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "candidate_diversity": true
+        },
+        "id": "uniform-300-diversity-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "d5cbf4e6fd4ce18157de7ee6d2a692567368e4b4ed9233b31fd1e84afd4facde",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 102023168,
+          "lifetime_peak_working_set_bytes": 102481920
+        },
+        "runtime": 1.9544919000472873,
+        "diagnostic_completed": 35,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "canonicalization",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 488,
+              "candidate_constraint_calls": 488,
+              "generated_candidates": 337,
+              "prefilter_rejections": 77,
+              "public_constraint_calls": 1626,
+              "accepted_insertions": 1438,
+              "scored_states": 1439,
+              "duplicate_states": 0,
+              "pruned_states": 1402,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 34,
+              "candidate_checks": 1703,
+              "feasible_children": 1437,
+              "prepared_tasks": 35,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "c541128efed3c110059ffe2560f144c51b598c1d738b85bcafa771379835ef76",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 35,
+        "unassigned": 265,
+        "metrics": {
+          "task_profit": 190.0,
+          "task_completion_rate": 0.11666666666666667,
+          "balance_degree": 0.9723551302498671,
+          "timeliness_metric": 0.9033222222222222,
+          "runtime_efficiency": 1.9544919000472873,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 736.252731446564,
+          "feasible_children_per_s": 735.7410895206108,
+          "public_acceptance": 0.8843788437884379,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-300",
+        "family": "uniform",
+        "n": 300,
+        "scenario_seed": 101,
+        "name": "order",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "task_order": "scarcity"
+        },
+        "id": "uniform-300-order-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "d5cbf4e6fd4ce18157de7ee6d2a692567368e4b4ed9233b31fd1e84afd4facde",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "scarcity",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 109330432,
+          "lifetime_peak_working_set_bytes": 109940736
+        },
+        "runtime": 1.9552848001476377,
+        "diagnostic_completed": 47,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "canonicalization",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 4019,
+              "candidate_constraint_calls": 4019,
+              "generated_candidates": 2682,
+              "prefilter_rejections": 40,
+              "public_constraint_calls": 824,
+              "accepted_insertions": 768,
+              "scored_states": 769,
+              "duplicate_states": 0,
+              "pruned_states": 760,
+              "max_beam_size": 8,
+              "max_children": 56,
+              "levels_completed": 50,
+              "candidate_checks": 864,
+              "feasible_children": 767,
+              "prepared_tasks": 300,
+              "candidate_cache_hits": 51,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "0e54fdbf6d6a004ee10800b20965fa0b73d2a46c8b019e7d43d30e4f65c9a679",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 47,
+        "unassigned": 253,
+        "metrics": {
+          "task_profit": 284.0,
+          "task_completion_rate": 0.15666666666666668,
+          "balance_degree": 0.9653375863902179,
+          "timeliness_metric": 0.8741916666666667,
+          "runtime_efficiency": 1.9552848001476377,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 393.2930895498881,
+          "feasible_children_per_s": 392.78165510313926,
+          "public_acceptance": 0.9320388349514563,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-300",
+        "family": "uniform",
+        "n": 300,
+        "scenario_seed": 101,
+        "name": "greedy",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "greedy_incumbent": true
+        },
+        "id": "uniform-300-greedy-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "d5cbf4e6fd4ce18157de7ee6d2a692567368e4b4ed9233b31fd1e84afd4facde",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 92360704,
+          "lifetime_peak_working_set_bytes": 92807168
+        },
+        "runtime": 1.952657800167799,
+        "diagnostic_completed": 186,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "scoring",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 4019,
+              "candidate_constraint_calls": 4019,
+              "generated_candidates": 2682,
+              "prefilter_rejections": 0,
+              "public_constraint_calls": 1851,
+              "accepted_insertions": 797,
+              "scored_states": 798,
+              "duplicate_states": 0,
+              "pruned_states": 552,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 12,
+              "candidate_checks": 1851,
+              "feasible_children": 610,
+              "prepared_tasks": 300,
+              "candidate_cache_hits": 13,
+              "greedy_tasks_completed": 300
+            }
+          }
+        },
+        "plan_sha256": "669b1fc57577ecef9270bb4d8003cdeb9d916d94ccd857842c8173ebcdf85995",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 186,
+        "unassigned": 114,
+        "metrics": {
+          "task_profit": 1051.0,
+          "task_completion_rate": 0.62,
+          "balance_degree": 0.9732057416267943,
+          "timeliness_metric": 0.491675,
+          "runtime_efficiency": 1.952657800167799,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 408.6737573431581,
+          "feasible_children_per_s": 408.16163484022184,
+          "public_acceptance": 0.4305780659103187,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "uniform-300",
+        "family": "uniform",
+        "n": 300,
+        "scenario_seed": 101,
+        "name": "stage1",
+        "ref": "current",
+        "params": {
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "id": "uniform-300-stage1-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "d5cbf4e6fd4ce18157de7ee6d2a692567368e4b4ed9233b31fd1e84afd4facde",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 85692416,
+          "lifetime_peak_working_set_bytes": 86224896
+        },
+        "runtime": 1.951016299892217,
+        "diagnostic_completed": 207,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "greedy_initialization",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 4019,
+              "candidate_constraint_calls": 4019,
+              "generated_candidates": 2682,
+              "prefilter_rejections": 0,
+              "public_constraint_calls": 1176,
+              "accepted_insertions": 208,
+              "scored_states": 208,
+              "duplicate_states": 0,
+              "pruned_states": 0,
+              "max_beam_size": 0,
+              "max_children": 0,
+              "levels_completed": 0,
+              "candidate_checks": 1176,
+              "feasible_children": 0,
+              "prepared_tasks": 300,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 251
+            }
+          }
+        },
+        "plan_sha256": "c87cfbb928139325303b3b55138e658e1a1b540cc7ea3d0ba89b32f21a6ef094",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 207,
+        "unassigned": 93,
+        "metrics": {
+          "task_profit": 1180.0,
+          "task_completion_rate": 0.69,
+          "balance_degree": 0.9660818713450292,
+          "timeliness_metric": 0.44501944444444447,
+          "runtime_efficiency": 1.951016299892217,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 106.61110315249077,
+          "feasible_children_per_s": 106.61110315249077,
+          "public_acceptance": 0.17687074829931973,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-20",
+        "family": "clustered",
+        "n": 20,
+        "scenario_seed": 211,
+        "name": "stage1",
+        "ref": "current",
+        "params": {
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "id": "clustered-20-stage1-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "ffa0ca92edc218a85ba97e5a47777a405bf07bfbe23deeb12e82879d985a4dcf",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 80318464,
+          "lifetime_peak_working_set_bytes": 80809984
+        },
+        "runtime": 0.14587859995663166,
+        "diagnostic_completed": 14,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 180,
+              "candidate_constraint_calls": 180,
+              "generated_candidates": 104,
+              "prefilter_rejections": 390,
+              "public_constraint_calls": 488,
+              "accepted_insertions": 188,
+              "scored_states": 189,
+              "duplicate_states": 0,
+              "pruned_states": 167,
+              "max_beam_size": 8,
+              "max_children": 56,
+              "levels_completed": 20,
+              "candidate_checks": 878,
+              "feasible_children": 174,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 20,
+              "greedy_tasks_completed": 20
+            }
+          }
+        },
+        "plan_sha256": "e60eba75b49b8dd2cf24217dc128ab7b62983df3dab3c7e548f63319021fe5df",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 14,
+        "unassigned": 6,
+        "metrics": {
+          "task_profit": 94.0,
+          "task_completion_rate": 0.7,
+          "balance_degree": 0.9901960784313726,
+          "timeliness_metric": 0.4246666666666667,
+          "runtime_efficiency": 0.14587859995663166,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1295.5978468136377,
+          "feasible_children_per_s": 1288.7428317511317,
+          "public_acceptance": 0.38524590163934425,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-20",
+        "family": "clustered",
+        "n": 20,
+        "scenario_seed": 211,
+        "name": "greedy",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "greedy_incumbent": true
+        },
+        "id": "clustered-20-greedy-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "ffa0ca92edc218a85ba97e5a47777a405bf07bfbe23deeb12e82879d985a4dcf",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 80334848,
+          "lifetime_peak_working_set_bytes": 80781312
+        },
+        "runtime": 0.13473680010065436,
+        "diagnostic_completed": 13,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 180,
+              "candidate_constraint_calls": 180,
+              "generated_candidates": 104,
+              "prefilter_rejections": 310,
+              "public_constraint_calls": 472,
+              "accepted_insertions": 229,
+              "scored_states": 230,
+              "duplicate_states": 0,
+              "pruned_states": 210,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 20,
+              "candidate_checks": 782,
+              "feasible_children": 217,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 20,
+              "greedy_tasks_completed": 20
+            }
+          }
+        },
+        "plan_sha256": "b314a6605c500cc6f49a4fa8c5d435eed785833525ff7879c08d6eedde58bce3",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 13,
+        "unassigned": 7,
+        "metrics": {
+          "task_profit": 85.0,
+          "task_completion_rate": 0.65,
+          "balance_degree": 0.9411764705882353,
+          "timeliness_metric": 0.46,
+          "runtime_efficiency": 0.13473680010065436,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1707.031782172204,
+          "feasible_children_per_s": 1699.6099048584117,
+          "public_acceptance": 0.4851694915254237,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-20",
+        "family": "clustered",
+        "n": 20,
+        "scenario_seed": 211,
+        "name": "order",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "task_order": "scarcity"
+        },
+        "id": "clustered-20-order-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "ffa0ca92edc218a85ba97e5a47777a405bf07bfbe23deeb12e82879d985a4dcf",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "scarcity",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 80531456,
+          "lifetime_peak_working_set_bytes": 81207296
+        },
+        "runtime": 0.1277379000093788,
+        "diagnostic_completed": 14,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 180,
+              "candidate_constraint_calls": 180,
+              "generated_candidates": 104,
+              "prefilter_rejections": 344,
+              "public_constraint_calls": 391,
+              "accepted_insertions": 174,
+              "scored_states": 175,
+              "duplicate_states": 0,
+              "pruned_states": 167,
+              "max_beam_size": 8,
+              "max_children": 56,
+              "levels_completed": 20,
+              "candidate_checks": 735,
+              "feasible_children": 174,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 20,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "e60eba75b49b8dd2cf24217dc128ab7b62983df3dab3c7e548f63319021fe5df",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 14,
+        "unassigned": 6,
+        "metrics": {
+          "task_profit": 94.0,
+          "task_completion_rate": 0.7,
+          "balance_degree": 0.9901960784313726,
+          "timeliness_metric": 0.4246666666666667,
+          "runtime_efficiency": 0.1277379000093788,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1369.9927741660943,
+          "feasible_children_per_s": 1362.1642440280023,
+          "public_acceptance": 0.44501278772378516,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-20",
+        "family": "clustered",
+        "n": 20,
+        "scenario_seed": 211,
+        "name": "diversity",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "candidate_diversity": true
+        },
+        "id": "clustered-20-diversity-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "ffa0ca92edc218a85ba97e5a47777a405bf07bfbe23deeb12e82879d985a4dcf",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 80355328,
+          "lifetime_peak_working_set_bytes": 80879616
+        },
+        "runtime": 0.13614630000665784,
+        "diagnostic_completed": 13,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 180,
+              "candidate_constraint_calls": 180,
+              "generated_candidates": 104,
+              "prefilter_rejections": 326,
+              "public_constraint_calls": 389,
+              "accepted_insertions": 225,
+              "scored_states": 226,
+              "duplicate_states": 0,
+              "pruned_states": 218,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 20,
+              "candidate_checks": 715,
+              "feasible_children": 225,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "b314a6605c500cc6f49a4fa8c5d435eed785833525ff7879c08d6eedde58bce3",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 13,
+        "unassigned": 7,
+        "metrics": {
+          "task_profit": 85.0,
+          "task_completion_rate": 0.65,
+          "balance_degree": 0.9411764705882353,
+          "timeliness_metric": 0.46,
+          "runtime_efficiency": 0.13614630000665784,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1659.9790077949099,
+          "feasible_children_per_s": 1652.6339679374103,
+          "public_acceptance": 0.5784061696658098,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-20",
+        "family": "clustered",
+        "n": 20,
+        "scenario_seed": 211,
+        "name": "budget",
+        "ref": "current",
+        "params": {},
+        "id": "clustered-20-budget-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "ffa0ca92edc218a85ba97e5a47777a405bf07bfbe23deeb12e82879d985a4dcf",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 81862656,
+          "lifetime_peak_working_set_bytes": 82665472
+        },
+        "runtime": 0.15305940015241504,
+        "diagnostic_completed": 13,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 180,
+              "candidate_constraint_calls": 180,
+              "generated_candidates": 104,
+              "prefilter_rejections": 322,
+              "public_constraint_calls": 463,
+              "accepted_insertions": 256,
+              "scored_states": 257,
+              "duplicate_states": 0,
+              "pruned_states": 249,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 20,
+              "candidate_checks": 785,
+              "feasible_children": 256,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "58bd82331ff85529cf0b7f6d2a25de9dd67135e8ab29bcb825e28e6dcc7d6a1d",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 13,
+        "unassigned": 7,
+        "metrics": {
+          "task_profit": 94.0,
+          "task_completion_rate": 0.65,
+          "balance_degree": 0.9509803921568627,
+          "timeliness_metric": 0.4605,
+          "runtime_efficiency": 0.15305940015241504,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1679.0866797078909,
+          "feasible_children_per_s": 1672.5532685028018,
+          "public_acceptance": 0.5529157667386609,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-20",
+        "family": "clustered",
+        "n": 20,
+        "scenario_seed": 211,
+        "name": "baseline",
+        "ref": "f344af9704d5839578b69caed4534a74374cab90",
+        "params": {},
+        "id": "clustered-20-baseline-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "4a8020c15ad3a484162c8f864ca4853a3bb879c3030a784f393095d0ad35595d",
+        "scenario_sha256": "ffa0ca92edc218a85ba97e5a47777a405bf07bfbe23deeb12e82879d985a4dcf",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 79773696,
+          "lifetime_peak_working_set_bytes": 80314368
+        },
+        "runtime": 0.12892089993692935,
+        "diagnostic_completed": 13,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.2.0",
+            "stop_reason": "completed",
+            "stop_phase": "pruning",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 180,
+              "candidate_constraint_calls": 180,
+              "generated_candidates": 104,
+              "prefilter_rejections": 310,
+              "public_constraint_calls": 405,
+              "accepted_insertions": 217,
+              "scored_states": 218,
+              "duplicate_states": 0,
+              "pruned_states": 210,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 20
+            }
+          }
+        },
+        "plan_sha256": "b314a6605c500cc6f49a4fa8c5d435eed785833525ff7879c08d6eedde58bce3",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 13,
+        "unassigned": 7,
+        "metrics": {
+          "task_profit": 85.0,
+          "task_completion_rate": 0.65,
+          "balance_degree": 0.9411764705882353,
+          "timeliness_metric": 0.46,
+          "runtime_efficiency": 0.12892089993692935,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1690.9593410118136,
+          "feasible_children_per_s": 1683.2026467869887,
+          "public_acceptance": 0.5358024691358024,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-100",
+        "family": "clustered",
+        "n": 100,
+        "scenario_seed": 211,
+        "name": "baseline",
+        "ref": "f344af9704d5839578b69caed4534a74374cab90",
+        "params": {},
+        "id": "clustered-100-baseline-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "4a8020c15ad3a484162c8f864ca4853a3bb879c3030a784f393095d0ad35595d",
+        "scenario_sha256": "efb48b5e2b50051016d66e3234c880ba3ba70e44f6851bacc1b79058b14ebe97",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 86269952,
+          "lifetime_peak_working_set_bytes": 86609920
+        },
+        "runtime": 1.3650610998738557,
+        "diagnostic_completed": 40,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.2.0",
+            "stop_reason": "completed",
+            "stop_phase": "pruning",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1409,
+              "candidate_constraint_calls": 1409,
+              "generated_candidates": 882,
+              "prefilter_rejections": 2340,
+              "public_constraint_calls": 2761,
+              "accepted_insertions": 718,
+              "scored_states": 719,
+              "duplicate_states": 0,
+              "pruned_states": 711,
+              "max_beam_size": 8,
+              "max_children": 65,
+              "levels_completed": 100
+            }
+          }
+        },
+        "plan_sha256": "0a7dd2ebe72b26e19d11f45280c67aa2c556dfe45fb8c163f9a88927c8b35ae8",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 40,
+        "unassigned": 60,
+        "metrics": {
+          "task_profit": 266.0,
+          "task_completion_rate": 0.4,
+          "balance_degree": 0.981151832460733,
+          "timeliness_metric": 0.66925,
+          "runtime_efficiency": 1.3650610998738557,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 526.7163499615089,
+          "feasible_children_per_s": 525.9837820199768,
+          "public_acceptance": 0.2600507062658457,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-100",
+        "family": "clustered",
+        "n": 100,
+        "scenario_seed": 211,
+        "name": "budget",
+        "ref": "current",
+        "params": {},
+        "id": "clustered-100-budget-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "efb48b5e2b50051016d66e3234c880ba3ba70e44f6851bacc1b79058b14ebe97",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 91594752,
+          "lifetime_peak_working_set_bytes": 92856320
+        },
+        "runtime": 1.9210918000899255,
+        "diagnostic_completed": 44,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1409,
+              "candidate_constraint_calls": 1409,
+              "generated_candidates": 882,
+              "prefilter_rejections": 3368,
+              "public_constraint_calls": 3583,
+              "accepted_insertions": 1009,
+              "scored_states": 1010,
+              "duplicate_states": 0,
+              "pruned_states": 1002,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 100,
+              "candidate_checks": 6951,
+              "feasible_children": 1009,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "80f9ac326ef6bc07a20f2ea3cb823d7ef124ccdc55781f70d8857ecc378d7cc7",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 44,
+        "unassigned": 56,
+        "metrics": {
+          "task_profit": 276.0,
+          "task_completion_rate": 0.44,
+          "balance_degree": 0.9853403141361257,
+          "timeliness_metric": 0.6376166666666667,
+          "runtime_efficiency": 1.9210918000899255,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 525.7427052433009,
+          "feasible_children_per_s": 525.2221679113768,
+          "public_acceptance": 0.2816075914038515,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-100",
+        "family": "clustered",
+        "n": 100,
+        "scenario_seed": 211,
+        "name": "diversity",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "candidate_diversity": true
+        },
+        "id": "clustered-100-diversity-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "efb48b5e2b50051016d66e3234c880ba3ba70e44f6851bacc1b79058b14ebe97",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 87502848,
+          "lifetime_peak_working_set_bytes": 87502848
+        },
+        "runtime": 1.5339411001186818,
+        "diagnostic_completed": 43,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1409,
+              "candidate_constraint_calls": 1409,
+              "generated_candidates": 882,
+              "prefilter_rejections": 2375,
+              "public_constraint_calls": 2726,
+              "accepted_insertions": 748,
+              "scored_states": 749,
+              "duplicate_states": 0,
+              "pruned_states": 741,
+              "max_beam_size": 8,
+              "max_children": 65,
+              "levels_completed": 100,
+              "candidate_checks": 5101,
+              "feasible_children": 748,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "d8d3d20ecc42fb7132d7e37032b1de291ef3251087e0bf967972a5913bd54447",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 43,
+        "unassigned": 57,
+        "metrics": {
+          "task_profit": 287.0,
+          "task_completion_rate": 0.43,
+          "balance_degree": 0.9821989528795811,
+          "timeliness_metric": 0.646675,
+          "runtime_efficiency": 1.5339411001186818,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 488.2847196297495,
+          "feasible_children_per_s": 487.6328041162251,
+          "public_acceptance": 0.2743947175348496,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-100",
+        "family": "clustered",
+        "n": 100,
+        "scenario_seed": 211,
+        "name": "order",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "task_order": "scarcity"
+        },
+        "id": "clustered-100-order-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "efb48b5e2b50051016d66e3234c880ba3ba70e44f6851bacc1b79058b14ebe97",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "scarcity",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 86048768,
+          "lifetime_peak_working_set_bytes": 86290432
+        },
+        "runtime": 1.43445729999803,
+        "diagnostic_completed": 44,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1409,
+              "candidate_constraint_calls": 1409,
+              "generated_candidates": 882,
+              "prefilter_rejections": 2544,
+              "public_constraint_calls": 2575,
+              "accepted_insertions": 617,
+              "scored_states": 618,
+              "duplicate_states": 0,
+              "pruned_states": 610,
+              "max_beam_size": 8,
+              "max_children": 56,
+              "levels_completed": 100,
+              "candidate_checks": 5119,
+              "feasible_children": 617,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 100,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "5c2e84c01ffc6e2fe5c73acf4906fdfa20f948a0eab4cde2d862bcc54bdd6e95",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 44,
+        "unassigned": 56,
+        "metrics": {
+          "task_profit": 292.0,
+          "task_completion_rate": 0.44,
+          "balance_degree": 0.9696335078534032,
+          "timeliness_metric": 0.6380583333333333,
+          "runtime_efficiency": 1.43445729999803,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 430.82495380019236,
+          "feasible_children_per_s": 430.1278260432341,
+          "public_acceptance": 0.2396116504854369,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-100",
+        "family": "clustered",
+        "n": 100,
+        "scenario_seed": 211,
+        "name": "greedy",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "greedy_incumbent": true
+        },
+        "id": "clustered-100-greedy-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "efb48b5e2b50051016d66e3234c880ba3ba70e44f6851bacc1b79058b14ebe97",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 86974464,
+          "lifetime_peak_working_set_bytes": 88477696
+        },
+        "runtime": 1.402407999848947,
+        "diagnostic_completed": 40,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1409,
+              "candidate_constraint_calls": 1409,
+              "generated_candidates": 882,
+              "prefilter_rejections": 2340,
+              "public_constraint_calls": 3289,
+              "accepted_insertions": 755,
+              "scored_states": 756,
+              "duplicate_states": 0,
+              "pruned_states": 711,
+              "max_beam_size": 8,
+              "max_children": 65,
+              "levels_completed": 100,
+              "candidate_checks": 5629,
+              "feasible_children": 718,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 100,
+              "greedy_tasks_completed": 100
+            }
+          }
+        },
+        "plan_sha256": "0a7dd2ebe72b26e19d11f45280c67aa2c556dfe45fb8c163f9a88927c8b35ae8",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 40,
+        "unassigned": 60,
+        "metrics": {
+          "task_profit": 266.0,
+          "task_completion_rate": 0.4,
+          "balance_degree": 0.981151832460733,
+          "timeliness_metric": 0.66925,
+          "runtime_efficiency": 1.402407999848947,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 539.0727948510196,
+          "feasible_children_per_s": 538.3597355985711,
+          "public_acceptance": 0.22955305564001216,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-100",
+        "family": "clustered",
+        "n": 100,
+        "scenario_seed": 211,
+        "name": "stage1",
+        "ref": "current",
+        "params": {
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "id": "clustered-100-stage1-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "efb48b5e2b50051016d66e3234c880ba3ba70e44f6851bacc1b79058b14ebe97",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 89788416,
+          "lifetime_peak_working_set_bytes": 89788416
+        },
+        "runtime": 1.569048199802637,
+        "diagnostic_completed": 47,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1409,
+              "candidate_constraint_calls": 1409,
+              "generated_candidates": 882,
+              "prefilter_rejections": 3654,
+              "public_constraint_calls": 4130,
+              "accepted_insertions": 693,
+              "scored_states": 694,
+              "duplicate_states": 0,
+              "pruned_states": 640,
+              "max_beam_size": 8,
+              "max_children": 56,
+              "levels_completed": 100,
+              "candidate_checks": 7784,
+              "feasible_children": 647,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 100,
+              "greedy_tasks_completed": 100
+            }
+          }
+        },
+        "plan_sha256": "f498929fd915d9108f593ec0463bc0d534f0d1dfbbccc07d1ba517d764ea8c94",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 47,
+        "unassigned": 53,
+        "metrics": {
+          "task_profit": 302.0,
+          "task_completion_rate": 0.47,
+          "balance_degree": 0.9821989528795811,
+          "timeliness_metric": 0.6153,
+          "runtime_efficiency": 1.569048199802637,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 442.3063613261179,
+          "feasible_children_per_s": 441.66903227521567,
+          "public_acceptance": 0.16779661016949152,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-300",
+        "family": "clustered",
+        "n": 300,
+        "scenario_seed": 211,
+        "name": "stage1",
+        "ref": "current",
+        "params": {
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "id": "clustered-300-stage1-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "da210362e4514acc582e46219cb9bd6b9c3c6b25ac6d3005f10935928de1125c",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 97247232,
+          "lifetime_peak_working_set_bytes": 97865728
+        },
+        "runtime": 1.9511810999829322,
+        "diagnostic_completed": 124,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "expansion",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 3740,
+              "candidate_constraint_calls": 3740,
+              "generated_candidates": 2461,
+              "prefilter_rejections": 115,
+              "public_constraint_calls": 2978,
+              "accepted_insertions": 712,
+              "scored_states": 712,
+              "duplicate_states": 0,
+              "pruned_states": 580,
+              "max_beam_size": 8,
+              "max_children": 50,
+              "levels_completed": 50,
+              "candidate_checks": 3093,
+              "feasible_children": 587,
+              "prepared_tasks": 300,
+              "candidate_cache_hits": 51,
+              "greedy_tasks_completed": 300
+            }
+          }
+        },
+        "plan_sha256": "140e954cda1f9ef886b6b931437135fc3a95d9883d2539b578c7d174c2b19f17",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 124,
+        "unassigned": 176,
+        "metrics": {
+          "task_profit": 687.0,
+          "task_completion_rate": 0.41333333333333333,
+          "balance_degree": 0.9822742474916388,
+          "timeliness_metric": 0.6599833333333334,
+          "runtime_efficiency": 1.9511810999829322,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 364.9071836572362,
+          "feasible_children_per_s": 364.9071836572362,
+          "public_acceptance": 0.23908663532572197,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-300",
+        "family": "clustered",
+        "n": 300,
+        "scenario_seed": 211,
+        "name": "greedy",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "greedy_incumbent": true
+        },
+        "id": "clustered-300-greedy-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "da210362e4514acc582e46219cb9bd6b9c3c6b25ac6d3005f10935928de1125c",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 102072320,
+          "lifetime_peak_working_set_bytes": 102072320
+        },
+        "runtime": 1.9514242000877857,
+        "diagnostic_completed": 116,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "expansion",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 3740,
+              "candidate_constraint_calls": 3740,
+              "generated_candidates": 2461,
+              "prefilter_rejections": 234,
+              "public_constraint_calls": 2641,
+              "accepted_insertions": 1065,
+              "scored_states": 1065,
+              "duplicate_states": 0,
+              "pruned_states": 936,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 30,
+              "candidate_checks": 2875,
+              "feasible_children": 948,
+              "prepared_tasks": 300,
+              "candidate_cache_hits": 31,
+              "greedy_tasks_completed": 300
+            }
+          }
+        },
+        "plan_sha256": "66b7a358d818d91f93396ceb7acb1beeaaaf99c52af23737305eefd40f5c581a",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 116,
+        "unassigned": 184,
+        "metrics": {
+          "task_profit": 676.0,
+          "task_completion_rate": 0.38666666666666666,
+          "balance_degree": 0.9778149386845039,
+          "timeliness_metric": 0.6778694444444444,
+          "runtime_efficiency": 1.9514242000877857,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 545.7552488854502,
+          "feasible_children_per_s": 545.7552488854502,
+          "public_acceptance": 0.4032563422945854,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-300",
+        "family": "clustered",
+        "n": 300,
+        "scenario_seed": 211,
+        "name": "order",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "task_order": "scarcity"
+        },
+        "id": "clustered-300-order-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "da210362e4514acc582e46219cb9bd6b9c3c6b25ac6d3005f10935928de1125c",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "scarcity",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 98189312,
+          "lifetime_peak_working_set_bytes": 98762752
+        },
+        "runtime": 1.9534016998950392,
+        "diagnostic_completed": 49,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "canonicalization",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 3740,
+              "candidate_constraint_calls": 3740,
+              "generated_candidates": 2461,
+              "prefilter_rejections": 195,
+              "public_constraint_calls": 1179,
+              "accepted_insertions": 751,
+              "scored_states": 752,
+              "duplicate_states": 0,
+              "pruned_states": 732,
+              "max_beam_size": 8,
+              "max_children": 50,
+              "levels_completed": 63,
+              "candidate_checks": 1374,
+              "feasible_children": 750,
+              "prepared_tasks": 300,
+              "candidate_cache_hits": 64,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "2f1ae081a4525a60b9327332c268596c748f57645086081f2f3a8838cce31349",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 49,
+        "unassigned": 251,
+        "metrics": {
+          "task_profit": 273.0,
+          "task_completion_rate": 0.16333333333333333,
+          "balance_degree": 0.9649944258639911,
+          "timeliness_metric": 0.8646305555555556,
+          "runtime_efficiency": 1.9534016998950392,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 384.96946124312615,
+          "feasible_children_per_s": 384.4575337680688,
+          "public_acceptance": 0.636980491942324,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-300",
+        "family": "clustered",
+        "n": 300,
+        "scenario_seed": 211,
+        "name": "diversity",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "candidate_diversity": true
+        },
+        "id": "clustered-300-diversity-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "da210362e4514acc582e46219cb9bd6b9c3c6b25ac6d3005f10935928de1125c",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 107216896,
+          "lifetime_peak_working_set_bytes": 108638208
+        },
+        "runtime": 1.9526643001008779,
+        "diagnostic_completed": 36,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "expansion",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 470,
+              "candidate_constraint_calls": 470,
+              "generated_candidates": 326,
+              "prefilter_rejections": 238,
+              "public_constraint_calls": 1615,
+              "accepted_insertions": 1262,
+              "scored_states": 1262,
+              "duplicate_states": 0,
+              "pruned_states": 1246,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 38,
+              "candidate_checks": 1853,
+              "feasible_children": 1261,
+              "prepared_tasks": 39,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "20497ef815627e8091c2286f680a7d8bbeb21e49a98ba6eebbe74d6a4f6d4357",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 36,
+        "unassigned": 264,
+        "metrics": {
+          "task_profit": 218.0,
+          "task_completion_rate": 0.12,
+          "balance_degree": 0.9681159420289855,
+          "timeliness_metric": 0.8993972222222222,
+          "runtime_efficiency": 1.9526643001008779,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 646.296447338543,
+          "feasible_children_per_s": 646.296447338543,
+          "public_acceptance": 0.7814241486068112,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-300",
+        "family": "clustered",
+        "n": 300,
+        "scenario_seed": 211,
+        "name": "budget",
+        "ref": "current",
+        "params": {},
+        "id": "clustered-300-budget-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "da210362e4514acc582e46219cb9bd6b9c3c6b25ac6d3005f10935928de1125c",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 107851776,
+          "lifetime_peak_working_set_bytes": 108503040
+        },
+        "runtime": 1.9543667000252753,
+        "diagnostic_completed": 33,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "expansion",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 416,
+              "candidate_constraint_calls": 416,
+              "generated_candidates": 284,
+              "prefilter_rejections": 277,
+              "public_constraint_calls": 1684,
+              "accepted_insertions": 1304,
+              "scored_states": 1305,
+              "duplicate_states": 0,
+              "pruned_states": 1273,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 34,
+              "candidate_checks": 1961,
+              "feasible_children": 1304,
+              "prepared_tasks": 35,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "473e833b7bf769d86855e4515a333707274f5d1de0c6ee85e666b4c826c2116a",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 33,
+        "unassigned": 267,
+        "metrics": {
+          "task_profit": 205.0,
+          "task_completion_rate": 0.11,
+          "balance_degree": 0.9695652173913043,
+          "timeliness_metric": 0.9069305555555556,
+          "runtime_efficiency": 1.9543667000252753,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 667.7354868884753,
+          "feasible_children_per_s": 667.2238121858787,
+          "public_acceptance": 0.7743467933491687,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "clustered-300",
+        "family": "clustered",
+        "n": 300,
+        "scenario_seed": 211,
+        "name": "baseline",
+        "ref": "f344af9704d5839578b69caed4534a74374cab90",
+        "params": {},
+        "id": "clustered-300-baseline-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "4a8020c15ad3a484162c8f864ca4853a3bb879c3030a784f393095d0ad35595d",
+        "scenario_sha256": "da210362e4514acc582e46219cb9bd6b9c3c6b25ac6d3005f10935928de1125c",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 106774528,
+          "lifetime_peak_working_set_bytes": 107216896
+        },
+        "runtime": 1.958665099926293,
+        "diagnostic_completed": 38,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.2.0",
+            "stop_reason": "budget",
+            "stop_phase": "pruning",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 491,
+              "candidate_constraint_calls": 491,
+              "generated_candidates": 339,
+              "prefilter_rejections": 336,
+              "public_constraint_calls": 1627,
+              "accepted_insertions": 1216,
+              "scored_states": 1217,
+              "duplicate_states": 0,
+              "pruned_states": 1169,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 39
+            }
+          }
+        },
+        "plan_sha256": "d1efe7756d62579cfee9c2580ed058ca8b3879bf22f9a5943b9309a26dc58a98",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 38,
+        "unassigned": 262,
+        "metrics": {
+          "task_profit": 233.0,
+          "task_completion_rate": 0.12666666666666668,
+          "balance_degree": 0.9638795986622074,
+          "timeliness_metric": 0.8945722222222222,
+          "runtime_efficiency": 1.958665099926293,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 621.341545344223,
+          "feasible_children_per_s": 620.8309935403248,
+          "public_acceptance": 0.7473878303626306,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-20",
+        "family": "downlink",
+        "n": 20,
+        "scenario_seed": 307,
+        "name": "baseline",
+        "ref": "f344af9704d5839578b69caed4534a74374cab90",
+        "params": {},
+        "id": "downlink-20-baseline-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "4a8020c15ad3a484162c8f864ca4853a3bb879c3030a784f393095d0ad35595d",
+        "scenario_sha256": "e2e6900a5008ac9fa5155dc3fa74d22c121483f8473801130fa32c56c3b3e60d",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 80261120,
+          "lifetime_peak_working_set_bytes": 80261120
+        },
+        "runtime": 0.10733029991388321,
+        "diagnostic_completed": 10,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.2.0",
+            "stop_reason": "completed",
+            "stop_phase": "pruning",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 213,
+              "candidate_constraint_calls": 310,
+              "generated_candidates": 166,
+              "prefilter_rejections": 303,
+              "public_constraint_calls": 729,
+              "accepted_insertions": 171,
+              "scored_states": 172,
+              "duplicate_states": 0,
+              "pruned_states": 164,
+              "max_beam_size": 8,
+              "max_children": 56,
+              "levels_completed": 20
+            }
+          }
+        },
+        "plan_sha256": "028818ec7a21ec684ada9bc0a9b842769fe4b3a404d03efa4d7b512c81a76193",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 10,
+        "unassigned": 10,
+        "metrics": {
+          "task_profit": 65.0,
+          "task_completion_rate": 0.5,
+          "balance_degree": 0.9868421052631579,
+          "timeliness_metric": 0.58675,
+          "runtime_efficiency": 0.10733029991388321,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1602.5297622200321,
+          "feasible_children_per_s": 1593.212728718753,
+          "public_acceptance": 0.2345679012345679,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-20",
+        "family": "downlink",
+        "n": 20,
+        "scenario_seed": 307,
+        "name": "budget",
+        "ref": "current",
+        "params": {},
+        "id": "downlink-20-budget-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "e2e6900a5008ac9fa5155dc3fa74d22c121483f8473801130fa32c56c3b3e60d",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 82427904,
+          "lifetime_peak_working_set_bytes": 82427904
+        },
+        "runtime": 0.16023609996773303,
+        "diagnostic_completed": 10,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 213,
+              "candidate_constraint_calls": 310,
+              "generated_candidates": 166,
+              "prefilter_rejections": 350,
+              "public_constraint_calls": 918,
+              "accepted_insertions": 253,
+              "scored_states": 254,
+              "duplicate_states": 0,
+              "pruned_states": 246,
+              "max_beam_size": 8,
+              "max_children": 64,
+              "levels_completed": 20,
+              "candidate_checks": 1268,
+              "feasible_children": 253,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "203ea8fb1a1d8827ca3cd3553660ac808bac81dd1372ed664615b32b5df59881",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 10,
+        "unassigned": 10,
+        "metrics": {
+          "task_profit": 62.0,
+          "task_completion_rate": 0.5,
+          "balance_degree": 0.9473684210526316,
+          "timeliness_metric": 0.5851666666666666,
+          "runtime_efficiency": 0.16023609996773303,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1585.1608972706422,
+          "feasible_children_per_s": 1578.9201063365058,
+          "public_acceptance": 0.275599128540305,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-20",
+        "family": "downlink",
+        "n": 20,
+        "scenario_seed": 307,
+        "name": "diversity",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "candidate_diversity": true
+        },
+        "id": "downlink-20-diversity-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "e2e6900a5008ac9fa5155dc3fa74d22c121483f8473801130fa32c56c3b3e60d",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 78610432,
+          "lifetime_peak_working_set_bytes": 79187968
+        },
+        "runtime": 0.10460889991372824,
+        "diagnostic_completed": 9,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 213,
+              "candidate_constraint_calls": 310,
+              "generated_candidates": 166,
+              "prefilter_rejections": 293,
+              "public_constraint_calls": 739,
+              "accepted_insertions": 168,
+              "scored_states": 169,
+              "duplicate_states": 0,
+              "pruned_states": 161,
+              "max_beam_size": 8,
+              "max_children": 56,
+              "levels_completed": 20,
+              "candidate_checks": 1032,
+              "feasible_children": 168,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "fc1bd4c969ca83456f525adde65631b75fc476a126b761e4364388c134ef4245",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 9,
+        "unassigned": 11,
+        "metrics": {
+          "task_profit": 60.0,
+          "task_completion_rate": 0.45,
+          "balance_degree": 0.9473684210526316,
+          "timeliness_metric": 0.6296666666666667,
+          "runtime_efficiency": 0.10460889991372824,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1615.541317606586,
+          "feasible_children_per_s": 1605.9819015260737,
+          "public_acceptance": 0.2273342354533153,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-20",
+        "family": "downlink",
+        "n": 20,
+        "scenario_seed": 307,
+        "name": "order",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "task_order": "scarcity"
+        },
+        "id": "downlink-20-order-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "e2e6900a5008ac9fa5155dc3fa74d22c121483f8473801130fa32c56c3b3e60d",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "scarcity",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 78786560,
+          "lifetime_peak_working_set_bytes": 79192064
+        },
+        "runtime": 0.09578570001758635,
+        "diagnostic_completed": 10,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 213,
+              "candidate_constraint_calls": 310,
+              "generated_candidates": 166,
+              "prefilter_rejections": 316,
+              "public_constraint_calls": 738,
+              "accepted_insertions": 105,
+              "scored_states": 106,
+              "duplicate_states": 0,
+              "pruned_states": 98,
+              "max_beam_size": 8,
+              "max_children": 31,
+              "levels_completed": 20,
+              "candidate_checks": 1054,
+              "feasible_children": 105,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 20,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "8fdd835a1f97e75872a5e13a9ccbd3de19e07eace09e826ba7ec1cc971bdeb6b",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 10,
+        "unassigned": 10,
+        "metrics": {
+          "task_profit": 57.0,
+          "task_completion_rate": 0.5,
+          "balance_degree": 0.9210526315789473,
+          "timeliness_metric": 0.583625,
+          "runtime_efficiency": 0.09578570001758635,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1106.6370030238156,
+          "feasible_children_per_s": 1096.1970312971757,
+          "public_acceptance": 0.14227642276422764,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-20",
+        "family": "downlink",
+        "n": 20,
+        "scenario_seed": 307,
+        "name": "greedy",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "greedy_incumbent": true
+        },
+        "id": "downlink-20-greedy-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "e2e6900a5008ac9fa5155dc3fa74d22c121483f8473801130fa32c56c3b3e60d",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 78745600,
+          "lifetime_peak_working_set_bytes": 79138816
+        },
+        "runtime": 0.11089059989899397,
+        "diagnostic_completed": 10,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 213,
+              "candidate_constraint_calls": 310,
+              "generated_candidates": 166,
+              "prefilter_rejections": 303,
+              "public_constraint_calls": 827,
+              "accepted_insertions": 180,
+              "scored_states": 181,
+              "duplicate_states": 0,
+              "pruned_states": 164,
+              "max_beam_size": 8,
+              "max_children": 56,
+              "levels_completed": 20,
+              "candidate_checks": 1130,
+              "feasible_children": 171,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 20,
+              "greedy_tasks_completed": 20
+            }
+          }
+        },
+        "plan_sha256": "028818ec7a21ec684ada9bc0a9b842769fe4b3a404d03efa4d7b512c81a76193",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 10,
+        "unassigned": 10,
+        "metrics": {
+          "task_profit": 65.0,
+          "task_completion_rate": 0.5,
+          "balance_degree": 0.9868421052631579,
+          "timeliness_metric": 0.58675,
+          "runtime_efficiency": 0.11089059989899397,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1632.239343685272,
+          "feasible_children_per_s": 1623.221446758834,
+          "public_acceptance": 0.21765417170495768,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-20",
+        "family": "downlink",
+        "n": 20,
+        "scenario_seed": 307,
+        "name": "stage1",
+        "ref": "current",
+        "params": {
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "id": "downlink-20-stage1-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "e2e6900a5008ac9fa5155dc3fa74d22c121483f8473801130fa32c56c3b3e60d",
+        "total": 20,
+        "satellites": 2,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 79790080,
+          "lifetime_peak_working_set_bytes": 80240640
+        },
+        "runtime": 0.12186820013448596,
+        "diagnostic_completed": 11,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 213,
+              "candidate_constraint_calls": 310,
+              "generated_candidates": 166,
+              "prefilter_rejections": 392,
+              "public_constraint_calls": 1037,
+              "accepted_insertions": 145,
+              "scored_states": 146,
+              "duplicate_states": 0,
+              "pruned_states": 127,
+              "max_beam_size": 8,
+              "max_children": 37,
+              "levels_completed": 20,
+              "candidate_checks": 1429,
+              "feasible_children": 134,
+              "prepared_tasks": 20,
+              "candidate_cache_hits": 20,
+              "greedy_tasks_completed": 20
+            }
+          }
+        },
+        "plan_sha256": "5e162d8cfa3c1374ca15928af387f0e2024b14a106c676c0873460fa5999a7cc",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 11,
+        "unassigned": 9,
+        "metrics": {
+          "task_profit": 66.0,
+          "task_completion_rate": 0.55,
+          "balance_degree": 0.9605263157894737,
+          "timeliness_metric": 0.5404583333333334,
+          "runtime_efficiency": 0.12186820013448596,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 1198.0155597513028,
+          "feasible_children_per_s": 1189.809973725609,
+          "public_acceptance": 0.1398264223722276,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-100",
+        "family": "downlink",
+        "n": 100,
+        "scenario_seed": 307,
+        "name": "stage1",
+        "ref": "current",
+        "params": {
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "id": "downlink-100-stage1-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "6e84b2739e6528dd225dabc9b128c94f15897de9e01f7277c355d6cbdb28e67a",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 81137664,
+          "lifetime_peak_working_set_bytes": 81846272
+        },
+        "runtime": 0.6004695000592619,
+        "diagnostic_completed": 15,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1207,
+              "candidate_constraint_calls": 1757,
+              "generated_candidates": 1016,
+              "prefilter_rejections": 1634,
+              "public_constraint_calls": 7461,
+              "accepted_insertions": 158,
+              "scored_states": 159,
+              "duplicate_states": 0,
+              "pruned_states": 137,
+              "max_beam_size": 8,
+              "max_children": 24,
+              "levels_completed": 100,
+              "candidate_checks": 9095,
+              "feasible_children": 144,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 100,
+              "greedy_tasks_completed": 100
+            }
+          }
+        },
+        "plan_sha256": "089859457404f917f982521d84a5ccfec72d8e8c9d8bb08683e5a63f1586b617",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 15,
+        "unassigned": 85,
+        "metrics": {
+          "task_profit": 106.0,
+          "task_completion_rate": 0.15,
+          "balance_degree": 0.9805128205128205,
+          "timeliness_metric": 0.8769,
+          "runtime_efficiency": 0.6004695000592619,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 264.7927996081531,
+          "feasible_children_per_s": 263.12743608860495,
+          "public_acceptance": 0.02117678595362552,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-100",
+        "family": "downlink",
+        "n": 100,
+        "scenario_seed": 307,
+        "name": "greedy",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "greedy_incumbent": true
+        },
+        "id": "downlink-100-greedy-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "6e84b2739e6528dd225dabc9b128c94f15897de9e01f7277c355d6cbdb28e67a",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 81600512,
+          "lifetime_peak_working_set_bytes": 82620416
+        },
+        "runtime": 0.5460218000225723,
+        "diagnostic_completed": 13,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1174,
+              "candidate_constraint_calls": 1683,
+              "generated_candidates": 1016,
+              "prefilter_rejections": 1104,
+              "public_constraint_calls": 4750,
+              "accepted_insertions": 239,
+              "scored_states": 240,
+              "duplicate_states": 0,
+              "pruned_states": 219,
+              "max_beam_size": 8,
+              "max_children": 59,
+              "levels_completed": 100,
+              "candidate_checks": 5854,
+              "feasible_children": 226,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 100,
+              "greedy_tasks_completed": 100
+            }
+          }
+        },
+        "plan_sha256": "eade8ff4eb9b15bb4c4cff9899a07f59c091824bd3c3366245feb940185c9772",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 13,
+        "unassigned": 87,
+        "metrics": {
+          "task_profit": 71.0,
+          "task_completion_rate": 0.13,
+          "balance_degree": 0.9743589743589743,
+          "timeliness_metric": 0.8927333333333334,
+          "runtime_efficiency": 0.5460218000225723,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 439.5428900276116,
+          "feasible_children_per_s": 437.71146131916316,
+          "public_acceptance": 0.05031578947368421,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-100",
+        "family": "downlink",
+        "n": 100,
+        "scenario_seed": 307,
+        "name": "order",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "task_order": "scarcity"
+        },
+        "id": "downlink-100-order-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "6e84b2739e6528dd225dabc9b128c94f15897de9e01f7277c355d6cbdb28e67a",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "scarcity",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 80830464,
+          "lifetime_peak_working_set_bytes": 81825792
+        },
+        "runtime": 0.4797088000923395,
+        "diagnostic_completed": 13,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1174,
+              "candidate_constraint_calls": 1683,
+              "generated_candidates": 1016,
+              "prefilter_rejections": 1018,
+              "public_constraint_calls": 4244,
+              "accepted_insertions": 116,
+              "scored_states": 117,
+              "duplicate_states": 0,
+              "pruned_states": 109,
+              "max_beam_size": 8,
+              "max_children": 24,
+              "levels_completed": 100,
+              "candidate_checks": 5262,
+              "feasible_children": 116,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 100,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "3aaf0d644c6e1735674b9866dc7dd789481d566b900197e0f87c0dd921a88035",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 13,
+        "unassigned": 87,
+        "metrics": {
+          "task_profit": 102.0,
+          "task_completion_rate": 0.13,
+          "balance_degree": 0.9805128205128205,
+          "timeliness_metric": 0.8925166666666666,
+          "runtime_efficiency": 0.4797088000923395,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 243.89796471834285,
+          "feasible_children_per_s": 241.81336672929717,
+          "public_acceptance": 0.027332704995287466,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-100",
+        "family": "downlink",
+        "n": 100,
+        "scenario_seed": 307,
+        "name": "diversity",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "candidate_diversity": true
+        },
+        "id": "downlink-100-diversity-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "6e84b2739e6528dd225dabc9b128c94f15897de9e01f7277c355d6cbdb28e67a",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 80056320,
+          "lifetime_peak_working_set_bytes": 81244160
+        },
+        "runtime": 0.5558824001345783,
+        "diagnostic_completed": 13,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1207,
+              "candidate_constraint_calls": 1757,
+              "generated_candidates": 1016,
+              "prefilter_rejections": 1068,
+              "public_constraint_calls": 4164,
+              "accepted_insertions": 239,
+              "scored_states": 240,
+              "duplicate_states": 0,
+              "pruned_states": 232,
+              "max_beam_size": 8,
+              "max_children": 67,
+              "levels_completed": 100,
+              "candidate_checks": 5232,
+              "feasible_children": 239,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "c00fabe255818cf49ff3e0e485f93f2c3c4354377284a6f95da69867dd6f28e8",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 13,
+        "unassigned": 87,
+        "metrics": {
+          "task_profit": 81.0,
+          "task_completion_rate": 0.13,
+          "balance_degree": 0.9702564102564103,
+          "timeliness_metric": 0.8933583333333334,
+          "runtime_efficiency": 0.5558824001345783,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 431.7459950915811,
+          "feasible_children_per_s": 429.9470534453662,
+          "public_acceptance": 0.05739673390970221,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-100",
+        "family": "downlink",
+        "n": 100,
+        "scenario_seed": 307,
+        "name": "budget",
+        "ref": "current",
+        "params": {},
+        "id": "downlink-100-budget-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "6e84b2739e6528dd225dabc9b128c94f15897de9e01f7277c355d6cbdb28e67a",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 81616896,
+          "lifetime_peak_working_set_bytes": 82550784
+        },
+        "runtime": 0.7269308001268655,
+        "diagnostic_completed": 16,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1174,
+              "candidate_constraint_calls": 1683,
+              "generated_candidates": 1016,
+              "prefilter_rejections": 1693,
+              "public_constraint_calls": 6260,
+              "accepted_insertions": 315,
+              "scored_states": 316,
+              "duplicate_states": 0,
+              "pruned_states": 308,
+              "max_beam_size": 8,
+              "max_children": 72,
+              "levels_completed": 100,
+              "candidate_checks": 7953,
+              "feasible_children": 315,
+              "prepared_tasks": 100,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "b6f834be2e95815c665ac95fef6be4f3f577d606423b2837ef9a2177981d0209",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 16,
+        "unassigned": 84,
+        "metrics": {
+          "task_profit": 97.0,
+          "task_completion_rate": 0.16,
+          "balance_degree": 0.9692307692307692,
+          "timeliness_metric": 0.87055,
+          "runtime_efficiency": 0.7269308001268655,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 434.7043761866343,
+          "feasible_children_per_s": 433.32872942655,
+          "public_acceptance": 0.050319488817891375,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-100",
+        "family": "downlink",
+        "n": 100,
+        "scenario_seed": 307,
+        "name": "baseline",
+        "ref": "f344af9704d5839578b69caed4534a74374cab90",
+        "params": {},
+        "id": "downlink-100-baseline-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "4a8020c15ad3a484162c8f864ca4853a3bb879c3030a784f393095d0ad35595d",
+        "scenario_sha256": "6e84b2739e6528dd225dabc9b128c94f15897de9e01f7277c355d6cbdb28e67a",
+        "total": 100,
+        "satellites": 5,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 81072128,
+          "lifetime_peak_working_set_bytes": 81772544
+        },
+        "runtime": 0.5897226999513805,
+        "diagnostic_completed": 12,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.2.0",
+            "stop_reason": "completed",
+            "stop_phase": "pruning",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 1174,
+              "candidate_constraint_calls": 1683,
+              "generated_candidates": 1016,
+              "prefilter_rejections": 1104,
+              "public_constraint_calls": 4128,
+              "accepted_insertions": 226,
+              "scored_states": 227,
+              "duplicate_states": 0,
+              "pruned_states": 219,
+              "max_beam_size": 8,
+              "max_children": 59,
+              "levels_completed": 100
+            }
+          }
+        },
+        "plan_sha256": "54f44b79cd43fb068c629158e8e7faf61533c3c9c05bc4a01868c3e662ea5383",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 12,
+        "unassigned": 88,
+        "metrics": {
+          "task_profit": 80.0,
+          "task_completion_rate": 0.12,
+          "balance_degree": 0.9712820512820513,
+          "timeliness_metric": 0.9006,
+          "runtime_efficiency": 0.5897226999513805,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 384.9266782823774,
+          "feasible_children_per_s": 383.230966043248,
+          "public_acceptance": 0.054748062015503876,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-300",
+        "family": "downlink",
+        "n": 300,
+        "scenario_seed": 307,
+        "name": "baseline",
+        "ref": "f344af9704d5839578b69caed4534a74374cab90",
+        "params": {},
+        "id": "downlink-300-baseline-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "4a8020c15ad3a484162c8f864ca4853a3bb879c3030a784f393095d0ad35595d",
+        "scenario_sha256": "5e98a51272186601a46289d175caa2b7172f68ebc76251a31c6981db9567e7f0",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 82989056,
+          "lifetime_peak_working_set_bytes": 83353600
+        },
+        "runtime": 1.812162500107661,
+        "diagnostic_completed": 15,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.2.0",
+            "stop_reason": "completed",
+            "stop_phase": "pruning",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 3491,
+              "candidate_constraint_calls": 4996,
+              "generated_candidates": 3060,
+              "prefilter_rejections": 1151,
+              "public_constraint_calls": 14769,
+              "accepted_insertions": 198,
+              "scored_states": 199,
+              "duplicate_states": 0,
+              "pruned_states": 191,
+              "max_beam_size": 8,
+              "max_children": 42,
+              "levels_completed": 300
+            }
+          }
+        },
+        "plan_sha256": "78d1467606d066e5fa494726374d5a328fa8fbb8b4f2336763952eafd54cdc36",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 15,
+        "unassigned": 285,
+        "metrics": {
+          "task_profit": 83.0,
+          "task_completion_rate": 0.05,
+          "balance_degree": 0.9834757834757835,
+          "timeliness_metric": 0.9594138888888889,
+          "runtime_efficiency": 1.812162500107661,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 109.8135514823739,
+          "feasible_children_per_s": 109.26172459050267,
+          "public_acceptance": 0.01340645947592931,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-300",
+        "family": "downlink",
+        "n": 300,
+        "scenario_seed": 307,
+        "name": "budget",
+        "ref": "current",
+        "params": {},
+        "id": "downlink-300-budget-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "5e98a51272186601a46289d175caa2b7172f68ebc76251a31c6981db9567e7f0",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 85278720,
+          "lifetime_peak_working_set_bytes": 86544384
+        },
+        "runtime": 1.9503111999947578,
+        "diagnostic_completed": 15,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "expansion",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 3353,
+              "candidate_constraint_calls": 4794,
+              "generated_candidates": 2939,
+              "prefilter_rejections": 1715,
+              "public_constraint_calls": 21651,
+              "accepted_insertions": 290,
+              "scored_states": 291,
+              "duplicate_states": 0,
+              "pruned_states": 283,
+              "max_beam_size": 8,
+              "max_children": 63,
+              "levels_completed": 283,
+              "candidate_checks": 23366,
+              "feasible_children": 290,
+              "prepared_tasks": 284,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "a0fcb9b1d16e54ebf46cf98f4490eb16176aad2d2ef0556ce5730eebd6e39a9d",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 15,
+        "unassigned": 285,
+        "metrics": {
+          "task_profit": 89.0,
+          "task_completion_rate": 0.05,
+          "balance_degree": 0.9767521367521368,
+          "timeliness_metric": 0.9591777777777778,
+          "runtime_efficiency": 1.9503111999947578,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 149.20695733110807,
+          "feasible_children_per_s": 148.69421864612144,
+          "public_acceptance": 0.0133943004942035,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-300",
+        "family": "downlink",
+        "n": 300,
+        "scenario_seed": 307,
+        "name": "diversity",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "candidate_diversity": true
+        },
+        "id": "downlink-300-diversity-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "5e98a51272186601a46289d175caa2b7172f68ebc76251a31c6981db9567e7f0",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "id",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 83517440,
+          "lifetime_peak_working_set_bytes": 84672512
+        },
+        "runtime": 1.8953999001532793,
+        "diagnostic_completed": 15,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 3571,
+              "candidate_constraint_calls": 5186,
+              "generated_candidates": 3060,
+              "prefilter_rejections": 916,
+              "public_constraint_calls": 15004,
+              "accepted_insertions": 206,
+              "scored_states": 207,
+              "duplicate_states": 0,
+              "pruned_states": 199,
+              "max_beam_size": 8,
+              "max_children": 44,
+              "levels_completed": 300,
+              "candidate_checks": 15920,
+              "feasible_children": 206,
+              "prepared_tasks": 300,
+              "candidate_cache_hits": 0,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "899eb10bb364cd40116fcfcf8bf297267ea5216cce2cde06660af0b8f82f3124",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 15,
+        "unassigned": 285,
+        "metrics": {
+          "task_profit": 91.0,
+          "task_completion_rate": 0.05,
+          "balance_degree": 0.9777777777777777,
+          "timeliness_metric": 0.9599333333333333,
+          "runtime_efficiency": 1.8953999001532793,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 109.21178163154914,
+          "feasible_children_per_s": 108.68418848357065,
+          "public_acceptance": 0.013729672087443348,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-300",
+        "family": "downlink",
+        "n": 300,
+        "scenario_seed": 307,
+        "name": "order",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "task_order": "scarcity"
+        },
+        "id": "downlink-300-order-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "5e98a51272186601a46289d175caa2b7172f68ebc76251a31c6981db9567e7f0",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "scarcity",
+          "greedy_incumbent": false
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 85241856,
+          "lifetime_peak_working_set_bytes": 85692416
+        },
+        "runtime": 1.8646019999869168,
+        "diagnostic_completed": 16,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 3491,
+              "candidate_constraint_calls": 4996,
+              "generated_candidates": 3060,
+              "prefilter_rejections": 1126,
+              "public_constraint_calls": 14821,
+              "accepted_insertions": 137,
+              "scored_states": 138,
+              "duplicate_states": 0,
+              "pruned_states": 130,
+              "max_beam_size": 8,
+              "max_children": 24,
+              "levels_completed": 300,
+              "candidate_checks": 15947,
+              "feasible_children": 137,
+              "prepared_tasks": 300,
+              "candidate_cache_hits": 300,
+              "greedy_tasks_completed": 0
+            }
+          }
+        },
+        "plan_sha256": "83c1156a7434145403000e73ee949a703af42631dfd476faf29207b323ab0e9b",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 16,
+        "unassigned": 284,
+        "metrics": {
+          "task_profit": 82.0,
+          "task_completion_rate": 0.05333333333333334,
+          "balance_degree": 0.987008547008547,
+          "timeliness_metric": 0.9563388888888888,
+          "runtime_efficiency": 1.8646019999869168,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 74.01043225362211,
+          "feasible_children_per_s": 73.4741247735234,
+          "public_acceptance": 0.00924364077997436,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-300",
+        "family": "downlink",
+        "n": 300,
+        "scenario_seed": 307,
+        "name": "greedy",
+        "ref": "current",
+        "params": {
+          "candidate_check_limit": 8,
+          "greedy_incumbent": true
+        },
+        "id": "downlink-300-greedy-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "5e98a51272186601a46289d175caa2b7172f68ebc76251a31c6981db9567e7f0",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 8,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": false,
+          "task_order": "id",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 85536768,
+          "lifetime_peak_working_set_bytes": 85954560
+        },
+        "runtime": 1.7690099000465125,
+        "diagnostic_completed": 16,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "completed",
+            "stop_phase": "completed",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 3491,
+              "candidate_constraint_calls": 4996,
+              "generated_candidates": 3060,
+              "prefilter_rejections": 1151,
+              "public_constraint_calls": 16742,
+              "accepted_insertions": 214,
+              "scored_states": 215,
+              "duplicate_states": 0,
+              "pruned_states": 191,
+              "max_beam_size": 8,
+              "max_children": 42,
+              "levels_completed": 300,
+              "candidate_checks": 17893,
+              "feasible_children": 198,
+              "prepared_tasks": 300,
+              "candidate_cache_hits": 300,
+              "greedy_tasks_completed": 300
+            }
+          }
+        },
+        "plan_sha256": "e632bd6b7c0b2dd24e34f56647a967849d0a153f9c9fa632707a0c35a4b0656a",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 16,
+        "unassigned": 284,
+        "metrics": {
+          "task_profit": 69.0,
+          "task_completion_rate": 0.05333333333333334,
+          "balance_degree": 0.9851851851851852,
+          "timeliness_metric": 0.9569777777777778,
+          "runtime_efficiency": 1.7690099000465125,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 121.53691168961068,
+          "feasible_children_per_s": 120.97162372826365,
+          "public_acceptance": 0.012782224345956278,
+          "dedup_rate": 0.0
+        }
+      },
+      {
+        "label": "downlink-300",
+        "family": "downlink",
+        "n": 300,
+        "scenario_seed": 307,
+        "name": "stage1",
+        "ref": "current",
+        "params": {
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "id": "downlink-300-stage1-0",
+        "suite": "synthetic",
+        "seed": 41,
+        "repeat": 0,
+        "budget": 2.0,
+        "weights": {
+          "w_profit": 1.0,
+          "w_completion": 0.0,
+          "w_timeliness": 0.0,
+          "w_balance": 0.0
+        },
+        "instrument": "none",
+        "audit": false,
+        "implementation_sha256": "a693572e3393e64b7a96c71c4e6f4f2946333c2dfcf62f68bcdcf8cd2a30145e",
+        "scenario_sha256": "5e98a51272186601a46289d175caa2b7172f68ebc76251a31c6981db9567e7f0",
+        "total": 300,
+        "satellites": 15,
+        "effective_params": {
+          "beam_width": 8,
+          "branch_limit": 8,
+          "candidate_check_limit": 16,
+          "max_candidates_per_task": 16,
+          "max_windows_per_task": 32,
+          "conflict_prefilter": true,
+          "candidate_diversity": true,
+          "task_order": "scarcity",
+          "greedy_incumbent": true
+        },
+        "constraints": {
+          "placement_mode": "earliest",
+          "agility_profile": "Standard-Agility",
+          "downlink_duration_ratio": 1.0,
+          "non_agile_transition_s": 10.0,
+          "unassigned_penalty": 1000.0
+        },
+        "process_memory": {
+          "rss_bytes": 85786624,
+          "lifetime_peak_working_set_bytes": 86269952
+        },
+        "runtime": 1.9508649001363665,
+        "diagnostic_completed": 17,
+        "diagnostics": {
+          "caabs": {
+            "version": "0.3.0",
+            "stop_reason": "budget",
+            "stop_phase": "expansion",
+            "return_reserve_s": 0.05,
+            "feasibility": "public_model_checked",
+            "stats": {
+              "candidate_builder_calls": 3571,
+              "candidate_constraint_calls": 5186,
+              "generated_candidates": 3060,
+              "prefilter_rejections": 1326,
+              "public_constraint_calls": 21862,
+              "accepted_insertions": 162,
+              "scored_states": 163,
+              "duplicate_states": 0,
+              "pruned_states": 138,
+              "max_beam_size": 8,
+              "max_children": 24,
+              "levels_completed": 266,
+              "candidate_checks": 23188,
+              "feasible_children": 145,
+              "prepared_tasks": 300,
+              "candidate_cache_hits": 267,
+              "greedy_tasks_completed": 300
+            }
+          }
+        },
+        "plan_sha256": "1441fce369088ce70003a1108e4433fd93967aadfd9c2b2fb60716d6e180141f",
+        "input_unchanged": true,
+        "status": "PUBLIC_PASS",
+        "completed": 17,
+        "unassigned": 283,
+        "metrics": {
+          "task_profit": 86.0,
+          "task_completion_rate": 0.056666666666666664,
+          "balance_degree": 0.9859829059829059,
+          "timeliness_metric": 0.9540777777777778,
+          "runtime_efficiency": 1.9508649001363665,
+          "robustness_variance": null,
+          "mip_gap": null
+        },
+        "controller_status": "NOT_APPLICABLE_SYNTHETIC",
+        "formal_certification": "NOT_CERTIFIED",
+        "derived": {
+          "states_per_s": 83.55268475464713,
+          "feasible_children_per_s": 83.04009159664317,
+          "public_acceptance": 0.007410118012990578,
+          "dedup_rate": 0.0
+        }
+      }
+    ]
+  }
+}

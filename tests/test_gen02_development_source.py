@@ -196,7 +196,8 @@ class RealDevelopmentSourceTests(unittest.TestCase):
             self.assertEqual(code, 200)
             algorithms = body["items"]
             caabs = next(a for a in algorithms if a["algorithm_id"] == "caabs")
-            self.assertEqual(caabs["version"], "0.2.0")
+            from algorithms.conflict_beam import VERSION
+            self.assertEqual(caabs["version"], VERSION)
             self.assertIn("beam_width", caabs["parameters"]["properties"])
             listing = request_api("/api/scenarios?execution_mode=planning_preview")[1]["items"]
             row = next(r for r in listing if r["scenario_id"] == "scene")

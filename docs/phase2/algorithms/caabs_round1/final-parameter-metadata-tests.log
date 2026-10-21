@@ -1,0 +1,29 @@
+python : test_actual_registry_schemas_render_and_validate_in_javascript (test_algorithm_parameter_metadata.ParameterMet
+
+adataTests.test_actual_registry_schemas_render_and_validate_in_javascript) ... ok
+
+At line:2 char:26
+
++ ... SHSEED='0'; python -B -m unittest discover -s tests -p test_algorithm ...
+
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    + CategoryInfo          : NotSpecified: (test_actual_reg...ascript) ... ok:String) [], RemoteException
+
+    + FullyQualifiedErrorId : NativeCommandError
+
+
+
+test_all_registered_metadata_and_validation_contracts_unchanged (test_algorithm_parameter_metadata.ParameterMetadataTes
+
+ts.test_all_registered_metadata_and_validation_contracts_unchanged) ... ok
+
+
+
+----------------------------------------------------------------------
+
+Ran 2 tests in 0.233s
+
+
+
+OK

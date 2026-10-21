@@ -283,7 +283,12 @@ class RecordingScheduler(ConflictBeamScheduler):
 
 class SearchTests(Fixture):
     def context(self, **params):
-        return SolveContext(42, 60, ObjectiveWeights(), CAABSParams(**params))
+        # Preserve the original mechanism fixtures independently of the tuned
+        # default portfolio. RoundOneTests and real integration cover defaults.
+        options = dict(task_order="id", greedy_incumbent=False, candidate_diversity=False,
+                       incremental_keys=False, incremental_objective=False)
+        options.update(params)
+        return SolveContext(42, 60, ObjectiveWeights(), CAABSParams(**options))
 
     def solve(self, *, scheduler=None, context=None, constraints=None, **params):
         scheduler = scheduler or ConflictBeamScheduler()
@@ -769,6 +774,203 @@ class StopTests(Fixture):
         for budget in (0, -1, float("nan"), float("inf")):
             with self.subTest(budget=budget), self.assertRaises(ValueError):
                 self.solve(context=replace(self.context(), time_budget_s=budget))
+
+
+class RoundOneTests(Fixture):
+    context = SearchTests.context
+    solve = SearchTests.solve
+    multipath = SearchTests.multipath
+
+    def test_default_portfolio_is_deterministic_feasible_and_completion_first(self):
+        self.multipath()
+        params = CAABSParams()
+        self.assertEqual(params.task_order, "scarcity")
+        self.assertTrue(params.greedy_incumbent and params.candidate_diversity and params.incremental_keys)
+        self.assertFalse(params.incremental_objective)
+        context = SolveContext(41, 60, ObjectiveWeights(), params)
+        first = self.solve(context=context)
+        second = self.solve(context=context)
+        self.assertEqual(first,second)
+        self.assertEqual(len(first.assignments),2)
+        self.assert_shared_feasible(first)
+        self.assertEqual(first.metadata["caabs"]["stop_phase"],"completed")
+        self.setUp()
+        self.task("T1", [("S1",0)],duration=40,width=40,priority=100)
+        self.task("T2", [("S1",0)],priority=1)
+        self.task("T3", [("S1",20)],priority=1)
+        result = self.solve(context=context)
+        self.assertEqual(set(result.assigned_task_ids),{"T2","T3"})
+
+    def test_default_portfolio_polls_cancellation_during_greedy_initialization(self):
+        self.multipath()
+        cancelled = [False]
+        original = self.cm.is_feasible_assignment
+        def checked(candidate, schedule):
+            answer = original(candidate,schedule)
+            cancelled[0] = True
+            return answer
+        self.cm.is_feasible_assignment = checked
+        context = SolveContext(41,60,ObjectiveWeights(),CAABSParams(),is_cancelled=lambda:cancelled[0])
+        result = self.solve(context=context)
+        self.assertEqual(result.metadata["caabs"]["stop_reason"],"cancelled")
+        self.assertEqual(result.metadata["caabs"]["stop_phase"],"greedy_initialization")
+        self.assertEqual(result.metadata["caabs"]["stats"]["levels_completed"],0)
+
+    def test_check_budget_can_reach_feasible_tail_without_exceeding_children(self):
+        self.task("T1", [("S1", 0)])
+        self.task("T2", [("S1", 0), ("S2", 0)])
+        short = self.solve(beam_width=1, branch_limit=1, candidate_check_limit=1)
+        long = self.solve(beam_width=1, branch_limit=1, candidate_check_limit=2)
+        self.assertEqual(len(short.assignments), 1)
+        self.assertEqual(len(long.assignments), 2)
+        self.assertGreater(long.metadata["caabs"]["stats"]["prefilter_rejections"], 0)
+        self.assert_shared_feasible(long)
+        recorder = RecordingScheduler()
+        self.solve(scheduler=recorder, branch_limit=1, candidate_check_limit=16)
+        self.assertLessEqual(len(recorder.levels[0]), 2)  # one child + skip
+
+    def test_diversity_rotates_existing_public_placement_modes(self):
+        for sat in self.problem.satellites.values():
+            sat.maneuverability_type = "agile"
+        task = self.task("T", [("S1", i*100) for i in range(6)], width=30)
+        adapter = BoundedCandidateAdapter(self.cm, CAABSParams(max_candidates_per_task=3, candidate_diversity=True))
+        candidates = adapter.build(task)
+        offsets = [(a.sat_start_time - next(w for w in task.windows if w.window_id == a.sat_window_id).start_time).total_seconds() for a in candidates]
+        self.assertEqual(offsets, [0, 10, 20])
+        for candidate in candidates:
+            self.assertTrue(self.cm.is_feasible_assignment(candidate, Schedule()))
+
+    def test_scarcity_uses_public_feasible_samples_and_improves_narrow_beam(self):
+        from algorithms.conflict_beam import static_opportunity_key
+        self.multipath()
+        self.assertEqual(len(self.solve(beam_width=1, task_order="id").assignments), 1)
+        result = self.solve(beam_width=1, task_order="scarcity")
+        self.assertEqual(len(result.assignments), 2)
+        self.assert_shared_feasible(result)
+        task = self.problem.tasks["T1"]
+        self.assertGreater(static_opportunity_key(task, []), static_opportunity_key(task, [self.candidate(task)]))
+
+    def test_greedy_initialization_is_inside_budget_and_keeps_complete_incumbent(self):
+        self.task("T1", [("S1", 0)])
+        self.task("T2", [("S2", 0)])
+        clock = ManualClock()
+        recorder = RecordingScheduler(clock=clock, on_level=lambda _: setattr(clock, "now", 60))
+        result = self.solve(scheduler=recorder, greedy_incumbent=True)
+        self.assertEqual(len(result.assignments), 2)
+        self.assertEqual(result.metadata["caabs"]["stats"]["levels_completed"], 1)
+        self.assertEqual(result.metadata["caabs"]["stats"]["greedy_tasks_completed"], 2)
+        self.assertEqual(result.metadata["caabs"]["stop_reason"], "budget")
+        self.assert_shared_feasible(result)
+
+    def test_candidate_cache_is_per_solve_and_rechecks_changed_evidence(self):
+        self.multipath()
+        scheduler = ConflictBeamScheduler()
+        first = self.solve(scheduler=scheduler, greedy_incumbent=True)
+        stats = first.metadata["caabs"]["stats"]
+        self.assertEqual(stats["prepared_tasks"], 2)
+        self.assertEqual(stats["candidate_cache_hits"], 2)
+        for task in self.problem.tasks.values():
+            for window in task.windows:
+                window.planning_evidence = None
+        second = self.solve(scheduler=scheduler, greedy_incumbent=True)
+        self.assertEqual(second.assignments, [])
+
+    def test_candidate_cache_does_not_cross_constraint_domains(self):
+        self.task("T1", [("S1",0)])
+        scheduler = ConflictBeamScheduler()
+        context = SolveContext(41,60,ObjectiveWeights(),CAABSParams())
+        first = self.solve(scheduler=scheduler,context=context)
+        self.assertEqual(len(first.assignments),1)
+        self.problem.satellites["S1"].max_data_storage_GB = .5
+        changed = ConstraintModel(self.problem,non_agile_transition_s=0)
+        second = self.solve(scheduler=scheduler,context=context,constraints=changed)
+        self.assertEqual(second.assignments,[])
+        self.assertEqual(second.metadata["caabs"]["stats"]["prepared_tasks"],1)
+
+    def test_actual_default_beam_siblings_and_incumbent_own_nested_payloads(self):
+        self.multipath()
+        class Capturing(ConflictBeamScheduler):
+            def _observe_beam(inner, states):
+                inner.last = states
+        scheduler = Capturing()
+        context = SolveContext(41,60,ObjectiveWeights(),CAABSParams())
+        result = self.solve(scheduler=scheduler,context=context)
+        chosen = next(state for state in scheduler.last if state.schedule.assignments)
+        others = [state for state in scheduler.last if state is not chosen]
+        saved = deepcopy([state.schedule for state in others])
+        saved_result = deepcopy(result)
+        chosen.schedule.assignments[0].sat_angles["roll_angle"] = 123
+        chosen.schedule.metadata["nested"] = {"values":[99]}
+        self.assertEqual([state.schedule for state in others],saved)
+        self.assertEqual(result,saved_result)
+        self.assertEqual(self.problem.tasks["T1"].windows[0].non_agile_data["roll_angle"],0.)
+
+    def test_new_budget_and_strategy_parameters_are_strict(self):
+        for values in ({"candidate_check_limit":0},{"candidate_check_limit":129},
+                       {"candidate_check_limit":True},{"task_order":"random"},
+                       {"candidate_diversity":1},{"greedy_incumbent":"yes"}):
+            with self.subTest(values=values), self.assertRaises(ValidationError):
+                CAABSParams(**values)
+
+    def test_incremental_keys_and_objective_match_full_computation_at_every_state(self):
+        from algorithms.objectives import ObjectiveModel
+        for i in range(5):
+            self.task(f"T{i}", [("S1", i*40), ("S2", i*40+10)], priority=i+1)
+        for weights in (ObjectiveWeights(), ObjectiveWeights(0,1,0,0),
+                        ObjectiveWeights(.2,.3,.1,.4), ObjectiveWeights(0,0,0,1)):
+            for fractional in (False, True):
+                with self.subTest(weights=weights, fractional=fractional):
+                    self.problem.tasks["T0"].priority = .125 if fractional else 1.
+                    recorder = RecordingScheduler()
+                    context = replace(self.context(incremental_keys=True, incremental_objective=True), objective_weights=weights)
+                    result = self.solve(scheduler=recorder, context=context)
+                    model = ObjectiveModel(self.problem, weights)
+                    for level in recorder.levels:
+                        for state in level:
+                            self.assertEqual(state.objective_score, model.score(state.schedule))
+                            self.assertEqual(state.canonical_key, canonical_state_key(state.schedule))
+                    stats = result.metadata["caabs"]["stats"]
+                    self.assertGreater(stats["incremental_key_calls"], 0)
+                    self.assertGreater(stats["full_objective_calls"] if fractional else stats["incremental_objective_calls"], 0)
+                    self.assert_shared_feasible(result)
+
+    def test_incremental_objective_falls_back_for_negative_priority_and_subseconds(self):
+        for priority, offset in ((-2., 0.), (1., .125)):
+            with self.subTest(priority=priority,offset=offset):
+                self.setUp()
+                self.task("T1", [("S1", offset)], priority=priority)
+                weights = ObjectiveWeights(.2,.2,.3,.3)
+                full = self.solve(context=replace(self.context(), objective_weights=weights))
+                incremental = self.solve(context=replace(self.context(incremental_keys=True,incremental_objective=True), objective_weights=weights))
+                self.assertEqual(canonical_state_key(full), canonical_state_key(incremental))
+                self.assertGreater(incremental.metadata["caabs"]["stats"]["full_objective_calls"], 0)
+
+    def test_incremental_and_full_search_are_identical_without_wall_clock_truncation(self):
+        self.multipath()
+        first = RecordingScheduler()
+        second = RecordingScheduler()
+        baseline = self.solve(scheduler=first)
+        fast = self.solve(scheduler=second,incremental_keys=True,incremental_objective=True)
+        self.assertEqual(canonical_state_key(baseline),canonical_state_key(fast))
+        self.assertEqual([[s.rank_key for s in level] for level in first.levels],
+                         [[s.rank_key for s in level] for level in second.levels])
+        # Mutable assignments remain fully isolated even with cached identities.
+        before = deepcopy(second.levels[-1])
+        second.levels[-1][0].schedule.assignments[0].sat_angles["roll_angle"] = 123
+        self.assertEqual(fast.assignments[0].sat_angles["roll_angle"], 0.)
+        self.assertEqual(before[-1].schedule, second.levels[-1][-1].schedule)
+
+    def test_cached_key_matches_exact_container_sensitive_identity(self):
+        from algorithms.conflict_beam import extend_canonical_key
+        task = self.task("T1", [("S1", 0)])
+        a = self.candidate(task)
+        variants = [replace(a,task_id=f"T{i}",sat_angles=value) for i,value in enumerate(
+            ([{"roll":0.}],({"roll":0.},),{"roll":[0.]},None))]
+        key = ()
+        for candidate in variants:
+            key = extend_canonical_key(key,canonical_assignment_key(candidate))
+        self.assertEqual(key,canonical_state_key(Schedule(variants)))
+        self.assertEqual(len(set(key)),len(variants))
 
 
 if __name__ == "__main__":

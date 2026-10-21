@@ -1,4 +1,14 @@
-# CAABS 当前状态增补 — v0.2.0 候选放置覆盖修复（2026-10-18）
+# CAABS v0.3.0 第一轮性能优化（2026-10-21）
+
+真实入口仍为 `algorithms/conflict_beam.py:ConflictBeamScheduler`，没有新增或重命名算法。
+默认启用受检静态机会排序、同一求解预算内的贪心incumbent、现有放置锚点轮换和精确增量规范键。
+`candidate_check_limit=16`限制每父状态候选尝试数；`branch_limit=8`限制实际可行子节点数，skip另计；Beam仍为8。
+目标继续完成数优先，其次共享ObjectiveModel，权重未改。安全深复制、公共可行性检查和Controller核验保留。
+`incremental_objective`已实现精确整数域及完整评分回退，但默认关闭；对照未证明叠加键缓存后有稳定额外收益。
+详见[基线审计](caabs_round1_baseline.md)、[阶段1独立消融](caabs_round1_stage1.md)、[阶段2诊断](caabs_round1_stage2.md)、[阶段3选择](caabs_round1_stage3.md)。
+下方0.2.0/0.1.0文档按历史保留，不代表本版本参数或当前验收结论。
+
+# CAABS 历史增补 — v0.2.0 候选放置覆盖修复（2026-10-18）
 
 > 以下是针对 Git `ba114dd` 的修复提议，**只有将补丁应用、回归通过并提交新 Git SHA 后，才可以声称 v0.2.0 已实现**。原有 v0.1 / I1 / I2 描述继续保留作为历史资料。
 >

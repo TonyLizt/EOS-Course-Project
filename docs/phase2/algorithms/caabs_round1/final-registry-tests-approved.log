@@ -1,0 +1,89 @@
+python : test_algorithm_then_registry_in_fresh_process (test_algorithm_registry_i1.FreshImportTests.test_algorithm_then
+
+_registry_in_fresh_process) ... ok
+
+At line:2 char:199
+
++ ... SHSEED='0'; python -B -m unittest discover -s tests -p test_algorithm ...
+
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    + CategoryInfo          : NotSpecified: (test_algorithm_...process) ... ok:String) [], RemoteException
+
+    + FullyQualifiedErrorId : NativeCommandError
+
+
+
+test_contract_import_does_not_initialize_registry_or_factory (test_algorithm_registry_i1.FreshImportTests.test_contract
+
+_import_does_not_initialize_registry_or_factory) ... ok
+
+test_registry_alone_can_query_validate_and_build_caabs (test_algorithm_registry_i1.FreshImportTests.test_registry_alone
+
+_can_query_validate_and_build_caabs) ... ok
+
+test_registry_then_algorithm_in_fresh_process (test_algorithm_registry_i1.FreshImportTests.test_registry_then_algorithm
+
+_in_fresh_process) ... ok
+
+test_all_parameter_boundaries_are_valid_and_frozen (test_algorithm_registry_i1.RegistryParameterTests.test_all_paramete
+
+r_boundaries_are_valid_and_frozen) ... ok
+
+test_context_and_compatibility_validator_use_same_model (test_algorithm_registry_i1.RegistryParameterTests.test_context
+
+_and_compatibility_validator_use_same_model) ... ok
+
+test_existing_algorithms_keep_metadata_and_validation (test_algorithm_registry_i1.RegistryParameterTests.test_existing_
+
+algorithms_keep_metadata_and_validation) ... ok
+
+test_http_algorithm_list_exposes_real_caabs_schema (test_algorithm_registry_i1.RegistryParameterTests.test_http_algorit
+
+hm_list_exposes_real_caabs_schema) ... skipped 'HTTP metadata test requires FastAPI; use project WSL environment'
+
+test_metadata_schema_defaults_and_version_are_actual_caabs (test_algorithm_registry_i1.RegistryParameterTests.test_meta
+
+data_schema_defaults_and_version_are_actual_caabs) ... ok
+
+test_old_pickled_contract_type_references_remain_resolvable (test_algorithm_registry_i1.RegistryParameterTests.test_old
+
+_pickled_contract_type_references_remain_resolvable) ... ok
+
+test_public_contract_names_remain_identical_reexports (test_algorithm_registry_i1.RegistryParameterTests.test_public_co
+
+ntract_names_remain_identical_reexports) ... ok
+
+test_runner_prepares_caabs_from_real_config_and_loader (test_algorithm_registry_i1.RegistryParameterTests.test_runner_p
+
+repares_caabs_from_real_config_and_loader) ... ok
+
+test_strict_integer_ranges_and_boolean_validation (test_algorithm_registry_i1.RegistryParameterTests.test_strict_intege
+
+r_ranges_and_boolean_validation) ... ok
+
+test_unknown_fields_non_objects_and_wrong_parameter_scope_rejected (test_algorithm_registry_i1.RegistryParameterTests.t
+
+est_unknown_fields_non_objects_and_wrong_parameter_scope_rejected) ... ok
+
+test_build_does_not_capture_pre_worker_context (test_algorithm_registry_i1.RegistrySolverTests.test_build_does_not_capt
+
+ure_pre_worker_context) ... ok
+
+test_existing_registry_solvers_keep_legacy_adapter_and_work (test_algorithm_registry_i1.RegistrySolverTests.test_existi
+
+ng_registry_solvers_keep_legacy_adapter_and_work) ... ok
+
+test_registry_solver_replays_nonempty_schedule_through_public_constraints (test_algorithm_registry_i1.RegistrySolverTes
+
+ts.test_registry_solver_replays_nonempty_schedule_through_public_constraints) ... ok
+
+
+
+----------------------------------------------------------------------
+
+Ran 17 tests in 3.029s
+
+
+
+OK (skipped=1)

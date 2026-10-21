@@ -1,0 +1,45 @@
+[
+  {
+    "name": "baseline",
+    "ref": "f344af9704d5839578b69caed4534a74374cab90",
+    "params": {}
+  },
+  {
+    "name": "budget",
+    "ref": "e109f4b",
+    "params": {}
+  },
+  {
+    "name": "diversity",
+    "ref": "e109f4b",
+    "params": {
+      "candidate_check_limit": 8,
+      "candidate_diversity": true
+    }
+  },
+  {
+    "name": "order",
+    "ref": "e109f4b",
+    "params": {
+      "candidate_check_limit": 8,
+      "task_order": "scarcity"
+    }
+  },
+  {
+    "name": "greedy",
+    "ref": "e109f4b",
+    "params": {
+      "candidate_check_limit": 8,
+      "greedy_incumbent": true
+    }
+  },
+  {
+    "name": "stage1",
+    "ref": "e109f4b",
+    "params": {
+      "candidate_diversity": true,
+      "task_order": "scarcity",
+      "greedy_incumbent": true
+    }
+  }
+]
