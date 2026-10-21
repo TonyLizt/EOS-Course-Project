@@ -34,7 +34,9 @@ class Control:
     def __init__(self, context, *, fraction=1.):
         self.context = context
         self.started = time.monotonic()
-        self.deadline = self.started + context.time_budget_s * fraction - min(.05, context.time_budget_s * .03)
+        # Reserve candidate conversion/return and a final indivisible constraint or
+        # tensor operation. Controller still rejects any reported budget overrun.
+        self.deadline = self.started + context.time_budget_s * fraction - min(.5, context.time_budget_s * .1)
         self.checks = 0
         self.stats = dict(objective_evaluations=0, model_calls=0, alternatives=0, budget_exit=False)
 
