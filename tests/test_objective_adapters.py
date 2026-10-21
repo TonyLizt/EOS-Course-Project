@@ -176,3 +176,98 @@ class ObjectiveSearchTests(unittest.TestCase):
         for aid in ('ppo','lavis'):
             ctx=replace(self.context(aid,MIXED),is_cancelled=lambda:True)
             with self.assertRaises(RuntimeError):self.solver(aid).solve(self.problem,self.cm,ctx)
+
+
+class ObjectiveIdentityTests(unittest.TestCase):
+    def config(self, aid='ppo', weights=MIXED):
+        from eos_system.contracts import RunConfig
+        from algorithms.objective_adapters.protocol import freeze_adapter
+        spec=get_algorithm(aid)
+        model={'model_id':'unit-'+aid,'model_sha256':'a'*64} if aid in ('ppo','lavis') else {}
+        return RunConfig(run_id='unit-'+aid,created_at='2026-01-01',scenario_id='unit',
+            scenario_path='/read-only/unit.json',scenario_sha256='b'*64,
+            algorithm_code_sha='c'*64,algorithm_id=aid,algorithm_version=spec.version,
+            objective_weights=weights,model_provenance=model,
+            objective_adapter=freeze_adapter(aid,spec.version,weights,model))
+
+    def test_snapshot_binds_weights_version_code_model_and_effective_goal(self):
+        from algorithms.objective_adapters.protocol import verify_adapter
+        from copy import deepcopy
+        for aid in ('ppo','lavis','caabs'):
+            config=self.config(aid);verify_adapter(config)
+            for field in ('effective_objective','requested_objective','training_objective',
+                          'adapter_code_sha256_lf','solver_version','model_sha256'):
+                changed=deepcopy(config.objective_adapter);changed[field]='tampered'
+                with self.subTest(algorithm=aid,field=field),self.assertRaises(ValueError):
+                    verify_adapter(config.model_copy(update={'objective_adapter':changed}))
+            for update in ({'objective_adapter':{}},{'algorithm_version':'old'},
+                           {'objective_weights':self.config(aid,TP).objective_weights},
+                           {'model_provenance':{'model_sha256':'d'*64}}):
+                with self.assertRaises(ValueError):verify_adapter(config.model_copy(update=update))
+
+    def test_algorithm_metadata_is_separate_but_shared_objective_is_mandatory(self):
+        from eos_system.experiments import common_config,algorithm_identity,Experiments
+        from eos_system.storage import Database
+        import tempfile
+        from pathlib import Path
+        a,b=self.config('ppo'),self.config('lavis')
+        self.assertEqual(common_config(a.model_dump()),common_config(b.model_dump()))
+        self.assertNotEqual(algorithm_identity(a.model_dump()),algorithm_identity(b.model_dump()))
+        self.assertIn('objective_weights',common_config(a.model_dump()))
+        with tempfile.TemporaryDirectory() as folder:
+            store=Experiments(Database(Path(folder)/'unit.sqlite3'))
+            eid=store.create([a,b],8,'same');self.assertEqual(len(store.detail(eid)['runs']),2)
+            # Repeating identical request remains idempotent; no learned model identity is lost.
+            self.assertEqual(store.create([a,b],8,'same'),eid)
+            with self.assertRaises(ValueError):store.create([a,self.config('lavis',TP)],8)
+            changed=b.model_copy(update={'objective_adapter':b.objective_adapter|{'mechanism':'other'}})
+            with self.assertRaises(ValueError):store.create([a,changed],8,'same')
+
+    def test_server_only_identity_and_invalid_weight_sum_rejected_by_http_contract(self):
+        from eos_system.contracts import RunRequest
+        for extra in ({'objective_adapter':{}}, {'model_provenance':{}},
+                      {'objective_weights':dict(TP,w_profit=1e308,w_completion=1e308)}):
+            with self.assertRaises(ValueError):RunRequest(scenario_id='unit',algorithm_id='ppo',**extra)
+
+
+class AllNativeObjectivesTests(unittest.TestCase):
+    setUp = ObjectiveSearchTests.setUp
+    def test_each_native_algorithm_actually_evaluates_all_requested_goals(self):
+        from eos_system.algorithm_registry import COMPARISON_ALGORITHMS,make_context
+        tuning={'sa':{'max_iterations':2,'neighbor_attempts':2},
+                'ga':{'population_size':4,'generations':1},'aco':{'ants':2,'iterations':1}}
+        for aid in COMPARISON_ALGORITHMS:
+            if aid in ('ppo','lavis'):continue
+            for goal in (TP,TCR,MIXED):
+                with self.subTest(algorithm=aid,weights=goal):
+                    spec=get_algorithm(aid);ctx=make_context(42,2.,goal,spec,tuning.get(aid,{}))
+                    plan=spec.build(ctx).solve(self.problem,self.cm,ctx)
+                    info=plan.metadata['objective_adapter']
+                    self.assertGreater(info['objective_evaluations'],0)
+                    self.assertEqual(info['identity']['effective_objective'],goal)
+                    self.assertTrue(plan.assignments)
+
+
+class ObjectiveBudgetTests(unittest.TestCase):
+    def test_search_reserves_return_time_without_expanding_solver_budget(self):
+        from algorithms.objective_adapters.search import Control,BudgetExpired
+        from types import SimpleNamespace
+        context=SimpleNamespace(time_budget_s=5.,is_cancelled=lambda:False)
+        with patch('algorithms.objective_adapters.search.time.monotonic',return_value=100.):
+            control=Control(context)
+        self.assertEqual(control.deadline,104.5)
+        with patch('algorithms.objective_adapters.search.time.monotonic',return_value=104.5):
+            with self.assertRaises(BudgetExpired):control.checkpoint()
+
+
+class ObjectivePresentationTests(unittest.TestCase):
+    def test_presented_model_schema_discloses_actual_versioned_adaptation(self):
+        from eos_system.algorithm_presentation import algorithm_info
+        for aid in ('ppo','lavis'):
+            info=algorithm_info(get_algorithm(aid))
+            text=info['parameters']['properties']['model_id']['description']
+            self.assertIn('R1',text);self.assertIn('TP',text);self.assertIn('TCR',text)
+            self.assertNotIn('仅支持完成率',text)
+        modes=algorithm_info(get_algorithm('lavis'))['parameters']['properties']
+        self.assertIn('束宽4',modes['search_mode']['description'])
+        self.assertIn('min(8,max_branches)',modes['max_branches']['description'])

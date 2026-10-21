@@ -2,7 +2,9 @@
 const assert=require('node:assert/strict');
 module.exports=async function checkParameters(page){
  await require('./workspace-navigation.cjs').step(page,2);
- const catalog=await page.evaluate(async()=> (await(await fetch('/api/algorithms')).json()).items);
+ const registered=await page.evaluate(async()=> (await(await fetch('/api/algorithms')).json()).items);
+ // R4 intentionally hides MIP; test visible controls against the actual catalog.
+ const catalog=registered.filter(a=>a.algorithm_id!=='mip');
  for(const a of catalog){
   const toggle=page.locator(`[data-toggle="algo-create-${a.algorithm_id}"]`),box=page.locator(`#algo-create-${a.algorithm_id}`);
   const check=page.locator(`[name="batch-algorithm"][value="${a.algorithm_id}"]`),selected=await check.isChecked();
@@ -15,8 +17,9 @@ module.exports=async function checkParameters(page){
   await toggle.click();assert.equal(await toggle.getAttribute('aria-expanded'),'false');
  }
  // MIP: nullable integer, omission, boolean, invalid field, advanced JSON.
- await page.locator('[data-toggle="algo-create-mip"]').click();
- const mip=page.locator('#algo-create-mip .algorithm-parameters');
+ // Exercise hidden MIP's schema with a temporary test-only DOM host.
+ await page.evaluate(a=>{const host=document.createElement('div');host.id='r1-mip-schema-fixture';document.body.append(host);host.innerHTML=AlgorithmParameters.render(a);AlgorithmParameters.bind(host.firstElementChild,a);},registered.find(a=>a.algorithm_id==='mip'));
+ const mip=page.locator('#r1-mip-schema-fixture .algorithm-parameters');
  const count=mip.locator('[data-key="max_candidates_per_task"]'),verbose=mip.locator('[data-key="verbose"]');
  await count.locator('.parameter-mode').selectOption('null');
  await verbose.locator('.parameter-mode').selectOption('value');await verbose.locator('input').check();
@@ -25,14 +28,14 @@ module.exports=async function checkParameters(page){
  const invalid=await mip.evaluate(b=>{try{b.parameterValues();return '';}catch(e){return e.message;}});
  assert.ok(invalid.includes('max_candidates_per_task'));assert.ok(await mip.locator('.parameter-error').isVisible());
  await count.locator('input').fill('12');
- await page.locator('[data-toggle="algo-create-mip"]').click();await page.locator('[data-toggle="algo-create-mip"]').click();
+ // Values remain present when reading the same bound editor again.
  assert.deepEqual(await mip.evaluate(b=>b.parameterValues()),{max_candidates_per_task:12,verbose:true});
  await mip.locator('summary').click();
  await mip.locator('textarea').fill('{"extra":1}');await mip.locator('.parameter-apply').click();
  assert.ok((await mip.locator('.parameter-error').innerText()).includes('extra'));
  await mip.locator('textarea').fill('{"verbose":false,"max_candidates_per_task":null}');await mip.locator('.parameter-apply').click();
  assert.deepEqual(await mip.evaluate(b=>b.parameterValues()),{max_candidates_per_task:null,verbose:false});
- await page.locator('[data-toggle="algo-create-mip"]').click();
+ await page.locator('#r1-mip-schema-fixture').evaluate(node=>node.remove());
  // Real DOM binding of schema shapes not present in today's registry.
  const generic=await page.evaluate(()=>{
   const a={algorithm_id:'test-only',parameters:{type:'object',additionalProperties:false,properties:{
@@ -50,8 +53,10 @@ module.exports=async function checkParameters(page){
  });
  assert.deepEqual(generic.first,{options:{name:'nested',n:1.25},union:2,choice:'b',fixed:'all',items:[1,2]});
  assert.equal(generic.second.union,'text');
- // Empty params: no pointless editor; unavailable model remains unavailable.
- assert.equal(await page.locator('#algo-create-ppo textarea').count(),0);
- assert.equal(await page.locator('[name="batch-algorithm"][value="ppo"]').isDisabled(),true);
+ // PPO has a model-ID editor; availability follows the current real registry.
+ const ppo=catalog.find(a=>a.algorithm_id==='ppo');
+ assert.ok(Object.hasOwn(ppo.parameters.properties,'model_id'));
+ assert.equal(await page.locator('#algo-create-ppo textarea').count(),1);
+ assert.equal(await page.locator('[name="batch-algorithm"][value="ppo"]').isDisabled(),ppo.availability!=='ready');
  console.log('ALGORITHM_PARAMETERS_BROWSER_PASS '+catalog.length+' algorithms; null/omit/boolean/number/enum/object/union/array/advanced');
 };
