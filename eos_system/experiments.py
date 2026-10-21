@@ -11,7 +11,7 @@ from .storage import TERMINAL, compact_json, now
 
 def common_config(config: dict) -> dict:
     return {k: v for k, v in config.items()
-            if k not in {'run_id', 'created_at', 'algorithm_id', 'algorithm_version', 'algorithm_params', 'model_provenance'}}
+            if k not in {'run_id', 'created_at', 'algorithm_id', 'algorithm_version', 'algorithm_params', 'model_provenance', 'objective_adapter'}}
 
 
 
@@ -19,6 +19,7 @@ def algorithm_identity(config):
     """模型是算法侧身份，不能进入所有算法共享配置，也不能从对照身份中丢失。"""
     identity = {'params': config.get('algorithm_params', {})}
     if config.get('model_provenance'): identity['model_provenance'] = config['model_provenance']
+    if config.get('objective_adapter'): identity['objective_adapter'] = config['objective_adapter']
     return identity
 
 
@@ -65,7 +66,7 @@ class Experiments:
         shared = common_config(configs[0].model_dump())
         if any(common_config(c.model_dump()) != shared for c in configs):
             raise ValueError('同一实验的场景、模型、种子、约束和预算必须一致')
-        request_sha = digest({'runs':[{'common': shared, 'algorithm': c.algorithm_id, 'params': c.algorithm_params, **({'model_provenance': c.model_provenance} if c.model_provenance else {})}
+        request_sha = digest({'runs':[{'common': shared, 'algorithm': c.algorithm_id, 'params': c.algorithm_params, **({'model_provenance': c.model_provenance} if c.model_provenance else {}), **({'objective_adapter': c.objective_adapter} if c.objective_adapter else {})}
                               for c in sorted(configs, key=lambda c: c.algorithm_id)], 'control_of':control_of})
         eid = str(uuid.uuid4())
         with self.db.write() as conn:

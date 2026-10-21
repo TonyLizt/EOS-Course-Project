@@ -68,6 +68,10 @@ def capture_provenance(scene: Path, scenario_sha: str) -> dict:
 
 def verify_provenance(config) -> None:
     """运行与独立核验都复查提交时的 sidecar，不接受提交后替换来源文件。"""
+    from algorithms.objective_adapters.protocol import verify_adapter, validate_model_request
+    verify_adapter(config)
+    if config.objective_adapter and config.algorithm_id in ('ppo', 'lavis'):
+        validate_model_request(config.algorithm_id, config, config.model_provenance)
     if config.algorithm_id == 'lavis':
         from algorithms.lavis.model import verify_snapshot
         verify_snapshot(config.model_provenance)
@@ -77,7 +81,8 @@ def verify_provenance(config) -> None:
         verify_snapshot(config.model_provenance)
         if config.model_provenance['model_id'] != config.algorithm_params.get('model_id', 'ppo-v1'):
             raise ValueError('PPO_MODEL_ID_MISMATCH')
-        validate_request(config, config.model_provenance)
+        if not config.objective_adapter:
+            validate_request(config, config.model_provenance)
         raw_scene = json.loads(Path(config.scenario_path).read_bytes())
         if raw_scene.get('ground_stations'):
             raise ValueError('PPO_MODEL_DOMAIN_MISMATCH: ground stations unsupported')

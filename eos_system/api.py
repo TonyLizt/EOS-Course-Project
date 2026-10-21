@@ -231,14 +231,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         model_provenance = {}
         if request.algorithm_id == 'lavis':
             from algorithms.lavis.model import freeze
-            from algorithms.lavis.protocol import DOMAIN, validate_weights
+            from algorithms.objective_adapters.protocol import validate_model_request
             try:
-                validate_weights(request.objective_weights)
-                actual = request.constraints.model_dump() | {
-                    'placement_mode': request.placement_mode, 'execution_mode': request.execution_mode}
-                if any(actual[k] != DOMAIN[k] for k in actual):
-                    raise ValueError('LAVIS_V1_DOMAIN_MISMATCH：仅支持earliest、默认约束及工程物理核验')
                 model_provenance = freeze(spec.parse_params(request.algorithm_params).model_id)
+                validate_model_request('lavis', request, model_provenance)
                 from utils.course_compatibility import model_scene_compatible
                 if not model_scene_compatible(model_provenance, provenance):
                     raise ValueError('LAVIS_SCENARIO_PHYSICS_DOMAIN_MISMATCH')
@@ -246,17 +242,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
         if request.algorithm_id == 'ppo':
             from algorithms.ppo.model import freeze
-            from algorithms.ppo.protocol import validate_request, validate_scene
+            from algorithms.ppo.protocol import validate_scene
+            from algorithms.objective_adapters.protocol import validate_model_request
             try:
                 model_provenance = freeze(spec.parse_params(request.algorithm_params).model_id)
-                validate_request(request, model_provenance)
+                validate_model_request('ppo', request, model_provenance)
                 raw_scene = json.loads(scene.read_bytes())
                 if raw_scene.get('ground_stations'):
                     raise ValueError('PPO_MODEL_DOMAIN_MISMATCH: ground stations unsupported')
                 validate_scene(raw_scene, provenance, model_provenance)
             except (ValueError, OSError) as exc:
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
+        from algorithms.objective_adapters.protocol import freeze_adapter
+        objective_adapter = freeze_adapter(request.algorithm_id, spec.version, request.objective_weights, model_provenance)
         config = RunConfig(
+            objective_adapter=objective_adapter,
             **request.model_dump(), model_provenance=model_provenance, run_id=str(uuid.uuid4()), scenario_sha256=digest,
             scenario_path=str(scene), output_kind=profile["kind"], output_root=profile["root_path"],
             algorithm_version=spec.version,

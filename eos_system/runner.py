@@ -11,7 +11,7 @@ from schedulers.constraint_model import ConstraintModel
 from schedulers.scenario_loader import SchedulingProblem, load_scheduling_problem_from_json
 from schedulers.schedule_output import schedule_to_dict
 
-from .algorithm_registry import SolveContext, Solver, get_algorithm, make_context
+from .algorithm_registry import SolveContext, Solver, get_algorithm, get_native_algorithm, make_context
 from .contracts import RunConfig
 from .provenance import verify_provenance
 
@@ -33,11 +33,15 @@ def prepare(config: RunConfig) -> tuple[Solver, SchedulingProblem, ConstraintMod
     """加载只读场景并构造调度器；耗时不计入算法搜索预算。"""
     verify_provenance(config)
     spec = get_algorithm(config.algorithm_id)
+    if not config.objective_adapter:
+        spec = get_native_algorithm(config.algorithm_id)
+    elif config.algorithm_version != spec.version:
+        raise ValueError('OBJECTIVE_ADAPTER_SOLVER_VERSION_MISMATCH')
     problem = load_scheduling_problem_from_json(Path(config.scenario_path))
     constraint_model = build_constraint_model(problem, config)
     context = make_context(config.seed, config.time_budget_s, config.objective_weights.model_dump(), spec, config.algorithm_params,
                            schedule_model=config.schedule_model)
-    context = replace(context, model_provenance=config.model_provenance)
+    context = replace(context, model_provenance=config.model_provenance, objective_adapter=config.objective_adapter)
     if config.algorithm_id == 'lavis':
         from algorithms.lavis.protocol import DOMAIN
         actual = config.constraints.model_dump() | {'placement_mode':config.placement_mode,
