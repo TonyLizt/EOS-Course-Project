@@ -28,7 +28,7 @@ class ObjectiveOptions(StrictModel):
     @model_validator(mode="after")
     def check_weights(self) -> "ObjectiveOptions":
         values = (self.w_profit, self.w_completion, self.w_timeliness, self.w_balance)
-        if not all(isfinite(value) for value in values) or sum(values) <= 0:
+        if not all(isfinite(value) for value in values) or not isfinite(sum(values)) or sum(values) <= 0:
             raise ValueError("目标权重必须是有限非负数，且总和大于零")
         return self
 
@@ -60,6 +60,8 @@ class RunConfig(RunRequest):
     scenario_provenance: dict[str, Any] = Field(default_factory=dict)
     # 仅服务端生成；默认空字典兼容历史运行，纳入配置哈希。
     model_provenance: dict[str, Any] = Field(default_factory=dict)
+    # Server-frozen R1 identity; absent on historical runs.
+    objective_adapter: dict[str, Any] = Field(default_factory=dict)
     created_at: str
 
 

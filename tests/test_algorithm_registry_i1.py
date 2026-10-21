@@ -53,13 +53,14 @@ context = make_context(42, 5.0, {"w_profit":0,"w_completion":1,"w_timeliness":0,
 solver = spec.build(context)
 assert type(context.params).__name__ == "CAABSParams"
 assert context.params.beam_width == 2
-assert type(solver).__name__ == "ConflictBeamScheduler"
+assert type(solver).__name__ == "NativeObjectiveSolver"
+assert type(solver.base).__name__ == "ConflictBeamScheduler"
 assert callable(solver.solve)
 print(json.dumps({"pid":os.getpid(),"ids":[x["algorithm_id"] for x in list_algorithms()],"version":spec.version,"solver":type(solver).__name__}))
 ''')
         self.assertEqual(data["ids"], list(registry.COMPARISON_ALGORITHMS))
         self.assertIn('caabs',data['ids'])
-        self.assertEqual(data["version"], VERSION)
+        self.assertEqual(data["version"], VERSION + "+objective-v1")
 
     def test_algorithm_then_registry_in_fresh_process(self):
         self.check_order("import algorithms.conflict_beam\nimport eos_system.algorithm_registry")
@@ -99,7 +100,7 @@ class RegistryParameterTests(unittest.TestCase):
     def test_metadata_schema_defaults_and_version_are_actual_caabs(self):
         info = self.spec.public_info()
         self.assertEqual((info["algorithm_id"], info["owner"], info["category"], info["version"]),
-                         ("caabs", "刘懋兴", "traditional", VERSION))
+                         ("caabs", "刘懋兴", "traditional", VERSION + "+objective-v1"))
         self.assertIs(self.spec.params_model, CAABSParams)
         self.assertEqual(self.spec.parse_params({}).model_dump(), EXPECTED_DEFAULTS)
         self.assertEqual(set(info["parameters"]["properties"]), set(CAABSParams.model_fields))
@@ -226,7 +227,7 @@ class RegistrySolverTests(Fixture):
         spec = registry.get_algorithm("caabs")
         context = registry.make_context(42, 5, WEIGHTS, spec, {"beam_width": 2})
         solver = spec.build(context)
-        self.assertIs(type(solver), ConflictBeamScheduler)
+        self.assertIs(type(solver.base), ConflictBeamScheduler)
         self.assertEqual(list(inspect.signature(solver.solve).parameters), ["problem", "constraints", "context"])
         result = solver.solve(self.problem, self.cm, context)
         self.assertIsInstance(result, Schedule)

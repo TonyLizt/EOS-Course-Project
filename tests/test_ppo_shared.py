@@ -165,7 +165,7 @@ class TrainedArtifactTests(unittest.TestCase):
     def setUpClass(cls):
         from algorithms.ppo.training import train
         from rabas_integration_fixture import write_scene
-        cls.temp = tempfile.TemporaryDirectory(prefix='ppo-SYNTHETIC-UNIT-ONLY-', dir=Path(__file__).resolve().parent)
+        cls.temp = tempfile.TemporaryDirectory(prefix='ppo-SYNTHETIC-UNIT-ONLY-')
         cls.addClassCleanup(cls.temp.cleanup)
         cls.root = Path(cls.temp.name)
         cls.envpatch = patch.dict(os.environ, EOS_RUNTIME_DIR=str(cls.root / 'runtime'))

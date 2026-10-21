@@ -213,6 +213,13 @@ function showDetail(run) {
   $("open-gantt").href = `/visualization/gantt/${encodeURIComponent(run.run_id)}`;
   $("open-cesium").href = `/visualization/cesium/${encodeURIComponent(run.run_id)}`;
   $("scenario-provenance").textContent = "场景物理版本："+(run.config.scenario_provenance?.scenario_physics_version || "legacy_unknown")+"；来源："+(run.config.scenario_provenance?.provenance_status || "unknown");
+  const objectiveAdapter = run.config.objective_adapter;
+  if (objectiveAdapter) $("scenario-provenance").textContent +=
+    "；算法版本：" + run.config.algorithm_version +
+    "；目标适配：" + objectiveAdapter.mechanism +
+    "；模型训练目标：" + JSON.stringify(objectiveAdapter.training_objective) +
+    "；请求目标：" + JSON.stringify(objectiveAdapter.requested_objective) +
+    "；实际搜索目标：" + JSON.stringify(objectiveAdapter.effective_objective);
   $("build-replay").hidden = run.status !== "SUCCEEDED" || !run.plan;
   if (run.status === "SUCCEEDED" && run.plan) refreshReplay(run.run_id);
   else $("replay-status").textContent = "";

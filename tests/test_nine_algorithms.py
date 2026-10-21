@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from eos_system.algorithm_registry import (
-    COMPARISON_ALGORITHMS, get_algorithm, list_algorithms,
+    COMPARISON_ALGORITHMS, get_algorithm, get_native_algorithm, list_algorithms,
     list_schedule_models, make_context,
 )
 from eos_system.contracts import RunRequest
@@ -19,7 +19,8 @@ from test_adaptive_repair import AdaptiveRepairTests
 
 class NineAlgorithmTests(unittest.TestCase):
     def test_catalog_and_models_are_disjoint_and_dependencies_explicit(self):
-        rows = list_algorithms()
+        with tempfile.TemporaryDirectory() as empty, patch.dict('os.environ', EOS_RUNTIME_DIR=empty):
+            rows = list_algorithms()
         self.assertEqual(len(rows), 13)  # 原九种 + CAABS + RABAS + LAVIS + DARTIS。
         self.assertEqual(len({r['algorithm_id'] for r in rows}), 13)
         self.assertIn('lavis', {r['algorithm_id'] for r in rows})
@@ -36,7 +37,8 @@ class NineAlgorithmTests(unittest.TestCase):
             RunRequest(scenario_id='x', algorithm_id='sa', schedule_model='unknown')
 
     def test_selected_model_is_passed_to_real_search_adapter(self):
-        spec = get_algorithm('sa')
+        # This test isolates the unchanged initial-model handoff, before R1 refinement.
+        spec = get_native_algorithm('sa')
         context = make_context(42, 5, {}, spec, {}, schedule_model='adaptive_repair')
         initial = Schedule()
         model = SimpleNamespace(search=lambda *args: initial)
@@ -50,12 +52,15 @@ class NineAlgorithmTests(unittest.TestCase):
     def test_submission_rejects_model_as_algorithm_and_unavailable_ppo(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            app = create_app(Settings(runtime_dir=root, scenario_dir=root/'scenarios'))
+            with patch.dict('os.environ', EOS_RUNTIME_DIR=str(root)):
+                app = create_app(Settings(runtime_dir=root, scenario_dir=root/'scenarios'))
             submit = next(route.endpoint for route in app.routes if route.path == '/api/runs' and 'POST' in route.methods)
             for aid in ('completion_first', 'adaptive_repair', 'ppo'):
                 with self.subTest(algorithm=aid), self.assertRaises(HTTPException) as raised:
-                    submit(RunRequest(scenario_id='not-needed', algorithm_id=aid), None)
+                    with patch.dict('os.environ', EOS_RUNTIME_DIR=str(root)):
+                        submit(RunRequest(scenario_id='not-needed', algorithm_id=aid), None)
                 self.assertEqual(raised.exception.status_code, 422)
+            app.state.replay.close()
 
     def test_seven_available_searches_on_small_trusted_unit_fixture(self):
         # Synthetic planning evidence is UNIT TEST ONLY, not a physical certificate.

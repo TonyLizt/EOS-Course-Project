@@ -71,6 +71,17 @@ def algorithm_info(spec: AlgorithmSpec) -> dict:
         properties['search_mode']['description'] = (
             'greedy使用所选模型的单路径；multistart使用同一模型探索多条续排路径。'
             '两者均不在线训练，全部搜索共用本次预算。')
+    if spec.version.endswith('+objective-v1') and spec.algorithm_id in ('ppo', 'lavis'):
+        decorated['properties']['model_id']['description'] = (
+            '选择原冻结训练模型ID。PPO训练目标为TP，LAVIS为TCR；'
+            'R1目标适配器实际按本次公共权重搜索，不能将其宣称为跨目标训练模型。'
+            '原场景、放置和物理域限制仍有效。')
+        if spec.algorithm_id == 'lavis':
+            decorated['properties']['search_mode']['description'] = (
+                'R1目标适配：greedy使用束宽4；multistart使用min(8,max_branches)束宽。'
+                '均由原模型提供前8项合法建议，再按公共目标评价；不在线训练，共用本次预算。')
+            decorated['properties']['max_branches']['description'] = (
+                'R1的multistart目标适配束宽为min(8,max_branches)，greedy模式固定为4。')
     # 仅补展示文字，保留注册表实时给出的受控模型选项，不重建覆盖Schema。
     for key, prop in info['parameters'].get('properties', {}).items():
         for field in ('title', 'description'):

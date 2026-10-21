@@ -31,6 +31,7 @@ class SolveContext:
     schedule_model: str = 'completion_first'
     # HTTP冻结模型身份；不从算法参数接受任意路径或可变权重。
     model_provenance: dict = field(default_factory=dict)
+    objective_adapter: dict = field(default_factory=dict)
 
 
 class Solver(Protocol):

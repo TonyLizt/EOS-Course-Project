@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from math import isfinite
 from importlib.util import find_spec
 from typing import Callable
@@ -128,6 +128,8 @@ class AlgorithmSpec:
             if models:
                 schema['properties']['model_id']['enum'] = [item['model_id'] for item in models]
                 schema['properties']['model_id']['default'] = models[0]['model_id']
+        if self.algorithm_id in {'ppo', 'lavis'} and self.version.endswith('+objective-v1'):
+            schema['properties']['model_id']['description'] = '选择原冻结训练模型ID；R1适配器按公共请求目标搜索，训练目标和请求目标分别记录。原场景/放置/物理域限制仍有效。'
         return {
             "algorithm_id": self.algorithm_id,
             "name": self.name,
@@ -262,6 +264,22 @@ for _id, _name, _category, _params, _strategy, _objectives, _limits in _DEFINITI
         description=_strategy, strategy=_strategy, objectives=_objectives, limitations=_limits)
 
 
+# R1 adapters are outside both frozen model source trees. Native specs remain
+# available to replay historical RunConfigs with their original solver version.
+_NATIVE_SPECS = dict(_SPECS)
+from algorithms.objective_adapters import build as build_objective_adapter
+for _aid in COMPARISON_ALGORITHMS:
+    _native = _NATIVE_SPECS[_aid]
+    _SPECS[_aid] = replace(_native, version=_native.version + '+objective-v1',
+        build=lambda context, aid=_aid, native=_native: build_objective_adapter(aid, context, native.build, native.version),
+        objectives='R1：接受公共ObjectiveModel的任意合法权重；请求目标实际用于候选计划评价和有界搜索。原学习模型的训练目标单独记录。',
+        strategy=_native.strategy + ' R1在原提议上增加公共目标感知的有界搜索，搜索计入同一预算。')
+
+
+def get_native_algorithm(algorithm_id: str) -> AlgorithmSpec:
+    return _NATIVE_SPECS[algorithm_id]
+
+
 def get_algorithm(algorithm_id: str) -> AlgorithmSpec:
     try:
         return _SPECS[algorithm_id]
@@ -283,6 +301,8 @@ def make_context(seed: int, time_budget_s: float, weights: dict, spec: Algorithm
     """同一注册表负责 HTTP 和 Worker 的参数校验，避免两处规则漂移。"""
     if not isfinite(time_budget_s) or time_budget_s <= 0:
         raise ValueError("算法预算必须是有限正数")
+    from algorithms.objective_adapters import validate_weights
+    validate_weights(ObjectiveWeights(**weights))
     return SolveContext(
         seed=seed, time_budget_s=time_budget_s,
         objective_weights=ObjectiveWeights(**weights), params=spec.parse_params(params), schedule_model=schedule_model,
