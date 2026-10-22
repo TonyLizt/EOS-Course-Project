@@ -1,0 +1,30 @@
+/home/meteor/eos-course-runtime/venv/lib/python3.10/site-packages/pulp/apis/coin_api.py:70: DeprecationWarning: PULP_CBC_CMD is deprecated and will be removed in PuLP 4.0. Install CBC with `pip install pulp[cbc]` and use COIN_CMD instead.
+  v4_deprecation(PULP_CBC_CMD_DEPRECATION_MSG, stacklevel=stacklevel)
+/home/meteor/eos-course-runtime/venv/lib/python3.10/site-packages/pulp/apis/coin_api.py:70: DeprecationWarning: PULP_CBC_CMD is deprecated and will be removed in PuLP 4.0. Install CBC with `pip install pulp[cbc]` and use COIN_CMD instead.
+  v4_deprecation(PULP_CBC_CMD_DEPRECATION_MSG, stacklevel=stacklevel)
+.................../home/meteor/eos-course-runtime/venv/lib/python3.10/site-packages/pulp/pulp.py:318: DeprecationWarning: Constructing LpVariable(name, ...) directly is deprecated; in PuLP 4.0 use prob.add_variable(name, lowBound, upBound, cat=...). Variables are then attached to the model when created.
+  _v4_deprecation(msg, stacklevel=2)
+/home/meteor/eos-course-runtime/venv/lib/python3.10/site-packages/pulp/apis/coin_api.py:70: DeprecationWarning: PULP_CBC_CMD is deprecated and will be removed in PuLP 4.0. Install CBC with `pip install pulp[cbc]` and use COIN_CMD instead.
+  v4_deprecation(PULP_CBC_CMD_DEPRECATION_MSG, stacklevel=stacklevel)
+/home/meteor/eos-course-runtime/venv/lib/python3.10/site-packages/pulp/apis/coin_api.py:212: UserWarning: `logPath` argument replaces `msg=1`. The output will be redirected to the log file.
+  warnings.warn(
+/mnt/d/VC/EOS-Course-Project/algorithms/mip.py:520: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/cbc_1146_69c98b49d7f2477480d00c3928c58d23_xxiav_ut.log' mode='r' encoding='utf-8'>
+  text = open(log_path, "r", encoding="utf-8", errors="ignore").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/mnt/d/VC/EOS-Course-Project/algorithms/mip.py:520: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/cbc_1146_eccb8abfe4b84fe7b8f156f2eb895a06_31qi2n5w.log' mode='r' encoding='utf-8'>
+  text = open(log_path, "r", encoding="utf-8", errors="ignore").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/mnt/d/VC/EOS-Course-Project/algorithms/mip.py:520: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/cbc_1146_007850f619234c0ab6be638e1d2f0f90_aprby00d.log' mode='r' encoding='utf-8'>
+  text = open(log_path, "r", encoding="utf-8", errors="ignore").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+......................./home/meteor/eos-course-runtime/venv/lib/python3.10/site-packages/pulp/apis/coin_api.py:70: DeprecationWarning: PULP_CBC_CMD is deprecated and will be removed in PuLP 4.0. Install CBC with `pip install pulp[cbc]` and use COIN_CMD instead.
+  v4_deprecation(PULP_CBC_CMD_DEPRECATION_MSG, stacklevel=stacklevel)
+.........../home/meteor/eos-course-runtime/venv/lib/python3.10/site-packages/pulp/apis/coin_api.py:70: DeprecationWarning: PULP_CBC_CMD is deprecated and will be removed in PuLP 4.0. Install CBC with `pip install pulp[cbc]` and use COIN_CMD instead.
+  v4_deprecation(PULP_CBC_CMD_DEPRECATION_MSG, stacklevel=stacklevel)
+...../home/meteor/eos-course-runtime/venv/lib/python3.10/site-packages/pulp/apis/coin_api.py:70: DeprecationWarning: PULP_CBC_CMD is deprecated and will be removed in PuLP 4.0. Install CBC with `pip install pulp[cbc]` and use COIN_CMD instead.
+  v4_deprecation(PULP_CBC_CMD_DEPRECATION_MSG, stacklevel=stacklevel)
+...............................................
+----------------------------------------------------------------------
+Ran 105 tests in 344.455s
+
+OK

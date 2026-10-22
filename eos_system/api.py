@@ -254,7 +254,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             except (ValueError, OSError) as exc:
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
         from algorithms.objective_adapters.protocol import freeze_adapter
-        objective_adapter = freeze_adapter(request.algorithm_id, spec.version, request.objective_weights, model_provenance)
+        objective_adapter = (freeze_adapter(request.algorithm_id, spec.version, request.objective_weights, model_provenance)
+                             if spec.version.endswith('+objective-v1') else {})
         config = RunConfig(
             objective_adapter=objective_adapter,
             **request.model_dump(), model_provenance=model_provenance, run_id=str(uuid.uuid4()), scenario_sha256=digest,

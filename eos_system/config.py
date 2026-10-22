@@ -19,7 +19,7 @@ from pathlib import Path
 class Settings:
     runtime_dir: Path
     scenario_dir: Path
-    max_queued: int = 8
+    max_queued: int = 32
     max_workers: int = 1
     startup_timeout_s: float = 30.0
     transfer_timeout_s: float = 30.0

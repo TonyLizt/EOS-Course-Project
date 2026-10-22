@@ -120,7 +120,7 @@
   box.addEventListener('click',event=>{const b=event.target.closest('[data-toggle]');if(!b)return;const content=document.getElementById(b.dataset.toggle);if(!content)return;const open=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',String(open));content.hidden=!open;});
  }
  function description(a){
-  const sections=[['简介',a.description],['调度机制',a.strategy!==a.description?a.strategy:''],['目标',a.objectives],['限制',a.limitations],['可用性',a.availability_message]].filter(([,text])=>text);
+  const sections=[['类型',a.category==='basic'?'基础调度 · 非抢占式 · 独立构建计划':''],['简介',a.description],['调度机制',a.strategy!==a.description?a.strategy:''],['目标',a.objectives],['限制',a.limitations],['可用性',a.availability_message]].filter(([,text])=>text);
   return '<div class="algorithm-description">'+sections.map(([title,text])=>`<p><strong>${E(title)}</strong><span>${E(text)}</span></p>`).join('')+'</div>';
  }
  function available(box,experiment,add,{hideIncluded=false}={}){

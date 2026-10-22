@@ -50,6 +50,13 @@ def create_algorithm(
     ow = objective_weights or ObjectiveWeights(1.0, 0.0, 0.0, 0.0)
     o = cfg_overrides or {}
 
+    from algorithms.basic import BASIC_ALGORITHMS, BasicParams, BasicScheduler, canonical_basic_name
+    basic_name = canonical_basic_name(name)
+    if basic_name in BASIC_ALGORITHMS:
+        params = BasicParams.model_validate({k: v for k, v in o.items() if k in BasicParams.model_fields})
+        return BasicScheduler(basic_name, params, weights=ow,
+                              time_budget_s=o.get('time_budget_s', 60.), seed=o.get('seed', 42))
+
     # ---------------- MIP ----------------
     if name in ("mip", "milp"):
         cfg = MIPConfig(weights=ow)
@@ -129,7 +136,7 @@ def create_algorithm(
 
     raise ValueError(
         f"Unknown algorithm: {algo_name}. "
-        f"Supported: mip, completion_first, pressure_repair, adaptive_repair, profit_first, balance_first, sa, ga, aco, ppo"
+        f"Supported: fcfs (fcfo/fifo), sjf, priority, edf, llf, hrrn, mip, completion_first, pressure_repair, adaptive_repair, profit_first, timeliness_first, balance_first, sa, ga, aco, ppo"
     )
 
 
