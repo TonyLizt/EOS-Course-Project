@@ -9,7 +9,7 @@ test('basic algorithms remain selectable alongside existing algorithms with trut
     objectives:'公共权重仅用于同序放置',limitations:'不使用初始模型解',
     parameters:{type:'object',additionalProperties:false,properties:{max_candidates_per_task:{type:'integer',minimum:1,maximum:512,default:128}}}}));
   UI.setCatalog([...rows,{algorithm_id:'dartis',name:'DARTIS',availability:'ready'},{algorithm_id:'mip'}]);
-  assert.equal(UI.getCatalog().length,7);
+  assert.deepEqual(UI.getCatalog().map(a=>a.algorithm_id),[...ids,'dartis','mip']);
   for(const a of rows){
     assert.equal(UI.name(a.algorithm_id),a.name);
     assert.match(UI.description(a),/非抢占式/);

@@ -2,8 +2,8 @@
 (function(root){
  'use strict';
  let catalog=[];
- // 保留MIP的交付隐藏策略；PPO与其他算法统一按后端可用性显示和禁用。
- const visibleCatalog=items=>items.filter(item=>item.algorithm_id!=='mip');
+ // 与后端Registry一致；不可用算法保留其原因，由选择器禁用，不静默隐藏。
+ const visibleCatalog=items=>items.slice();
  const Rules = typeof module==='object' && module.exports ? require('./comparison.js') : root.RunComparison;
  const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const metrics=[['TP',1],['TCR',1],['BD',1],['TM',-1],['RT',-1]];

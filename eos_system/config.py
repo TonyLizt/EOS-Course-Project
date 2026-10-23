@@ -36,11 +36,14 @@ class Settings:
         else:
             runtime_scenarios = runtime / "scenarios"
             project_scenarios = Path(__file__).resolve().parent.parent / "experiments" / "scenarios"
+            canonical = Path(__file__).resolve().parent.parent / 'data/scenarios/eos-v1'
             has_runtime_scenarios = (runtime_scenarios.is_dir()
                                      and any(runtime_scenarios.rglob("*.json")))
             scenarios = (runtime_scenarios
                          if has_runtime_scenarios or not project_scenarios.is_dir()
                          else project_scenarios)
+            if any((canonical / name).is_file() for name in ('dataset_plan.json','dataset_plan_v2.json','dataset_plan_v3.json')) and any(canonical.rglob('provenance.json')):
+                scenarios = canonical
         # 命令行环境变量优先；网页保存的并发设置位于运行目录，不进入仓库。
         saved = runtime / 'execution-settings.json'
         stored = json.loads(saved.read_text(encoding='utf-8')) if saved.is_file() else {}
@@ -140,6 +143,10 @@ def _released_epoch_scenario(path: Path, *, planning_preview: bool = False) -> b
 
 def list_scenarios_in(root: Path, source_id: str, *, planning_preview: bool = False) -> list[dict]:
     """递归列出已登记目录中的 JSON；ID 是不含扩展名的安全相对路径。"""
+    from .dataset_registry import entries
+    canonical = entries(root)
+    if canonical is not None:
+        return [dict(row, source_id=source_id) for row in canonical]
     if not root.is_dir():
         return []
     result = []
@@ -169,6 +176,10 @@ def list_scenarios_in(root: Path, source_id: str, *, planning_preview: bool = Fa
 
 def resolve_scenario_in(root: Path, scenario_id: str) -> tuple[Path, str]:
     """ID 允许安全相对路径，解析后仍检查登记根目录边界和符号链接。"""
+    from .dataset_registry import resolve
+    canonical = resolve(root, scenario_id)
+    if canonical is not None:
+        return canonical
     relative = Path(scenario_id)
     valid_parts = (not relative.is_absolute() and bool(relative.parts)
                    and all(part and part not in {".", ".."}

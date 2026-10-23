@@ -20,6 +20,13 @@ from __future__ import annotations
 
 import os
 import sys
+if __name__ == '__main__' and sys.argv[1:2] == ['--canonical']:
+    # The canonical benchmark uses the same Registry/API/Verifier as the Web.
+    # Keep all historical flags and their behavior on the existing path below.
+    sys.argv = [sys.argv[0], *sys.argv[2:]]
+    from scripts.validate_scenarios import main as canonical_main
+    canonical_main()
+    raise SystemExit(0)
 import argparse
 import time
 import re

@@ -4,9 +4,10 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const UI=require('../eos_system/web/experiment-ui.js');
-test('交付选择入口保留PPO，仅隐藏MIP，其他算法与既有指标保留',()=>{
+test('统一选择入口保留全部注册算法及既有指标，不按ID隐藏MIP或PPO',()=>{
  const catalog=['mip','ppo','lavis','caabs','rabas','darts','profit_first'].map(algorithm_id=>({algorithm_id}));
- assert.deepEqual(UI.visibleCatalog(catalog).map(a=>a.algorithm_id),['ppo','lavis','caabs','rabas','darts','profit_first']);
+ assert.deepEqual(UI.visibleCatalog(catalog).map(a=>a.algorithm_id),catalog.map(a=>a.algorithm_id));
+ assert.notEqual(UI.visibleCatalog(catalog),catalog);
  const comparison=require('../eos_system/web/comparison.js');
  assert.deepEqual(comparison.metrics.map(m=>m[0]),['TP','TCR','BD','TM','RT']);
 });

@@ -6,6 +6,8 @@
 
 > 当前使用方式：Windows 浏览器 + Ubuntu 22.04 LTS（WSL2）后端，也支持原生 Linux。日常实验使用工程物理核验；采样通过不等于严格连续区间认证。大型场景、模型权重和运行数据库另行分发，不随 Git clone 下载。
 
+2026-10-23交接入口：[项目总览与后续开发交接](docs/phase2/project_development_handoff_20261023.md)。当前19个比较算法、96核心＋7附加Canonical场景，以及本轮尚未提交的代码/数据范围、启动与修复优先级均在其中说明。
+
 ## 目录
 
 - [背景与目标](#背景与目标)
@@ -56,7 +58,7 @@
 | 可视化 | 交互甘特图、Cesium三维轨道/任务回放、固定载荷视图、观察区间、实验内算法管理与比较 |
 | 故障恢复 | 独立Linux/WSL Daemon监护、有界退避重启和可核对身份的恢复；不承诺无条件恢复所有任务 |
 
-MIP/PPO保留后端及历史兼容能力，课程交付的算法选择界面隐藏这两项。结果比较不显示RV，原数据库/结果格式的兼容字段仍保留。
+算法选择界面保留后端Registry全部条目，包括MIP/PPO；缺依赖或模型时显示原因并禁用。结果比较不显示RV，原数据库/结果格式的兼容字段仍保留。
 
 ## 系统架构
 
@@ -89,6 +91,8 @@ EOS-Course-Project/
 ├─ core/                # 调度问题、约束、目标和结果等公共模型
 ├─ schedulers/          # 原有调度器与基线
 ├─ utils/               # 轨道、物理核验、来源与公共工具
+├─ input/               # 原始输入与数据来源
+├─ data/                # Canonical场景、Registry与派生统计
 ├─ draw/                # Cesium及可视化资源
 ├─ replay/              # 回放构建与资源发布
 ├─ replay_configs/      # 版本化回放配置
@@ -195,7 +199,9 @@ Orekit-JPype的JDK由安装额外项`jdk4py`提供；若本机使用自备JDK，
 
 ### 3. 准备场景与模型
 
-取得小组公开开发数据包，解压到运行目录；保留 `provenance/`、manifest、来源谱系和划分文件。仅登记实际场景目录，不把数据说明JSON当场景：
+当前统一Canonical数据位于`data/scenarios/eos-v1/`，含96核心＋7附加可用实例；使用本轮数据时设置`EOS_SCENARIO_DIR="$PWD/data/scenarios/eos-v1"`。完整来源、v3计划、场景搭建、PPO/LAVIS新模型安装和实跑结果见[场景目录](docs/phase2/scenario_catalog.md)及[建设报告](docs/phase2/scenario_dataset_build_report.md)。这些本地数据和本轮未跟踪代码尚未全部纳入当前HEAD，接收时须一并交付。
+
+原有80份公开开发数据继续兼容。使用该旧数据包时解压到运行目录，保留 `provenance/`、manifest、来源谱系和划分文件。仅登记实际场景目录，不把数据说明JSON当场景：
 
 ```bash
 export EOS_SCENARIO_DIR="$EOS_RUNTIME_DIR/datasets/eos-course-v1/development/scenarios"
@@ -234,7 +240,7 @@ python -m eos_system
 | 环境变量 | 用途与默认行为 |
 |---|---|
 | `EOS_RUNTIME_DIR` | 运行目录，默认 `~/eos-course-runtime` |
-| `EOS_SCENARIO_DIR` | 默认数据源目录；未指定时优先运行目录scenarios，再用仓库样例 |
+| `EOS_SCENARIO_DIR` | 显式设置优先；未指定且项目Canonical已建成时使用Canonical，否则保留运行目录scenarios/仓库Legacy回退 |
 | `EOS_OREKIT_DATA` | Orekit数据ZIP位置；未指定时使用仓库默认数据 |
 | `EOS_PORT` | 本机HTTP端口，默认8765 |
 | `EOS_MAX_WORKERS` | 可选1—8；未指定时读网页已保存设置，首次默认2 |
@@ -265,6 +271,8 @@ python -m eos_system.daemon stop
 浏览器按F11可全屏，窗口变化自动适配；更新前端后按Ctrl+F5刷新。输出目录必须已存在并可写，按运行隔离；浏览器下载位置由浏览器设置决定。
 
 ## 数据与模型交付
+
+- 本轮新增统一Canonical核心为8种规模×4种难度×3种子，共96实例；另有7附加可用实例，旧80份开发数据与本轮核心不能混计。全量3,914比较组合已实跑，106次MIP超时、2次并发异常保留；不宣称全算法全部通过。详见[总交接](docs/phase2/project_development_handoff_20261023.md)。
 
 - 公共原始集合：100份任务来源，60训练/开发、20验证、20冻结测试；日常公开目录只有80份。
 - 已有高冲突扩充：48个来源家族、96份场景，64训练、32验证；兄弟变体按同一家族划分，不跨训练/验证。
@@ -341,6 +349,8 @@ node --test (Get-ChildItem tests/*.test.cjs).FullName
 
 | 文档 | 内容 |
 |---|---|
+| [项目总交接](docs/phase2/project_development_handoff_20261023.md) | 当前整体状态、换机部署、场景搭建、已知问题、分工与验收清单 |
+| [Canonical场景目录](docs/phase2/scenario_catalog.md) / [建设报告](docs/phase2/scenario_dataset_build_report.md) | 96核心＋7附加、来源与难度、统一入口、全量实跑及限制 |
 | [COURSE_SETUP](COURSE_SETUP.md) | 历次版本、原因、验证与限制 |
 | [工作台交付](docs/phase2/delivery_workbench_handoff.md) | 全屏界面、导出、表头排序、Cesium修复 |
 | [并行/评分/搜索](docs/phase2/parallel_ranking_lavis_handoff.md) | Worker池、固定评分和可选候选扩展 |
