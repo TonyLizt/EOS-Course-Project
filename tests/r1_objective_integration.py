@@ -50,7 +50,7 @@ def main():
     assert before==tree(out/'runtime/models')
     from eos_system.api import create_app
     from eos_system.config import Settings,algorithm_source_sha256
-    from eos_system.algorithm_registry import COMPARISON_ALGORITHMS
+    from eos_system.algorithm_registry import COMPARISON_ALGORITHMS, get_algorithm
     from test_replay_backend import _DirectClient
     from algorithms.ppo.model import freeze as pfreeze,inference_code_sha as pcode
     from algorithms.lavis.model import freeze as lfreeze,inference_code_sha as lcode
@@ -99,9 +99,12 @@ def main():
                 for aids in (['ppo'],['lavis'],['ppo','lavis'],['ppo','lavis','caabs']):
                     run_case(name+'-'+ '+'.join(aids),aids,goal)
         elif args.phase=='extended':
-            others=[a for a in COMPARISON_ALGORITHMS if a not in ('ppo','lavis')]
+            # This matrix asserts the R1 adapter identity; native basic queue
+            # policies are covered by validate_basic_schedulers.py instead.
+            others=[a for a in COMPARISON_ALGORITHMS if a not in ('ppo','lavis')
+                    and get_algorithm(a).version.endswith('+objective-v1')]
             for name,goal in GOALS.items():
-                for start in (0,7):run_case(name+'-others-'+str(start),others[start:start+7],goal)
+                for start in range(0,len(others),7):run_case(name+'-others-'+str(start),others[start:start+7],goal)
             for scene,seed in (('EOS-G0034',7),('EOS-G0087',101)):
                 for name,goal in GOALS.items():run_case(scene+'-'+str(seed)+'-'+name,['ppo','lavis'],goal,scene,seed)
         else:

@@ -6,7 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from replay.sampling import sampling_policy
-from .config import list_scenarios_in
+from .config import list_scenarios_in, resolve_scenario_in
 
 
 @lru_cache(maxsize=64)
@@ -39,6 +39,12 @@ class ScenarioCatalog:
     def register_sources(self, database) -> list[str]:
         """启动时幂等登记；已手工登记的同路径复用，不增加重复数据源。"""
         warnings = []
+        canonical = self.project / 'data/scenarios/eos-v1'
+        if any((canonical/name).is_file() for name in ('dataset_plan.json','dataset_plan_v2.json','dataset_plan_v3.json')) and any(canonical.rglob('provenance.json')):
+            if not any(canonical.resolve().is_relative_to(Path(p['root_path']).resolve())
+                       or Path(p['root_path']).resolve().is_relative_to(canonical.resolve())
+                       for p in database.list_output_profiles() if p['root_path']):
+                database.ensure_catalog_source('canonical-eos-v1','统一场景 eos-v1（开发）',canonical)
         for group in self.groups:
             root = (self.root / group["directory"]).resolve()
             if not root.is_relative_to(self.root.resolve()) or not root.is_dir():
@@ -92,7 +98,7 @@ class ScenarioCatalog:
                 continue
             try:
                 from .provenance import capture_execution_provenance
-                scene = root / (row["scenario_id"] + ".json")
+                scene = resolve_scenario_in(root, row["scenario_id"])[0]
                 if not row.get("catalog_id"):
                     row.update(_summary(str(scene), row["sha256"]))
                 evidence = capture_execution_provenance(scene, row["sha256"],

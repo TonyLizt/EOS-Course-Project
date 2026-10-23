@@ -2,8 +2,8 @@
 (function(root){
  'use strict';
  let catalog=[];
- // 保留MIP的交付隐藏策略；PPO与其他算法统一按后端可用性显示和禁用。
- const visibleCatalog=items=>items.filter(item=>item.algorithm_id!=='mip');
+ // 与后端Registry一致；不可用算法保留其原因，由选择器禁用，不静默隐藏。
+ const visibleCatalog=items=>items.slice();
  const Rules = typeof module==='object' && module.exports ? require('./comparison.js') : root.RunComparison;
  const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const metrics=[['TP',1],['TCR',1],['BD',1],['TM',-1],['RT',-1]];
@@ -120,7 +120,7 @@
   box.addEventListener('click',event=>{const b=event.target.closest('[data-toggle]');if(!b)return;const content=document.getElementById(b.dataset.toggle);if(!content)return;const open=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',String(open));content.hidden=!open;});
  }
  function description(a){
-  const sections=[['简介',a.description],['调度机制',a.strategy!==a.description?a.strategy:''],['目标',a.objectives],['限制',a.limitations],['可用性',a.availability_message]].filter(([,text])=>text);
+  const sections=[['类型',a.category==='basic'?'基础调度 · 非抢占式 · 独立构建计划':''],['简介',a.description],['调度机制',a.strategy!==a.description?a.strategy:''],['目标',a.objectives],['限制',a.limitations],['可用性',a.availability_message]].filter(([,text])=>text);
   return '<div class="algorithm-description">'+sections.map(([title,text])=>`<p><strong>${E(title)}</strong><span>${E(text)}</span></p>`).join('')+'</div>';
  }
  function available(box,experiment,add,{hideIncluded=false}={}){

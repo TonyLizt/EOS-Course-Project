@@ -20,6 +20,13 @@ from __future__ import annotations
 
 import os
 import sys
+if __name__ == '__main__' and sys.argv[1:2] == ['--canonical']:
+    # The canonical benchmark uses the same Registry/API/Verifier as the Web.
+    # Keep all historical flags and their behavior on the existing path below.
+    sys.argv = [sys.argv[0], *sys.argv[2:]]
+    from scripts.validate_scenarios import main as canonical_main
+    canonical_main()
+    raise SystemExit(0)
 import argparse
 import time
 import re
@@ -482,6 +489,7 @@ def run_benchmark(
     # ---------------------------------------------
 
     # List of all supported algorithms
+    from algorithms.basic import BASIC_ALGORITHMS, canonical_basic_name
     all_algo_specs = [
         {"class_id": 1, "algo_name": "mip", "cfg_overrides": {}},
 
@@ -498,9 +506,12 @@ def run_benchmark(
 
         {"class_id": 4, "algo_name": "ppo", "cfg_overrides": {}},
     ]
+    all_algo_specs.extend({"class_id": 2, "algo_name": aid, "cfg_overrides": {}}
+                          for aid in BASIC_ALGORITHMS)
 
     # Filter algorithms based on selected_algos
     if selected_algos:
+        selected_algos = [canonical_basic_name(aid) for aid in selected_algos]
         algo_specs = [spec for spec in all_algo_specs if spec["algo_name"] in selected_algos]
         if not algo_specs:
             print(f"[WARN] No matched algorithms found for {selected_algos}. Please check algorithm names.")

@@ -22,6 +22,7 @@ from algorithms.ppo.solver import build as build_ppo
 from algorithms.deadline_insertion import DARTISParams, DARTISScheduler, VERSION as DARTIS_VERSION
 from algorithms.factory import create_algorithm
 from algorithms.objectives import ObjectiveWeights
+from algorithms.basic import BASIC_ALGORITHMS, BasicParams, BasicScheduler, VERSION as BASIC_VERSION
 # Re-export the existing public names for HTTP/Worker and third-party callers.
 from algorithms.solver_contracts import AlgorithmParams, SolveContext, Solver
 from schedulers.constraint_model import ConstraintModel, Schedule
@@ -246,7 +247,7 @@ _SPECS: dict[str, AlgorithmSpec] = {
 
 COMPARISON_ALGORITHMS = ('mip', 'profit_first', 'timeliness_first', 'balance_first',
                          'pressure_repair', 'sa', 'ga', 'aco', 'ppo', 'caabs', 'rabas',
-                         'lavis', 'dartis')
+                         'lavis', 'dartis') + BASIC_ALGORITHMS
 
 _DEFINITIONS = [
     ('mip', '混合整数规划 MIP', 'exact', MIPParams, '离散候选与冲突约束构建 MILP，由 CBC 求解。', '候选集上的加权目标优化，含实现中的主目标增强。', '候选集有限；独立建模，不使用初始模型解。'),
@@ -263,12 +264,29 @@ for _id, _name, _category, _params, _strategy, _objectives, _limits in _DEFINITI
         'console-1', _params, lambda context, aid=_id: _build_legacy(aid, context),
         description=_strategy, strategy=_strategy, objectives=_objectives, limitations=_limits)
 
+for _id, _name, _strategy in (
+    ('fcfs', 'FCFS / FCFO · 先来先服务', '按首个窗口开始时间先后派发，同到达时间保持数据集任务顺序。'),
+    ('sjf', 'SJF · 短作业优先', '在当前可执行任务中优先选择观测时长最短的任务。'),
+    ('priority', 'Priority · 优先级调度', '在当前可执行任务中按任务 priority 降序派发，数值越大越优先。'),
+    ('edf', 'EDF · 最早截止期优先', '在当前可执行任务中优先选择最后可见窗口结束时间最早的任务。'),
+    ('llf', 'LLF · 最小松弛度优先', '在当前可执行任务中优先选择截止期减当前时刻减观测时长最小的任务。'),
+    ('hrrn', 'HRRN · 高响应比优先', '在当前可执行任务中优先选择 (等待时间+观测时长)/观测时长 最大的任务，每轮重新计算。'),
+):
+    _SPECS[_id] = AlgorithmSpec(_id, _name, 'basic', '课程基础调度基线', BASIC_VERSION,
+        BasicParams, lambda context, aid=_id: BasicScheduler(aid),
+        description=_strategy,
+        strategy=_strategy + ' 非抢占式；每次派发使用共享约束重新检查可见窗口、资源、姿态及下传。',
+        objectives='保留基础策略队列；公共权重仅用于同一任务、同一开始时刻的可行放置择优，不进行R1全局目标重排。',
+        limitations='到达时间=首个窗口开始，截止期=最后窗口结束；无独立CPU到达字段。只在受检可行机会中派发，候选有界，不保证最优；不使用初始模型解。')
+
 
 # R1 adapters are outside both frozen model source trees. Native specs remain
 # available to replay historical RunConfigs with their original solver version.
 _NATIVE_SPECS = dict(_SPECS)
 from algorithms.objective_adapters import build as build_objective_adapter
 for _aid in COMPARISON_ALGORITHMS:
+    if _aid in BASIC_ALGORITHMS:
+        continue
     _native = _NATIVE_SPECS[_aid]
     _SPECS[_aid] = replace(_native, version=_native.version + '+objective-v1',
         build=lambda context, aid=_aid, native=_native: build_objective_adapter(aid, context, native.build, native.version),

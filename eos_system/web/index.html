@@ -43,7 +43,14 @@
         <p id="mode-hint" class="hint">统一执行来源、资源、转向及 Orekit 全曝光物理采样检查；通过后可导出与回放。采样核验不等同于严格连续区间证明。</p>
         <div class="workspace-fields"><label>数据源<select id="source" required></select></label>
         <label>场景<select id="scenario" required></select></label>
-        </div><details class="quiet-details"><summary>场景规模、来源与 SHA 校验</summary><p id="scenario-hint" class="hint" role="status"></p></details>
+        </div><details class="quiet-details"><summary>按规模和难度筛选场景</summary>
+        <div class="workspace-fields">
+        <label>规模等级<select id="scenario-scale"><option value="">全部规模</option></select></label>
+        <label>难度<select id="scenario-difficulty"><option value="">全部难度</option></select></label>
+        <label>卫星数<select id="scenario-satellites"><option value="">全部数量</option></select></label>
+        <label>任务数<select id="scenario-tasks"><option value="">全部数量</option></select></label>
+        </div><button id="reset-scenario-filters" type="button" class="secondary">清除筛选</button><p id="scenario-filter-count" class="hint" role="status"></p></details>
+        <details class="quiet-details"><summary>场景规模、来源与 SHA 校验</summary><p id="scenario-hint" class="hint" role="status"></p></details>
         <div class="workflow-actions"><span>下一步：勾选本次需要运行的算法</span><button type="button" data-workspace-next="2">选择算法 <span aria-hidden="true">→</span></button></div>
         </section>
         <section class="workflow-panel" id="workspace-step-2" aria-labelledby="workspace-heading-2">

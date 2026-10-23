@@ -1,0 +1,21 @@
+{
+  "dataset_id": "eos-v1",
+  "publication_status": "development",
+  "planned": 96,
+  "generated_core": 96,
+  "additional_instances": 7,
+  "total_available": 103,
+  "independent_core_task_collections": 96,
+  "pending": [],
+  "manifest_path": "data/registry/scenario_manifest.json",
+  "canonical_root": "data/scenarios/eos-v1",
+  "final_test_used": false,
+  "all_algorithm_matrix_status": "FULLY_ATTEMPTED_WITH_LIMITS",
+  "comparison_registry_algorithms": 19,
+  "expected_algorithm_goal_combinations": 3914,
+  "terminal_algorithm_goal_combinations": 3914,
+  "pending_algorithm_goal_combinations": 0,
+  "comparison_matrix_path": "experiments/runs/eos-v1/compatibility_matrix.json",
+  "initial_model_matrix_path": "experiments/runs/eos-v1/initial-models-full.json",
+  "initial_model_observed_combinations": 412
+}

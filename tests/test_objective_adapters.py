@@ -238,6 +238,9 @@ class AllNativeObjectivesTests(unittest.TestCase):
                 'ga':{'population_size':4,'generations':1},'aco':{'ants':2,'iterations':1}}
         for aid in COMPARISON_ALGORITHMS:
             if aid in ('ppo','lavis'):continue
+            # Textbook baselines deliberately preserve their queue policy; they
+            # disclose placement-only weights and do not claim R1 refinement.
+            if not get_algorithm(aid).version.endswith('+objective-v1'):continue
             for goal in (TP,TCR,MIXED):
                 with self.subTest(algorithm=aid,weights=goal):
                     spec=get_algorithm(aid);ctx=make_context(42,2.,goal,spec,tuning.get(aid,{}))

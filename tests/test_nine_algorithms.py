@@ -21,8 +21,8 @@ class NineAlgorithmTests(unittest.TestCase):
     def test_catalog_and_models_are_disjoint_and_dependencies_explicit(self):
         with tempfile.TemporaryDirectory() as empty, patch.dict('os.environ', EOS_RUNTIME_DIR=empty):
             rows = list_algorithms()
-        self.assertEqual(len(rows), 13)  # 原九种 + CAABS + RABAS + LAVIS + DARTIS。
-        self.assertEqual(len({r['algorithm_id'] for r in rows}), 13)
+        self.assertEqual(len(rows), 19)  # 原13种 + 6种基础调度。
+        self.assertEqual(len({r['algorithm_id'] for r in rows}), 19)
         self.assertIn('lavis', {r['algorithm_id'] for r in rows})
         self.assertIn('dartis', {r['algorithm_id'] for r in rows})
         self.assertEqual({r['algorithm_id'] for r in rows}, set(COMPARISON_ALGORITHMS))
@@ -65,6 +65,8 @@ class NineAlgorithmTests(unittest.TestCase):
     def test_seven_available_searches_on_small_trusted_unit_fixture(self):
         # Synthetic planning evidence is UNIT TEST ONLY, not a physical certificate.
         tiny = AdaptiveRepairTests(); tiny.setUp()
+        from schedulers.scenario_loader import SensorSpec
+        tiny.problem.satellites['S1'].sensors['sensor'] = SensorSpec('sensor')
         tiny.add_task('A', [0, 50]); tiny.add_task('B', [30])
         tuning = {'sa': {'max_iterations': 2, 'neighbor_attempts': 2},
                   'ga': {'population_size': 4, 'generations': 1},

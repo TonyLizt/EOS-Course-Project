@@ -5,7 +5,9 @@ from __future__ import annotations
 from math import isfinite
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+MAX_EXPERIMENT_RUNS = 32
 
 
 class StrictModel(BaseModel):
@@ -47,6 +49,14 @@ class RunRequest(StrictModel):
     objective_weights: ObjectiveOptions = Field(default_factory=ObjectiveOptions)
     time_budget_s: float = Field(default=60, gt=0, le=600)
 
+    @field_validator('algorithm_id')
+    @classmethod
+    def normalize_basic_alias(cls, value: str) -> str:
+        # Normalize only the new baseline names; historical IDs keep their identity.
+        from algorithms.basic import BASIC_ALGORITHMS, canonical_basic_name
+        normalized = canonical_basic_name(value)
+        return normalized if normalized in BASIC_ALGORITHMS else value
+
 
 class RunConfig(RunRequest):
     run_id: str
@@ -72,12 +82,14 @@ class ReplayRequest(StrictModel):
 
 
 class ExperimentRequest(StrictModel):
-    runs: list[RunRequest] = Field(min_length=1, max_length=10)
+    runs: list[RunRequest] = Field(min_length=1, max_length=MAX_EXPERIMENT_RUNS)
 
 
 class ExperimentAlgorithm(StrictModel):
     algorithm_id: str = Field(min_length=1, max_length=100)
     algorithm_params: dict[str, Any] = Field(default_factory=dict)
+
+    _normalize_basic_alias = field_validator('algorithm_id')(RunRequest.normalize_basic_alias.__func__)
 
 
 class ControlExperimentRequest(StrictModel):

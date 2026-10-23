@@ -1,0 +1,1 @@
+{"status":"QUARANTINED","reason":"Trial used max_operation_time_s as stress capacity; shared hard constraint does not enforce that field. Replaced by actual enforced per-orbit storage in r3. Scenario bytes retained.","superseded_by":"SCN-S7-resource_overload-0-r3"}

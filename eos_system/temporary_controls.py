@@ -13,6 +13,7 @@ import uuid
 from .experiments import aggregate_status, digest, common_config
 from .storage import TERMINAL, now
 from .planning_preview import PreviewReceipt, validate_preview
+from .contracts import MAX_EXPERIMENT_RUNS
 from utils.continuous_exposure import CertificationReceipt, validate_certification, check_deadline
 
 
@@ -51,7 +52,7 @@ class TemporaryControls:
                 del self.sessions[sid]
 
     def create(self, source_id, configs, key=None):
-        if not configs or len(configs) > 10 or len({c.algorithm_id for c in configs}) != len(configs):
+        if not configs or len(configs) > MAX_EXPERIMENT_RUNS or len({c.algorithm_id for c in configs}) != len(configs):
             raise ValueError('临时对照算法集合无效')
         shared = common_config(configs[0].model_dump())
         if any(common_config(c.model_dump()) != shared for c in configs):

@@ -144,12 +144,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     @app.get("/api/scenarios")
-    def scenarios(source_id: str = "runtime", execution_mode: Literal['formal','planning_preview','physical_validation'] = 'physical_validation'):
+    def scenarios(source_id: str = "runtime", execution_mode: Literal['formal','planning_preview','physical_validation'] = 'physical_validation',
+                  satellite_count: int | None = None, task_count: int | None = None,
+                  difficulty_profile: str | None = None, scale: str | None = None):
         source = database.get_data_source(source_id)
         if source is None:
             raise HTTPException(status_code=404, detail="数据源未登记")
-        return {"source_id": source_id, "items": catalog.list_scenarios(Path(source["root_path"]), source_id,
-            planning_preview=execution_mode in ('planning_preview', 'physical_validation'))}
+        rows = catalog.list_scenarios(Path(source["root_path"]), source_id,
+            planning_preview=execution_mode in ('planning_preview', 'physical_validation'))
+        rows = [r for r in rows if all(value is None or r.get(key)==value for key,value in (
+            ('satellite_count',satellite_count),('mission_count',task_count),('difficulty_profile',difficulty_profile),('scale',scale)))]
+        return {"source_id": source_id, "items": rows}
 
     @app.get("/api/models")
     def models():
@@ -254,7 +259,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             except (ValueError, OSError) as exc:
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
         from algorithms.objective_adapters.protocol import freeze_adapter
-        objective_adapter = freeze_adapter(request.algorithm_id, spec.version, request.objective_weights, model_provenance)
+        objective_adapter = (freeze_adapter(request.algorithm_id, spec.version, request.objective_weights, model_provenance)
+                             if spec.version.endswith('+objective-v1') else {})
         config = RunConfig(
             objective_adapter=objective_adapter,
             **request.model_dump(), model_provenance=model_provenance, run_id=str(uuid.uuid4()), scenario_sha256=digest,

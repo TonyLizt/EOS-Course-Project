@@ -56,21 +56,47 @@ async function loadScenarios() {
   const scenarios = await api(`/api/scenarios?source_id=${encodeURIComponent(sourceId)}&execution_mode=${encodeURIComponent($("execution-mode").value)}`);
   if (generation !== scenarioGeneration) return;
   currentScenarios=scenarios.items;
-  $("scenario").innerHTML = currentScenarios.map(s => {
+  populateScenarioFilters();
+  renderScenarioChoices(previous);
+}
+
+const scenarioFilterFields = [['scenario-scale','scale'],['scenario-difficulty','difficulty_profile'],
+  ['scenario-satellites','satellite_count'],['scenario-tasks','mission_count']];
+const difficultyLabels = {low_conflict:'低冲突',mixed:'常规混合',high_conflict:'高冲突',resource_overload:'资源过载',narrow_window:'窄窗口'};
+function populateScenarioFilters() {
+  for (const [id,key] of scenarioFilterFields) {
+    const node=$(id), previous=node.value, empty=node.options[0].textContent;
+    const values=[...new Set(currentScenarios.map(s=>s[key]).filter(v=>v!=null))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+    node.innerHTML='<option value="">'+escapeHtml(empty)+'</option>'+values.map(v=>'<option value="'+escapeHtml(v)+'">'+escapeHtml(difficultyLabels[v]||v)+'</option>').join('');
+    if(values.some(v=>String(v)===previous)) node.value=previous;
+    node.disabled=!values.length;
+  }
+}
+
+function renderScenarioChoices(previous=$("scenario").value) {
+  const matches=currentScenarios.filter(s=>scenarioFilterFields.every(([id,key])=>!$(id).value||String(s[key])===$(id).value));
+  $("scenario").innerHTML = matches.map(s => {
     const unavailable=s.availability && s.availability!=='ready';
     const suffix=s.satellite_count ? " · "+s.satellite_count+"星/"+s.mission_count+"任务" : "";
     return '<option value="'+escapeHtml(s.scenario_id)+'"'+(unavailable ? ' disabled' : '')+'>'
       +escapeHtml(s.name+suffix+(unavailable ? "（文件未就绪）" : ""))+'</option>';
   }).join("");
-  const available = currentScenarios.filter(s => !s.availability || s.availability === 'ready');
+  const available = matches.filter(s => !s.availability || s.availability === 'ready');
   const ready = available.find(s => s.scenario_id === previous || s.scenario_id === previous + '_epoch_fixed_v1')
     || [...available].sort((a,b) => (a.satellite_count ?? Infinity) - (b.satellite_count ?? Infinity)
       || (a.mission_count ?? Infinity) - (b.mission_count ?? Infinity))[0];
   if(ready) $("scenario").value=ready.scenario_id;
   $("submit").disabled=!ready;
   updateScenarioHint();
-  $("form-message").textContent = currentScenarios.length ? (ready ? "" : "场景文件未就绪，请完成 Git LFS 下载并核对 SHA。") : "该数据源没有直接存放的 JSON 场景文件。";
+  $("scenario-filter-count").textContent=`显示 ${matches.length} / ${currentScenarios.length} 个场景`;
+  $("form-message").textContent = matches.length ? (ready ? "" : "场景文件未就绪，请完成 Git LFS 下载并核对 SHA。") : currentScenarios.length ? "没有符合条件的场景，请调整或清除筛选。" : "该数据源没有可用场景。";
 }
+
+for (const [id] of scenarioFilterFields) $(id).addEventListener('change',()=>renderScenarioChoices());
+$("reset-scenario-filters").addEventListener('click',()=>{
+  for (const [id] of scenarioFilterFields) $(id).value='';
+  renderScenarioChoices();
+});
 
 function updateScenarioHint() {
   const scene=currentScenarios.find(s => s.scenario_id===$("scenario").value);
@@ -104,7 +130,10 @@ function updateHints() {
   if ($("execution-mode").value === 'planning_preview') $("output-hint").textContent = '规划预览保存数据库记录并支持比较和回放；不生成正式认证 JSON/CSV 文件。';
 }
 
-$("source").addEventListener("change", () => loadScenarios().catch((error) => { $("form-message").textContent = error.message; }));
+$("source").addEventListener("change", () => {
+  for (const [id] of scenarioFilterFields) $(id).value='';
+  loadScenarios().catch((error) => { $("form-message").textContent = error.message; });
+});
 $("execution-mode").addEventListener("change", () => {
   const preview = $("execution-mode").value === 'planning_preview';
   $("mode-hint").textContent = preview
