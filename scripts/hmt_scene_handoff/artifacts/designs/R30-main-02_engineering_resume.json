@@ -1,0 +1,7 @@
+{
+  "reason": "clipped helper minimum15s rejected preregistered exact5s source interval before scenario publication; allow one complete5s exposure without changing selected intervals, task parameters or physics",
+  "previous_code_sha256": "ec117417eb215388b2118636bbd0c07ec401fa4f49844fc39ec908368d442e71",
+  "new_code_sha256": "20e299c9b38a9c96241fb426ca8a997181e7fb8a83eaf6c4910262638a233d15",
+  "scientific_design_unchanged": true,
+  "Controller_submissions": 0
+}

@@ -1,0 +1,22 @@
+{
+  "dataset_id": "hmt-web-10-30-handoff-v1",
+  "scope": "targeted correlated development, not independent final test",
+  "allocation": [
+    {
+      "scenario_id": "R10-show-01",
+      "relative_path": "R10-show-01/scenario.json"
+    },
+    {
+      "scenario_id": "R30-main-01",
+      "relative_path": "R30-main-01/scenario.json"
+    },
+    {
+      "scenario_id": "C30-main-01",
+      "relative_path": "C30-main-01/scenario.json"
+    },
+    {
+      "scenario_id": "R30-main-02",
+      "relative_path": "R30-main-02/scenario.json"
+    }
+  ]
+}

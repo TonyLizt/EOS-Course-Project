@@ -1,0 +1,45 @@
+{
+  "status": "PASS",
+  "byte_manifest_sha256": "0070175dfa89a4c5d975d563d7fe14136093dc7021747098d447f9b7cc4ff860",
+  "runtime": {
+    "status": "PASS",
+    "project": "/home/mint/projects/EOS-Course-Project",
+    "differences": [],
+    "required_deployment": "0853deda4e121778a456ebc8ec33a9e1a03b49e4da5f946b0574636e8dbc1405"
+  },
+  "original_Loader": {
+    "status": "PASS",
+    "Loader": "/home/mint/projects/EOS-Course-Project/schedulers/scenario_loader.py",
+    "scenarios": [
+      {
+        "id": "R10-show-01",
+        "satellites": 10,
+        "tasks": 48,
+        "sha256": "cf83a343d5a2f9c6767e1fbc9c844c0523e7bdaaed15277f342da670e30993f0"
+      },
+      {
+        "id": "R30-main-01",
+        "satellites": 30,
+        "tasks": 144,
+        "sha256": "f916edf91e47a2471c0bf509f7672d901295ca2a2d181426698b7cb3773db306"
+      },
+      {
+        "id": "C30-main-01",
+        "satellites": 30,
+        "tasks": 144,
+        "sha256": "25ce3f1a33752b9f6c7b219f825100ee1790c4b3fbf43f0dec3564f83fd0f649"
+      },
+      {
+        "id": "R30-main-02",
+        "satellites": 30,
+        "tasks": 144,
+        "sha256": "87419a32c85c303d2e2003f0efd3d3712c624c6a2011e9ad9dcafd2a9bf11c4a"
+      }
+    ],
+    "Solver_calls": 0,
+    "Verifier_calls": 0,
+    "Controller_submissions": 0
+  },
+  "physical_validation": "NOT_EXECUTED_THIS_HANDOFF",
+  "scope": "Structural readback only; historical sampled evidence stays historical."
+}

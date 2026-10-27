@@ -1,0 +1,14 @@
+# Recorded sender versions; review platform/JDK support before installation.
+numpy==2.2.6
+scipy==1.15.3
+pydantic==2.14.1
+fastapi==0.143.0
+starlette==1.7.0
+uvicorn==0.54.0
+JPype1==1.5.2
+orekit-jpype==13.1.5.0
+scikit-learn==1.7.2
+joblib==1.5.2
+threadpoolctl==3.6.0
+matplotlib==3.10.9
+Pillow==12.3.0

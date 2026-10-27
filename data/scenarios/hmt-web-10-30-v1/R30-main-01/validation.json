@@ -1,0 +1,28 @@
+{
+  "scenario_sha256": "f916edf91e47a2471c0bf509f7672d901295ca2a2d181426698b7cb3773db306",
+  "Loader": true,
+  "structure": {
+    "status": "WARN",
+    "checks": [
+      {
+        "check": "distribution",
+        "level": "WARN",
+        "reason": "not recorded",
+        "file": "candidate.json",
+        "field": "distribution_type"
+      }
+    ],
+    "mission_count": 144,
+    "missions_with_windows": 144,
+    "observation_segments": 216,
+    "communication_segments": 0
+  },
+  "physics": {
+    "status": "SAMPLED_PASS",
+    "segments": 10,
+    "sample_wall_s": 0.44615023200094583
+  },
+  "single_task_feasible": 144,
+  "continuous_certification": "NOT_CERTIFIED",
+  "Controller": "NOT_RUN"
+}

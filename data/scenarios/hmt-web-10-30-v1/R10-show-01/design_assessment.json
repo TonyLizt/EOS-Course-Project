@@ -1,0 +1,645 @@
+{
+  "scenario_id": "R10-show-01",
+  "scenario_sha256": "cf83a343d5a2f9c6767e1fbc9c844c0523e7bdaaed15277f342da670e30993f0",
+  "satellites": 10,
+  "active_satellites": 8,
+  "tasks": 48,
+  "windows": 72,
+  "multi_satellite_tasks": 24,
+  "conflict_edges": 120,
+  "lower_bound": 35,
+  "optimistic_upper_bound": 48,
+  "upper_bound_certificate": "one assignment per task; optimistic not a guarantee",
+  "neutral_plans": {
+    "chronological": {
+      "completed": 34,
+      "TP": 174.0
+    },
+    "exclusive_first": {
+      "completed": 35,
+      "TP": 183.0
+    },
+    "value_first": {
+      "completed": 35,
+      "TP": 183.0
+    }
+  },
+  "all_tasks_individually_feasible": true,
+  "Loader": true,
+  "structure": {
+    "status": "WARN",
+    "checks": [
+      {
+        "check": "distribution",
+        "level": "WARN",
+        "reason": "not recorded",
+        "file": "candidate.json",
+        "field": "distribution_type"
+      }
+    ],
+    "mission_count": 48,
+    "missions_with_windows": 48,
+    "observation_segments": 72,
+    "communication_segments": 0
+  },
+  "physics": {
+    "status": "SAMPLED_PASS",
+    "segments": 10,
+    "sample_wall_s": 0.3388350620007259
+  },
+  "candidate_coverage": [
+    {
+      "task_id": "R10-G01-S01",
+      "raw": 40,
+      "single_valid": 27,
+      "satellites": [
+        "Sa041",
+        "Sa101"
+      ]
+    },
+    {
+      "task_id": "R10-G01-S02",
+      "raw": 40,
+      "single_valid": 27,
+      "satellites": [
+        "Sa041",
+        "Sa101"
+      ]
+    },
+    {
+      "task_id": "R10-G01-S03",
+      "raw": 40,
+      "single_valid": 27,
+      "satellites": [
+        "Sa041",
+        "Sa101"
+      ]
+    },
+    {
+      "task_id": "R10-G01-S04",
+      "raw": 40,
+      "single_valid": 27,
+      "satellites": [
+        "Sa041",
+        "Sa101"
+      ]
+    },
+    {
+      "task_id": "R10-G01-S05",
+      "raw": 40,
+      "single_valid": 27,
+      "satellites": [
+        "Sa041",
+        "Sa101"
+      ]
+    },
+    {
+      "task_id": "R10-G01-S06",
+      "raw": 40,
+      "single_valid": 27,
+      "satellites": [
+        "Sa041",
+        "Sa101"
+      ]
+    },
+    {
+      "task_id": "R10-G01-X07",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa041"
+      ]
+    },
+    {
+      "task_id": "R10-G01-X08",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa041"
+      ]
+    },
+    {
+      "task_id": "R10-G01-X09",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa041"
+      ]
+    },
+    {
+      "task_id": "R10-G01-X10",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa041"
+      ]
+    },
+    {
+      "task_id": "R10-G01-X11",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa041"
+      ]
+    },
+    {
+      "task_id": "R10-G01-X12",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa041"
+      ]
+    },
+    {
+      "task_id": "R10-G02-S01",
+      "raw": 40,
+      "single_valid": 31,
+      "satellites": [
+        "Sa021",
+        "Sa061"
+      ]
+    },
+    {
+      "task_id": "R10-G02-S02",
+      "raw": 40,
+      "single_valid": 31,
+      "satellites": [
+        "Sa021",
+        "Sa061"
+      ]
+    },
+    {
+      "task_id": "R10-G02-S03",
+      "raw": 40,
+      "single_valid": 31,
+      "satellites": [
+        "Sa021",
+        "Sa061"
+      ]
+    },
+    {
+      "task_id": "R10-G02-S04",
+      "raw": 40,
+      "single_valid": 31,
+      "satellites": [
+        "Sa021",
+        "Sa061"
+      ]
+    },
+    {
+      "task_id": "R10-G02-S05",
+      "raw": 40,
+      "single_valid": 31,
+      "satellites": [
+        "Sa021",
+        "Sa061"
+      ]
+    },
+    {
+      "task_id": "R10-G02-S06",
+      "raw": 40,
+      "single_valid": 31,
+      "satellites": [
+        "Sa021",
+        "Sa061"
+      ]
+    },
+    {
+      "task_id": "R10-G02-X07",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa061"
+      ]
+    },
+    {
+      "task_id": "R10-G02-X08",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa061"
+      ]
+    },
+    {
+      "task_id": "R10-G02-X09",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa061"
+      ]
+    },
+    {
+      "task_id": "R10-G02-X10",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa061"
+      ]
+    },
+    {
+      "task_id": "R10-G02-X11",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa061"
+      ]
+    },
+    {
+      "task_id": "R10-G02-X12",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa061"
+      ]
+    },
+    {
+      "task_id": "R10-G03-S01",
+      "raw": 40,
+      "single_valid": 40,
+      "satellites": [
+        "Sa031",
+        "Sa091"
+      ]
+    },
+    {
+      "task_id": "R10-G03-S02",
+      "raw": 40,
+      "single_valid": 40,
+      "satellites": [
+        "Sa031",
+        "Sa091"
+      ]
+    },
+    {
+      "task_id": "R10-G03-S03",
+      "raw": 40,
+      "single_valid": 40,
+      "satellites": [
+        "Sa031",
+        "Sa091"
+      ]
+    },
+    {
+      "task_id": "R10-G03-S04",
+      "raw": 40,
+      "single_valid": 40,
+      "satellites": [
+        "Sa031",
+        "Sa091"
+      ]
+    },
+    {
+      "task_id": "R10-G03-S05",
+      "raw": 40,
+      "single_valid": 40,
+      "satellites": [
+        "Sa031",
+        "Sa091"
+      ]
+    },
+    {
+      "task_id": "R10-G03-S06",
+      "raw": 40,
+      "single_valid": 40,
+      "satellites": [
+        "Sa031",
+        "Sa091"
+      ]
+    },
+    {
+      "task_id": "R10-G03-X07",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa031"
+      ]
+    },
+    {
+      "task_id": "R10-G03-X08",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa031"
+      ]
+    },
+    {
+      "task_id": "R10-G03-X09",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa031"
+      ]
+    },
+    {
+      "task_id": "R10-G03-X10",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa031"
+      ]
+    },
+    {
+      "task_id": "R10-G03-X11",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa031"
+      ]
+    },
+    {
+      "task_id": "R10-G03-X12",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa031"
+      ]
+    },
+    {
+      "task_id": "R10-G04-S01",
+      "raw": 40,
+      "single_valid": 40,
+      "satellites": [
+        "Sa011",
+        "Sa071"
+      ]
+    },
+    {
+      "task_id": "R10-G04-S02",
+      "raw": 40,
+      "single_valid": 40,
+      "satellites": [
+        "Sa011",
+        "Sa071"
+      ]
+    },
+    {
+      "task_id": "R10-G04-S03",
+      "raw": 40,
+      "single_valid": 40,
+      "satellites": [
+        "Sa011",
+        "Sa071"
+      ]
+    },
+    {
+      "task_id": "R10-G04-S04",
+      "raw": 40,
+      "single_valid": 40,
+      "satellites": [
+        "Sa011",
+        "Sa071"
+      ]
+    },
+    {
+      "task_id": "R10-G04-S05",
+      "raw": 40,
+      "single_valid": 40,
+      "satellites": [
+        "Sa011",
+        "Sa071"
+      ]
+    },
+    {
+      "task_id": "R10-G04-S06",
+      "raw": 40,
+      "single_valid": 40,
+      "satellites": [
+        "Sa011",
+        "Sa071"
+      ]
+    },
+    {
+      "task_id": "R10-G04-X07",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa011"
+      ]
+    },
+    {
+      "task_id": "R10-G04-X08",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa011"
+      ]
+    },
+    {
+      "task_id": "R10-G04-X09",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa011"
+      ]
+    },
+    {
+      "task_id": "R10-G04-X10",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa011"
+      ]
+    },
+    {
+      "task_id": "R10-G04-X11",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa011"
+      ]
+    },
+    {
+      "task_id": "R10-G04-X12",
+      "raw": 20,
+      "single_valid": 20,
+      "satellites": [
+        "Sa011"
+      ]
+    }
+  ],
+  "resource_clusters": 4,
+  "resource_ledger": [
+    {
+      "satellite": "Sa011",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa021",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa031",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa041",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa051",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa061",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa071",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa081",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa091",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa101",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    }
+  ],
+  "development_not_independent": true,
+  "Controller_validation": "NOT_RUN"
+}

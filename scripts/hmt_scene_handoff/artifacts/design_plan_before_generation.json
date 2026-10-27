@@ -1,0 +1,58 @@
+{
+  "version": "web-mechanism-development-v1",
+  "purpose": "explicit RABAS/CAABS-oriented development, not independently sampled performance test",
+  "seed": 2026102701,
+  "first_id": "R30-main-01",
+  "satellite_count": 30,
+  "task_count": 144,
+  "time_start": "2025-11-18T12:00:00",
+  "duration_s": 21600,
+  "grid_s": 5,
+  "orbit_selection": "evenly spaced original indices floor(i*50/30), no fabricated satellites",
+  "source": {
+    "path": "/mnt/f/EOS-Bench/output_s50_cc/re_50_satellites/Scenario_S1_50_satellites_Sats50_M100_T7.0d_cities_01.json",
+    "sha256": "5374c99aead5d8c7dc1b8c85d6d6a0fccaef75a85b3b9096d1f9601bbe215d23",
+    "size": 175214385,
+    "header_sha256": "de9b0af88764661166b921cad4fe5704dab829aaeb6c7becf0dfdd9f1a44b5ef",
+    "old_windows_read": false
+  },
+  "request_policy": "controlled repeat observation requests over real city coordinates; 72 shared and72 single-eligible requests; preserve source family mapping; repeated targets are dependent, not new independent targets",
+  "task_duration_s": 5.0,
+  "shared_priority": 3.0,
+  "exclusive_priority": 9.0,
+  "window_policy": "real regenerated windows; trim only to complete5s endpoints; at most two satellites per shared request and one for exclusive; explicit eligibility restrictions, not claimed geometric impossibility",
+  "resource_policy": "controlled per-orbit power/storage, calibrated from assigned demand only before Solver results; real CM additive W semantics, no fabricated Wh",
+  "gate": {
+    "tasks_single_feasible_fraction": 1.0,
+    "minimum_shared_tasks": 24,
+    "minimum_conflict_edges": 30,
+    "minimum_legal_plan_tasks": 25,
+    "minimum_independent_samples": 10
+  },
+  "bank_resources": {
+    "max_wall_s": 900,
+    "max_rss_kib": 2400000
+  },
+  "comparison": {
+    "algorithms": [
+      "fcfs",
+      "edf",
+      "rabas",
+      "caabs"
+    ],
+    "objective_protocol": "objective-v1",
+    "weights": {
+      "w_profit": 0.0,
+      "w_completion": 1.0,
+      "w_timeliness": 0.0,
+      "w_balance": 0.0
+    },
+    "time_budget_s": 60,
+    "seed": 2026102701,
+    "Worker_configuration": 4,
+    "concurrent_comparison_submissions": 1,
+    "reason": "preserve requested completion-first native/standard adapter semantics; display70/20/10 separately; do not silently relabel Score-v2 as TCR-first"
+  },
+  "selection_outcomes": "retain every scene and every negative result; at most declared main02 revisions, never independent test claim",
+  "source_sha256": "235ba5b5ef3183d4964687f77f603f5ae9fc894c3cc0d8e7dcc9838d0655d006"
+}

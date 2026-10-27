@@ -1,0 +1,16 @@
+{
+  "status": "WARN",
+  "checks": [
+    {
+      "check": "distribution",
+      "level": "WARN",
+      "reason": "not recorded",
+      "file": "candidate.json",
+      "field": "distribution_type"
+    }
+  ],
+  "mission_count": 144,
+  "missions_with_windows": 144,
+  "observation_segments": 216,
+  "communication_segments": 0
+}

@@ -1,0 +1,855 @@
+{
+  "source": {
+    "path": "/mnt/f/EOS-Bench/output_s50_cc/re_50_satellites/Scenario_S1_50_satellites_Sats50_M100_T7.0d_cities_01.json",
+    "sha256": "5374c99aead5d8c7dc1b8c85d6d6a0fccaef75a85b3b9096d1f9601bbe215d23",
+    "size": 175214385,
+    "header_sha256": "de9b0af88764661166b921cad4fe5704dab829aaeb6c7becf0dfdd9f1a44b5ef",
+    "old_windows_read": false
+  },
+  "selected_satellites": [
+    "Sa011",
+    "Sa021",
+    "Sa031",
+    "Sa041",
+    "Sa051",
+    "Sa061",
+    "Sa071",
+    "Sa081",
+    "Sa091",
+    "Sa101"
+  ],
+  "bank_sha256": "edbc23951ac419f68cd74ed03b2b2c5f6e0273b4871fe9e48a9a42ee69c7c15d",
+  "controlled_requests": [
+    {
+      "task_id": "R10-G01-S01",
+      "source_target_id": "Sohar",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa041",
+        "Sa101"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G01-S02",
+      "source_target_id": "Sohar",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa041",
+        "Sa101"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G01-S03",
+      "source_target_id": "Sohar",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa041",
+        "Sa101"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G01-S04",
+      "source_target_id": "Sohar",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa041",
+        "Sa101"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G01-S05",
+      "source_target_id": "Sohar",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa041",
+        "Sa101"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G01-S06",
+      "source_target_id": "Sohar",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa041",
+        "Sa101"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G01-X07",
+      "source_target_id": "Toamasina",
+      "source_duration_s": 11.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa041"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G01-X08",
+      "source_target_id": "Toamasina",
+      "source_duration_s": 11.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa041"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G01-X09",
+      "source_target_id": "Toamasina",
+      "source_duration_s": 11.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa041"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G01-X10",
+      "source_target_id": "Toamasina",
+      "source_duration_s": 11.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa041"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G01-X11",
+      "source_target_id": "Toamasina",
+      "source_duration_s": 11.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa041"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G01-X12",
+      "source_target_id": "Toamasina",
+      "source_duration_s": 11.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa041"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G02-S01",
+      "source_target_id": "Grytviken",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa061",
+        "Sa021"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G02-S02",
+      "source_target_id": "Grytviken",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa061",
+        "Sa021"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G02-S03",
+      "source_target_id": "Grytviken",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa061",
+        "Sa021"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G02-S04",
+      "source_target_id": "Grytviken",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa061",
+        "Sa021"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G02-S05",
+      "source_target_id": "Grytviken",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa061",
+        "Sa021"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G02-S06",
+      "source_target_id": "Grytviken",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa061",
+        "Sa021"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G02-X07",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa061"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G02-X08",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa061"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G02-X09",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa061"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G02-X10",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa061"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G02-X11",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa061"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G02-X12",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa061"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G03-S01",
+      "source_target_id": "P?rnu",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 5.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa031",
+        "Sa091"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G03-S02",
+      "source_target_id": "P?rnu",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 5.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa031",
+        "Sa091"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G03-S03",
+      "source_target_id": "P?rnu",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 5.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa031",
+        "Sa091"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G03-S04",
+      "source_target_id": "P?rnu",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 5.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa031",
+        "Sa091"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G03-S05",
+      "source_target_id": "P?rnu",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 5.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa031",
+        "Sa091"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G03-S06",
+      "source_target_id": "P?rnu",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 5.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa031",
+        "Sa091"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G03-X07",
+      "source_target_id": "Zal?u",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa031"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G03-X08",
+      "source_target_id": "Zal?u",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa031"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G03-X09",
+      "source_target_id": "Zal?u",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa031"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G03-X10",
+      "source_target_id": "Zal?u",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa031"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G03-X11",
+      "source_target_id": "Zal?u",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa031"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G03-X12",
+      "source_target_id": "Zal?u",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa031"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G04-S01",
+      "source_target_id": "San Juan",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 9.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa011",
+        "Sa071"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G04-S02",
+      "source_target_id": "San Juan",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 9.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa011",
+        "Sa071"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G04-S03",
+      "source_target_id": "San Juan",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 9.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa011",
+        "Sa071"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G04-S04",
+      "source_target_id": "San Juan",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 9.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa011",
+        "Sa071"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G04-S05",
+      "source_target_id": "San Juan",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 9.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa011",
+        "Sa071"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G04-S06",
+      "source_target_id": "San Juan",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 9.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa011",
+        "Sa071"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G04-X07",
+      "source_target_id": "Mitú",
+      "source_duration_s": 7.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 3.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa011"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G04-X08",
+      "source_target_id": "Mitú",
+      "source_duration_s": 7.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 3.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa011"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G04-X09",
+      "source_target_id": "Mitú",
+      "source_duration_s": 7.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 3.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa011"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G04-X10",
+      "source_target_id": "Mitú",
+      "source_duration_s": 7.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 3.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa011"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G04-X11",
+      "source_target_id": "Mitú",
+      "source_duration_s": 7.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 3.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa011"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "R10-G04-X12",
+      "source_target_id": "Mitú",
+      "source_duration_s": 7.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 3.0,
+      "actual_priority": 9.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa011"
+      ],
+      "controlled_repeat_request": true
+    }
+  ],
+  "controlled_resources": [
+    {
+      "satellite": "Sa011",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa021",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa031",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa041",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa051",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa061",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa071",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa081",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa091",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa101",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    }
+  ],
+  "design_sha256": "9a8ca4f439d5e721e775ab189d245037b189f96d05dbf809c0c6a73ff79f1c0a"
+}

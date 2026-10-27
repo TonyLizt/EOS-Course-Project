@@ -1,0 +1,15 @@
+test_actual_four_bundles_bytes_and_counts (test_hmt_scene_handoff.HandoffTests) ... ok
+test_empty_runtime_fails_closed (test_hmt_scene_handoff.HandoffTests) ... ok
+test_fifty_star_body_not_in_git_scope (test_hmt_scene_handoff.HandoffTests) ... ok
+test_import_contains_no_service_or_execution (test_hmt_scene_handoff.HandoffTests) ... ok
+test_manifest_path_escape_rejected (test_hmt_scene_handoff.HandoffTests) ... ok
+test_mutation_fails_before_loader (test_hmt_scene_handoff.HandoffTests) ... ok
+test_only_path_assignments_relocated (test_hmt_scene_handoff.HandoffTests) ... ok
+test_original_generator_hashes (test_hmt_scene_handoff.HandoffTests) ... ok
+test_original_metadata_does_not_claim_continuous_certification (test_hmt_scene_handoff.HandoffTests) ... ok
+test_register_reuses_unique_existing_root (test_hmt_scene_handoff.HandoffTests) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.220s
+
+OK

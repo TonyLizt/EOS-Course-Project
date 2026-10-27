@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "sealed_files": 226,
+  "differences": [],
+  "receipt_sha256": "d8bdf71aa69335997e9a03016b7185b5220fe16addf946aed3af23f5dd4522e4",
+  "actual_workers": 4,
+  "active_runs": 0,
+  "queued_runs": 0,
+  "service_left_running": true,
+  "new_formal_submissions": 14,
+  "successes": 14,
+  "independent_physical_and_budget_receipts": 14,
+  "Windows_HTTP": "PASS",
+  "original_frontend_and_backend_unchanged": true
+}

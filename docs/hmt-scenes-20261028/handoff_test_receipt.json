@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "tests": 10,
+  "errors": 0,
+  "failures": 0,
+  "Solver_calls": 0,
+  "Controller_submissions": 0,
+  "Verifier_calls": 0,
+  "command": "python -B -m unittest discover -s tests -p test_hmt_scene_handoff.py -v",
+  "output_sha256": "885fe020fecba6ad0bc6b4314fbc4db7ada5e9d4a93bd5203ad44152add526e0"
+}

@@ -1,0 +1,2531 @@
+{
+  "source": {
+    "path": "/mnt/f/EOS-Bench/output_s50_cc/re_50_satellites/Scenario_S1_50_satellites_Sats50_M100_T7.0d_cities_01.json",
+    "sha256": "5374c99aead5d8c7dc1b8c85d6d6a0fccaef75a85b3b9096d1f9601bbe215d23",
+    "size": 175214385,
+    "header_sha256": "de9b0af88764661166b921cad4fe5704dab829aaeb6c7becf0dfdd9f1a44b5ef",
+    "old_windows_read": false
+  },
+  "selected_satellites": [
+    "Sa011",
+    "Sa012",
+    "Sa014",
+    "Sa021",
+    "Sa022",
+    "Sa024",
+    "Sa031",
+    "Sa032",
+    "Sa034",
+    "Sa041",
+    "Sa042",
+    "Sa044",
+    "Sa051",
+    "Sa052",
+    "Sa054",
+    "Sa061",
+    "Sa062",
+    "Sa064",
+    "Sa071",
+    "Sa072",
+    "Sa074",
+    "Sa081",
+    "Sa082",
+    "Sa084",
+    "Sa091",
+    "Sa092",
+    "Sa094",
+    "Sa101",
+    "Sa102",
+    "Sa104"
+  ],
+  "bank_sha256": "2096f8fd9b7321ac50f4027d3ceae80725006ae67968d8e2ba22712d9e6eb314",
+  "controlled_requests": [
+    {
+      "task_id": "C30-G01-S01",
+      "source_target_id": "Sohar",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 8.0,
+      "actual_priority": 10.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa041",
+        "Sa094"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G01-S02",
+      "source_target_id": "Sohar",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa041",
+        "Sa094"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G01-S03",
+      "source_target_id": "Sohar",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa041",
+        "Sa094"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G01-S04",
+      "source_target_id": "Sohar",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 8.0,
+      "actual_priority": 7.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa041",
+        "Sa094"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G01-S05",
+      "source_target_id": "Sohar",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa041",
+        "Sa094"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G01-S06",
+      "source_target_id": "Sohar",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa041",
+        "Sa094"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G01-X07",
+      "source_target_id": "Toamasina",
+      "source_duration_s": 11.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 1.0,
+      "actual_priority": 10.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa041"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G01-X08",
+      "source_target_id": "Toamasina",
+      "source_duration_s": 11.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa041"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G01-X09",
+      "source_target_id": "Toamasina",
+      "source_duration_s": 11.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa041"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G01-X10",
+      "source_target_id": "Toamasina",
+      "source_duration_s": 11.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 1.0,
+      "actual_priority": 7.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa041"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G01-X11",
+      "source_target_id": "Toamasina",
+      "source_duration_s": 11.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa041"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G01-X12",
+      "source_target_id": "Toamasina",
+      "source_duration_s": 11.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa041"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G02-S01",
+      "source_target_id": "Punta Arenas",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 2.0,
+      "actual_priority": 10.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa052",
+        "Sa014"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G02-S02",
+      "source_target_id": "Punta Arenas",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa052",
+        "Sa014"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G02-S03",
+      "source_target_id": "Punta Arenas",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa052",
+        "Sa014"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G02-S04",
+      "source_target_id": "Punta Arenas",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 2.0,
+      "actual_priority": 7.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa052",
+        "Sa014"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G02-S05",
+      "source_target_id": "Punta Arenas",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa052",
+        "Sa014"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G02-S06",
+      "source_target_id": "Punta Arenas",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa052",
+        "Sa014"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G02-X07",
+      "source_target_id": "San Salvador",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 1.0,
+      "actual_priority": 10.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa052"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G02-X08",
+      "source_target_id": "San Salvador",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa052"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G02-X09",
+      "source_target_id": "San Salvador",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa052"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G02-X10",
+      "source_target_id": "San Salvador",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 1.0,
+      "actual_priority": 7.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa052"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G02-X11",
+      "source_target_id": "San Salvador",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa052"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G02-X12",
+      "source_target_id": "San Salvador",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa052"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G03-S01",
+      "source_target_id": "Grytviken",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 8.0,
+      "actual_priority": 10.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa061",
+        "Sa022"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G03-S02",
+      "source_target_id": "Grytviken",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa061",
+        "Sa022"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G03-S03",
+      "source_target_id": "Grytviken",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa061",
+        "Sa022"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G03-S04",
+      "source_target_id": "Grytviken",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 8.0,
+      "actual_priority": 7.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa061",
+        "Sa022"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G03-S05",
+      "source_target_id": "Grytviken",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa061",
+        "Sa022"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G03-S06",
+      "source_target_id": "Grytviken",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa061",
+        "Sa022"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G03-X07",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 2.0,
+      "actual_priority": 10.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa061"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G03-X08",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa061"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G03-X09",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa061"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G03-X10",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 2.0,
+      "actual_priority": 7.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa061"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G03-X11",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa061"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G03-X12",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa061"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G04-S01",
+      "source_target_id": "Maseru",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 10.0,
+      "actual_priority": 10.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa084",
+        "Sa042"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G04-S02",
+      "source_target_id": "Maseru",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 10.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa084",
+        "Sa042"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G04-S03",
+      "source_target_id": "Maseru",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 10.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa084",
+        "Sa042"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G04-S04",
+      "source_target_id": "Maseru",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 10.0,
+      "actual_priority": 7.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa084",
+        "Sa042"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G04-S05",
+      "source_target_id": "Maseru",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 10.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa084",
+        "Sa042"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G04-S06",
+      "source_target_id": "Maseru",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 10.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa084",
+        "Sa042"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G04-X07",
+      "source_target_id": "Ghanzi",
+      "source_duration_s": 12.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 7.0,
+      "actual_priority": 10.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa084"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G04-X08",
+      "source_target_id": "Ghanzi",
+      "source_duration_s": 12.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa084"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G04-X09",
+      "source_target_id": "Ghanzi",
+      "source_duration_s": 12.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa084"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G04-X10",
+      "source_target_id": "Ghanzi",
+      "source_duration_s": 12.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 7.0,
+      "actual_priority": 7.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa084"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G04-X11",
+      "source_target_id": "Ghanzi",
+      "source_duration_s": 12.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa084"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G04-X12",
+      "source_target_id": "Ghanzi",
+      "source_duration_s": 12.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa084"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G05-S01",
+      "source_target_id": "P?rnu",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 5.0,
+      "actual_priority": 10.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa031",
+        "Sa034"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G05-S02",
+      "source_target_id": "P?rnu",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 5.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa031",
+        "Sa034"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G05-S03",
+      "source_target_id": "P?rnu",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 5.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa031",
+        "Sa034"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G05-S04",
+      "source_target_id": "P?rnu",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 5.0,
+      "actual_priority": 7.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa031",
+        "Sa034"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G05-S05",
+      "source_target_id": "P?rnu",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 5.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa031",
+        "Sa034"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G05-S06",
+      "source_target_id": "P?rnu",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 5.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa031",
+        "Sa034"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G05-X07",
+      "source_target_id": "Tiraspol",
+      "source_duration_s": 6.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 4.0,
+      "actual_priority": 10.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa031"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G05-X08",
+      "source_target_id": "Tiraspol",
+      "source_duration_s": 6.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa031"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G05-X09",
+      "source_target_id": "Tiraspol",
+      "source_duration_s": 6.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa031"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G05-X10",
+      "source_target_id": "Tiraspol",
+      "source_duration_s": 6.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 4.0,
+      "actual_priority": 7.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa031"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G05-X11",
+      "source_target_id": "Tiraspol",
+      "source_duration_s": 6.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa031"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G05-X12",
+      "source_target_id": "Tiraspol",
+      "source_duration_s": 6.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa031"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G06-S01",
+      "source_target_id": "Perth",
+      "source_duration_s": 14.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 9.0,
+      "actual_priority": 10.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa064",
+        "Sa062"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G06-S02",
+      "source_target_id": "Perth",
+      "source_duration_s": 14.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 9.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa064",
+        "Sa062"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G06-S03",
+      "source_target_id": "Perth",
+      "source_duration_s": 14.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 9.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa064",
+        "Sa062"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G06-S04",
+      "source_target_id": "Perth",
+      "source_duration_s": 14.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 9.0,
+      "actual_priority": 7.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa064",
+        "Sa062"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G06-S05",
+      "source_target_id": "Perth",
+      "source_duration_s": 14.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 9.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa064",
+        "Sa062"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G06-S06",
+      "source_target_id": "Perth",
+      "source_duration_s": 14.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 9.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa064",
+        "Sa062"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G06-X07",
+      "source_target_id": "Paraná",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 6.0,
+      "actual_priority": 10.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa064"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G06-X08",
+      "source_target_id": "Paraná",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 6.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa064"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G06-X09",
+      "source_target_id": "Paraná",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 6.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa064"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G06-X10",
+      "source_target_id": "Paraná",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 6.0,
+      "actual_priority": 7.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa064"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G06-X11",
+      "source_target_id": "Paraná",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 6.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa064"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G06-X12",
+      "source_target_id": "Paraná",
+      "source_duration_s": 8.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 6.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa064"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G07-S01",
+      "source_target_id": "Karagandy",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 2.0,
+      "actual_priority": 10.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa102",
+        "Sa101"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G07-S02",
+      "source_target_id": "Karagandy",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa102",
+        "Sa101"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G07-S03",
+      "source_target_id": "Karagandy",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa102",
+        "Sa101"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G07-S04",
+      "source_target_id": "Karagandy",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 2.0,
+      "actual_priority": 7.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa102",
+        "Sa101"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G07-S05",
+      "source_target_id": "Karagandy",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa102",
+        "Sa101"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G07-S06",
+      "source_target_id": "Karagandy",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa102",
+        "Sa101"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G07-X07",
+      "source_target_id": "Omsk",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 1.0,
+      "actual_priority": 10.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa102"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G07-X08",
+      "source_target_id": "Omsk",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa102"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G07-X09",
+      "source_target_id": "Omsk",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa102"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G07-X10",
+      "source_target_id": "Omsk",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 1.0,
+      "actual_priority": 7.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa102"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G07-X11",
+      "source_target_id": "Omsk",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa102"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G07-X12",
+      "source_target_id": "Omsk",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 1.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa102"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G08-S01",
+      "source_target_id": "Saint-Denis",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 10.0,
+      "actual_priority": 10.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa092",
+        "Sa054"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G08-S02",
+      "source_target_id": "Saint-Denis",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 10.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa092",
+        "Sa054"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G08-S03",
+      "source_target_id": "Saint-Denis",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 10.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa092",
+        "Sa054"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G08-S04",
+      "source_target_id": "Saint-Denis",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 10.0,
+      "actual_priority": 7.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa092",
+        "Sa054"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G08-S05",
+      "source_target_id": "Saint-Denis",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 10.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa092",
+        "Sa054"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G08-S06",
+      "source_target_id": "Saint-Denis",
+      "source_duration_s": 5.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 10.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa092",
+        "Sa054"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G08-X07",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 4.0,
+      "actual_priority": 10.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa092"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G08-X08",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa092"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G08-X09",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa092"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G08-X10",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 4.0,
+      "actual_priority": 7.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa092"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G08-X11",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa092"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G08-X12",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa092"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G09-S01",
+      "source_target_id": "?awallī",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 6.0,
+      "actual_priority": 10.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa044",
+        "Sa104"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G09-S02",
+      "source_target_id": "?awallī",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 6.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa044",
+        "Sa104"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G09-S03",
+      "source_target_id": "?awallī",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 6.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa044",
+        "Sa104"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G09-S04",
+      "source_target_id": "?awallī",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 6.0,
+      "actual_priority": 7.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa044",
+        "Sa104"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G09-S05",
+      "source_target_id": "?awallī",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 6.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa044",
+        "Sa104"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G09-S06",
+      "source_target_id": "?awallī",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 6.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa044",
+        "Sa104"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G09-X07",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 4.0,
+      "actual_priority": 10.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa044"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G09-X08",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa044"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G09-X09",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa044"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G09-X10",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 4.0,
+      "actual_priority": 7.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa044"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G09-X11",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa044"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G09-X12",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa044"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G10-S01",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 2.0,
+      "actual_priority": 10.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa012",
+        "Sa011"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G10-S02",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa012",
+        "Sa011"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G10-S03",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa012",
+        "Sa011"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G10-S04",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 2.0,
+      "actual_priority": 7.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa012",
+        "Sa011"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G10-S05",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa012",
+        "Sa011"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G10-S06",
+      "source_target_id": "Plymouth",
+      "source_duration_s": 9.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa012",
+        "Sa011"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G10-X07",
+      "source_target_id": "Santiago",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 2.0,
+      "actual_priority": 10.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa012"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G10-X08",
+      "source_target_id": "Santiago",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa012"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G10-X09",
+      "source_target_id": "Santiago",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa012"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G10-X10",
+      "source_target_id": "Santiago",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 2.0,
+      "actual_priority": 7.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa012"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G10-X11",
+      "source_target_id": "Santiago",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa012"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G10-X12",
+      "source_target_id": "Santiago",
+      "source_duration_s": 13.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa012"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G11-S01",
+      "source_target_id": "Manakara",
+      "source_duration_s": 14.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 7.0,
+      "actual_priority": 10.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa091",
+        "Sa051"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G11-S02",
+      "source_target_id": "Manakara",
+      "source_duration_s": 14.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa091",
+        "Sa051"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G11-S03",
+      "source_target_id": "Manakara",
+      "source_duration_s": 14.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa091",
+        "Sa051"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G11-S04",
+      "source_target_id": "Manakara",
+      "source_duration_s": 14.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 7.0,
+      "actual_priority": 7.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa091",
+        "Sa051"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G11-S05",
+      "source_target_id": "Manakara",
+      "source_duration_s": 14.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa091",
+        "Sa051"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G11-S06",
+      "source_target_id": "Manakara",
+      "source_duration_s": 14.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 7.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa091",
+        "Sa051"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G11-X07",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 4.0,
+      "actual_priority": 10.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa091"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G11-X08",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa091"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G11-X09",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa091"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G11-X10",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 4.0,
+      "actual_priority": 7.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa091"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G11-X11",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa091"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G11-X12",
+      "source_target_id": "Hargeysa",
+      "source_duration_s": 15.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 4.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa091"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G12-S01",
+      "source_target_id": "Laghouat",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 8.0,
+      "actual_priority": 10.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa082",
+        "Sa032"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G12-S02",
+      "source_target_id": "Laghouat",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa082",
+        "Sa032"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G12-S03",
+      "source_target_id": "Laghouat",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa082",
+        "Sa032"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G12-S04",
+      "source_target_id": "Laghouat",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 8.0,
+      "actual_priority": 7.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa082",
+        "Sa032"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G12-S05",
+      "source_target_id": "Laghouat",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa082",
+        "Sa032"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G12-S06",
+      "source_target_id": "Laghouat",
+      "source_duration_s": 10.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 8.0,
+      "actual_priority": 3.0,
+      "request_role": "SHARED",
+      "eligible_satellites": [
+        "Sa082",
+        "Sa032"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G12-X07",
+      "source_target_id": "Toulouse",
+      "source_duration_s": 12.0,
+      "actual_duration_s": 20.0,
+      "source_priority": 2.0,
+      "actual_priority": 10.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa082"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G12-X08",
+      "source_target_id": "Toulouse",
+      "source_duration_s": 12.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa082"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G12-X09",
+      "source_target_id": "Toulouse",
+      "source_duration_s": 12.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa082"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G12-X10",
+      "source_target_id": "Toulouse",
+      "source_duration_s": 12.0,
+      "actual_duration_s": 10.0,
+      "source_priority": 2.0,
+      "actual_priority": 7.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa082"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G12-X11",
+      "source_target_id": "Toulouse",
+      "source_duration_s": 12.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa082"
+      ],
+      "controlled_repeat_request": true
+    },
+    {
+      "task_id": "C30-G12-X12",
+      "source_target_id": "Toulouse",
+      "source_duration_s": 12.0,
+      "actual_duration_s": 5.0,
+      "source_priority": 2.0,
+      "actual_priority": 3.0,
+      "request_role": "EXCLUSIVE_ELIGIBILITY",
+      "eligible_satellites": [
+        "Sa082"
+      ],
+      "controlled_repeat_request": true
+    }
+  ],
+  "controlled_resources": [
+    {
+      "satellite": "Sa011",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa012",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa014",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa021",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa022",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa024",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa031",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa032",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa034",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa041",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa042",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa044",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa051",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa052",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa054",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa061",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa062",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa064",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa071",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa072",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa074",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa081",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa082",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa084",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa091",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa092",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa094",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa101",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa102",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0003662109375,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 300.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    },
+    {
+      "satellite": "Sa104",
+      "old_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "used_specs": {
+        "max_data_storage_GB": 0.0006103515625,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "controlled": true
+    }
+  ],
+  "design_sha256": "ca60cd50eb9638b58501fc85cf5f4dd2d427d9f786136226d1b9c43f1454b678"
+}

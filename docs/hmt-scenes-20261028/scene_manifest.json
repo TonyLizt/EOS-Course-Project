@@ -1,0 +1,320 @@
+{
+  "version": "web-mechanism-development-v1",
+  "purpose": "targeted development, correlated families",
+  "source": {
+    "path": "/mnt/f/EOS-Bench/output_s50_cc/re_50_satellites/Scenario_S1_50_satellites_Sats50_M100_T7.0d_cities_01.json",
+    "sha256": "5374c99aead5d8c7dc1b8c85d6d6a0fccaef75a85b3b9096d1f9601bbe215d23",
+    "size": 175214385,
+    "header_sha256": "de9b0af88764661166b921cad4fe5704dab829aaeb6c7becf0dfdd9f1a44b5ef",
+    "old_windows_read": false
+  },
+  "scenarios": [
+    {
+      "scenario_id": "C30-main-01",
+      "scenario_sha256": "25ce3f1a33752b9f6c7b219f825100ee1790c4b3fbf43f0dec3564f83fd0f649",
+      "satellites": 30,
+      "active_satellites": 24,
+      "tasks": 144,
+      "windows": 216,
+      "multi_satellite_tasks": 72,
+      "conflict_edges": 360,
+      "lower_bound": 72,
+      "optimistic_upper_bound": 144,
+      "neutral_plans": {
+        "chronological": {
+          "completed": 72,
+          "TP": 348.0
+        },
+        "exclusive_first": {
+          "completed": 67,
+          "TP": 373.0
+        },
+        "value_first": {
+          "completed": 63,
+          "TP": 333.0
+        }
+      },
+      "resource_clusters": 12,
+      "distinct_ground_locations": 21,
+      "Loader": true,
+      "structure_status": "WARN",
+      "structure_warning": [
+        {
+          "check": "distribution",
+          "level": "WARN",
+          "reason": "not recorded",
+          "file": "candidate.json",
+          "field": "distribution_type"
+        }
+      ],
+      "generation_samples": {
+        "status": "SAMPLED_PASS",
+        "segments": 10,
+        "sample_wall_s": 0.3703048179995676
+      },
+      "evidence_entries": 4176,
+      "build_wall_s": 20.639982217002398,
+      "build_cpu_s": 14.065786412,
+      "mirror_verify_wall_s": 0.8083731769984297,
+      "main_mechanism_gate": "ENGINEERING_AND_PREREGISTERED_STRUCTURE_PASS",
+      "Web_registered": true,
+      "zero_window_tasks": 0,
+      "zero_single_feasible_tasks": 0,
+      "controller_run_ids": [
+        "5ee89a3e-c695-4b15-af28-965e454e6409",
+        "8adef3f9-0bf0-4635-a6c4-9fe7ef0b26af",
+        "41efa1f4-db62-41b7-895f-2d8d96d56a12",
+        "cd863fe1-1d4a-4504-a305-a60602aa6e50"
+      ]
+    },
+    {
+      "scenario_id": "R10-show-01",
+      "scenario_sha256": "cf83a343d5a2f9c6767e1fbc9c844c0523e7bdaaed15277f342da670e30993f0",
+      "satellites": 10,
+      "active_satellites": 8,
+      "tasks": 48,
+      "windows": 72,
+      "multi_satellite_tasks": 24,
+      "conflict_edges": 120,
+      "lower_bound": 35,
+      "optimistic_upper_bound": 48,
+      "neutral_plans": {
+        "chronological": {
+          "completed": 34,
+          "TP": 174.0
+        },
+        "exclusive_first": {
+          "completed": 35,
+          "TP": 183.0
+        },
+        "value_first": {
+          "completed": 35,
+          "TP": 183.0
+        }
+      },
+      "resource_clusters": 4,
+      "distinct_ground_locations": 8,
+      "Loader": true,
+      "structure_status": "WARN",
+      "structure_warning": [
+        {
+          "check": "distribution",
+          "level": "WARN",
+          "reason": "not recorded",
+          "file": "candidate.json",
+          "field": "distribution_type"
+        }
+      ],
+      "generation_samples": {
+        "status": "SAMPLED_PASS",
+        "segments": 10,
+        "sample_wall_s": 0.3388350620007259
+      },
+      "evidence_entries": 1440,
+      "build_wall_s": 6.410422020002443,
+      "build_cpu_s": 4.448263845,
+      "mirror_verify_wall_s": 0.23731585699715652,
+      "main_mechanism_gate": "ENGINEERING_AND_PREREGISTERED_STRUCTURE_PASS",
+      "Web_registered": true,
+      "zero_window_tasks": 0,
+      "zero_single_feasible_tasks": 0,
+      "controller_run_ids": [
+        "1432ac85-2614-4d1e-9387-88e3f4181496"
+      ]
+    },
+    {
+      "scenario_id": "R30-main-01",
+      "scenario_sha256": "f916edf91e47a2471c0bf509f7672d901295ca2a2d181426698b7cb3773db306",
+      "satellites": 30,
+      "active_satellites": 24,
+      "tasks": 144,
+      "windows": 216,
+      "multi_satellite_tasks": 72,
+      "conflict_edges": 360,
+      "lower_bound": 107,
+      "optimistic_upper_bound": 144,
+      "neutral_plans": {
+        "chronological": {
+          "completed": 100,
+          "TP": 486.0
+        },
+        "exclusive_first": {
+          "completed": 107,
+          "TP": 573.0
+        },
+        "value_first": {
+          "completed": 107,
+          "TP": 573.0
+        }
+      },
+      "resource_clusters": 12,
+      "distinct_ground_locations": 21,
+      "Loader": true,
+      "structure_status": "WARN",
+      "structure_warning": [
+        {
+          "check": "distribution",
+          "level": "WARN",
+          "reason": "not recorded",
+          "file": "candidate.json",
+          "field": "distribution_type"
+        }
+      ],
+      "generation_samples": {
+        "status": "SAMPLED_PASS",
+        "segments": 10,
+        "sample_wall_s": 0.44615023200094583
+      },
+      "evidence_entries": 4320,
+      "build_wall_s": 20.410872368000128,
+      "build_cpu_s": 14.126528664,
+      "mirror_verify_wall_s": 0.6222273050007061,
+      "main_mechanism_gate": "ENGINEERING_AND_PREREGISTERED_STRUCTURE_PASS",
+      "Web_registered": true,
+      "zero_window_tasks": 0,
+      "zero_single_feasible_tasks": 0,
+      "controller_run_ids": [
+        "7ac14fc4-338e-4ba4-a3c2-7bc847b72260",
+        "5bd6e943-8e44-40bd-830d-6a610ec5d151",
+        "20c28304-cbbb-4433-ae56-fc8f4190f225",
+        "854c9fe1-a3cf-4f0b-be8c-9fa079dca48d"
+      ]
+    },
+    {
+      "scenario_id": "R30-main-02",
+      "scenario_sha256": "87419a32c85c303d2e2003f0efd3d3712c624c6a2011e9ad9dcafd2a9bf11c4a",
+      "satellites": 30,
+      "active_satellites": 24,
+      "tasks": 144,
+      "windows": 216,
+      "multi_satellite_tasks": 72,
+      "conflict_edges": 0,
+      "lower_bound": 106,
+      "optimistic_upper_bound": 144,
+      "neutral_plans": {
+        "chronological": {
+          "completed": 95,
+          "TP": 423.0
+        },
+        "exclusive_first": {
+          "completed": 106,
+          "TP": 624.0
+        },
+        "value_first": {
+          "completed": 106,
+          "TP": 624.0
+        }
+      },
+      "resource_clusters": 12,
+      "distinct_ground_locations": 22,
+      "Loader": true,
+      "structure_status": "WARN",
+      "structure_warning": [
+        {
+          "check": "distribution",
+          "level": "WARN",
+          "reason": "not recorded",
+          "file": "candidate.json",
+          "field": "distribution_type"
+        }
+      ],
+      "generation_samples": {
+        "status": "SAMPLED_PASS",
+        "segments": 10,
+        "sample_wall_s": 0.351496629002213
+      },
+      "evidence_entries": 216,
+      "build_wall_s": 4.061181955999928,
+      "build_cpu_s": 3.569843017,
+      "mirror_verify_wall_s": 0.10790791399995214,
+      "main_mechanism_gate": "RESOURCE_CONTROL_ONLY_TEMPORAL_EDGE_GATE_UNATTAINED",
+      "Web_registered": true,
+      "zero_window_tasks": 0,
+      "zero_single_feasible_tasks": 0,
+      "controller_run_ids": [
+        "5494158a-fa95-4546-b518-6d29e5dfcb07",
+        "d72b1569-5d91-4610-8d08-0bc9d5ae9004",
+        "7a74d9ac-b4e8-48e4-a695-9215f9e904c2",
+        "00b12d52-b1a2-41ec-b2df-3c636f99d376"
+      ]
+    },
+    {
+      "scenario_id": "R50-show-01",
+      "scenario_sha256": "c967a16dab071331ab8de8d2b44731e7b1095389435c2af1e7741e8c38bf5b5d",
+      "satellites": 50,
+      "active_satellites": 40,
+      "tasks": 240,
+      "windows": 360,
+      "multi_satellite_tasks": 120,
+      "conflict_edges": 600,
+      "lower_bound": 177,
+      "optimistic_upper_bound": 240,
+      "neutral_plans": {
+        "chronological": {
+          "completed": 167,
+          "TP": 801.0
+        },
+        "exclusive_first": {
+          "completed": 177,
+          "TP": 933.0
+        },
+        "value_first": {
+          "completed": 177,
+          "TP": 933.0
+        }
+      },
+      "resource_clusters": 20,
+      "distinct_ground_locations": 33,
+      "Loader": true,
+      "structure_status": "WARN",
+      "structure_warning": [
+        {
+          "check": "distribution",
+          "level": "WARN",
+          "reason": "not recorded",
+          "file": "candidate.json",
+          "field": "distribution_type"
+        }
+      ],
+      "generation_samples": {
+        "status": "SAMPLED_PASS",
+        "segments": 10,
+        "sample_wall_s": 0.2124267580002197
+      },
+      "evidence_entries": 7200,
+      "build_wall_s": 45.14098688999729,
+      "build_cpu_s": 32.453815779,
+      "mirror_verify_wall_s": 1.032248833002086,
+      "main_mechanism_gate": "ENGINEERING_AND_PREREGISTERED_STRUCTURE_PASS",
+      "Web_registered": true,
+      "zero_window_tasks": 0,
+      "zero_single_feasible_tasks": 0,
+      "controller_run_ids": [
+        "42da9b47-acc3-44c3-acf0-342e86918507"
+      ]
+    }
+  ],
+  "production_source_id": "src-696e02406002",
+  "all_run_ids": [
+    "5ee89a3e-c695-4b15-af28-965e454e6409",
+    "8adef3f9-0bf0-4635-a6c4-9fe7ef0b26af",
+    "41efa1f4-db62-41b7-895f-2d8d96d56a12",
+    "cd863fe1-1d4a-4504-a305-a60602aa6e50",
+    "1432ac85-2614-4d1e-9387-88e3f4181496",
+    "7ac14fc4-338e-4ba4-a3c2-7bc847b72260",
+    "5bd6e943-8e44-40bd-830d-6a610ec5d151",
+    "20c28304-cbbb-4433-ae56-fc8f4190f225",
+    "854c9fe1-a3cf-4f0b-be8c-9fa079dca48d",
+    "5494158a-fa95-4546-b518-6d29e5dfcb07",
+    "d72b1569-5d91-4610-8d08-0bc9d5ae9004",
+    "7a74d9ac-b4e8-48e4-a695-9215f9e904c2",
+    "00b12d52-b1a2-41ec-b2df-3c636f99d376",
+    "42da9b47-acc3-44c3-acf0-342e86918507"
+  ],
+  "new_submissions": 14,
+  "successes": 14,
+  "failures": 0,
+  "zero_plans": 0,
+  "duplicate_submissions": 0,
+  "independent_test": false
+}

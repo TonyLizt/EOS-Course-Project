@@ -1,0 +1,1298 @@
+[
+  {
+    "path": "algorithms/dartis_score_retime.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "299e762829f8e455cc2bb3937b480adc7d386a93087ff4f7caac0ab19b249ecc",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/conflict_beam.py",
+    "git_base_sha256": "46466a861a5260db662b3d2b8c34cc1f8a44382a51c366a50291d1a6c1e03cf2",
+    "pre_scene_sha256": "5bec98908163bd26bef80833a64b296f0afd066e2c1f5157d1be75e87de2a105",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/dartis_repair.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "c3bee4782186af72e4b021ede19ea6201ff2e138934167325c2a61a91a9f12c8",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/solver_contracts.py",
+    "git_base_sha256": "b9510a7d6964ec266e66df2e79a9678fd595866ea13d72b3fe230ebe8d4be1be",
+    "pre_scene_sha256": "b58dfe77d7fd61c37c677f463bc1c5851127ae8706122e0950fb83378ebada1d",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/auction_bundle.py",
+    "git_base_sha256": "2fce981451f7f8283b4f0eef7ba995adc8f769a3757bd62187567422a744afa8",
+    "pre_scene_sha256": "f4690e37bcd50ac4af44adee57cf405f041bd437c98438351bb42276621852b1",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/objective_runtime.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "78e1f53a98ff706cfc81a11b8dcadcbd5bbdd20c9a1eb8a5b01c7035115db9d7",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/score_guidance.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "6e403f7b360dfa55b4521e0c43f3a229980b10f67d703cce77a7040dde6167ba",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/dartis_exchange.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "c6ef9df9d8611d4430b41bba21f1571cf3200a0011dc12fd4a6d0450203b191a",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/deadline_insertion.py",
+    "git_base_sha256": "fc9d07e47063c072111c7fb12be03541281965890b8813940df0fbb801db9098",
+    "pre_scene_sha256": "2f356a9729c2ce24f65cf71a0ca6762b827891e4070b6753a422da5a6fa1056c",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/rabas_cross_star.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "f4e208ff9709b3b4a2e784b543648576083ce42b32c811564689adae0f65ac7f",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/dartis_resources.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "e2fd9978d27b4c4f6321bcf7d13ba396650db58b8f67982448ff6f9b62e9089d",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/objective_adapters/protocol.py",
+    "git_base_sha256": "0d97e5bf4094534bf7f4329ee0b5a25e4c6dc0e764a488ccc4418812dd5b2e48",
+    "pre_scene_sha256": "9e8bc86ee333bf57a02087037e89ab700c74f56b92114e89d92094492bc73e9f",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/objective_adapters/lexicographic.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "3e4fa4afe9e7f1a5ac5ee96e89bfe04d77ed7f2ca8ade4a3a5a95383230fc557",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/objective_adapters/score_v2.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "604cbb824c1e407aecfb7b48369a211822b1e7b082ad395a90793928277bcb21",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/objective_adapters/score.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "40c79e741c8fa7ce4155a920ebe35c801a1c8ca4b7372eb0a15f7345667001b3",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/objective_adapters/search.py",
+    "git_base_sha256": "b0654931707432ffffa3e87e453f50bef41fbcf3c52e593808989c9f6d37d719",
+    "pre_scene_sha256": "1e8f1e04c1fd3882fe76ca24a624df8e2921260e7737a7eb1c17b27898927790",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/objective_adapters/score_search.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "b15e92dbe5f9eb4dd399d4efe108e204b284f4ca6a17c8892862eaa46453c936",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "algorithms/lavis/model.py",
+    "git_base_sha256": "faacc7e27e08cbff5010607f6541ca8c54cc16b4f182a65a778cbb4f08eab40b",
+    "pre_scene_sha256": "c8d3c71c470f58ddcd54ca4fd4bc72b20d16d68c203c4a577604d56b614dcc25",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "schedulers/scenario_loader.py",
+    "git_base_sha256": "f915bd06918d36cb6f7f7a203fef9b3fd193de34f19601b162cf226e34d67320",
+    "pre_scene_sha256": "944ef87bd8c2e43140670cf4b83f569a01f22f1f9dd11ce4687a5a0ab0f3d5f8",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "schedulers/constraint_model.py",
+    "git_base_sha256": "d68bc270e149eede4d3b524deb983e478cda49551a7391d333a5248032463205",
+    "pre_scene_sha256": "4f2aea5cdabc2206e95cab32df86e9af84accf134e1170935152df07f96d7386",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "utils/continuous_exposure.py",
+    "git_base_sha256": "2cea2079ec9bcd7d24b5e33ff8ed72fba5bf52626dd8aa9ced5e914d28fc6415",
+    "pre_scene_sha256": "dbfd10059f64de813b24f803d9067e55fc4bd33b4a201690e7aa8554687c3b78",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "utils/physical_contract.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "cc915297c9d8b4e52829eab2717b3725f2a6178bea0663862f4c8326968508f6",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "utils/certification_identity.py",
+    "git_base_sha256": "bfcb72c2cd6eca155b5e2c2f33ce93460ed277276fc71604ad90077a9129c97e",
+    "pre_scene_sha256": "418fa4a886fab617d057b6a02961843574e51292e3d6849b8736b4db05f0f33b",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "utils/physical_candidate_evidence.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "ca876dd0fe58bb771cf20aab103140937962be3f5411173f4183440bb84262a0",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "utils/exposure_physics.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "1da4755a2039350d74d2f81a8fe265a7b03cf2c07810c95f8a82b71cd974b70c",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/preview_audit_process.py",
+    "git_base_sha256": "09a1cceb9d92376c0e7a2e988d48d53ebc4145551afc0bb30c550546cbd6bcc7",
+    "pre_scene_sha256": "806e513522be34ee711a3e9b87df96bdb62979c0570f4f866221aa171744c45e",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/worker_reference.py",
+    "git_base_sha256": "596bb80198eada81cd4667d10ebe01390b7daca6026037b3180ffba82e201796",
+    "pre_scene_sha256": "5206f97c5583a1f67ce05370a06ab60c51a050868e59a2c6d827da274b113774",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/runner.py",
+    "git_base_sha256": "342028bd2251172c334e07f753780f64d1f0f760df0957c88c95cb5262e86b36",
+    "pre_scene_sha256": "1bb3c213f435ee46f69d1ff05911325be792f8a25071da73692c30b080f0e8ab",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/physical_audit_sidecar.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "229d9c918de1a16a450d32553a4ca2372a7beef0edc3197a858abf0e7f10bc9f",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/scenario_catalog.py",
+    "git_base_sha256": "806b3a29c0e53189b8bf0b5dad451989bc76174f61ff8d5d54953e9cc9103fca",
+    "pre_scene_sha256": "aded2cb24488003062c1ca773949471331eefac0979862e34a43286a8bfbdade",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/execution_diagnostics.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "a1b95a2a77c37482211b2dcb4ee9fd1999f2c7afc32935459b901ee425511262",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/contracts.py",
+    "git_base_sha256": "c8982c64de23e871bf8811453ee38ee104b96f03111270dcbb82e359ec698809",
+    "pre_scene_sha256": "34b89278a2660ef2292bc566380b73b84e20ff52e13357c3ea679cc411602155",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/objective_v2.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "9d53ab8d202aae99a112fe9a95f48460fbcc16d8224ebe8378862ea5d9a1419d",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/diagnostic_sidecar.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "3e58fba1b10d23d1955324acbc03be572ed3a2413e2fe30fd0aa176296953bc1",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/lavis_resource_features_v2.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "bea7f09f9f38eaeb02659dc37b8b87677c6a91dbb4e21f2d4c4a6993c62b331b",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/exporting.py",
+    "git_base_sha256": "628bd48a8e81b2d4c1f9616a1d34346e8f6b90780331272660459f1d8e2f88bc",
+    "pre_scene_sha256": "3a1d5a9b159d14abdb0d127865eeccba4186a344e52fd0bf7593764e6fdda134",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/planning_preview.py",
+    "git_base_sha256": "64cb587e7e49cc7fe788b300abad554964ec4df61c516f56828d013441aa1960",
+    "pre_scene_sha256": "acfa6a3a59284608d59af12fd805b71d87dbed3e92635d58e90828e9aca62035",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/pilot_integration.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "1dcce947b0b83c150d42a855d13e9baa15d087eeefd64376fcfcdd8ef88646e6",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/api.py",
+    "git_base_sha256": "b08493cc05cf5874dbba4ddb6485d610da34aec6bdb55b94fb3b471533f1ea96",
+    "pre_scene_sha256": "d3fad0cc74c5ad9588d7633a8b29078c7279d1400463ecd264d610a1c413983f",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/physics_execution.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "3247891761c5d5541fa7865f929df1789e8e694adf7cbe348e28fe222445b812",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/algorithm_presentation.py",
+    "git_base_sha256": "c03b178089d9d6e80fea4c19fcb373d235dd1c20cddfbd0c50d89573e1f38064",
+    "pre_scene_sha256": "8cc4d4af006a0f7549d739befa120dfb16f68a49691760f66777861a3062477e",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/score_v1.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "040071788dec8315ac16fb39deda14367cdb90b1a02d0330943594f699ffe5b4",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/verification.py",
+    "git_base_sha256": "076acb1b2d330efc5ff0b5342c268db1d47905338cadfe5299bf1bc032e00f2f",
+    "pre_scene_sha256": "9acd39be0bb9e71e75e274e3c518305cb3b9d15da6821c314d99e1e19339c465",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/web_runtime_hooks.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "d4004a17bf8a9fb31b00d93c87c934e5efcdd6b72ff4ab197bd812768c2b0e76",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/dataset_registry.py",
+    "git_base_sha256": "bcc7f03a7609adacc64b42aa3a3b29ccefe4c8756bfe0a50747b6c14ede3ade9",
+    "pre_scene_sha256": "b4849ff4df051e5a5f816c6acbb5cda90721ca4206074e3aa7b61eeeb6941c64",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/experiment_submission.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "1b018038cd699f54b4795fa64d98bca07cc0b983f5f833a85fd8e58ecab8c371",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/controller.py",
+    "git_base_sha256": "7bfef6f64fce5d834ff974c00daa874d678cf132cc1ef95e05a4d99e101694f9",
+    "pre_scene_sha256": "171135a5ab6dab937f43755224e75a6f2488d902cff70c5c7eae8d8532cd0685",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/algorithm_registry.py",
+    "git_base_sha256": "73d0b5892fb244bfa9e4afd8ca4c414e9c29c71df735d447aabd4549433e859e",
+    "pre_scene_sha256": "2bc09911dc10a92339cf4d0fa2afe2fc8f6a3e6a99b55a77b7ab29e1966fe389",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/lavis_domain_compatibility.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "c432a7d1b7fdad9ddc3b1b46633b304c2a427777d7d6a6300b8a671be2be85c5",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/web/index.html",
+    "git_base_sha256": "9479d05202814cf8f2516471b8f2f343f046fd1d68c8a0d7a349864b0abf558d",
+    "pre_scene_sha256": "f56402c9c52d703c6a27ae652b4bd07b8875aa4dd6abb9a6abe715a8cb39d02b",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/web/app.js",
+    "git_base_sha256": "d6af1396e4fbd95965b749aeac9d35a09da0c3fcb9a765a3f056c7d76ce25089",
+    "pre_scene_sha256": "95996b2098c4531ee66d0190afe0fb44d4e9757ab051b179b4f57a051d6645fd",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/web/experiment-ui.js",
+    "git_base_sha256": "11bb42d02b14331b798538192a6e6991e8dd9c4aea35d9a7fb243e8da0cde291",
+    "pre_scene_sha256": "1c6d1e3983d97aa4a60ddf6e1e38ed7bb2f5da041adc76b77963f0e64a441afc",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/web/experiment-submission.js",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "c25707259e5eb7a4e6e4354551b7aa4d629023e0c5cf55c01a4242b7018b13dd",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/web/workspace-pages.js",
+    "git_base_sha256": "504553297d8f7e04f0e3ab72fe3c0c4e44093d9bbeb62bd90dfed44b59230acc",
+    "pre_scene_sha256": "9fe8d5ba9ae15cd754cb60f3703a9b6af89222bf227584fe360e5df012b159a6",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/web/console.js",
+    "git_base_sha256": "ad7aef83e99596227a39792f45727f09e73a2b242b96a66e26ffe25bb78f64df",
+    "pre_scene_sha256": "944fe2420b2e2c15072a5d843476d764fb5097bf8a8741be7adb2946074e4dc3",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "eos_system/web/archive-ui.js",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "51c030c119dacfd0377ebeacf77ca10d08ec016f8114145dc0ede75fbdb45eb4",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/build_f_pilot_v3.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "28a0d630e057175e8b16260a34f7f4d1f7172079e1baca158330b4fcccda7eb4",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/build_rabas_pilot_v4.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "24e7fe2a892d4f1c76c360d9c98eb98ede69344fdb6724cef473d1a6eee62ed9",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/stage17_profile.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "9672046babd234508041a48770a3fd6e98b3a38a235080dc2dee8fe2829b46aa",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/stage19_finalize.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "21e945af023d87d42a679b4701f677df157fad39e298a265ca887519906516fd",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/freeze_v3_development_protocol.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "f76d1d56ad9b86ad464f115f81f4edcd2caa02d93e1d49fc63aa5899e264d377",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/analyze_f_pilot.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "2df1d0e78f50423368051c9022f80bc8eabe93e39e957a501b0722f9c80bfdcc",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/analyze_f_pilot_v2.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "18471cc17f9b141cbe7bf3a83a7f87e1233d9f75038920aeb4be495ba3b6b0fb",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/prescreen_f_pilot_v2.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "7ff18a9a43fc64bcedef435fa4843d1d69a9c4a07b459b52293b2837bd2e9f48",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/validate_f_pilot.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "d85e7d4d4876c73c7a1ff76dd627075c94362e076f5e082c58ecf962e9616c57",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/build_f_pilot_v2.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "ea18c90db4e17c3b99468c5ec404787222d7315afda18347fd8a13920e8fc6d9",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/stage19_run_builds.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "97e5f74139217ad39df4c84dd2a7a0931cd2f5b52512e81a4c70d2d378b09dc7",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/validate_caabs_pilot_v2.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "4ba2831d3639641205d61d927ff5368b3d6ff9ba2bbf0a27e5f815b09298c552",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/check_caabs_v1_reference.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "14d5eda122dcf7c6a6b0f116da22a0b28a7e1599c892b556ef854213395c9730",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/assess_caabs_pilot_v2.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "0f8ffffefcd96dd59457177ed423cce9db95294c656d51d21b3d6a623b954b64",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/build_shared_dataset.py",
+    "git_base_sha256": "76adea009d0ec44e0253c93590f62ea1c7b4d856a29ad0a961715851e291bb13",
+    "pre_scene_sha256": "c79dbf4e1a00893005e417c9f97b3c5e98f31c01b00869658b308aa5dcf5a032",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/stage19_scenarios.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "6c1b209d894da4e00c0b58ce1530079e7545fba5de9ecbb0283302afd78dc6e4",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/build_caabs_pilot_v2.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "1575c3e5816abb4f5f769dc4b84cfa81a5130dcc4728c4e3575b54b452fee163",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/stage17_finish.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "335665016d833e1e837b1aeb84a1a9b42d0ca3fa10fd049b3c1b16dceb08cf8b",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/freeze_rabas_pilot_v4.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "32ed0f4b3beb487e6da6230548411f746e3bd16cced8fc049fc54f7acbdef685",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/freeze_f_pilot_v3_plan.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "fdf5db880a976798b3bb069823cebae247402fb13ad2ba7606c3a17181526123",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/build_f_pilot.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "9ab14bf3930355fd6096bd3e16cc3a082d1d955d6841cae285a25b95c57cc511",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/stage17_scenarios.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "0a65ac7338adb87c8255814c8ab14555fd7421b8e060efc195df0ab86fe32f74",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/stage19_closeout.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "b1565bcadb84a14b6ff2bade232adf8ae3723a95fc1416e6352210b36b1b1ee5",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/assess_rabas_pilot_v4.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "6a975fd79ff5a9c0b119009991cb5fab1d837227ca0b434c1980fc84dbe0b0b1",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/validate_f_pilot_v2.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "d7bc17bfab50b9385f3c991b3105563fcf180cc74bf73a5989f91a8730320d66",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage8_collect.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "b8c70e05e492a8044486078217e08386cc893ba3323997a353cd98e68473cde6",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage15_delivery_verify.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "30734d18e8c59a70aa58dc046ac50f25e6c6e2fb73ebb2b55057b92cde04bdf7",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage14_regression.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "af1605bfd64f8388ed2d8423415b1f3ae53a9ded30eb37732a5bf43ccfe71e4d",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/report_stage7.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "75d190921977077300a3a22899f587bfb55a6485581e50a59096d6fb19219419",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage14_regression_review.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "63bde00e27fc14a85975ec512074c59ea03a6df32115f2d063c9aed0fb6a6134",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage11_analyze.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "b274f71b9fb9326cc608e5e5319612705d7f0022809f2961c49697a3e4f76671",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16_implement.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "91db6e9fc03030a102b9a1b966490958fb3194fcc7fbbaf523ec2567efd2e558",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19b_finalize.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "6f04bec782e36851ced8bb84114ec69847ea64c3b3fe51ae37f1feb0caf1cc9a",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage9_lavis.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "611e75429fc5f45c3b69188041c88412b6d35fa2fb8a1c1b10368d99391f0ca9",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16_offline.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "87e85c36341c9d07a5a5007fc070906c6b746acc834ab526519a29299a9d8db1",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage14_audit.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "4427a6c919c3417376b1cab826ac675d81aecd055396a0fd43785d122d3c9194",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19c_more_probes.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "b087449e5729843ce0f55871bd9b71d70d5e78ccf8a4cb240f4b5239afefcb26",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage9_assess.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "5f6024cbb2bbda650af23d750df5cf2595a557f9e3d70b1f4ae3bb0f6ca81716",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage14_finish.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "6ef186ee243048fe25984a02b4b16272c220ebfb2d6494ac1da12ab8af7120f3",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16_delivery.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "fee8a078bf1f87eca13559b8251a044cc3fec527b34660914d0f158972c53f5a",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage4_caabs_rabas_audit.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "9cc0501da822a16d4e0b10f1925e95f330dbece99b69e5e9e55b6427e5dfb08a",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage13_recovery.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "4e70a30848e87cdb58b09e4a0b24cf1ceec40f9253d497b324083ce206295511",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/ablate_v3_mechanisms.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "888fde199724a49f9fa0185eb27214144aea642bebb92e0afb0bc4c95c8878a5",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/assess_f_pilot_v3.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "3c6dd75c6c2e02452c23559651974a6e6eb874053a026d5937d80c9bf860b2e8",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_causality.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "ab7eca6a0b7eb2f430ae201ab2260c94f99693d91bb4a9d1a6b05c447bcb3b0d",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage14_sources.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "bc08b8ad101c85b29804f0f979de39f9e202ac123433b2de300c7c80187b74ae",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19b_feature_probe.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "99e71ef891a2c4cbaf6f8b71545df2a1007a85d14fe579aaf3b4f21de4a87e7c",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage15_analyze.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "7f236c20854c885eaecdf5bafee8eb551687bdf537d00a8918e6aa6f7022a6f0",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19c_run_probes.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "c16284bb2856c3d73555fcc901fe3b8c85e3412a43c3bb27d03408631fc1c749",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage12_caabs_trace.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "979c7873f8ac0994837bafa2e59b662fbbba4514d9d44d1668e86b6f59e632a2",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19d1_offline.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "b19640b5342a382b23e09533e1350eedfad09b5c17e986680de3f0b86cb166d7",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage6_quote_sensitivity.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "231985fe2c39d7871919c7877f1daac6826df8f61c52971cf8ae79c212374888",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/finalize_stage5_gate.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "93ddf9be318009706a54a3e254e57e904169b521163965a1d580553104fc0991",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage7_opportunities.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "9d40efca4d500ca620f20b5035f0af0a22abafafe8801fc83df3a9266b87125f",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19c_profile.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "e27b15fc7beb4571b89b2fe1e5bd0ee9df0b0babce88c9e17f7540e000286c89",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_feature_audit.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "e7eca0e01a18bd58b732d8c17ff365b85e37960c461623effae87dae601029b3",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16_partial_delivery.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "a1794dd7bda841c4a8465016c695ac181a1884a5da2b4a45ec78341795bc5132",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage12_finalize.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "6188ac526942c8e61dd99a6ab399fa06ab5fe5ff9bc2663cf3ca686d006466d0",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage15_report.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "3e8f2d7d3aa8e316d12c13517c92d7f55f0a9349994c12244b1045754abca50f",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage9_training_preflight.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "5182bb53da7bd566db84a95a8d6f448febcb5311abe20184c50d6727a5b75bc7",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19b_certify.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "d5fa9c72b0581c37360991fdf9c73d24877e8880c09a9de29c15131f4645bf72",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage9_system.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "b6c163755e36bc5f1406d405fb9a2bc109324db1082b95da894af68a1c01a624",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16r_report.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "497539ae0a96580a5c8887af538258fa7b7faac7a23f6ed40477fe38894ec381",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/report_stage9.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "3dd2f691d70fc3c69d3b892402c97fb13d961e4bc53a2f74717ab1f97a403207",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19b_readiness.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "1910700075661c4c72e6a16399f373442aa24f3d07e6b37ecd49cd89220c0215",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16_blockers.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "e24fc97ff55e4e4f989387a37328c8e5a4d87ebccd05f499c1fcd2e81760f6b8",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16r_transport.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "fe41b5b3d5fbab17d78d358115eba985a2b6a30e550c041036c0db3cd3e5b785",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage6_trace.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "d8a659b1725edd684bfb6d342267b20871e791127b78fc2abb61419ddc2b63fa",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/report_stage4.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "05d96ffadbf408ffbe3e1bcdcd5e7fc401df3886997ec514ccc42bad14b2db96",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage15_prepare.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "58d3afd4e06e64c59477d9b6a98efcaf7b41df473574471bce447862a52621a6",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage51_resource_audit.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "49b4fd5819ada21e6a0d3a492249d340eda077e92f053d9428516e298e423361",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage11_observer.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "ab2761b516fa09a37b93c74895216cdaf625bffde26b8a027f96e61a814520c1",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage14_profile.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "19f2594bdca58ccd34c6b04017071ebc9c6e87ea14c0c4b3be1f10c848c937cb",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/report_stage11.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "2d6651bba124fd38e8dfd70109588cdd1a2e59a112bf00505173fa846fee497c",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage12_source_audit.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "18e9606da9555a98e12771c54d517aa1d4199f50ba8ec310660e9b4f58e93016",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage9_label_demo.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "2c4065141f6bededad167bb10527a617cae76b5d777cf535d95edb0bf57a885b",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19c_certify.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "016078465515af0470c13a278cb7cdca11a969d36b28c703537d2a3a496596bd",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage18_report.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "4729466bfa85d0fe8dbd96b195c14ceea1167a36c8490547a5948900459b8672",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage11_learning_audit.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "a497d1a5d23392b62ea448b351cd8e36eb799161b2e0493fb89c27d1e551d9cb",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage15_observer.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "13d2ae099bddaec1ee90904656b5e82dac6978966f0268c52ad1088301435cf1",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16_observer.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "31dcfb29570f3288c9622a213e5103274b8e1275fe28344394f47a5b93d05c65",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19d_smoke.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "7ec4d772f71f29f66aeb92340688e4a7c2e4b7e46ec5c3026a52a3823117884b",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_learning.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "328c7cb8362a686c72cf99a38b5ee13cf7fa749a65f6b1c20eb7abd624483260",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage8_system.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "58353b57269559cd066ff198a9be7de5d69684057897b720b133511bf9bd2194",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19c_materialize.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "14f700e6182333a08dfc2e5c5f67396d1e3059dd74c3ab07161f2512e1ce8bb7",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage11_scenarios.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "55601ad06e3cad8a47592963084cdfbb1fda2162621265ae89ef677bc133a9d8",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_assess.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "a8c9c3344f00c2e463074d6265c4a6ff0e5ea61e3209cc16d588a4cb9159a71c",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage4_system_runs.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "a4ba29f9bd0a92e1f5f06bf0180b3c367d051890464bf3d16336d8000d34c229",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16r.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "0882b5332c7eff05efee0860f4738fd37d7e2fcc917c6a3b088024d36e00cf5c",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage11_system.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "f5c4631631f1337dc5d02069b7dc94747374f2ca98191119f9dd0ee8c34dd1af",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage18_pilot.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "ae9f838c088f756981f38f7debb951db3c8d60f3025dab043604ed9526e1a6cf",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage9_finalize_collection.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "23ca4328fc086394cbf2810342e11f1ad32c12961b9e9988dd1a90353ff407e2",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19c_pool_probe.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "505c078de05b1f31fdcefd782d6989ea285f770c82d4ab80c9cfc677fd4db06b",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19b_launch_probe.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "c0dc779462171320e54a213e684bc7c07c2d415b671ab53a96e14109396d5ad6",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage9.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "f8d4dd4fb9bbd25612d4d6cfaeef2e8e528021aed38f602ea386f925c909659d",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_source_headers.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "d17fe4ed510602ab405d68f88d10d075752b7fd7e331a0763c716dac81dda941",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage14_learning.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "407616184df9cb33c540a9b028eaca694ef0099adef9222a13b08c98ca133aef",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage12_offline.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "d437fae5d19b329a57572f6715efd2c53369f29fca3da7b5472c0563269c4538",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/audit_rabas_lavis_v3.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "4e23bec783be9e552acf8d1c843ed6762c1c00b2bba8b6cef10f221e36472c51",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage9_scenarios.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "ac979d9e0c25fed8ea1ef4d862caf47ca596fe4a3d4c39d62d4577d20a74cdf0",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage12_caabs_lineage.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "af68ba24eb8b267ae179aadbc2645eded4849a288c15c642c2df6fd5afd7b840",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_audit.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "c543fd9d94ac4549ea8eda637f05629cb8403ef86cd7f16603f83034f555efa0",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/report_stage10.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "e70dbf7927b7bcea1bedadc7a3249cf8669de005504a8086f1782404936e1ee2",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage11_prior_diagnostics.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "8bbb792e9d7beca51b7c054fbbf17cd93123669a97af70c32a65cf12683e6d80",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage11_dartis_diagnostics.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "0bfe47930cd719bedceb65b67705cbc0d72291dcdd9af6c22f5e6b1c6bc7b51a",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16r_state.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "22c166f9ac78b3deaecc11e258cc3f5eccdb3f2b16826a2da6d3691c7f0d916b",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_system.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "426d6743b3bbfe9f3a969e314aa0242d8c11f0434beada712ad931d6cfe37047",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19d_stage_contract.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "0c1ec34bf3fcf763c2c981a8c6802c3ed63d1f491a1bab54abaa57efe494f52f",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_saturation.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "e67ec7de48b3650c1ea2ce11a4fd8f0aa42018c4a8a3c010a1e0a8e587c5c11f",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/report_stage8.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "5c5d6fc25a7408e8da244b0e876dbc52b2c18505f5e6a2aa65f1dd9e1e956c24",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_results.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "f06a9320a41f43aa3eabf9362a634e548f85f80bcd47eac25ceb22bb28620452",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage13_analyze.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "e5ffb5095a601a282f83d2cda9c443492f2187784fa973b09e30ae57bae96a07",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16_prepare.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "09a66c43d05c50ca0719f57a9137e8bbe37c9ccf83ca9eca6e55e5d906d8eaa8",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage13_system.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "2f149cb4e948ec21e4f89c2afd50f92dad9477ae4aa5e21b610f0ab8653f4ee6",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/report_stage5.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "91d125aacdc20bbb37b63cd47001e4cd968ff557a60c47e1440206bd230a2cd8",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/report_stage51.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "40fc20bbf8df4a8df612c5ba3393d8e96fceccc65e1917bee2e48921ea49ead6",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_scenarios.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "be29f43bf4942facd6de797c7b1940b5f1ceb45f88bba5b2ee320374af0e8ef8",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage4_dartis_diagnostics.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "cad5ff912b6702df550312e243153188265d6587d3a0c532bacf13c52c768ef6",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage6_prescreen.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "083f820f9bfa3ce4f6f08ee002327d68dcdeea751ba22f670dbee48d5ff91398",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19c_online_control.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "cf2e1685f0c50aaa8b74a784ec9d2339b15faf0a1999f5ba103ffe26c894715f",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/report_stage6.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "3a7ee565aa344222cd5b00d05724e6a18027bd9703c31811babb4ae93ecf5024",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage12_analyze.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "967fcad1e46f57d9b8621ad0d70d042aa49c8ed2f8c16c9239bda3c3c5f84dd7",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16_history_audit.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "3e1da5699f9c9f7227ed912109122f218fdaefeea72ae09726b357d925eed392",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage16_system.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "645d6d44b7cc69c2435bf0171ebfa12f6df03a2069c5f8217201f80979352690",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage14_design.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "af01302789284a0e92d974cd0a4949f73951ed59a5f848d81951b114c625462a",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage8_observer.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "05a8723eb0e28f228ff7bbf332b1169f0339962da76ec998390a5ca6342b9021",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage7_system.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "cb4e31c4c98371e971b2e1a4010107b678653266816467e3d6129e8d74b6a7d4",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/compare_autonomous_v3.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "874522efe75a848becda3dc379ef65608273a4b7a2646878bbb2942cf3f4a54b",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/fingerprint_workspace_v3.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "146cc902f1b4f9e207dadf858c0e9b81e714d40a75d322c908b46afb6381cb21",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_exchange.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "e9dd9e72a835d2558a7388715e26b3b98dbeaf25361dc1fa7adada1f67bf0888",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage11_assets.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "e6ba5f0b9749b56f4d4f10fc69442b54ac98ff32f0aebf11cbb362ae00099223",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/run_v3_development.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "43aacb2093b25ee9ff44d52dcaf2c465650c726baa8c70ece6ff4c65a7d4fa25",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19c_physical_pool.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "eb741e5810f7a23a4aed73978576ffde702b3414a4d4b7674f2b23d1d28739ee",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage9_load_appendix.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "1555939694898e3a4c311b7afe1cdd981efad84cd652c9ce9c3f0eb57cf4a787",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19c_io_profile.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "5bd86ddfe298205a0a68c4215273a750032b6f3329659d6577da2c0f09e0ff1d",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_learning_rollouts.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "5ee2f740f3878dba2161ac154b8bcf52dd74cf4c872900df89e7588d759963ae",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/connect_lavis_stage4.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "dd7f3a19592af0249c4db7e669cc25dc53cfb9fa7273aa44edb2f033440a962b",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage15_system.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "82f5f0cc8f3b6472dca3b1e6c7ea68bdc3fa4e38deec0882334a6d926b2e17fa",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage6.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "710e9a5f23996f110aff74f7541a805caedc696e3013c5e9819bd34bb0343126",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage12_system.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "3fc300a9c4ae87d1a4b864fe9c74f8f3570f5e463940a74926ef9e507ff83e20",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19b_cost_probe.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "8710bd7a20ffaa806efad544b94effe6813dd4cbb6e28de1f6020adaa2322bf4",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/report_stage12.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "edfeeea359935519fb588fc7980a668dc8d75a27083b44b7673569f2444f3df9",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage9_dartis_coverage.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "fd83b02ee3da093641b5ea3205c35e1105d4b8bc1213c58f16de14235e7a05cb",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage11_final_checks.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "66510a266ade7dd48d54fc49340542a1d336032dd72370fa1a82fb2b02b43411",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage8_rabas_audit.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "61df1b116886a28531cbddd3d6cf70ce72e08331f6a677b4b9f7164ac00f45ea",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage18d_finish.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "674e13f7581c065931dee9d3791f59fcde42e77c4f0f532e068d2f590ef6d8cd",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage12_tests.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "e60e35df47c2277adde06e6a1ee7a5617af9fa1d1144334c4336d191170d32bb",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage13_learning.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "a5dfbde2a5d572cbbf544cbac8d4725f61263037e8ec19d75be224c12882a6f5",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage12_freeze.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "d99bf770babc8b7d1519bde2e2ddb6100ae3434155f4880117534eb4b2566629",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage6_pair.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "caa052fecdb1aad21676b36ab191b055db20908826386f294548672b45813c42",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19d_observer.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "cbc4581e94b8406b1e1c96d6f79440cd1ab790082d8348b71bd8a18e6dbb9bdc",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage10_objective_audit.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "20a604ba7701ca87e0b5cec99dcabbdbaefbca0670340493440238593aa561b0",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/report_v3_development.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "ea228cc0bb644aa7e33146f5f6b85702facad247ec1745203ece5739fb124c31",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage19c_finalize.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "9e563adbc29a50a7bb3727a4fd11f506cfe5a5c3479cb80bf412a9ac660afcfd",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage51_pair.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "a39399d17787a57d0f12f6281a1f7fe86bf948425e9f961a27650802972e2ba1",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage13_observer.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "821b6fc531a337b02403acee8521405b7e419bb85ba221c58907936516fde7b4",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage14_assets.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "2044a7a3049c06adb360466694fee3f6d06d8125d6f13d391d6868698217ca76",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage18d_observer.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "9d553589c4912d4c85da31710fdba2b9e321f23efca8d85970377f1f2e680c7f",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "scripts/diagnostics/stage18d.py",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "f74ceac1e1581e190a1f2aec9703c18cf5b753f5acf214f46c5c3dde30374588",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  },
+  {
+    "path": "data/physical_contracts/physical_contract.json",
+    "git_base_sha256": null,
+    "pre_scene_sha256": "51f2c14e2f3af8ef8ce1d04d58b565ca8c1ec569096c5d102588bc30cb8a221e",
+    "attribution": "PRE_EXISTING_UNCOMMITTED_BASELINE_NOT_THIS_SCENE_CONTRIBUTION"
+  }
+]
