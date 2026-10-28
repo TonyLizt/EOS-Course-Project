@@ -23,6 +23,8 @@ from algorithms.deadline_insertion import DARTISParams, DARTISScheduler, VERSION
 from algorithms.factory import create_algorithm
 from algorithms.objectives import ObjectiveWeights
 from algorithms.basic import BASIC_ALGORITHMS, BasicParams, BasicScheduler, VERSION as BASIC_VERSION
+from algorithms.simple_baselines import (SIMPLE_BASELINES, SimpleBaselineScheduler,
+                                        VERSION as SIMPLE_BASELINE_VERSION)
 # Re-export the existing public names for HTTP/Worker and third-party callers.
 from algorithms.solver_contracts import AlgorithmParams, SolveContext, Solver
 from schedulers.constraint_model import ConstraintModel, Schedule
@@ -220,7 +222,7 @@ _SPECS: dict[str, AlgorithmSpec] = {
         owner="刘懋兴", version=CAABS_VERSION, params_model=CAABSParams,
         build=lambda context: ConflictBeamScheduler(),
         description="完成数优先的有界多路径搜索；返回候选计划，仍须公共核验。",
-        strategy="预算内贪心初解、受检机会排序、多路径 Beam 搜索、独立检查/可行分支预算与精确键缓存。",
+        strategy="预算内贪心初解、来源网格覆盖、边界补点、多路径 Beam 搜索及任务子集多样性；检查数与可行分支分别有界。",
         objectives="完成任务数优先，再按共享 ObjectiveModel 得分与规范键确定次序。",
         limitations="Beam 宽度与候选上限限制覆盖；candidate_check_limit 限尝试数，branch_limit 限可行子节点数；不保证全局最优，候选仍须来源与连续曝光核验。",
     ),
@@ -229,7 +231,7 @@ _SPECS: dict[str, AlgorithmSpec] = {
         owner="何明涛", version=DARTIS_VERSION, params_model=DARTISParams,
         build=lambda context: DARTISScheduler(),
         description="离线单计划构造；按观测机会 LLF/EDF 紧迫度选择并动态重评估。",
-        strategy="跨卫星及窗口探查可行插入；每次接受后全量重算未安排任务机会。",
+        strategy="跨卫星及窗口探查插入、自适应空隙补点与单任务撤销续排；可选两任务交换和聚合资源修复，接受后完整重放。",
         objectives="优先增加完成任务数；LLF/EDF 仅决定搜索顺序，正式指标由 Controller 重算。",
         limitations="窗口和位置有界，松弛度仅针对受检候选近似；大于 1024 网格的敏捷窗口暂跳过，仍须公共认证。",
     ),
@@ -238,8 +240,8 @@ _SPECS: dict[str, AlgorithmSpec] = {
         owner="梁兆榮", version=RABAS_VERSION, params_model=RABASParams,
         build=lambda context: ResourceAwareBundleAuctionScheduler(),
         description="单 Worker 内中心化多卫星任务包竞价；不是分布式 CBBA。",
-        strategy="每星有界建包、可选多起点，动态机会/资源/转向报价；按候选量及剩余预算收窄搜索，全量核验中标后重新竞价。",
-        objectives="最终计划只接受完成数增加；默认按包大小、公共效用减成本竞价，可选未来机会优先排序；Bid 非正式 TP。",
+        strategy="每星有界建包与动态机会/资源/转向报价；可选多起点和跨星共享任务迁移修复，所有接受方案经公共约束核验。",
+        objectives="原生竞价默认按包大小、公共效用减成本排序；可选修复只接受公共加权目标严格改善，Bid 非正式 TP；保留现有 R1 适配。",
         limitations="有界窗口、放置、任务包和竞价轮数；不保证全局最优，不使用初始模型解，仍须 Controller 独立认证。",
     ),
 }
@@ -247,7 +249,7 @@ _SPECS: dict[str, AlgorithmSpec] = {
 
 COMPARISON_ALGORITHMS = ('mip', 'profit_first', 'timeliness_first', 'balance_first',
                          'pressure_repair', 'sa', 'ga', 'aco', 'ppo', 'caabs', 'rabas',
-                         'lavis', 'dartis') + BASIC_ALGORITHMS
+                         'lavis', 'dartis') + BASIC_ALGORITHMS + SIMPLE_BASELINES
 
 _DEFINITIONS = [
     ('mip', '混合整数规划 MIP', 'exact', MIPParams, '离散候选与冲突约束构建 MILP，由 CBC 求解。', '候选集上的加权目标优化，含实现中的主目标增强。', '候选集有限；独立建模，不使用初始模型解。'),
@@ -280,12 +282,27 @@ for _id, _name, _strategy in (
         limitations='到达时间=首个窗口开始，截止期=最后窗口结束；无独立CPU到达字段。只在受检可行机会中派发，候选有界，不保证最优；不使用初始模型解。')
 
 
+# 简单基线保留原生策略，不叠加全局目标搜索，以免把随机基线暗中变成优化算法。
+for _id, _name, _strategy in (
+    ('random_feasible', '随机可行插入 · Random',
+     '使用实验seed随机打乱任务和有界来源候选，逐任务接受首个公共约束合法的安排。'),
+    ('satellite_round_robin', '卫星轮询分配 · Satellite RR',
+     '任务按首个窗口开始及ID排序，卫星游标循环分配；当前星无合法放置则尝试下一星。'),
+):
+    _SPECS[_id] = AlgorithmSpec(_id, _name, 'baseline', '课程简单对照基线',
+        SIMPLE_BASELINE_VERSION, BasicParams,
+        lambda context, aid=_id: SimpleBaselineScheduler(aid),
+        description=_strategy, strategy=_strategy,
+        objectives='无收益/完成率/时效目标搜索，公共权重仅用于最终统一评价；从空计划单次构造，无回溯修复。',
+        limitations='候选覆盖与预算有界，不保证最优或一定最差；随机结果依赖seed。卫星轮询是非抢占式资源分配，不是CPU时间片RR；全部安排仍须Controller独立核验。')
+
+
 # R1 adapters are outside both frozen model source trees. Native specs remain
 # available to replay historical RunConfigs with their original solver version.
 _NATIVE_SPECS = dict(_SPECS)
 from algorithms.objective_adapters import build as build_objective_adapter
 for _aid in COMPARISON_ALGORITHMS:
-    if _aid in BASIC_ALGORITHMS:
+    if _aid in BASIC_ALGORITHMS + SIMPLE_BASELINES:
         continue
     _native = _NATIVE_SPECS[_aid]
     _SPECS[_aid] = replace(_native, version=_native.version + '+objective-v1',

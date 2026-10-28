@@ -144,6 +144,8 @@ EOS-Course-Project/
 
 新模型 `lavis-v4-opportunity`在本轮冻结加载的52个开发验证场景全部通过独立物理采样，高冲突完成数1849/2944；旧v3同策略为1808/2944。固定四个高冲突场景30秒多分支完成数208→218，存在单场景退步，不宣称全面优于传统算法或最终泛化领先。完整协议、失败配置与边界见[LAVIS-OC报告](docs/phase2/algorithms/lavis_learning_v2.md)。
 
+新增简单对照：`random_feasible`（固定seed的随机可行插入）、`satellite_round_robin`（非抢占式卫星轮询，不是CPU时间片RR）。两者不叠加全局目标优化，仍经公共约束核验；定义与开发筛选协议见[简单基线说明](docs/phase2/simple_baselines_pilot_20261028.md)。
+
 ## 部署与启动
 
 ### 1. 运行环境

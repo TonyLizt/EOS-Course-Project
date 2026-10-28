@@ -38,7 +38,8 @@ def wait_for(predicate,timeout=30):
 
 class RABASIntegrationTests(unittest.TestCase):
     def test_registry_metadata_and_strict_http_validation(self):
-        spec=get_algorithm('rabas')
+        from eos_system.algorithm_registry import get_native_algorithm
+        spec=get_native_algorithm('rabas')
         self.assertEqual(spec.version,VERSION)
         context=make_context(42,5,{},spec,{'max_bundle_size':3})
         self.assertIsInstance(context.params,RABASParams)
@@ -58,7 +59,7 @@ class RABASIntegrationTests(unittest.TestCase):
     def test_fresh_import_has_no_registry_cycle_or_factory_requirement(self):
         result=subprocess.run([sys.executable,'-c',
             "import sys;import algorithms.auction_bundle;assert 'eos_system.algorithm_registry' not in sys.modules;"
-            "from eos_system.algorithm_registry import get_algorithm;assert get_algorithm('rabas').version=='1.1.1'"],
+            "from eos_system.algorithm_registry import get_algorithm;assert get_algorithm('rabas').version==algorithms.auction_bundle.VERSION+'+objective-v1'"],
             cwd=ROOT,capture_output=True,text=True,timeout=15)
         self.assertEqual(result.returncode,0,result.stderr)
 
@@ -86,7 +87,7 @@ class RABASIntegrationTests(unittest.TestCase):
                         self.assertEqual(row['status'],'SUCCEEDED',row.get('error'))
                         self.assertEqual(row['metrics']['completed_tasks'],3)
                         self.assertEqual(row['config']['algorithm_params'],request['algorithm_params'])
-                        self.assertEqual(row['config']['algorithm_version'],VERSION)
+                        self.assertEqual(row['config']['algorithm_version'],VERSION+'+objective-v1')
                         self.assertNotEqual(row['attempts'][0]['worker_pid'],os.getpid())
                         self.assertEqual(row['continuous_certification']['predicate'],'UNIT_TEST_ONLY')
                         self.assertEqual(client.get('/api/experiments').json()['total'],1)
