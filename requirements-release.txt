@@ -1,0 +1,16 @@
+-c requirements-runtime-lock.txt
+# 已完成1140次实验的Ubuntu22.04 / CPython3.10直接依赖版本。
+# 模型数值依赖固定，禁止为加载失败手改模型manifest。
+fastapi==0.143.0
+uvicorn==0.54.0
+numpy==2.2.6
+scipy==1.15.3
+scikit-learn==1.7.2
+joblib==1.5.2
+threadpoolctl==3.6.0
+matplotlib==3.10.9
+ijson==3.6.0
+pydantic==2.14.1
+orekit-jpype[jdk4py]==13.1.5.0
+jpype1==1.5.2
+jdk4py==25.0.2.1

@@ -116,7 +116,7 @@ class ReplayBackendTests(unittest.TestCase):
         """单任务正式结果用固定轨道样本验证独立构建与观测阶段。"""
         project = Path(__file__).resolve().parent.parent
         original = json.loads(
-            (project / "docs" / "Scenario_S1_Sats20_M500_T0.5d_dist0.json").read_text(encoding="utf-8")
+            (project / "tests" / "fixtures" / "replay_static_objects.json").read_text(encoding="utf-8")
         )
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

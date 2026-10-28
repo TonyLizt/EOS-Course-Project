@@ -1,3 +1,3 @@
-# 仅在需要用 Orekit 生成 Cesium 轨道回放时安装；基础调度网页不依赖它。
+# Orekit既用于独立物理核验也用于回放；正式部署统一使用requirements-release.txt。
 orekit-jpype[jdk4py]
 jpype1==1.5.2

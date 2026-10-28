@@ -243,6 +243,11 @@ class AllNativeObjectivesTests(unittest.TestCase):
             if not get_algorithm(aid).version.endswith('+objective-v1'):continue
             for goal in (TP,TCR,MIXED):
                 with self.subTest(algorithm=aid,weights=goal):
+                    # 发布环境明确不安装MIP可选依赖；其余可用方法照常验证。
+                    if aid == 'mip':
+                        from eos_system.algorithm_registry import availability
+                        if availability(aid)[0] != 'ready':
+                            self.skipTest('MIP可选PuLP/CBC依赖未安装')
                     spec=get_algorithm(aid);ctx=make_context(42,2.,goal,spec,tuning.get(aid,{}))
                     plan=spec.build(ctx).solve(self.problem,self.cm,ctx)
                     info=plan.metadata['objective_adapter']

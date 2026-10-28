@@ -6,3 +6,7 @@ eos_system/scenario_artifacts.py text eol=lf
 # Frozen numerical reference hashes exact bytes; checkout must preserve LF.
 tests/fixtures/nadir_relative_v2.json text eol=lf
 docs/phase2/evidence/r1_02/d0d9325/database_current_v03.crlf.snapshot.md -text whitespace=cr-at-eol
+
+# Ubuntu部署入口必须保持LF，避免Windows检出导致bash语法错误。
+eos text eol=lf
+ops/*.py text eol=lf

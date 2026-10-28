@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# 统一部署入口：不依赖调用者当前目录，不在Windows Python中运行后端。
+set -euo pipefail
+project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+exec python3 "$project_dir/ops/eos.py" "$@"

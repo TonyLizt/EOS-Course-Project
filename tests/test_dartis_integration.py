@@ -121,7 +121,8 @@ def make_test_app():
 
 class DARTISRegistryTests(unittest.TestCase):
     def test_registry_metadata_context_and_strict_params(self):
-        spec = get_algorithm("dartis")
+        from eos_system.algorithm_registry import get_native_algorithm
+        spec = get_native_algorithm("dartis")
         self.assertEqual(spec.version, VERSION)
         self.assertIs(spec.params_model, DARTISParams)
         self.assertIsInstance(spec.build(make_context(42, 5, {}, spec, {})),
@@ -140,7 +141,8 @@ class DARTISRegistryTests(unittest.TestCase):
              "import sys; import algorithms.deadline_insertion;"
              "assert 'eos_system.algorithm_registry' not in sys.modules;"
              "from eos_system.algorithm_registry import get_algorithm;"
-             "assert get_algorithm('dartis').version == '0.1.0'"],
+             "from algorithms.deadline_insertion import VERSION;"
+             "assert get_algorithm('dartis').version == VERSION + '+objective-v1'"],
             cwd=ROOT, capture_output=True, text=True, timeout=15)
         self.assertEqual(result.returncode, 0, result.stderr)
 
@@ -268,7 +270,7 @@ class DARTISHttpTests(unittest.TestCase):
         self.assertEqual(row["metrics"]["completed_tasks"], 3)
         self.assertEqual(len(row["plan"]["assignments"]), 3)
         self.assertEqual(row["continuous_certification"]["predicate"], "UNIT_TEST_ONLY")
-        self.assertEqual(row["config"]["algorithm_version"], VERSION)
+        self.assertEqual(row["config"]["algorithm_version"], VERSION + "+objective-v1")
         self.assertEqual(row["attempts"][0]["exit_code"], 0)
         self.assertNotEqual(row["attempts"][0]["worker_pid"], self.server.pid)
         self.assert_reaped(row)
