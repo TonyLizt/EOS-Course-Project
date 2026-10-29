@@ -4,15 +4,17 @@
   <meta charset="utf-8">
   <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EOS · 统一调度控制台</title>
+  <title>操作系统课程设计 · 多星任务调度实验平台</title>
   <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="/static/algorithm-parameters.css">
   <link rel="stylesheet" href="/static/workspace.css">
+  <link rel="stylesheet" href="/static/os-course.css">
   <script defer src="/static/algorithm-parameters.js"></script>
   <script defer src="/static/comparison.js"></script>
   <script defer src="/static/experiment-ui.js"></script>
   <script defer src="/static/app.js"></script>
   <script defer src="/static/statistics-export.js"></script>
+  <script defer src="/static/os-course.js"></script>
   <script defer src="/static/console.js"></script>
   <script defer src="/static/workspace-pages.js"></script>
   <script defer src="/static/workspace.js"></script>
@@ -20,15 +22,62 @@
 <body class="console-workspace">
   <a class="skip-link" href="#main-content">跳到主要內容</a>
   <header class="topbar">
-    <a class="brand" href="#new-experiment" data-console-route="create" aria-label="EOS 实验工作台首页"><span class="brand-mark" aria-hidden="true">E</span><span><span class="eyebrow">EOS · COURSE PROJECT</span><strong>调度实验工作台</strong></span></a>
-    <nav aria-label="控制台导航"><a href="#new-experiment" data-console-route="create">新建实验</a><a href="#experiments" data-console-route="records">实验管理</a><a href="#comparison" data-console-route="compare">结果比较</a><a href="/visualization/gantt">甘特图 ↗</a></nav>
+    <a class="brand" href="#course-overview" data-console-route="course" aria-label="操作系统课程设计首页"><span class="brand-mark" aria-hidden="true">OS</span><span><span class="eyebrow">操作系统课程设计 · EOS</span><strong>多星任务调度实验平台</strong></span></a>
+    <nav aria-label="控制台导航"><a href="#course-overview" data-console-route="course">课程导览</a><a href="#new-experiment" data-console-route="create">作业提交</a><a href="#experiments" data-console-route="records">运行管理</a><a href="#comparison" data-console-route="compare">策略比较</a><a href="/daemon-demo">守护演示 ↗</a><a href="/visualization/gantt">甘特图 ↗</a></nav>
     <details class="service-info"><summary><span id="workspace-service-label">服务状态</span> <span class="status-dot" aria-hidden="true"></span></summary><span id="health" class="badge" role="status" aria-live="polite">正在连接服务…</span></details>
   </header>
-  <div class="workspace-intro"><div><p class="eyebrow">SCHEDULING WORKSPACE</p><h1 id="workspace-page-title">新建实验</h1><p id="workspace-page-description">选择场景与算法，设置预算后开始运行。</p></div><span class="intro-note">一份场景 · 多算法对照</span></div>
+  <div class="workspace-intro"><div><p class="eyebrow">OPERATING SYSTEMS · SCHEDULING LAB</p><h1 id="workspace-page-title">新建实验</h1><p id="workspace-page-description">选择场景与算法，设置预算后开始运行。</p></div><a class="intro-note" href="#new-experiment" data-console-route="create">提交作业实验 →</a></div>
   <main class="layout" id="main-content" tabindex="-1">
+    <!-- 课程导览与实验表单分开，长内容只在本工作区内滚动，不重建已有表单节点。 -->
+    <section class="workspace-page course-page card" id="course-overview" data-console-page="course" aria-labelledby="course-heading" hidden>
+      <div class="panel-scroll course-scroll" tabindex="0" aria-label="课程模型与系统实现说明">
+        <div class="course-hero">
+          <div class="course-hero-copy"><p class="eyebrow">OPERATING SYSTEMS · SCHEDULING LAB</p><h2 id="course-heading">从操作系统调度<br>到多星观测任务</h2><p>把地面观测任务抽象为作业，在时间窗口、切换开销与资源限制下编排执行计划；用真实的独立进程完成求解、通信与核验。</p><div class="course-tags"><span>调度策略迁移</span><span>进程管理与 IPC</span><span>可复核的实验</span></div><a class="link-button" href="#new-experiment" data-console-route="create">开始一组调度实验 <span aria-hidden="true">→</span></a></div>
+          <div class="course-layer-map" aria-label="两层调度模型">
+            <div class="layer-heading"><span class="layer-index">01</span><div><strong>任务调度层</strong><small>课程概念在卫星场景中的迁移</small></div></div>
+            <div class="layer-flow"><span>观测任务<small>作业集合</small></span><b aria-hidden="true">→</b><span>调度策略<small>FCFS / EDF / …</small></span><b aria-hidden="true">→</b><span>卫星计划<small>时间与资源分配</small></span></div>
+            <div class="layer-heading execution-layer"><span class="layer-index">02</span><div><strong>实验执行层</strong><small>系统实际使用的操作系统机制</small></div></div>
+            <div class="layer-flow"><span>Controller<small>队列与派发</small></span><b aria-hidden="true">⇄</b><span>Worker<small>独立求解进程</small></span><b aria-hidden="true">→</b><span>核验与入库<small>结果事务保存</small></span></div>
+            <p class="layer-boundary">一个 Worker 求解一整份卫星计划；Worker 进程数量与场景中的卫星数量分别配置。</p>
+          </div>
+        </div>
+        <div class="course-section-heading"><div><p class="eyebrow">LAB WORKFLOW</p><h3>一次实验，贯通完整执行链路</h3></div><span>选择策略 → 观察执行 → 分析结果</span></div>
+        <ol class="course-pipeline" aria-label="实验执行流程">
+          <li><span>01</span><strong>提交作业实验</strong><small>固定场景、策略与预算</small></li><li><span>02</span><strong>进入运行队列</strong><small>Controller 等待可用槽位</small></li><li><span>03</span><strong>独立进程求解</strong><small>Worker 通过 IPC 汇报</small></li><li><span>04</span><strong>独立核验结果</strong><small>来源、资源、转向与曝光</small></li><li><span>05</span><strong>保存与比较</strong><small>SQLite、统计导出与回放</small></li>
+        </ol>
+        <div class="course-reference-grid">
+          <section class="course-reference" aria-labelledby="analogy-heading"><div class="course-section-heading"><div><p class="eyebrow">MODEL MAPPING</p><h3 id="analogy-heading">操作系统概念如何迁移？</h3></div><span class="concept-badge">场景类比</span></div>
+            <div class="course-table-wrap"><table class="course-mapping-table"><caption class="sr-only">操作系统与卫星调度的概念对应及边界</caption><thead><tr><th scope="col">课程概念</th><th scope="col">卫星场景中的对应</th></tr></thead><tbody>
+              <tr><th scope="row">作业 / Job</th><td>一次观测请求<small>包含目标、优先级、所需曝光时长和候选窗口。</small></td></tr>
+              <tr><th scope="row">处理资源</th><td>卫星及其观测载荷<small>可并行服务不同任务；卫星是被建模的资源，不是本机 CPU 或 Worker。</small></td></tr>
+              <tr><th scope="row">就绪条件</th><td>当前受检的可行观测机会<small>进入窗口还不够，还需满足资源、转向与曝光要求。</small></td></tr>
+              <tr><th scope="row">服务时间</th><td>任务要求的完整曝光时长<small>观测不可拆成 CPU 时间片抢占后续拍摄。</small></td></tr>
+              <tr><th scope="row">上下文切换开销</th><td>卫星姿态转向与稳定时间<small>按当前场景与公共模型计算，不能照搬固定 CPU 切换常数。</small></td></tr>
+              <tr><th scope="row">I/O 与资源分配</th><td>下传、地面站与存储等约束<small>有地面站时才安排下传；课程资源预算不是完整电池动力学。</small></td></tr>
+            </tbody></table></div>
+          </section>
+          <section class="course-reference" aria-labelledby="mechanism-heading"><div class="course-section-heading"><div><p class="eyebrow">SYSTEM IMPLEMENTATION</p><h3 id="mechanism-heading">系统真正实现了什么？</h3></div><span class="concept-badge is-implemented">实际机制</span></div>
+            <div class="course-mechanisms">
+              <article><span>PROCESS</span><h4>进程管理</h4><p>Controller 派发实验；独立 Worker 求解。运行详情展示后端记录的 PID、尝试次数与终态。</p></article>
+              <article><span>IPC &amp; SYNC</span><h4>通信与同步互斥</h4><p>通过 Pipe / JSON 协议传递命令与结果；文件锁、槽位租约和事务保护共享状态。</p></article>
+              <article><span>LIFECYCLE</span><h4>取消、超时与回收</h4><p>先协作取消，再按有界期限回收进程；取消和失败有独立终态，不冒充成功结果。</p></article>
+              <article><span>PERSISTENCE</span><h4>持久化与有限恢复</h4><p>SQLite 保存配置、状态、计划与指标；可选独立 Daemon 提供有界监护与恢复。</p></article>
+            </div>
+          </section>
+        </div>
+        <section class="course-strategy-guide" aria-labelledby="strategy-guide-heading"><div class="course-section-heading"><div><p class="eyebrow">STRATEGY &amp; EVALUATION</p><h3 id="strategy-guide-heading">把课程策略放到同一条件下比较</h3></div><a href="#comparison" data-console-route="compare">打开策略比较 →</a></div><div class="course-strategy-grid">
+          <article><h4>经典 OS 策略迁移</h4><p>FCFS 关注到达顺序，SJF 关注曝光时长，Priority 关注任务优先级，EDF / LLF 关注窗口截止期与松弛度，HRRN 综合等待与服务时间。</p></article>
+          <article><h4>简单对照与小组方法</h4><p>随机可行插入、卫星轮询提供简单对照；DARTIS、RABAS、CAABS、LAVIS 展示不同搜索与学习路线。卫星轮询不是 CPU 时间片 RR。</p></article>
+          <article><h4>观察策略的收益与代价</h4><p>完成率与任务收益越高越好；TM 是包含未完成惩罚的归一化等待指标，不是平均周转时间；RT 是求解耗时，不是卫星执行时长。</p></article>
+        </div></section>
+        <details class="course-state-guide"><summary>实验状态如何流转？查看队列、进程与核验的边界</summary><p><code>QUEUED</code> 等待派发 → <code>STARTING</code> 启动进程 → <code>RUNNING</code> 求解 → <code>VERIFYING</code> 核验 → <code>SUCCEEDED</code> 结果保存。另有 <code>FAILED</code>、<code>TIMED_OUT</code>、<code>CANCELLED</code> 等终态。</p><p>这是算法运行 Run 的状态机，不是卫星的 CPU 进程状态图。工程曝光采样通过也不等于严格连续区间认证。</p></details>
+        <div class="course-bottom-actions"><p>先理解模型，再提交实验；从执行记录回到策略分析。</p><a class="link-button secondary" href="#experiments" data-console-route="records">查看运行管理 →</a></div>
+      </div>
+    </section>
+
     <section class="workspace-page create-page" id="new-experiment" data-console-page="create" aria-label="新建实验工作区">
     <section class="card form-card" aria-labelledby="create-heading">
-      <div class="section-title"><p class="eyebrow">CREATE EXPERIMENT</p><h2 id="create-heading">配置实验</h2><p>选择统一输入，再为本次实验配置算法与运行设置。</p></div>
+      <div class="section-title"><p class="eyebrow">CREATE EXPERIMENT</p><h2 id="create-heading">配置实验</h2><p>将一份观测任务集作为作业输入，选择策略，形成可核验的卫星执行计划。</p></div>
       <div class="panel-scroll create-scroll" role="region" aria-label="实验配置与目录管理" tabindex="0">
       <form id="run-form">
         <div class="workflow-tabs" aria-label="实验配置步骤">
@@ -38,6 +87,7 @@
         </div>
         <section class="workflow-panel" id="workspace-step-1" aria-labelledby="workspace-heading-1">
         <div class="panel-heading"><div><h3 id="workspace-heading-1" tabindex="-1">先选择本次实验的场景</h3><p>从已登记的数据源中选择；需要新目录时，展开下方「目录管理」。</p></div><span class="step-count">步骤 1 / 3</span></div>
+        <div class="course-context"><strong>作业输入：</strong>场景定义任务、可见窗口与资源。窗口类似可运行的时间条件，能否执行仍需检查资源、姿态和曝光。</div>
         <!-- 常规场景保持统一工程流程；仅开发来源显示明确的预览选择。 -->
         <label id="execution-mode-control" hidden>核验流程<select id="execution-mode" aria-label="核验流程"><option value="physical_validation" selected>工程物理核验</option><option value="planning_preview">开发规划预览（不提供正式认证导出）</option></select></label>
         <p id="mode-hint" class="hint">统一执行来源、资源、转向及 Orekit 全曝光物理采样检查；通过后可导出与回放。采样核验不等同于严格连续区间证明。</p>
@@ -55,6 +105,7 @@
         </section>
         <section class="workflow-panel" id="workspace-step-2" aria-labelledby="workspace-heading-2">
         <div class="panel-heading"><div><h3 id="workspace-heading-2" tabindex="-1">选择要放在一起比较的算法</h3><p>可多选。勾选名称选择算法；点击右侧三角查看说明和专属参数。</p></div><span class="step-count">步骤 2 / 3</span></div>
+        <div class="course-context"><strong>调度策略迁移：</strong>FCFS / SJF / Priority / EDF / LLF / HRRN 在卫星任务上保留各自的选择规则。观测不可抢占；卫星轮询是资源轮询，不是 CPU 时间片 RR。</div>
         <fieldset><legend>本实验算法（勾选后可展开配置参数）</legend><div id="algorithm-choices"></div></fieldset>
 <div class="model-setting">        <label>初始排程模型<select id="schedule-model" required></select></label>
         <p class="hint">模型与比较算法分别选择。SA 使用模型初始解，GA／ACO 保留其为候选最佳解；其余算法依原实现自行建解，模型不改变其核心策略。</p>
@@ -63,6 +114,7 @@
         </section>
         <section class="workflow-panel" id="workspace-step-3" aria-labelledby="workspace-heading-3">
         <div class="panel-heading"><div><h3 id="workspace-heading-3" tabindex="-1">确认设置，开始本次实验</h3><p>默认参数可以直接使用；每种算法独立运行并保存状态。</p></div><span class="step-count">步骤 3 / 3</span></div>
+        <div class="course-context"><strong>运行与服务时间分开：</strong>一个 Worker 是执行算法的本机进程，可用槽位限制并发；算法预算是求解时间上限，不是观测曝光时长，也不是 CPU 时间片。</div>
         <dl class="configuration-summary"><div><dt>已选场景</dt><dd id="workspace-scene-summary">等待加载场景…</dd></div><div><dt>本次算法</dt><dd id="workspace-algorithm-summary">尚未选择</dd></div></dl>
         <label>结果输出<select id="output-profile" required></select></label>
         <p id="output-hint" class="hint"></p>
@@ -108,7 +160,7 @@
     </section>
 
     <section class="workspace-page records-page" id="experiments" data-console-page="records" aria-label="实验管理工作区" hidden>
-      <div class="page-toolbar"><p>在列表中选择实验，右侧查看进度、计划与导出。</p><a href="#comparison" data-console-route="compare" class="workspace-text-link">比较当前实验 <span aria-hidden="true">→</span></a></div>
+      <div class="page-toolbar"><p>Controller 派发完整算法运行；选择实验，在右侧观察进程记录、核验与结果。</p><a href="#comparison" data-console-route="compare" class="workspace-text-link">比较当前实验 <span aria-hidden="true">→</span></a></div>
     <section class="card list-card" aria-labelledby="runs-heading">
       <div class="section-title inline"><div><p class="eyebrow">EXPERIMENTS</p><h2 id="runs-heading">实验列表</h2><p id="run-count">状态每两秒刷新一次。</p></div><div class="toolbar"><button class="secondary" id="toggle-refresh" type="button" aria-pressed="false">暂停自动更新</button><button class="secondary" id="refresh" type="button">立即刷新</button></div></div>
       <div class="export-toolbar" aria-label="批量统计导出">
@@ -127,6 +179,11 @@
       <div class="current-export"><span>当前实验统计</span><button type="button" data-stat-export data-export-scope="current" data-export-format="csv" class="secondary" disabled>汇总 CSV</button><button type="button" data-stat-export data-export-scope="current" data-export-format="zip" class="secondary" disabled>完整数据包</button></div>
       <label>查看实验内算法<select id="detail-algorithm"></select></label>
       <details class="quiet-details add-algorithms"><summary>为当前实验添加算法</summary><div id="experiment-algorithm-add"></div></details>
+      <section id="os-process-info" class="os-process-card" aria-labelledby="os-process-heading" hidden>
+        <h3 id="os-process-heading">进程执行记录 <small>· 最近一次 Worker 尝试</small></h3>
+        <dl class="os-process-grid"><div><dt>Worker PID</dt><dd data-os-process-field="pid">—</dd></div><div><dt>尝试次数</dt><dd data-os-process-field="attempt">—</dd></div><div><dt>运行状态</dt><dd data-os-process-field="state">—</dd></div><div><dt>进程退出码</dt><dd data-os-process-field="exitCode">—</dd></div><div><dt>算法求解耗时</dt><dd data-os-process-field="algorithmTime">—</dd></div><div><dt>独立核验耗时</dt><dd data-os-process-field="verificationTime">—</dd></div></dl>
+        <p data-os-process-field="note"></p>
+      </section>
       <div id="metrics" class="metrics"></div>
       <p id="run-summary" class="hint"></p><button id="run-algorithm-info" type="button" class="secondary" hidden>算法与本次参数</button>
       <details class="quiet-details"><summary>本次运行条件与核验信息</summary><pre id="run-config"></pre></details>
@@ -144,14 +201,14 @@
       <p id="scenario-provenance" class="hint"></p>
       <p id="detail-error" class="error" role="alert"></p>
       <details class="quiet-details"><summary>服务器输出文件</summary><ul id="files" class="files"></ul></details>
-      <details class="quiet-details"><summary>运行记录与事件</summary><ol id="events" class="events"></ol></details>
+      <details class="quiet-details"><summary>进程通信与运行事件</summary><ol id="events" class="events"></ol></details>
       <h3 class="plan-heading">计划明细 <span id="assignment-count"></span></h3>
       <div class="table-wrap" tabindex="0" aria-label="计划明细，可水平滚动"><table><caption class="sr-only">所选实验的任务计划</caption><thead><tr><th scope="col">任务</th><th scope="col">卫星</th><th scope="col">开始</th><th scope="col">结束</th></tr></thead><tbody id="assignments"></tbody></table></div>
       </div>
     </section>
     </section>
     <section class="card comparison-card workspace-page" data-console-page="compare" hidden id="comparison" aria-labelledby="comparison-heading">
-      <div class="comparison-header"><div class="section-title"><p class="eyebrow">COMPARE RESULTS</p><h2 id="comparison-heading">结果比较</h2><p>选择实验后，在这里比较各算法与临时模型对照。</p></div><div class="control-action"><label for="control-model" class="sr-only">对照实验初始模型</label><select id="control-model"><option value="completion_first">完成率优先</option><option value="adaptive_repair">自适应修复</option></select><button type="button" class="secondary" id="create-control" disabled>一键创建对照实验</button></div></div>
+      <div class="comparison-header"><div class="section-title"><p class="eyebrow">COMPARE RESULTS</p><h2 id="comparison-heading">结果比较</h2><p>在相同作业集、约束和预算下，比较完成率、收益、等待与计算代价。</p></div><div class="control-action"><label for="control-model" class="sr-only">对照实验初始模型</label><select id="control-model"><option value="completion_first">完成率优先</option><option value="adaptive_repair">自适应修复</option></select><button type="button" class="secondary" id="create-control" disabled>一键创建对照实验</button></div></div>
       <div class="panel-scroll comparison-scroll" role="region" aria-label="结果比较内容" tabindex="0">
       <div class="comparison-export"><div><h3>保存实验统计</h3><p>汇总每行一次算法运行。数据包含分组均值、样本标准差、任务明细与配置；临时对照不计入持久导出。</p></div><div class="export-buttons"><button type="button" data-stat-export data-export-scope="current" data-export-format="csv" class="secondary" disabled>本实验 CSV</button><button type="button" data-stat-export data-export-scope="current" data-export-format="zip" disabled>统计数据包</button></div></div><p class="message export-message" data-export-message role="status"></p>
       <div class="comparison-workarea">
@@ -159,7 +216,7 @@
           <h3>选择对照范围</h3>
           <label class="organization-control">结果组织方式<select id="comparison-mode"><option value="algorithm">按算法比较</option><option value="experiment">按实验比较</option></select></label>
           <div id="comparison-choices"></div>
-          <details class="quiet-details metric-guide"><summary>指标说明</summary><p class="hint">TP ↑ 任务收益<br>TCR ↑ 任务完成率<br>BD ↑ 负载均衡度<br>TM ↓ 归一化等待时间<br>RT ↓ 算法耗时（秒）</p></details>
+          <details class="quiet-details metric-guide"><summary>课程指标与场景含义</summary><p class="hint">TP ↑ 完成任务的优先级收益<br>TCR ↑ 完成的作业比例<br>BD ↑ 卫星观测时长的负载均衡度<br>TM ↓ 含未完成惩罚的归一化等待指标，不是平均周转时间<br>RT ↓ 本机算法求解耗时，不是卫星执行时长</p></details>
         </aside>
         <section class="comparison-main" aria-label="结果表与排序">
           <p class="hint">综合分＝70×完成率＋20×收益比例＋10×(1−等待时间)。耗时不计分；同场景、预算、初始模型与并发设置内排序，总优先级为0时收益项计0。</p>
@@ -171,6 +228,6 @@
     </section>
   </main>
   <dialog id="algorithm-dialog" aria-labelledby="algorithm-dialog-title"><div class="inline"><h2 id="algorithm-dialog-title">算法详情</h2><button type="button" id="close-algorithm-dialog" class="secondary">关闭</button></div><div id="algorithm-description"></div></dialog>
-  <footer>EOS · 地球观测卫星调度实验 · 来源可追溯，结果可复核</footer>
+  <footer>《操作系统课程设计》 · 组长：李泽同 · 组员：何明涛 / 刘懋兴 / 梁兆榮 <span>｜调度策略迁移 · 进程与通信 · 同步互斥</span></footer>
 </body>
 </html>

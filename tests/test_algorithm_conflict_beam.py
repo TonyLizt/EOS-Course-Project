@@ -113,7 +113,7 @@ class FoundationTests(Fixture):
     def test_agile_earliest_center_latest(self):
         self.problem.satellites["S1"].maneuverability_type = "agile"
         task = self.task("T1", [("S1", 0)], width=30)
-        candidates = BoundedCandidateAdapter(self.cm, CAABSParams()).build(task)
+        candidates = BoundedCandidateAdapter(self.cm, CAABSParams(grid_coverage=False)).build(task)
         self.assertEqual([(a.sat_start_time-self.start).total_seconds() for a in candidates], [0, 10, 20])
         self.assertEqual([len(a.sat_angles["roll_angles"]) for a in candidates], [10, 10, 10])
 
@@ -124,7 +124,7 @@ class FoundationTests(Fixture):
         self.problem.satellites["S1"].maneuverability_type = "agile"
         tasks = [self.task(tid, [("S1", 0)], duration=10, width=120)
                  for tid in ("T1", "T2", "T3")]
-        params = CAABSParams(beam_width=32, branch_limit=16,
+        params = CAABSParams(beam_width=32, branch_limit=16, grid_coverage=False,
                              max_candidates_per_task=16, max_windows_per_task=32)
         adapter = BoundedCandidateAdapter(self.cm, params)
         for task in tasks:

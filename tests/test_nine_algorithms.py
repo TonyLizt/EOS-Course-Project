@@ -21,8 +21,8 @@ class NineAlgorithmTests(unittest.TestCase):
     def test_catalog_and_models_are_disjoint_and_dependencies_explicit(self):
         with tempfile.TemporaryDirectory() as empty, patch.dict('os.environ', EOS_RUNTIME_DIR=empty):
             rows = list_algorithms()
-        self.assertEqual(len(rows), 19)  # 原13种 + 6种基础调度。
-        self.assertEqual(len({r['algorithm_id'] for r in rows}), 19)
+        self.assertEqual(len(rows), 21)  # 包含历史MIP/PPO及新增随机/卫星轮询；就绪数另由部署自检核对。
+        self.assertEqual(len({r['algorithm_id'] for r in rows}), 21)
         self.assertIn('lavis', {r['algorithm_id'] for r in rows})
         self.assertIn('dartis', {r['algorithm_id'] for r in rows})
         self.assertEqual({r['algorithm_id'] for r in rows}, set(COMPARISON_ALGORITHMS))

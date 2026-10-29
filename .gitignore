@@ -1,18 +1,25 @@
+# 本机解释器、缓存和运行状态
 .venv/
-output_original_fallback/
-draw/orbit.czml
-draw/orekit-data.zip
-.mplconfig/
-__pycache__/
-.DS_Store
 __pycache__/
 *.py[cod]
-# Generated EOS-Bench scenario datasets
+.DS_Store
+.mplconfig/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.log
+*.partial
+# 运行资源另行分发；禁止把新生成数据/回放/制品加回源码树
+/runtime/
+/release/
+/dist/
+/data/scenarios/
+/data/derived/
+/experiments/runs/
+/experiments/reports/
 /output/
-
-# Local dataset archives
+/output_original_fallback/
 /input.zip
 /output.zip
-
-# Locally generated scenario hash report
-/experiments/reports/scenario_sha256.txt
+/draw/orbit.czml
+/draw/orekit-data.zip

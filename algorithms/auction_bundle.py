@@ -1,7 +1,6 @@
-"""RABAS: centralized resource-aware bundle auction, using shared feasibility.
+"""资源感知任务包竞价：在原生竞价后可选跨星迁移修复，沿用 main 的公共加权目标。
 
-Bounded diverse local bundle chains per satellite, NOT a cross-round beam or CBBA.
-Only validated current-version awards become the returned incumbent. No I/O.
+参考 2026-10-28 交付快照选择性移植；不引入 Score/v2 协议，不修改物理与指标口径。
 """
 from __future__ import annotations
 
@@ -19,7 +18,7 @@ from algorithms.solver_contracts import AlgorithmParams, SolveContext
 from schedulers.constraint_model import Assignment, ConstraintModel, Schedule
 from schedulers.scenario_loader import SchedulingProblem
 
-VERSION = '1.1.1'
+VERSION = '1.2.0-course.1'
 
 
 class RABASParams(AlgorithmParams):
@@ -41,6 +40,15 @@ class RABASParams(AlgorithmParams):
     repair_attempts: int = Field(0, ge=0, le=64, strict=True, description='停滞后同星1换2的移除任务尝试上限；0关闭，至多接受一次严格改善')
     future_aware_rank: bool = Field(False, strict=True, description='可选新增数减机会损失优先排序；默认关闭，保留完成数优先')
     reauction_mode: Literal['all_affected'] = Field('all_affected', description='当前实现：所有卫星全量重新报价')
+    cross_star_repair: bool = Field(False, strict=True, description='有界共享任务跨星迁移后补入资源受阻任务；默认关闭')
+    cross_star_tasks: int = Field(8, ge=1, le=32, strict=True, description='跨星修复最多检查的未安排任务数。')
+    cross_star_windows: int = Field(4, ge=1, le=8, strict=True, description='每个任务在每颗卫星上最多检查的来源窗口数。')
+    cross_star_movers: int = Field(12, ge=1, le=32, strict=True, description='每次资源受阻最多考虑的可迁移共享任务数。')
+    cross_star_alternatives: int = Field(4, ge=1, le=16, strict=True, description='每个被迁移任务最多尝试的替代卫星放置数。')
+    cross_star_max_replays: int = Field(2048, ge=1, le=4096, strict=True, description='跨星修复完整计划重放次数上限。')
+    cross_star_max_checks: int = Field(60000, ge=1, le=100000, strict=True, description='跨星修复公共约束检查次数上限。')
+    cross_star_max_repairs: int = Field(2, ge=1, le=4, strict=True, description='跨星修复最多接受的严格改善次数。')
+    cross_star_budget_fraction: float = Field(.1, gt=0, le=.2, strict=True, description='跨星修复最多使用总预算的比例，仍受父求解截止时间限制。')
 
 
 class RABASCancelled(RuntimeError):
@@ -467,7 +475,8 @@ class _Auction:
                             break
                     else:
                         destroyed += 1
-                lost += destroyed / len(witnesses)
+                loss = destroyed / len(witnesses)
+                lost += loss
         opportunity = lost / max(1, len(remaining))
         transition_cost = transition/self.horizon
         score = delta - p.transition_cost_weight*transition_cost - p.resource_cost_weight*resource - p.opportunity_cost_weight*opportunity
@@ -650,10 +659,23 @@ class ResourceAwareBundleAuctionScheduler:
                 plan = self._repair(auction, plan, remaining, params.repair_attempts)
             except (_BudgetExpired, _RoundLimit):
                 pass
+        # 可选跨星修复仅迁移共享任务、释放受阻卫星资源；仍受总预算和公共约束限制。
+        cross_stats=None
+        if params.cross_star_repair and 'auction' in locals() and reason not in ('budget','round_check_limit'):
+            from algorithms.rabas_cross_star import improve
+            before_cross=plan
+            try:
+                control.round_checks=0;control.check_limit=params.cross_star_max_checks
+                cross_deadline=min(control.deadline,self.clock()+context.time_budget_s*params.cross_star_budget_fraction)
+                plan,cross_stats=improve(auction,plan,context,cross_deadline)
+            except (_BudgetExpired,_RoundLimit):
+                plan=before_cross
+                cross_stats=dict(stop_reason='parent_budget',repairs=0,inserted=0)
         # No unbounded copy/evaluation after stopping; plan is an owned award.
         if context.is_cancelled():
             raise RABASCancelled('RABAS cancelled before return')
         plan.metadata['rabas'] = {'version': VERSION, 'stop_reason': reason,
                                   'return_reserve_s': control.reserve,
                                   'stats': control.stats, 'awards': trace}
+        if cross_stats is not None:plan.metadata['rabas']['cross_star_repair']=cross_stats
         return plan

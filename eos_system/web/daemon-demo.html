@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>守护与故障演示 · 操作系统课程设计</title><link rel="icon" href="data:,"><link rel="stylesheet" href="/static/daemon-demo.css"><script defer src="/static/daemon-demo.js"></script></head>
+<body><header><a href="/#course-overview">← 返回实验平台</a><span>操作系统课程设计 · 进程管理与故障恢复</span></header><main>
+<div class="intro"><div><p class="eyebrow">PROCESS SUPERVISION LAB</p><h1>守护与故障演示</h1><p>结束一个进程，观察系统如何发现故障、回收资源并恢复服务。</p></div><span class="pill">独立沙箱 · 不影响实验数据</span></div>
+<section class="notice"><strong>真实进程，隔离作业。</strong> 本页启动独立 Daemon、FastAPI / Controller 和 Worker，使用临时数据库及随机端口。三个作业只进行受控等待，不执行卫星算法，不生成论文指标。关闭演示会回收进程并清理临时文件；单轮最多运行十分钟；离开页面前请停止演示。</section>
+<section class="card"><div class="heading"><h2>进程监护</h2><span id="state" class="pill" role="status">未启动</span></div><div class="tree">
+<article><small>独立守护进程</small><h3>Daemon</h3><strong id="daemon">—</strong><p>检查心跳 · 有界退避重启</p></article><b>→</b><article><small>独立服务进程</small><h3>Controller</h3><strong id="controller">—</strong><p>队列派发 · IPC · 状态保存</p></article><b>→</b><article><small>独立作业进程</small><h3>Worker</h3><strong id="worker">—</strong><p>受控等待 · 响应取消</p></article></div>
+<div class="summary"><span>服务恢复次数 <strong id="restarts">0 / 3</strong></span><span id="alive">Daemon 尚未启动</span></div>
+<div class="actions"><button data-action="start">① 启动隔离演示</button><button data-action="worker" disabled>② 强制结束 Worker</button><button data-action="controller" disabled>③ 强制结束演示后端</button><button data-action="stop" class="secondary" disabled>④ 停止并清理</button></div><p id="message" role="status">启动后等待“健康”，再逐项注入故障。</p></section>
+<div class="columns"><section class="card"><div class="heading"><h2>作业与队列</h2><span>真实 SQLite 状态</span></div><div id="runs" class="runs">尚未创建演示作业</div><p class="hint">结束 Worker：当前运行失败，下一作业接着运行，Daemon 恢复次数不变。结束后端：旧运行记为 CONTROLLER_RESTART，排队作业由新 Controller 领取；不会从算法断点续算。</p></section>
+<section class="card"><div class="heading"><h2>恢复时间线</h2><span>Daemon 实际事件</span></div><ol id="events" aria-live="polite"><li>等待启动</li></ol></section></div>
+<section class="guide"><h2>建议录制顺序</h2><p>1. 展示三个不同 PID → 2. 结束 Worker，观察下一作业与恢复次数 → 3. 结束后端，观察 Daemon PID 不变、Controller PID 改变、恢复次数加一 → 4. 正常停止，验证不会反复拉起。</p><p>本页由主平台承载，宕机的是隔离演示后端，因此页面可以持续显示恢复过程。普通实验页面的服务没有被结束。</p></section>
+</main><footer>《操作系统课程设计》 · 服务恢复 ≠ 算法断点续算 · 最大恢复 3 次，退避从 2 秒开始</footer></body></html>

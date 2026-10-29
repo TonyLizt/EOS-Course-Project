@@ -1,7 +1,6 @@
-"""Conflict-Aware Anytime Beam Search; planning feasibility is not certification.
+"""冲突感知束搜索：增加来源网格覆盖、边界补点与任务子集多样性，保留公共可行性检查。
 
-Candidate construction delegates all physical rules to ConstraintModel. Nothing
-in this module registers an algorithm or writes system lifecycle state.
+参考 2026-10-28 交付快照选择性移植；不引入 Score/v2 协议，不修改物理与指标口径。
 """
 from __future__ import annotations
 
@@ -18,11 +17,12 @@ from pydantic import ConfigDict, Field
 from algorithms.objectives import ObjectiveModel
 from algorithms.solver_contracts import AlgorithmParams, SolveContext
 from schedulers.constraint_model import Assignment, ConstraintModel, Schedule
+from schedulers.assignment_building import observation_at_index
 from schedulers.scenario_loader import SchedulingProblem, SchedulingTask, TaskWindow
 from utils.continuous_exposure import ExposureStatus
 from schedulers.preview_exposure import candidate_exposure
 
-VERSION = "0.3.0"
+VERSION = "0.5.0-course.1"
 Checkpoint = Callable[[], None]
 
 
@@ -45,6 +45,12 @@ class CAABSParams(AlgorithmParams):
     greedy_incumbent: bool = Field(default=True, strict=True)
     incremental_keys: bool = Field(default=True, strict=True)
     incremental_objective: bool = Field(default=False, strict=True)
+    dynamic_repair_limit: int = Field(default=12, ge=0, le=32, strict=True,
+        description="静态候选在当前 Beam 状态均不可行时，任务边界附近最多补查的来源网格起点数。")
+    grid_coverage: bool = Field(default=True, strict=True,
+        description="在公共首中末锚点之后，用真实来源网格补足有界候选池。")
+    diversity_slots: int = Field(default=2, ge=0, le=32, strict=True,
+        description="Beam 内为不同已选任务集合保留的最多替换槽数；0 关闭。")
 
 
 def _freeze(value, checkpoint: Checkpoint) -> tuple:
@@ -225,7 +231,7 @@ class _CandidateConstructor(ConstraintModel):
 
 
 class BoundedCandidateAdapter:
-    """At most three public constructor calls per selected observation window.
+    """Public anchors followed by bounded, evenly spread source-grid coverage.
 
     Selection balances satellites, then spreads each satellite's window quota
     over the horizon. Diversity rotates public placement anchors across windows.
@@ -302,8 +308,98 @@ class BoundedCandidateAdapter:
                 if key not in seen:
                     seen.add(key)
                     candidates.append(candidate)
+        if len(candidates) >= self.params.max_candidates_per_task:
+            return candidates
+        # 只补充来源网格上的真实采样点；每个候选仍经当前公共约束检查。
+        if self.params.grid_coverage and not self.constraints.has_ground_stations:
+            remaining = self.params.max_candidates_per_task - len(candidates)
+            per_window = max(1, math.ceil(remaining / max(1, len(windows))))
+            buckets = []
+            for window in windows:
+                self.checkpoint()
+                if self.constraints.problem.satellites[window.satellite_id].maneuverability_type != "agile":
+                    continue
+                step = float(window.time_step)
+                last = math.floor(((window.end_time-window.start_time).total_seconds()
+                                   - task.required_duration + 1e-9)/step)
+                if last < 0 or last > 1024:
+                    continue
+                count = min(last + 1, per_window + 6)
+                buckets.append((window, _spread(list(range(last + 1)), count)))
+            for depth in range(max((len(indices) for _, indices in buckets), default=0)):
+                for window, indices in buckets:
+                    self.checkpoint()
+                    if depth >= len(indices):
+                        continue
+                    candidate = observation_at_index(self.constraints.problem, task, window, indices[depth])
+                    if candidate is None:
+                        continue
+                    key = canonical_assignment_key(candidate, self.checkpoint)
+                    if key in seen:
+                        continue
+                    self.stats["grid_candidates_checked"] = self.stats.get("grid_candidates_checked", 0) + 1
+                    if not self.constraints.is_feasible_assignment(candidate, Schedule()):
+                        continue
+                    seen.add(key)
+                    candidates.append(candidate)
+                    if len(candidates) >= self.params.max_candidates_per_task:
+                        return candidates
         # Deterministic coverage order; solve has separate check/child budgets.
         return candidates
+
+    def repair(self, task: SchedulingTask, schedule: Schedule,
+               static: list[Assignment]) -> list[Assignment]:
+        """Bounded source-grid placements near occupied task boundaries.
+
+        Public feasibility remains in the caller. Downlink cases retain the
+        existing public constructor path until a shared indexed builder exists.
+        """
+        limit = self.params.dynamic_repair_limit
+        if not limit or self.constraints.has_ground_stations:
+            return []
+        seen = {(a.satellite_id, a.sat_window_id, a.sat_start_time) for a in static}
+        result = []
+        for window in self._windows(task):
+            self.checkpoint()
+            sat = self.constraints.problem.satellites[window.satellite_id]
+            if sat.maneuverability_type == "non_agile":
+                continue
+            occupied = sorted(schedule.get_assignments_for_satellite(window.satellite_id),
+                              key=lambda a: a.sat_start_time)
+            if not occupied:
+                continue
+            step = float(window.time_step)
+            last = math.floor(((window.end_time-window.start_time).total_seconds()
+                               - task.required_duration + 1e-9)/step)
+            indices = []
+            for prior in occupied:
+                # A successor may need several extra grid steps for attitude
+                # slew; a predecessor may need to end earlier for the same.
+                after = math.ceil((prior.sat_end_time-window.start_time).total_seconds()/step-1e-9)
+                before = math.floor(((prior.sat_start_time-window.start_time).total_seconds()
+                                     - task.required_duration)/step+1e-9)
+                # Alternate grid steps first to cover a useful slew span
+                # before the small per-state budget is exhausted.
+                offsets = list(range(0, 25, 2)) + list(range(1, 24, 2))
+                indices.extend(after + delta for delta in offsets)
+                indices.extend(before - delta for delta in offsets)
+            for k in dict.fromkeys(indices):
+                self.checkpoint()
+                if k < 0 or k > last:
+                    continue
+                candidate = observation_at_index(self.constraints.problem, task, window, k)
+                if candidate is None:
+                    continue
+                key = (candidate.satellite_id, candidate.sat_window_id, candidate.sat_start_time)
+                if key in seen:
+                    continue
+                seen.add(key)
+                result.append(candidate)
+                if len(result) >= limit:
+                    self.stats["dynamic_candidates_generated"] = self.stats.get("dynamic_candidates_generated", 0) + len(result)
+                    return result
+        self.stats["dynamic_candidates_generated"] = self.stats.get("dynamic_candidates_generated", 0) + len(result)
+        return result
 
 
 def static_opportunity_key(task: SchedulingTask, candidates: list[Assignment]) -> tuple:
@@ -422,6 +518,10 @@ class ConflictBeamScheduler:
             "incremental_objective_calls": 0, "full_objective_calls": 0,
             "skip_states": 0,
             "dedup_input_states": 0,
+            "dynamic_candidates_generated": 0, "dynamic_repair_states": 0,
+            "dynamic_repair_successes": 0,
+            "grid_candidates_checked": 0,
+            "diversity_replacements": 0,
         }
         best_feasible = Schedule()
         best_rank = None
@@ -484,12 +584,13 @@ class ConflictBeamScheduler:
             def remember(candidate_state: BeamState) -> None:
                 nonlocal best_feasible, best_rank, phase
                 checkpoint()
-                if best_rank is None or candidate_state.rank_key < best_rank:
+                incumbent_rank = candidate_state.rank_key
+                if best_rank is None or incumbent_rank < best_rank:
                     # Only replace the incumbent after the isolated copy finishes.
                     phase = "incumbent_copy"
                     snapshot = clone_schedule(candidate_state.schedule, checkpoint)
                     best_feasible = snapshot
-                    best_rank = candidate_state.rank_key
+                    best_rank = incumbent_rank
 
             initial = state(Schedule(), 0)
             remember(initial)
@@ -522,8 +623,8 @@ class ConflictBeamScheduler:
                         key = canonical_assignment_key(candidate, checkpoint) if params.incremental_keys else None
                         greedy = state(branch_schedule(greedy.schedule, candidate, checkpoint), 0, greedy, candidate, key)
                         remember(greedy)
+                        stats["greedy_tasks_completed"] += 1
                         break
-                    stats["greedy_tasks_completed"] += 1
             beam = [initial]
             stats["max_beam_size"] = 1
             for task_index, tid in enumerate(task_ids, 1):
@@ -572,6 +673,32 @@ class ConflictBeamScheduler:
                         children.append(child)
                         admitted += 1
                         stats["feasible_children"] += 1
+                    if not admitted and params.dynamic_repair_limit:
+                        phase = "dynamic_repair"
+                        repair = adapter.repair(problem.tasks[tid], parent.schedule, candidates)
+                        if repair:
+                            stats["dynamic_repair_states"] += 1
+                        for candidate in repair:
+                            checkpoint()
+                            stats["candidate_checks"] += 1
+                            if index is not None and index.rejects(candidate):
+                                stats["prefilter_rejections"] += 1
+                                continue
+                            stats["public_constraint_calls"] += 1
+                            if not constraints.is_feasible_assignment(candidate, parent.schedule):
+                                continue
+                            checkpoint()
+                            stats["accepted_insertions"] += 1
+                            stats["dynamic_repair_successes"] += 1
+                            key = canonical_assignment_key(candidate, checkpoint) if params.incremental_keys else None
+                            child = state(branch_schedule(parent.schedule, candidate, checkpoint), task_index,
+                                          parent, candidate, key)
+                            remember(child)
+                            children.append(child)
+                            admitted += 1
+                            stats["feasible_children"] += 1
+                            if admitted >= params.branch_limit:
+                                break
                 stats["max_children"] = max(stats["max_children"], len(children))
                 phase = "deduplication"
                 unique = {}
@@ -592,6 +719,37 @@ class ConflictBeamScheduler:
                 ranked = sorted(unique.values(), key=rank)
                 checkpoint()
                 beam = ranked[:params.beam_width]
+                # 为不同任务子集保留有界名额，避免同一组任务的多个时间放置挤掉跳过分支。
+                # A top-B filled by many time placements of the same task set
+                # can erase the skip path needed for a later conflicting task.
+                # Reserve a small number of slots for distinct task subsets;
+                # never bypass public feasibility or the global width bound.
+                if params.diversity_slots and len(ranked) > len(beam):
+                    def signature(item: BeamState) -> frozenset[str]:
+                        return frozenset(a.task_id for a in item.schedule.assignments)
+                    slots = min(params.diversity_slots, len(beam))
+                    replacements = 0
+                    signatures = {signature(item) for item in beam}
+                    for alternative in ranked[len(beam):]:
+                        checkpoint()
+                        if replacements >= slots:
+                            break
+                        new_signature = signature(alternative)
+                        if new_signature in signatures:
+                            continue
+                        counts = {}
+                        for item in beam:
+                            key = signature(item)
+                            counts[key] = counts.get(key, 0) + 1
+                        victim = next((i for i in range(len(beam)-1, -1, -1)
+                            if counts[signature(beam[i])] > 1), None)
+                        if victim is None:
+                            break
+                        beam[victim] = alternative
+                        signatures.add(new_signature)
+                        replacements += 1
+                    beam.sort(key=rank)
+                    stats["diversity_replacements"] += replacements
                 stats["pruned_states"] += max(0, len(ranked) - len(beam))
                 stats["max_beam_size"] = max(stats["max_beam_size"], len(beam))
                 stats["levels_completed"] += 1

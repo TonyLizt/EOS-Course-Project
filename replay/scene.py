@@ -1,6 +1,7 @@
 """回放所需的静态场景投影，不在内存中复制百万级窗口/角度数组。"""
 from __future__ import annotations
 
+from decimal import Decimal
 import hashlib
 import json
 from pathlib import Path
@@ -41,7 +42,11 @@ def load_display_scene(path: str | Path) -> dict:
         current, builder = None, None
         first = True
         with path.open("rb") as stream:
-            for prefix, event, value in ijson.parse(stream, use_float=True):
+            # 大整数种子必须保留为 Python int；默认 Decimal 模式不会触发 C 后端整数溢出。
+            for prefix, event, value in ijson.parse(stream, use_float=False):
+                # 展示坐标仍采用 float，保持与标准 json.load 相同的数值接口。
+                if isinstance(value, Decimal):
+                    value = float(value)
                 if first:
                     first = False
                     if prefix != "" or event != "start_map":

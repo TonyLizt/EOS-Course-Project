@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const source = fs.readFileSync('eos_system/web/workspace-pages.js','utf8');
 function setup(hash) {
   const node = key => ({dataset:{consolePage:key,consoleRoute:key},hidden:false,attrs:{},setAttribute(k,v){this.attrs[k]=v;},removeAttribute(k){delete this.attrs[k];},focus(){}});
-  const pages = ['create','records','compare'].map(node), links = ['create','records','compare'].map(node);
+  const pages = ['create','records','compare','course'].map(node), links = ['create','records','compare','course'].map(node);
   const title = node(), description = node(), events = {}, clicks = {}, pushes = [];
   const location = {hash}, window = {addEventListener:(key,fn)=>events[key]=fn};
   const document = {querySelectorAll:selector=>selector==='[data-console-page]'?pages:links,getElementById:id=>id==='workspace-page-title'?title:description,addEventListener:(key,fn)=>clicks[key]=fn};
@@ -34,4 +34,16 @@ test('switching and browser history preserve existing page nodes and entered val
   app.location.hash='#runs-heading'; app.events.hashchange();
   assert.equal(app.pages[1].hidden,false);
   assert.equal(app.pushes.length,2);
+});
+
+test('course landing and direct course link coexist with all existing workspaces',()=>{
+  for(const hash of ['', '#course-overview']){
+    const app=setup(hash);
+    assert.equal(app.pages.find(node=>!node.hidden).dataset.consolePage,'course');
+    assert.equal(app.pushes.length,0);
+    app.show('create');app.pages[0].input={value:'42'};
+    app.show('course');app.show('records');app.show('create');
+    assert.equal(app.pages[0].input.value,'42');
+    assert.equal(app.pages.filter(node=>!node.hidden).length,1);
+  }
 });

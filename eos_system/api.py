@@ -53,6 +53,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     experiments = Experiments(database)
     catalog = ScenarioCatalog(Path(__file__).resolve().parent.parent)
     catalog_warnings = catalog.register_sources(database)
+    # 演示编排只拥有自己的临时数据库/进程，不接入业务Controller。
+    from .daemon_demo.manager import DemoSession
+    demo_session = DemoSession()
     controller = Controller(settings, database)
     temporary = TemporaryControls(database.expected_certification_context, settings.max_queued)
     controller.transient = temporary
@@ -65,14 +68,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             replay.recover()
             yield
         finally:
-            controller.announce_stopping()
-            temporary.close()
             try:
-                replay.close()
+                demo_session.stop()
             finally:
-                controller.stop()
+                controller.announce_stopping()
+                temporary.close()
+                try:
+                    replay.close()
+                finally:
+                    controller.stop()
 
     app = FastAPI(title="EOS 课程调度系统", version=VERSION, lifespan=lifespan)
+    from .daemon_demo.routes import install_routes
+    install_routes(app, Path(__file__).parent / "web", demo_session)
+    app.state.daemon_demo = demo_session
     app.state.replay = replay
     app.state.controller = controller
     app.state.database = database

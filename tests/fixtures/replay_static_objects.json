@@ -1,0 +1,63 @@
+{
+  "satellites": [
+    {
+      "id": "ALOS-2_39766",
+      "orbital_type": "LEO",
+      "orbital_params": {
+        "semi_major_axis_km": 7013.62362,
+        "eccentricity": 0.000898,
+        "inclination_deg": 98.04,
+        "argument_of_perigee_deg": 101.516,
+        "right_ascension_of_ascending_node_deg": 57.345,
+        "mean_anomaly_deg": 96.356,
+        "epoch": "18 Nov 2025 12:00:00.000"
+      },
+      "satellite_specs": {
+        "max_data_storage_GB": 1000.0,
+        "max_operation_time_s": 4500.0,
+        "max_power_W": 500.0,
+        "max_battery_capacity_Wh": 2000.0,
+        "max_fuel_kg": 100.0
+      },
+      "observation_capability": {
+        "sensors": [
+          {
+            "sensor_id": "ALOS-2_39766_sensor",
+            "resolution": "medium",
+            "sensor_mode": "visible",
+            "field_of_view_deg": 45.0,
+            "observation_swath_width_km": 50.0,
+            "data_rate_Mbps": 0.1,
+            "power_consumption_W": 50.0,
+            "min_elevation_angle_deg": 0.0
+          }
+        ]
+      },
+      "maneuverability_capability": {
+        "maneuverability_type": "agile",
+        "slew_rate_deg_per_s": 1.0,
+        "max_pitch_angle_deg": 45.0,
+        "max_yaw_angle_deg": 45.0,
+        "max_roll_angle_deg": 45.0,
+        "stabilization_time_s": 10.0
+      }
+    }
+  ],
+  "missions": [
+    {
+      "id": "M001",
+      "target_location": {
+        "latitude": 27.944006,
+        "longitude": -138.54184,
+        "altitude_km": 0.0
+      },
+      "priority": 5.0,
+      "observation_requirement": {
+        "duration_s": 11.0,
+        "required_resolution": null,
+        "required_mode": null,
+        "min_elevation_angle_deg": null
+      }
+    }
+  ]
+}

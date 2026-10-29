@@ -42,6 +42,8 @@
     finally{pending=false;$('submit').disabled=false;}
   }
   function detail(run) {
+    // 仅呈现 API 已有尝试记录；不根据历史 PID 猜测进程是否存活。
+    window.OsCourseView?.render($('os-process-info'), run);
     $('run-algorithm-info').hidden=!run;
     $('run-config').textContent=run?JSON.stringify({config:run.config,continuous_certification:run.continuous_certification,preview_validation:run.preview_validation},null,2):'';
     $('run-summary').textContent=run?`${UI.name(run.config.algorithm_id)} · ${UI.model(run.config.schedule_model)} · ${run.config.scenario_id}`:'';

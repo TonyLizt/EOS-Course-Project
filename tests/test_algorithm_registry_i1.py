@@ -29,7 +29,8 @@ WEIGHTS = dict(w_profit=0.0, w_completion=1.0, w_timeliness=0.0, w_balance=0.0)
 EXPECTED_DEFAULTS = dict(beam_width=8, branch_limit=8, candidate_check_limit=16,
     max_candidates_per_task=16, max_windows_per_task=32, conflict_prefilter=True,
     candidate_diversity=True, task_order="scarcity", greedy_incumbent=True,
-    incremental_keys=True, incremental_objective=False)
+    incremental_keys=True, incremental_objective=False,
+    dynamic_repair_limit=12, grid_coverage=True, diversity_slots=2)
 
 
 class FreshImportTests(unittest.TestCase):

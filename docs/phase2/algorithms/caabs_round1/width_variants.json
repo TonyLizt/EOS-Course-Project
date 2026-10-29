@@ -1,6 +1,0 @@
-[
-  {"name":"beam8_branch8","ref":"95e3d39","params":{"candidate_diversity":true,"task_order":"scarcity","greedy_incumbent":true,"incremental_keys":true}},
-  {"name":"beam4_branch4","ref":"95e3d39","params":{"candidate_diversity":true,"task_order":"scarcity","greedy_incumbent":true,"incremental_keys":true,"beam_width":4,"branch_limit":4}},
-  {"name":"beam16_branch8","ref":"95e3d39","params":{"candidate_diversity":true,"task_order":"scarcity","greedy_incumbent":true,"incremental_keys":true,"beam_width":16}},
-  {"name":"beam8_branch4","ref":"95e3d39","params":{"candidate_diversity":true,"task_order":"scarcity","greedy_incumbent":true,"incremental_keys":true,"branch_limit":4}}
-]
